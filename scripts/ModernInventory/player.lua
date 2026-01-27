@@ -1,0 +1,140 @@
+local I = require('openmw.interfaces')
+local self = require('openmw.self')
+local core = require('openmw.core')
+local input = require('openmw.input')
+local async = require('openmw.async')
+local storage = require('openmw.storage')
+local ui = require('openmw.ui')
+local types = require('openmw.types')
+
+local util = require('openmw.util')
+local auxUtil = require('openmw_aux.util')
+local v2 = util.vector2
+
+local API = I.ModernInventory
+
+local configPlayer = require('scripts.ModernInventory.config.player')
+local helpers = require('scripts.ModernInventory.util.helpers')
+
+local function init()
+    if not I.GamepadControls.isControllerMenusEnabled or not I.GamepadControls.isControllerMenusEnabled() then
+        --I.UI.registerWindow('Inventory', API.show, API.hide)
+    elseif configPlayer.misc.b_ShowControllerWarning then
+        storage.playerSection('Settings/ModernInventory/5_Misc'):set('b_ShowControllerWarning', false)
+        local msg = 'NOTICE:\nModern Inventory is not compatible with controller menus.\nThis message will only appear once.'
+        if I.UI.showInteractiveMessage then -- OpenMW 0.50+
+            I.UI.showInteractiveMessage(msg, {})
+        else
+            ui.showMessage(msg)
+        end
+    end
+end
+
+local defaultCategories = {
+    {
+        key = 'All',
+        filter = function() return true end,
+    },
+    {
+        key = 'Weapon',
+        filter = types.Weapon.objectIsInstance,
+    },
+    {
+        key = 'Armor',
+        filter = types.Armor.objectIsInstance,
+    },
+    {
+        key = 'Clothing',
+        filter = types.Clothing.objectIsInstance,
+    },
+    {
+        key = 'Potion',
+        filter = types.Potion.objectIsInstance,
+    },
+    {
+        key = 'Ingredient',
+        filter = types.Ingredient.objectIsInstance,
+    },
+    {
+        key = 'Scroll',
+        filter = function(item)
+            if types.Book.objectIsInstance(item) then
+                local record = types.Book.records[item.recordId]
+                return record and record.enchant
+            end
+        end,
+    },
+    {
+        key = 'Book',
+        filter = function(item)
+            if types.Book.objectIsInstance(item) then
+                local record = types.Book.records[item.recordId]
+                return record and not record.enchant
+            end
+        end,
+    },
+    {
+        key = 'Key',
+        filter = function(item)
+            if types.Miscellaneous.objectIsInstance(item) then
+                local record = types.Miscellaneous.records[item.recordId]
+                return record and record.isKey
+            end
+        end,
+    },
+    {
+        key = 'Misc',
+        filter = function(item)
+            return not (types.Weapon.objectIsInstance(item) or
+                        types.Armor.objectIsInstance(item) or
+                        types.Clothing.objectIsInstance(item) or
+                        types.Potion.objectIsInstance(item) or
+                        types.Ingredient.objectIsInstance(item) or
+                        types.Book.objectIsInstance(item) or
+                        (types.Miscellaneous.objectIsInstance(item) and
+                            types.Miscellaneous.records[item.recordId].isKey))
+        end,
+    }
+}
+
+for _, category in ipairs(defaultCategories) do
+    -- API.registerCategory{
+    --     l10n = 'ModernInventory',
+    --     key = category.key,
+    --     filter = category.filter,
+    -- }
+end
+
+local wasConsolePressed, wasGameMenuPressed = false, false
+
+input.registerTriggerHandler('Console', async:callback(function()
+    if not API.getConsoleState() then
+        API.setConsoleState(true)
+        wasConsolePressed = true
+    end
+end))
+
+return {
+    engineHandlers = {
+        onInit = init,
+        onLoad = init,
+        onFrame = function()
+            API.onFrame()
+
+            local consolePressed = input.isActionPressed(input.ACTION.Console)
+            local gameMenuPressed = input.isActionPressed(input.ACTION.GameMenu)
+
+            if API.getConsoleState() then
+                if (consolePressed and not wasConsolePressed) or (gameMenuPressed and not wasGameMenuPressed) then
+                    API.setConsoleState(false)
+                end
+            end
+
+            wasConsolePressed = consolePressed
+            wasGameMenuPressed = gameMenuPressed
+        end,
+        onMouseWheel = function(v, h)
+            API.onMouseWheel(v, h)
+        end,
+    },
+}

@@ -1,0 +1,89 @@
+ConfigTitle: Modern Inventory
+ConfigSummary: |-
+  A Lua replacement for the inventory window with a modernized list-based interface.
+  --- v%{version} ---
+
+RequiresReload: Requires a Lua reload to take effect.
+
+ConfigCategoryWindowOptions: Window Options
+InventoryWindowPinned: Inventory window pinned
+InventoryWindowDimensions: Inventory window dimensions
+BarterInventoryWindowDimensions: Inventory window dimensions (bartering)
+
+ConfigCategoryTweaks: Tweaks
+
+ConfigCategoryModIntegration: Mod Integrations
+InterfaceReimagined: Interface Reimagined support
+InterfaceReimaginedDesc: |-
+  Adjust appearance to better fit the style of Interface Reimagined.
+
+ConfigCategoryMisc: Miscellaneous
+ShowControllerWarning: Show controller warning
+ShowControllerWarningDesc: |-
+  Show a warning message if controller menus are enabled, since the window replacer is not compatible with them.
+
+# Column
+Column_Name: Name
+Column_Type: Type
+Column_Value: Value
+Column_Weight: Weight
+Column_VW: V/W
+
+# Category
+Category_All: All
+Category_Weapon: Weapon
+Category_Armor: Armor
+Category_Clothing: Clothing
+Category_Potion: Potion
+Category_Ingredient: Ingredient
+Category_Scroll: Scroll
+Category_Book: Book
+Category_Key: Key
+Category_Misc: Misc
+
+# Apparatus
+Type_Alembic: Alembic
+Type_Calcinator: Calcinator
+Type_MortarPestle: Mortar
+Type_Retort: Retort
+
+# Armor
+Type_Boots: Boots
+Type_Cuirass: Cuirass
+Type_Greaves: Greaves
+Type_Helmet: Helmet
+Type_LBracer: Bracer (L)
+Type_LGauntlet: Gauntlet (L)
+Type_LPauldron: Pauldron (L)
+Type_RBracer: Bracer (R)
+Type_RGauntlet: Gauntlet (R)
+Type_RPauldron: Pauldron (R)
+Type_Shield: Shield
+
+# Clothing
+Type_Amulet: Amulet
+Type_Belt: Belt
+Type_LGlove: Glove (L)
+Type_Pants: Pants
+Type_RGlove: Glove (R)
+Type_Ring: Ring
+Type_Robe: Robe
+Type_Shirt: Shirt
+Type_Shoes: Shoes
+Type_Skirt: Skirt
+
+# Weapon
+Type_Arrow: Arrow
+Type_AxeOneHand: Axe (1H)
+Type_AxeTwoHand: Axe (2H)
+Type_BluntOneHand: Blunt (1H)
+Type_BluntTwoClose: Blunt (2H)
+Type_BluntTwoWide: Blunt (2H)
+Type_Bolt: Bolt
+Type_LongBladeOneHand: Long Blade (1H)
+Type_LongBladeTwoHand: Long Blade (2H)
+Type_MarksmanBow: Bow
+Type_MarksmanCrossbow: Crossbow
+Type_MarksmanThrown: Thrown
+Type_ShortBladeOneHand: Short Blade
+Type_SpearTwoWide: Spear
