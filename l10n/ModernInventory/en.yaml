@@ -16,11 +16,17 @@ BarterWindowDimensions: Barter window
 CompanionWindowDimensions: Companion window
 
 ConfigCategoryTweaks: Tweaks
+CondensedWeightValue: Condensed weight/value
+CondensedWeightValueDesc: |-
+  Condense weight and value information in item tooltips.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support
 InterfaceReimaginedDesc: |-
   Adjust appearance to better fit the style of Interface Reimagined.
+TooltipsComplete: Tooltips Complete support
+TooltipsCompleteDesc: |-
+  If Tooltips Complete is installed, add its descriptions to item tooltips.
 
 ConfigCategoryMisc: Miscellaneous
 ShowControllerWarning: Show controller warning
@@ -30,8 +36,8 @@ ShowControllerWarningDesc: |-
 # Column
 Column_Name: Name
 Column_Type: Type
-Column_Value: Value
-Column_Weight: Weight
+Column_Value: Val.
+Column_Weight: Wgt.
 Column_VW: V/W
 
 # Category

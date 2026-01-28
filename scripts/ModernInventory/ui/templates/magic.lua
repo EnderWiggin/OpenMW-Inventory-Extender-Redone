@@ -357,6 +357,8 @@ Templates.lineTooltip = function(text, name)
     }, name)
 end
 
+local tooltipData = require('scripts.ModernInventory.interop.tooltips')
+
 Templates.itemTooltip = function(item)
     local itemRecord = item.type.record(item)
     local itemData = types.Item.itemData(item)
@@ -417,6 +419,152 @@ Templates.itemTooltip = function(item)
         nameString = nameString .. ' (' .. tostring(item.count) .. ')'
     end
 
+    local innerContent = ui.content {
+        {
+            name = 'name',
+            template = BASE.textHeader,
+            props = {
+                text = nameString,
+            }
+        },
+        BASE.intervalV(4),
+        {
+            name = 'weight',
+            template = BASE.textNormal,
+            props = {
+                text = constants.Strings.ITEM_WEIGHT .. ': ' .. helpers.roundToPlaces(itemRecord.weight, 3),
+            }
+        },
+        {
+            name = 'value',
+            template = BASE.textNormal,
+            props = {
+                text = constants.Strings.ITEM_VALUE .. ': ' .. (itemRecord.value)
+            }
+        },
+    }
+
+    if castTypeString then
+        innerContent:add({
+            name = 'castType',
+            template = BASE.textNormal,
+            props = {
+                text = castTypeString,
+            }
+        })
+    end
+
+    if itemRecord.enchant then
+        innerContent:add(BASE.intervalV(4))
+        innerContent:add({
+            name = 'effects',
+            type = ui.TYPE.Flex,
+            props = {
+                arrange = ui.ALIGNMENT.Start,
+            },
+            content = ui.content {
+                table.unpack(effectLayouts)
+            }
+        })
+    end
+
+    if doCharge then
+        innerContent:add(BASE.intervalV(8))
+        innerContent:add({
+            name = 'charge',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                {
+                    template = BASE.textNormal,
+                    props = {
+                        text = constants.Strings.CHARGE,
+                    }
+                },
+                BASE.intervalH(5),
+                Templates.progressBar {
+                    value = itemData.enchantmentCharge or 0,
+                    maxValue = maxCharge,
+                    size = v2(204, Templates.LINE_HEIGHT),
+                    color = constants.Colors.BAR_HEALTH,
+                    textColor = constants.Colors.DEFAULT,
+                }
+            }
+        })
+    end
+
+    if configPlayer.modIntegration.b_TooltipsComplete and tooltipData[item.recordId] then
+        innerContent:add(BASE.intervalV(12))
+        innerContent:add({
+            template = I.MWUI.templates.horizontalLine,
+            props = {
+                size = v2(280, 2),
+                position = v2(20, 0),
+            }
+        })
+        innerContent:add(BASE.intervalV(12))
+        innerContent:add({
+            name = 'lore',
+            template = BASE.textParagraph,
+            props = {
+                text = tooltipData[item.recordId],
+                textColor = constants.Colors.DEFAULT_LIGHT,
+                autoSize = true,
+                size = v2(320, 0),
+            }
+        })
+    end
+
+    if configPlayer.tweaks.b_CondensedWeightValue then
+        innerContent.weight = nil
+        innerContent.value = nil
+        local flex = {
+            name = 'weightValue',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                align = ui.ALIGNMENT.End,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            external = {
+                stretch = 1,
+            },
+            content = ui.content {
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        size = v2(16, 16),
+                        resource = BASE.createTexture('icons/gold.dds'),
+                    }
+                },
+                {
+                    template = BASE.textNormal,
+                    props = {
+                        text = ' ' .. tostring(util.round(itemRecord.value)) .. ' ',
+                    }
+                },
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        size = v2(16, 16),
+                        resource = BASE.createTexture('icons/weight.dds'),
+                    }
+                },
+                {
+                    template = BASE.textNormal,
+                    props = {
+                        text = ' ' .. tostring(helpers.roundToPlaces(itemRecord.weight, 2)),
+                    }
+                },
+            }
+        }
+        innerContent:add(BASE.intervalV(8))
+        innerContent:add(flex)
+    end
+
     return Templates.tooltip(8, ui.content {
         {
             name = 'tooltip',
@@ -425,71 +573,10 @@ Templates.itemTooltip = function(item)
                 align = ui.ALIGNMENT.Center,
                 arrange = ui.ALIGNMENT.Center,
             },
-            content = ui.content {
-                {
-                    template = BASE.textHeader,
-                    props = {
-                        text = nameString,
-                    }
-                },
-                BASE.intervalV(4),
-                {
-                    template = BASE.textNormal,
-                    props = {
-                        text = constants.Strings.ITEM_WEIGHT .. ': ' .. helpers.roundToPlaces(itemRecord.weight, 3),
-                    }
-                },
-                {
-                    template = BASE.textNormal,
-                    props = {
-                        text = constants.Strings.ITEM_VALUE .. ': ' .. (itemRecord.value)
-                    }
-                },
-                castTypeString and {
-                    template = BASE.textNormal,
-                    props = {
-                        text = castTypeString,
-                    }
-                },
-                itemRecord.enchant and BASE.intervalV(4) or {},
-                itemRecord.enchant and {
-                    type = ui.TYPE.Flex,
-                    props = {
-                        arrange = ui.ALIGNMENT.Start,
-                    },
-                    content = ui.content {
-                        table.unpack(effectLayouts)
-                    }
-                } or {},
-                doCharge and BASE.intervalV(8) or {},
-                doCharge and {
-                    type = ui.TYPE.Flex,
-                    props = {
-                        horizontal = true,
-                        arrange = ui.ALIGNMENT.Center,
-                    },
-                    content = ui.content {
-                        {
-                            template = BASE.textNormal,
-                            props = {
-                                text = constants.Strings.CHARGE,
-                            }
-                        },
-                        BASE.intervalH(5),
-                        Templates.progressBar {
-                            value = itemData.enchantmentCharge or 0,
-                            maxValue = maxCharge,
-                            size = v2(204, Templates.LINE_HEIGHT),
-                            color = constants.Colors.BAR_HEALTH,
-                            textColor = constants.Colors.DEFAULT,
-                        }
-                    }
-                } or {},
-            }
+            content = innerContent,
         }
     }, item.id)
 end
-
 Templates.sectionDivider = {
     props = {
         relativeSize = v2(1, 0),

@@ -84,6 +84,13 @@ I.Settings.registerGroup {
     description = 'RequiresReload',
     permanentStorage = true,
     settings = {
+        {
+            key = 'b_CondensedWeightValue',
+            renderer = 'checkbox',
+            name = 'CondensedWeightValue',
+            description = 'CondensedWeightValueDesc',
+            default = true,
+        }
     },
 }
 
@@ -102,6 +109,13 @@ I.Settings.registerGroup {
             description = 'InterfaceReimaginedDesc',
             default = false,
         },
+        {
+            key = 'b_TooltipsComplete',
+            renderer = 'checkbox',
+            name = 'TooltipsComplete',
+            description = 'TooltipsCompleteDesc',
+            default = true,
+        }
     },
 }
 

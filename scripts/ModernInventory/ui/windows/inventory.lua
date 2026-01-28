@@ -1,3 +1,4 @@
+local core = require('openmw.core')
 local ui = require('openmw.ui')
 local storage = require('openmw.storage')
 local this = require('openmw.self')
@@ -10,6 +11,8 @@ local ItemTable = require('scripts.ModernInventory.ui.templates.itemTable')
 local Window = require('scripts.ModernInventory.ui.windows.base')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
+
+local l10n = core.l10n('ModernInventory')
 
 local Inventory = Window:new()
 
@@ -55,17 +58,21 @@ function Inventory:create(ctx)
             },
             {
                 id = 'Name',
+                label = l10n('Column_Name'),
             },
             {
                 id = 'Weight',
+                label = l10n('Column_Weight'),
                 width = 64,
             },
             {
                 id = 'Value',
+                label = l10n('Column_Value'),
                 width = 64,
             },
             {
                 id = 'V/W',
+                label = l10n('Column_VW'),
                 width = 64,
             }
         },
