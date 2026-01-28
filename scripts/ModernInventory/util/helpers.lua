@@ -184,6 +184,99 @@ Helpers.getEquippedName = function()
     return name
 end
 
+Helpers.getWeaponInfo = function(item)
+    if not types.Weapon.objectIsInstance(item) then
+        return nil
+    end
+    local record = types.Weapon.records[item.recordId]
+    local TYPE = types.Weapon.TYPE
+    if record.type == TYPE.Arrow or record.type == TYPE.Bolt then
+        return {
+            skill = 'marksman',
+            class = C.WeaponClass.Ammo,
+        }
+        
+    elseif record.type == TYPE.MarksmanBow or record.type == TYPE.MarksmanCrossbow then
+        return {
+            skill = 'marksman',
+            class = C.WeaponClass.Ranged,
+        }
+
+    elseif record.type == TYPE.MarksmanThrown then
+        return {
+            skill = 'marksman',
+            class = C.WeaponClass.Thrown,
+        }
+
+    elseif record.type == TYPE.AxeOneHand then
+        return {
+            skill = 'axe',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = false,
+        }
+
+    elseif record.type == TYPE.AxeTwoHand then
+        return {
+            skill = 'axe',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = true,
+        }
+
+    elseif record.type == TYPE.BluntOneHand then
+        return {
+            skill = 'bluntweapon',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = false,
+        }
+
+    elseif record.type == TYPE.BluntTwoClose or record.type == TYPE.BluntTwoWide then
+        return {
+            skill = 'bluntweapon',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = true,
+        }
+
+    elseif record.type == TYPE.LongBladeOneHand then
+        return {
+            skill = 'longblade',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = false,
+        }
+
+    elseif record.type == TYPE.LongBladeTwoHand then
+        return {
+            skill = 'longblade',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = true,
+        }
+
+    elseif record.type == TYPE.ShortBladeOneHand then
+        return {
+            skill = 'shortblade',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = false,
+        }
+
+    elseif record.type == TYPE.SpearTwoWide then
+        return {
+            skill = 'spear',
+            class = C.WeaponClass.Melee,
+            isTwoHanded = true,
+        }
+        
+    end
+end
+
+Helpers.getWeaponRangeInFeet = function(item)
+    if not types.Weapon.objectIsInstance(item) then
+        return 0
+    end
+    local record = types.Weapon.records[item.recordId]
+    local reach = record.reach or 0
+    local unitsPerFoot = 21.33333333
+    return core.getGMST('fCombatDistance') * reach / unitsPerFoot
+end
+
 local magicka = self.type.stats.dynamic.magicka(self)
 local willpower = self.type.stats.attributes.willpower(self)
 local luck = self.type.stats.attributes.luck(self)

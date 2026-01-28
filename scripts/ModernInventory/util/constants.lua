@@ -55,8 +55,6 @@ C.Strings = {
     POWERS = 'sPowers',
     SPELLS = 'sSpells',
     MAGIC_ITEMS = 'sMagicItem',
-    ITEM_WEIGHT = 'sWeight',
-    ITEM_VALUE = 'sValue',
     ITEM_CAST_ONCE = 'sItemCastOnce',
     ITEM_CAST_WHEN_STRIKES = 'sItemCastWhenStrikes',
     ITEM_CAST_WHEN_USED = 'sItemCastWhenUsed',
@@ -105,7 +103,24 @@ C.Strings = {
     YES = 'sYes',
     NO = 'sNo',
     OK = 'sOK',
-    HAND_TO_HAND = 'sSkillHandtohand'
+    HAND_TO_HAND = 'sSkillHandtohand',
+    LIGHT = 'sLight',
+    MEDIUM = 'sMedium',
+    HEAVY = 'sHeavy',
+    CONDITION = 'sCondition',
+    WEIGHT = 'sWeight',
+    VALUE = 'sValue',
+    SLASH = 'sSlash',
+    THRUST = 'sThrust',
+    CHOP = 'sChop',
+    ATTACK = 'sAttack',
+    USES = 'sUses',
+    QUALITY = 'sQuality',
+    ARMOR_RATING = 'sArmorRating',
+    TYPE = 'sType',
+    SPEED = 'sAttributeSpeed',
+    ONE_HANDED = 'sOneHanded',
+    TWO_HANDED = 'sTwoHanded',
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)
@@ -156,6 +171,13 @@ C.Magic = {
         PERCENTAGE = 5,
         POINTS = 6,
     }
+}
+
+C.WeaponClass = {
+    Melee = 1,
+    Ranged = 2,
+    Thrown = 3,
+    Ammo = 4,
 }
 
 return C

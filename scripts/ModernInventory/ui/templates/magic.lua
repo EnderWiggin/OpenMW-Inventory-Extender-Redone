@@ -359,7 +359,14 @@ end
 
 local tooltipData = require('scripts.ModernInventory.interop.tooltips')
 
-Templates.itemTooltip = function(item)
+Templates.itemTooltip = function(item, showIcon)
+    local function textNormal(name, text)
+        return { name = name, template = BASE.textNormal, props = { text = text } }
+    end
+    local function textHeader(name, text)
+        return { name = name, template = BASE.textHeader, props = { text = text } }
+    end
+
     local itemRecord = item.type.record(item)
     local itemData = types.Item.itemData(item)
     local effectLayouts = {}
@@ -381,12 +388,7 @@ Templates.itemTooltip = function(item)
                 content = ui.content {
                     Templates.effectIcon(effect.id),
                     BASE.intervalH(4),
-                    {
-                        template = BASE.textNormal,
-                        props = {
-                            text = helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect),
-                        }
-                    }
+                    textNormal('effect_' .. i, helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect)),
                 }
             }
             if i ~= 1 then
@@ -416,42 +418,116 @@ Templates.itemTooltip = function(item)
 
     local nameString = itemRecord.name
     if item.count > 1 then
-        nameString = nameString .. ' (' .. tostring(item.count) .. ')'
+        nameString = nameString .. ' (' .. item.count .. ')'
     end
 
-    local innerContent = ui.content {
-        {
+    local innerContent = ui.content {}
+
+    if not showIcon then
+        innerContent:add(textHeader('name', nameString)) 
+    else
+        innerContent:add({
             name = 'name',
-            template = BASE.textHeader,
+            type = ui.TYPE.Flex,
             props = {
-                text = nameString,
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        size = v2(32, 32),
+                        resource = BASE.createTexture(itemRecord.icon),
+                    }
+                },
+                BASE.intervalH(4),
+                textHeader('name', nameString),
+                BASE.intervalH(4),
             }
-        },
-        BASE.intervalV(4),
-        {
-            name = 'weight',
-            template = BASE.textNormal,
-            props = {
-                text = constants.Strings.ITEM_WEIGHT .. ': ' .. helpers.roundToPlaces(itemRecord.weight, 3),
-            }
-        },
-        {
-            name = 'value',
-            template = BASE.textNormal,
-            props = {
-                text = constants.Strings.ITEM_VALUE .. ': ' .. (itemRecord.value)
-            }
-        },
-    }
+        }) 
+    end
+
+    innerContent:add(BASE.intervalV(4))
+
+    local conditionString
+    local condition = types.Item.itemData(item).condition
+    local maxCondition = itemRecord.health
+    if condition and maxCondition then
+        conditionString = constants.Strings.CONDITION .. ': ' .. util.round(condition) .. '/' .. util.round(maxCondition)
+    end
+
+    if types.Armor.objectIsInstance(item) then
+        innerContent:add(textNormal('armorRating', constants.Strings.ARMOR_RATING .. ': ' .. math.modf(I.Combat.getEffectiveArmorRating(item, omwself))))
+        innerContent:add(textNormal('condition', conditionString))
+    end
+
+    if types.Weapon.objectIsInstance(item) then
+        local weaponInfo = helpers.getWeaponInfo(item)
+        if weaponInfo then
+            innerContent:add(textNormal('type', constants.Strings.TYPE .. ' ' .. core.getGMST('sSkill' .. weaponInfo.skill)))
+            
+            if weaponInfo.class == constants.WeaponClass.Melee then
+                local handedString = weaponInfo.isTwoHanded and constants.Strings.TWO_HANDED or constants.Strings.ONE_HANDED
+                innerContent.type.props.text = innerContent.type.props.text .. ', ' .. handedString
+                innerContent:add(textNormal('chop', constants.Strings.CHOP .. ': ' .. itemRecord.chopMinDamage .. ' - ' .. itemRecord.chopMaxDamage))
+                innerContent:add(textNormal('slash', constants.Strings.SLASH .. ': ' .. itemRecord.slashMinDamage .. ' - ' .. itemRecord.slashMaxDamage))
+                innerContent:add(textNormal('thrust', constants.Strings.THRUST .. ': ' .. itemRecord.thrustMinDamage .. ' - ' .. itemRecord.thrustMaxDamage))
+            else
+                local attackMin, attackMax = itemRecord.chopMinDamage, itemRecord.chopMaxDamage
+                if weaponInfo.class == constants.WeaponClass.Thrown then
+                    attackMin = attackMin * 2
+                    attackMax = attackMax * 2
+                end
+                innerContent:add(textNormal('attack', constants.Strings.ATTACK .. ': ' .. attackMin .. ' - ' .. attackMax)) 
+            end
+
+            if weaponInfo.class == constants.WeaponClass.Melee or weaponInfo.class == constants.WeaponClass.Ranged then
+                innerContent:add(textNormal('condition', conditionString))
+            end
+
+            if weaponInfo.class == constants.WeaponClass.Melee then
+                innerContent:add(textNormal('range', constants.Strings.RANGE .. ': ' .. helpers.roundToPlaces(helpers.getWeaponRangeInFeet(item), 1) .. ' ' .. constants.Strings.FEET)) 
+            end
+
+            if weaponInfo.class ~= constants.WeaponClass.Ammo then
+                innerContent:add(textNormal('speed', constants.Strings.SPEED .. ': ' .. util.round(itemRecord.speed * 100) .. '%')) 
+            end
+        end
+    end
+
+    if itemRecord.maxCondition then
+        innerContent:add(textNormal('condition', constants.Strings.USES .. ': ' .. itemData.condition))
+    end
+
+    if itemRecord.quality then
+        innerContent:add(textNormal('quality', constants.Strings.QUALITY .. ': ' .. helpers.roundToPlaces(itemRecord.quality, 3)))
+    end
+
+    if itemRecord.weight > 0 then
+        innerContent:add(textNormal('weight', constants.Strings.WEIGHT .. ': ' .. helpers.roundToPlaces(itemRecord.weight, 3)))
+        if types.Armor.objectIsInstance(item) then
+            local skill = I.Combat.getArmorSkill(item)
+            local skillString
+            if skill == 'lightarmor' then
+                skillString = constants.Strings.LIGHT
+            elseif skill == 'mediumarmor' then
+                skillString = constants.Strings.MEDIUM
+            elseif skill == 'heavyarmor' then
+                skillString = constants.Strings.HEAVY
+            else
+                skillString = core.getGMST('sSkill' .. skill)
+            end
+            innerContent.weight.props.text = innerContent.weight.props.text .. ' (' .. skillString .. ')'
+        end
+    end
+
+    if itemRecord.value > 0 and itemRecord.id ~= 'gold_001' then
+        innerContent:add(textNormal('value', constants.Strings.VALUE .. ': ' .. (itemRecord.value)))
+    end
 
     if castTypeString then
-        innerContent:add({
-            name = 'castType',
-            template = BASE.textNormal,
-            props = {
-                text = castTypeString,
-            }
-        })
+        innerContent:add(textNormal('castType', castTypeString))
     end
 
     if itemRecord.enchant then
@@ -478,12 +554,7 @@ Templates.itemTooltip = function(item)
                 arrange = ui.ALIGNMENT.Center,
             },
             content = ui.content {
-                {
-                    template = BASE.textNormal,
-                    props = {
-                        text = constants.Strings.CHARGE,
-                    }
-                },
+                textNormal(nil, constants.Strings.CHARGE),
                 BASE.intervalH(5),
                 Templates.progressBar {
                     value = itemData.enchantmentCharge or 0,
@@ -519,50 +590,67 @@ Templates.itemTooltip = function(item)
     end
 
     if configPlayer.tweaks.b_CondensedWeightValue then
-        innerContent.weight = nil
-        innerContent.value = nil
-        local flex = {
-            name = 'weightValue',
-            type = ui.TYPE.Flex,
-            props = {
-                horizontal = true,
-                align = ui.ALIGNMENT.End,
-                arrange = ui.ALIGNMENT.Center,
-            },
-            external = {
-                stretch = 1,
-            },
-            content = ui.content {
-                {
-                    type = ui.TYPE.Image,
-                    props = {
-                        size = v2(16, 16),
-                        resource = BASE.createTexture('icons/gold.dds'),
-                    }
+        if innerContent:indexOf('weight') then
+            innerContent.weight = nil
+        end
+        if innerContent:indexOf('value') then
+            innerContent.value = nil
+        end
+
+        
+        if types.Armor.objectIsInstance(item) then
+            local skillString = core.getGMST('sSkill' .. I.Combat.getArmorSkill(item))
+            innerContent:insert(3, textNormal('type', constants.Strings.TYPE .. ' ' .. skillString)) 
+        end
+
+        local flexContent = ui.content {}
+
+        if itemRecord.value > 0 and itemRecord.id ~= 'gold_001' then
+            flexContent:add({
+                type = ui.TYPE.Image,
+                props = {
+                    size = v2(16, 16),
+                    resource = BASE.createTexture('icons/gold.dds'),
+                }
+            })
+            flexContent:add(textNormal(nil, ' ' .. util.round(itemRecord.value)))
+        end
+
+        if itemRecord.weight > 0 then
+            if #flexContent > 0 then
+                flexContent:add(BASE.intervalH(4))
+            end
+            flexContent:add({
+                type = ui.TYPE.Image,
+                props = {
+                    size = v2(16, 16),
+                    resource = BASE.createTexture('icons/weight.dds'),
+                }
+            })
+            flexContent:add(textNormal(nil, ' ' .. helpers.roundToPlaces(itemRecord.weight, 2)))
+        end
+
+        if #flexContent > 0 then
+            local flex = {
+                name = 'weightValue',
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    align = ui.ALIGNMENT.End,
+                    arrange = ui.ALIGNMENT.Center,
                 },
-                {
-                    template = BASE.textNormal,
-                    props = {
-                        text = ' ' .. tostring(util.round(itemRecord.value)) .. ' ',
-                    }
+                external = {
+                    stretch = 1,
                 },
-                {
-                    type = ui.TYPE.Image,
-                    props = {
-                        size = v2(16, 16),
-                        resource = BASE.createTexture('icons/weight.dds'),
-                    }
-                },
-                {
-                    template = BASE.textNormal,
-                    props = {
-                        text = ' ' .. tostring(helpers.roundToPlaces(itemRecord.weight, 2)),
-                    }
-                },
+                content = flexContent
             }
-        }
-        innerContent:add(BASE.intervalV(8))
-        innerContent:add(flex)
+            innerContent:add(BASE.intervalV(8))
+            innerContent:add(flex)
+        end
+    end
+
+    if #innerContent == 2 then
+        innerContent[2] = nil -- remove extra interval if no details
     end
 
     return Templates.tooltip(8, ui.content {
@@ -577,6 +665,7 @@ Templates.itemTooltip = function(item)
         }
     }, item.id)
 end
+
 Templates.sectionDivider = {
     props = {
         relativeSize = v2(1, 0),
