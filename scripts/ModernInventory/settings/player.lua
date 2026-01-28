@@ -26,6 +26,12 @@ I.Settings.registerGroup {
     permanentStorage = true,
     settings = {
         {
+            key = 'b_EnableMod',
+            renderer = 'checkbox',
+            name = 'EnableMod',
+            default = true,
+        },
+        {
             key = 'b_InventoryWindowPinned',
             renderer = 'checkbox',
             name = 'InventoryWindowPinned',

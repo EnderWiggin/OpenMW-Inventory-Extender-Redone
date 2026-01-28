@@ -6,6 +6,7 @@ ConfigSummary: |-
 RequiresReload: Requires a Lua reload to take effect.
 
 ConfigCategoryWindowOptions: Window Options
+EnableMod: Enable mod
 InventoryWindowPinned: Inventory pinned
 InventoryWindowDimensions: Inventory window
 InventoryContainerWindowDimensions: Inventory (container)

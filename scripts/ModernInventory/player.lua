@@ -17,6 +17,9 @@ local configPlayer = require('scripts.ModernInventory.config.player')
 local helpers = require('scripts.ModernInventory.util.helpers')
 
 local function init()
+    if not configPlayer.window.b_EnableMod then
+        return
+    end
     if not I.GamepadControls.isControllerMenusEnabled or not I.GamepadControls.isControllerMenusEnabled() then
         local overrides = {
             'Inventory',
