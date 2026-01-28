@@ -21,6 +21,9 @@ end
 local function compareItems(a, b, field, direction)
     local valA = a[field]
     local valB = b[field]
+
+    if type(valA) == 'string' then valA = valA:lower() end
+    if type(valB) == 'string' then valB = valB:lower() end
     
     -- Handle nils (push to bottom usually)
     if valA == nil and valB == nil then return false end
@@ -85,7 +88,7 @@ ItemTable.create = function(props)
         table.sort(state.sortedRows, function(a, b)
             -- Case 1: If sorting by the default column, strictly use fallback sorter
             if isDefaultCol and fallbackSort then
-                return fallbackSort(a, b)
+                return fallbackSort(a, b, state.sortDir)
             end
 
             -- Case 2: Standard comparison with tiebreaker
@@ -108,7 +111,7 @@ ItemTable.create = function(props)
 
             -- Use fallbackSort as tiebreaker
             if areEqual and fallbackSort then
-                return fallbackSort(a, b)
+                return fallbackSort(a, b, state.sortDir)
             end
             
             return result
@@ -263,7 +266,7 @@ ItemTable.create = function(props)
                     {
                         type = ui.TYPE.Image,
                         props = {
-                            resource = defaultSortIcon,
+                            resource = ui.texture { path = defaultSortIcon },
                             size = util.vector2(16, 16),
                         }
                     }
@@ -283,6 +286,7 @@ ItemTable.create = function(props)
                     text = title,
                     size = util.vector2(w, headerHeight),
                     autoSize = false,
+                    textAlignV = ui.ALIGNMENT.Center,
                 },
                 external = {
                     grow = (w == 0) and 1 or nil,

@@ -26,19 +26,42 @@ function Inventory:create(ctx)
             Weight = helpers.roundToPlaces(record.weight, 3),
             ['V/W'] = helpers.roundToPlaces((record.weight > 0) and (record.value / record.weight) or 0, 2),
             item = item,
+            itemRecord = record,
         })
     end
     local itemTable = ItemTable.create({
         columns = {
             {
+                id = 'Icon',
+                width = 24,
+                renderer = function(row, width, height)
+                    local iconDim = math.min(width, height) -- keep square
+                    return {
+                        props = {
+                            size = v2(width, height),
+                        },
+                        content = ui.content {
+                            {
+                                type = ui.TYPE.Image,
+                                props = {
+                                    resource = ui.texture { path = row.itemRecord.icon },
+                                    position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                                    size = v2(iconDim, iconDim),
+                                }
+                            }
+                        }
+                    }
+                end
+            },
+            {
                 id = 'Name',
             },
             {
-                id = 'Value',
+                id = 'Weight',
                 width = 64,
             },
             {
-                id = 'Weight',
+                id = 'Value',
                 width = 64,
             },
             {
@@ -49,6 +72,17 @@ function Inventory:create(ctx)
         data = data,
         size = v2(600, 400),
         rowHeight = specialTemplates.LINE_HEIGHT,
+        defaultSortId = 'Icon',
+        defaultSortIcon = 'icons/ModernInventory/default_sort.dds',
+        fallbackSort = function(a, b, sortDir)
+            local nameA = a.Name:lower()
+            local nameB = b.Name:lower()
+            if sortDir == 'asc' then
+                return nameA < nameB
+            else
+                return nameA > nameB
+            end
+        end,
     })
     content:add(itemTable)
     local element = baseTemplates.window(helpers.getEquippedName(), content, true, ctx.pinned)
