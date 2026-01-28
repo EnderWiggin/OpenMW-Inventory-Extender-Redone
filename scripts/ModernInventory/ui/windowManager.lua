@@ -32,11 +32,13 @@ windowManager.windows = {
     Companion = nil,
 }
 
+windowManager.ctx = {
+    focusedScrollable = nil,
+}
+
 windowManager.create = function(windowName)
     if windowName == 'Inventory' then
-        windowManager.windows[windowName] = InventoryWindow:create{
-            pinned = configPlayer.window.b_InventoryWindowPinned,
-        }
+        windowManager.windows[windowName] = InventoryWindow:create(windowManager.ctx)
         return windowManager.windows[windowName]
     end
 end
@@ -75,8 +77,8 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
 end
 
 windowManager.onMouseWheel = function(v, h)
-    if templates.focusedScrollable and templates.focusedScrollable.layout then
-        local layout = templates.focusedScrollable.layout
+    if windowManager.ctx.focusedScrollable and windowManager.ctx.focusedScrollable.layout then
+        local layout = windowManager.ctx.focusedScrollable.layout
         local pos = layout.content[1].props.position
         layout.content[1].props.position = util.vector2(
             pos.x,
@@ -97,41 +99,18 @@ windowManager.onFrame = function()
 
     local dt = core.getRealFrameDuration()
 
-    -- if templates.active then
-    --     if not canShow() then
-    --         windowManager.hide(true)
-    --         return
-    --     end
-
-    --     if templates.focusedScrollable and templates.focusedScrollable.layout then
-    --         local rightStick = input.getAxisValue(input.CONTROLLER_AXIS.RightY)
-    --         if math.abs(rightStick) > 0.2 then
-    --             local layout = templates.focusedScrollable.layout
-    --             local pos = layout.content[1].props.position
-    --             layout.content[1].props.position = util.vector2(
-    --                 pos.x,
-    --                 util.clamp(pos.y - rightStick * layout.userData.scrollStep / 4 * dt * 60, -layout.userData.scrollLimit, 0)
-    --             )
-    --             layout.userData.onScroll()
-    --         end
-
-    --         storedScrollPos[templates.focusedScrollable.layout.name] = templates.focusedScrollable.layout.content[1].props.position.y
-    --     end
-
-    --     if windowManager.needsRedraw then
-    --         windowManager.create()
-    --         windowManager.needsRedraw = false
-    --     elseif updateTimer >= updateInt then
-    --         updateTimer = 0
-    --     else
-    --         updateTimer = updateTimer + dt
-    --     end
-
-    --     if windowManager.needsRedrawDelayed then
-    --         windowManager.needsRedrawDelayed = false
-    --         windowManager.needsRedraw = true
-    --     end
-    -- end
+    if windowManager.ctx.focusedScrollable and windowManager.ctx.focusedScrollable.layout then
+        local rightStick = input.getAxisValue(input.CONTROLLER_AXIS.RightY)
+        if math.abs(rightStick) > 0.2 then
+            local layout = windowManager.ctx.focusedScrollable.layout
+            local pos = layout.content[1].props.position
+            layout.content[1].props.position = util.vector2(
+                pos.x,
+                util.clamp(pos.y - rightStick * layout.userData.scrollStep / 4 * dt * 60, -layout.userData.scrollLimit, 0)
+            )
+            layout.userData.onScroll()
+        end
+    end
 end
 
 return windowManager

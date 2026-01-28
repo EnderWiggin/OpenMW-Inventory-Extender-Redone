@@ -90,12 +90,19 @@ function Inventory:create(ctx)
                 return nameA > nameB
             end
         end,
-    })
+    }, ctx)
     content:add(itemTable)
-    local element = baseTemplates.window(helpers.getEquippedName(), content, true, ctx.pinned)
+    local element = baseTemplates.window(
+        helpers.getEquippedName(), 
+        content, 
+        true, 
+        function(layout)
+            itemTable.layout.userData.resize(layout.userData.getInnerSize())
+        end,
+        storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get('b_InventoryWindowPinned'))
     self.element = element
     self:loadState()
-
+    itemTable.layout.userData.resize(self.element.layout.userData.getInnerSize())
     return self
 end
 

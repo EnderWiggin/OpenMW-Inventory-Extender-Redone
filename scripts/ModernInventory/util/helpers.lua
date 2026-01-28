@@ -64,6 +64,9 @@ Helpers.uiDeepPrint = function(layoutOrElement, lvl)
     if layout.name then
         print(string.rep('-', lvl), layoutOrElement, layout.name)
     end
+    if layout.props then
+        print(string.rep(' ', lvl), 'Props:', Helpers.deepPrint(layout.props))
+    end
     if layout.userData then
         print(string.rep(' ', lvl), 'UserData:', Helpers.deepPrint(layout.userData))
     end

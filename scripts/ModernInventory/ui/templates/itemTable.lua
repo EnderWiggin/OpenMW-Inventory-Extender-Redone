@@ -9,12 +9,31 @@ local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 
 local ItemTable = {}
 
-local function setColumnWidths(columns)
+local function setColumnWidths(columns, state)
+    local contentWidth = math.floor(math.max(0, state.currentSize.x - 16)) -- scrollbarWidth = 16
     local widths = {}
+    local fixedWidth = 0
+    local flexCount = 0
+    
     for i, col in ipairs(columns) do
-        widths[i] = col.width
+        if col.width then
+            widths[i] = col.width
+            fixedWidth = fixedWidth + col.width
+        else
+            flexCount = flexCount + 1
+        end
     end
-    return widths
+    
+    local remainingWidth = math.max(0, contentWidth - fixedWidth)
+    local flexWidth = flexCount > 0 and math.floor(remainingWidth / flexCount) or 0
+    
+    for i, col in ipairs(columns) do
+        if not col.width then
+            widths[i] = flexWidth
+        end
+    end
+    
+    state.columnWidths = widths
 end
 
 -- Default sort comparator
@@ -25,7 +44,6 @@ local function compareItems(a, b, field, direction)
     if type(valA) == 'string' then valA = valA:lower() end
     if type(valB) == 'string' then valB = valB:lower() end
     
-    -- Handle nils (push to bottom usually)
     if valA == nil and valB == nil then return false end
     if valA == nil then return false end
     if valB == nil then return true end
@@ -36,7 +54,7 @@ local function compareItems(a, b, field, direction)
         return valA > valB
     end
 end
-ItemTable.create = function(props)
+ItemTable.create = function(props, ctx)
     local columns = props.columns or {}
     local dataRows = props.data or {}
     local size = props.size or util.vector2(400, 300)
@@ -55,10 +73,11 @@ ItemTable.create = function(props)
         sortedRows = {},      -- List of items after sorting
         sortColIndex = nil,   -- Index of currently sorted column
         sortDir = 'asc',      -- 'asc' or 'desc'
-        columnWidths = {}
+        columnWidths = {},
+        currentSize = size,   
     }
 
-    state.columnWidths = setColumnWidths(columns)
+    setColumnWidths(columns, state)
     
     -- Initialize defaults
     for i, col in ipairs(columns) do
@@ -75,8 +94,11 @@ ItemTable.create = function(props)
     local scrollable
     local updateRows
     local sortRows
+    local headerRow
     
-    local contentWidth = math.floor(math.max(0, size.x - scrollbarWidth))
+    local function getContentWidth()
+        return math.floor(math.max(0, state.currentSize.x - scrollbarWidth))
+    end
     
     sortRows = function()
         if not state.sortColIndex then return end
@@ -125,7 +147,8 @@ ItemTable.create = function(props)
 
         local contentLayer = scrollable.layout.content[1]
         contentLayer.type = ui.TYPE.Widget
-        local viewHeight = size.y - headerHeight
+        local viewHeight = state.currentSize.y - headerHeight
+        local contentWidth = getContentWidth()
 
         -- Virtualization mathematics
         -- contentLayer.props.position.y is negative when scrolled down
@@ -151,6 +174,7 @@ ItemTable.create = function(props)
                 if not state.rowCache[cacheKey] then
                     local cells = {}
 
+                    local totalW = 0
                     for cIdx, col in ipairs(columns) do
                         local w = state.columnWidths[cIdx] or 0
                         local cellContent
@@ -167,14 +191,13 @@ ItemTable.create = function(props)
                                     size = util.vector2(w, rowHeight),
                                     autoSize = false,
                                 },
-                                external = {
-                                    grow = (w == 0) and 1 or nil,
-                                },
                                 userData = {
                                     colorable = true,
                                 }
                             }
                         end
+                        cellContent.props.position = util.vector2(totalW, 0)
+                        totalW = totalW + w
 
                         table.insert(cells, cellContent)
                     end
@@ -183,9 +206,7 @@ ItemTable.create = function(props)
                         onClick = function() end,
                         name = row.item.id,
                     }, {
-                        type = ui.TYPE.Flex,
                         props = {
-                            horizontal = true,
                             size = util.vector2(contentWidth, rowHeight),
                             position = util.vector2(0, 0),
                         },
@@ -202,12 +223,23 @@ ItemTable.create = function(props)
                             end,
                         }
                     })
+                else
+                    local totalW = 0
+                    for cIdx, col in ipairs(columns) do
+                        local w = state.columnWidths[cIdx] or 0
+                        local cellContent = state.rowCache[cacheKey].layout.content[cIdx]
+                        local helpers = require('scripts.ModernInventory.util.helpers')
+                        cellContent.props.size = util.vector2(w, rowHeight)
+                        cellContent.props.position = util.vector2(totalW, 0)
+                        totalW = totalW + w
+                    end
                 end
 
                 local rowWidget = state.rowCache[cacheKey]
                 local rowY = (i - 1) * rowHeight
 
-                if rowWidget.layout.props.position.y ~= rowY then
+                if rowWidget.layout.props.size.x ~= contentWidth or rowWidget.layout.props.position.y ~= rowY then
+                    rowWidget.layout.props.size = util.vector2(contentWidth, rowHeight)
                     rowWidget.layout.props.position = util.vector2(0, rowY)
                     rowWidget:update()
                 end
@@ -231,18 +263,34 @@ ItemTable.create = function(props)
         contentLayer.content = ui.content(newRowElements)
         scrollable:update()
     end
+    
     updateRows = function()
         if not scrollable then return end
         
-        local viewHeight = size.y - headerHeight
-        local totalHeight = math.floor(math.max(#state.sortedRows * rowHeight, viewHeight)) -- At least view height to prevent collapse
+        local viewHeight = state.currentSize.y - headerHeight
+        local totalHeight = math.floor(math.max(#state.sortedRows * rowHeight, viewHeight))
         
         scrollable.layout.userData.update(
-            util.vector2(size.x, viewHeight), 
-            util.vector2(size.x - scrollbarWidth, totalHeight)
+            util.vector2(state.currentSize.x, viewHeight), 
+            util.vector2(state.currentSize.x - scrollbarWidth, totalHeight)
         )
         
         renderVisibleRows()
+    end
+
+    local function updateHeader()
+        if not headerRow then return end
+        
+        local contentWidth = getContentWidth()
+        headerRow.props.size = util.vector2(contentWidth, headerHeight)
+        
+        for i, headerCell in ipairs(headerRow.content) do
+            local w = state.columnWidths[i] or 0
+            if headerCell.layout and headerCell.layout.props.size.x ~= w then
+                headerCell.layout.props.size = util.vector2(w, headerHeight)
+                headerCell:update()
+            end
+        end
     end
 
     local headerElements = {}
@@ -271,9 +319,6 @@ ItemTable.create = function(props)
                         }
                     }
                 }),
-                external = {
-                    grow = (w == 0) and 1 or nil,
-                }
             }
         else
             if state.sortColIndex == i then
@@ -288,52 +333,59 @@ ItemTable.create = function(props)
                     autoSize = false,
                     textAlignV = ui.ALIGNMENT.Center,
                 },
-                external = {
-                    grow = (w == 0) and 1 or nil,
-                }
             }
         end
         
         local btn = specialTemplates.interactive({
             onClick = function()
-                if state.sortColIndex == i then
-                    state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
-                else
-                    state.sortColIndex = i
-                    state.sortDir = 'asc'
-                end
-                
-                sortRows()
-                updateRows() 
+            if state.sortColIndex == i then
+                state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
+            else
+                state.sortColIndex = i
+                state.sortDir = 'asc'
+            end
+            
+            sortRows()
+            
+            -- Scroll to top when sort changes
+            if scrollable and scrollable.layout.content[1] then
+                scrollable.layout.content[1].props.position = util.vector2(0, 0)
+            end
+            
+            updateRows()
             end
         }, headerWidget)
         table.insert(headerElements, btn)
     end
     
-    local headerRow = {
+    headerRow = {
         type = ui.TYPE.Flex,
         props = {
             horizontal = true,
-            size = util.vector2(contentWidth, headerHeight),
+            size = util.vector2(getContentWidth(), headerHeight),
         },
         content = ui.content(headerElements)
     }
 
     local dummyContent = ui.content({}) 
     local totalY = #state.sortedRows * rowHeight
-    local flexSize = util.vector2(contentWidth, totalY)
+    local flexSize = util.vector2(getContentWidth(), totalY)
     
     scrollable = baseTemplates.scrollable(
-        util.vector2(size.x, size.y - headerHeight),     -- Widget Size
-        dummyContent,                                    -- Initial Content
-        flexSize,                                        -- Inner scrollable area size
-        0,                                               -- Padding
-        0,                                               -- Border
-        rowHeight,                                       -- Scroll Step
-        true,                                           -- Always show bar
-        function() end,                                  -- onFocusGain
-        function() end,                                  -- onFocusLoss
-        0,                                               -- Start pos
+        util.vector2(size.x, size.y - headerHeight),
+        dummyContent,
+        flexSize,
+        0,
+        0,
+        rowHeight * 2,
+        true,
+        function(e)
+            ctx.focusedScrollable = e
+        end,
+        function()
+            ctx.focusedScrollable = nil
+        end,
+        0,
         'itemTable_Scroll'
     )
     
@@ -343,7 +395,7 @@ ItemTable.create = function(props)
         renderVisibleRows()
     end
     
-    sortRows() -- Initial sort
+    sortRows()
     updateRows()
 
     local wrapper = ui.create {
@@ -355,8 +407,18 @@ ItemTable.create = function(props)
         content = ui.content {
             headerRow,
             scrollable
-        }
+        },
+        userData = {},
     }
+    
+    wrapper.layout.userData.resize = function(newSize)
+        state.currentSize = newSize
+        setColumnWidths(columns, state)
+        wrapper.layout.props.size = newSize
+        updateHeader()
+        updateRows()
+        wrapper:update()
+    end
     
     return wrapper
 end

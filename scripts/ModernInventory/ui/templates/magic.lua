@@ -46,7 +46,6 @@ Templates.MIN_WIDTH =
     Templates.BOX_OUTER_PADDING * 2
 
 Templates.active = false
-Templates.focusedScrollable = nil
 Templates.focusedLabel = nil
 Templates.activeTooltip = nil
 Templates.linesToProcess = {}
@@ -197,7 +196,7 @@ Templates.interactive = function(props, layout)
             if Templates.activeTooltip then
                 Templates.activeTooltip.layout.props.visible = true
                 local distToBottom = ui.layers[ui.layers.indexOf('Notification')].size.y - (e.position.y - e.offset.y)
-                if distToBottom < 360 then
+                if distToBottom < ui.layers[ui.layers.indexOf('Notification')].size.y / 2 then
                     Templates.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 1)
                     Templates.activeTooltip.layout.props.position = v2(e.position.x, e.position.y - 32)
                 else

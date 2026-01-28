@@ -15,9 +15,11 @@ local configPlayer = require('scripts.ModernInventory.config.player')
 
 local intRe = configPlayer.modIntegration.b_InterfaceReimagined
 
+local HEADER_HEIGHT = 20
 local SCROLL_BAR_OUTER_WIDTH = 16
 local SCROLL_BAR_INNER_WIDTH = 14
 local BORDER_THICKNESS = omwConstants.border
+local BORDER_THICKNESS_THICK = omwConstants.thickBorder
 
 local l10n = core.l10n('ModernInventory')
 
@@ -78,7 +80,7 @@ local headerSection = {
             type = ui.TYPE.Flex,
             props = {
                 autoSize = false,
-                size = util.vector2(2, 20),
+                size = util.vector2(2, HEADER_HEIGHT),
             },
             content = ui.content {
                 headerImage(1, false, util.vector2(2, 2)),
@@ -90,7 +92,7 @@ local headerSection = {
             type = ui.TYPE.Flex,
             props = {
                 autoSize = false,
-                size = util.vector2(0, 20),
+                size = util.vector2(0, HEADER_HEIGHT),
             },
             content = ui.content {
                 headerImage(2, true, util.vector2(0, 2)),
@@ -106,7 +108,7 @@ local headerSection = {
             type = ui.TYPE.Flex,
             props = {
                 autoSize = false,
-                size = util.vector2(2, 20),
+                size = util.vector2(2, HEADER_HEIGHT),
             },
             content = ui.content {
                 headerImage(3, false, util.vector2(2, 2)),
@@ -633,7 +635,7 @@ local function makeDraggable(borderTemplate, onDragTypeChanged)
     return template
 end
 
-Templates.window = function(title, content, draggable, pinned)
+Templates.window = function(title, content, draggable, onDrag, pinned)
     local baseTemplate = I.MWUI.templates.bordersThick
     local userData = {}
     if draggable then
@@ -785,6 +787,10 @@ Templates.window = function(title, content, draggable, pinned)
                     layout.props.position = newPos
 
                     window:update()
+
+                    if onDrag then
+                        onDrag(window.layout)
+                    end
                 end
             end),
             mouseRelease = async:callback(function(e)
@@ -792,6 +798,14 @@ Templates.window = function(title, content, draggable, pinned)
                 userData.dragging = false
             end),
         } 
+    end
+
+    userData.getInnerSize = function()
+        local size = window.layout.props.size
+        return util.vector2(
+            size.x - BORDER_THICKNESS_THICK * 4,
+            size.y - BORDER_THICKNESS_THICK * 4 - HEADER_HEIGHT
+        )
     end
     return window
 end
