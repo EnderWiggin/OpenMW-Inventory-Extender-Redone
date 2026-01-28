@@ -134,4 +134,16 @@ C.Events = {
     COMPANION_HIDDEN = 'MI_CompanionHidden',
 }
 
+C.DragType = {
+    ResizeTL = 'top_left',
+    ResizeBR = 'bottom_right',
+    ResizeTR = 'top_right',
+    ResizeBL = 'bottom_left',
+    ResizeL = 'left',
+    ResizeR = 'right',
+    ResizeT = 'top',
+    ResizeB = 'bottom',
+    Move = 'move',
+}
+
 return C

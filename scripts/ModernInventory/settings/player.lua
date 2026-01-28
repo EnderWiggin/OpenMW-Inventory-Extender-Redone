@@ -35,23 +35,43 @@ I.Settings.registerGroup {
             key = 'd_InventoryWindowDimensions',
             renderer = 'windowDimensions',
             name = 'InventoryWindowDimensions',
-            default = {
-                x = 0.015,
-                y = 0.54,
-                w = 0.45,
-                h = 0.38,
-            }
+            default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
         },
         {
-            key = 'd_BarterInventoryWindowDimensions',
+            key = 'd_InventoryContainerWindowDimensions',
             renderer = 'windowDimensions',
-            name = 'BarterInventoryWindowDimensions',
-            default = {
-                x = 0.015,
-                y = 0.54,
-                w = 0.45,
-                h = 0.38,
-            }
+            name = 'InventoryContainerWindowDimensions',
+            default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
+        },
+        {
+            key = 'd_InventoryBarterWindowDimensions',
+            renderer = 'windowDimensions',
+            name = 'InventoryBarterWindowDimensions',
+            default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
+        },
+        {
+            key = 'd_InventoryCompanionWindowDimensions',
+            renderer = 'windowDimensions',
+            name = 'InventoryCompanionWindowDimensions',
+            default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
+        },
+        {
+            key = 'd_ContainerWindowDimensions',
+            renderer = 'windowDimensions',
+            name = 'ContainerWindowDimensions',
+            default = { x = 0.49, y = 0.54, w = 0.39, h = 0.38, }
+        },
+        {
+            key = 'd_BarterWindowDimensions',
+            renderer = 'windowDimensions',
+            name = 'BarterWindowDimensions',
+            default = { x = 0.6, y = 0.27, w = 0.38, h = 0.63, }
+        },
+        {
+            key = 'd_CompanionWindowDimensions',
+            renderer = 'windowDimensions',
+            name = 'CompanionWindowDimensions',
+            default = { x = 0.6, y = 0.27, w = 0.38, h = 0.63, }
         },
     },
 }

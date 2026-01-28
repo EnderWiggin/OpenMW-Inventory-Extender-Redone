@@ -167,4 +167,12 @@ Helpers.roundToPlaces = function(num, places)
     return math.floor(num * mult + 0.5) / mult
 end
 
+Helpers.toLookup = function(list)
+    local lookup = {}
+    for _, v in ipairs(list) do
+        lookup[v] = true
+    end
+    return lookup
+end
+
 return Helpers

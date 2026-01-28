@@ -23,7 +23,7 @@ local l10n = core.l10n('ModernInventory')
 
 local Templates = {}
 
-Templates.TEXT_SIZE = configPlayer.window.i_FontSize
+Templates.TEXT_SIZE = omwConstants.textNormalSize
 
 Templates.TEXTURES = {}
 Templates.createTexture = function(path)
@@ -184,18 +184,109 @@ local borderSideParts = {
     bottom = v2(0, 1),
 }
 local borderCornerParts = {
-    top_left_corner = v2(0, 0),
-    top_right_corner = v2(1, 0),
-    bottom_left_corner = v2(0, 1),
-    bottom_right_corner = v2(1, 1),
+    top_left = v2(0, 0),
+    top_right = v2(1, 0),
+    bottom_left = v2(0, 1),
+    bottom_right = v2(1, 1),
 }
-local buttonBorderPattern = 'textures/menu_button_frame_%s.dds'
+
+local borderSidePattern = 'textures/menu_%s_border_%s.dds'
+local borderCornerPattern = 'textures/menu_%s_border_%s_corner.dds'
+
+local borderResources = {}
+local borderPieces = {}
+
+for _, thickness in ipairs{'thin', 'thick'} do
+    borderResources[thickness] = {}
+    for k in pairs(borderSideParts) do
+        borderResources[thickness][k] = ui.texture{ path = borderSidePattern:format(thickness, k) }
+    end
+    for k in pairs(borderCornerParts) do
+        borderResources[thickness][k] = ui.texture{ path = borderCornerPattern:format(thickness, k) }
+    end
+
+    borderPieces[thickness] = {}
+    for k in pairs(borderSideParts) do
+        local horizontal = k == 'top' or k == 'bottom'
+        borderPieces[thickness][k] = {
+            type = ui.TYPE.Image,
+            props = {
+                resource = borderResources[thickness][k],
+                tileH = horizontal,
+                tileV = not horizontal,
+            },
+        }
+    end
+    for k in pairs(borderCornerParts) do
+        borderPieces[thickness][k] = {
+            type = ui.TYPE.Image,
+            props = {
+                resource = borderResources[thickness][k],
+            },
+        }
+    end
+end
+
+local function borderTemplates(thickness)
+    local borderSize = (thickness == 'thin') and omwConstants.border or omwConstants.thickBorder
+    local borderV = v2(1, 1) * borderSize
+    local result = {}
+
+    result.bordersDraggable = {
+        content = ui.content {},
+    }
+    for k, v in pairs(borderSideParts) do
+        local horizontal = k == 'top' or k == 'bottom'
+        local direction = horizontal and v2(1, 0) or v2(0, 1)
+        result.bordersDraggable.content:add {
+            template = borderPieces[thickness][k],
+            props = {
+                position = (direction - v) * borderSize,
+                relativePosition = v,
+                size = (v2(1, 1) - direction * 3) * borderSize,
+                relativeSize = direction,
+            },
+            userData = {
+                dragType = k
+            }
+        }
+    end
+    for k, v in pairs(borderCornerParts) do
+        result.bordersDraggable.content:add {
+            template = borderPieces[thickness][k],
+            props = {
+                position = -v * borderSize,
+                relativePosition = v,
+                size = borderV,
+            },
+            userData = {
+                dragType = k
+            }
+        }
+    end
+    result.bordersDraggable.content:add {
+        external = { slot = true },
+        props = {
+            position = borderV,
+            size = borderV * -2,
+            relativeSize = v2(1, 1),
+        }
+    }
+
+    return result
+end
+
+Templates.bordersDraggable = borderTemplates('thin').bordersDraggable
+Templates.bordersDraggableThick = borderTemplates('thick').bordersDraggable
+
+local buttonBorderSidePattern = 'textures/menu_button_frame_%s.dds'
+local buttonBorderCornerPattern = 'textures/menu_button_frame_%s_corner.dds'
 
 local buttonBorderResources = {}
 local buttonBorderPieces = {}
 
 for k in pairs(borderSideParts) do
-    buttonBorderResources[k] = Templates.createTexture(buttonBorderPattern:format(k))
+    buttonBorderResources[k] = Templates.createTexture(buttonBorderSidePattern:format(k))
     local horizontal = (k == 'top' or k == 'bottom')
     buttonBorderPieces[k] = {
         type = ui.TYPE.Image,
@@ -208,7 +299,7 @@ for k in pairs(borderSideParts) do
 end
 
 for k in pairs(borderCornerParts) do
-    buttonBorderResources[k] = Templates.createTexture(buttonBorderPattern:format(k))
+    buttonBorderResources[k] = Templates.createTexture(buttonBorderCornerPattern:format(k))
     buttonBorderPieces[k] = {
         type = ui.TYPE.Image,
         props = {
@@ -500,9 +591,59 @@ for _, part in pairs(Templates.bordersInvisible.content) do
     end
 end
 
-Templates.containerWithHeader = function(title, content)
-    return {
-        template = I.MWUI.templates.bordersThick,
+local dragTypePointers = {
+    [constants.DragType.ResizeL] = 'hresize',
+    [constants.DragType.ResizeR] = 'hresize',
+    [constants.DragType.ResizeT] = 'vresize',
+    [constants.DragType.ResizeB] = 'vresize',
+    [constants.DragType.ResizeTL] = 'dresize',
+    [constants.DragType.ResizeTR] = 'dresize2',
+    [constants.DragType.ResizeBL] = 'dresize2',
+    [constants.DragType.ResizeBR] = 'dresize',
+    [constants.DragType.Move] = 'arrow',
+}
+
+local function makeDraggable(borderTemplate, onDragTypeChanged)
+    local template = auxUi.deepLayoutCopy(borderTemplate)
+    local content = template.content
+
+    local function setDragType(index)
+        local borderPiece = content[index]
+        if borderPiece.userData and borderPiece.userData.dragType then
+            borderPiece.props.pointer = dragTypePointers[borderPiece.userData.dragType] or 'arrow'
+            borderPiece.events = {
+                focusGain = async:callback(function(e, layout)
+                    if onDragTypeChanged then
+                        onDragTypeChanged(layout.userData.dragType)
+                    end
+                end),
+                focusLoss = async:callback(function(e, layout)
+                    if onDragTypeChanged then
+                        onDragTypeChanged(nil)
+                    end
+                end),
+            }
+        end
+    end
+
+    for i = 1, 8 do
+        setDragType(i)
+    end
+
+    return template
+end
+
+Templates.window = function(title, content, draggable, pinned)
+    local baseTemplate = I.MWUI.templates.bordersThick
+    local userData = {}
+    if draggable then
+        baseTemplate = makeDraggable(Templates.bordersDraggableThick, function(dragType)
+            userData.dragType = dragType
+        end)
+    end
+    local window = {
+        layer = 'Windows',
+        template = baseTemplate,
         props = {},
         content = ui.content {
             {
@@ -543,10 +684,22 @@ Templates.containerWithHeader = function(title, content)
                             Templates.intervalH(8),
                             intRe and emptyHeaderSection or headerSection,
                         },
+                        events = {
+                            focusGain = async:callback(function()
+                                if draggable then
+                                    userData.dragType = constants.DragType.Move
+                                end
+                            end),
+                            focusLoss = async:callback(function()
+                                if draggable then
+                                    userData.dragType = nil
+                                end
+                            end),
+                        }
                     },
                     {
                         name = 'body',
-                        template = not intRe and I.MWUI.templates.bordersThick,
+                        template = not intRe and baseTemplate,
                         external = {
                             grow = 1,
                             stretch = 1,
@@ -555,8 +708,92 @@ Templates.containerWithHeader = function(title, content)
                     },
                 }
             }
-        }
+        },
+        events = {},
+        userData = userData,
     }
+    if pinned ~= nil then
+        userData.pinned = pinned
+        local pinButton = Templates.pinButton(pinned, function(newPinned)
+            userData.pinned = newPinned
+        end)
+        pinButton.layout.props.anchor = v2(1, 0)
+        pinButton.layout.props.relativePosition = v2(1, 0)
+        window.content:add(pinButton)
+    end
+    window = ui.create(window)
+    
+    if draggable then
+        local minWidth = 200
+        local minHeight = 60
+        userData.dragging = false
+        userData.dragStartAbs = nil
+        userData.dragStartSize = nil
+        userData.dragStartPos = nil
+        
+        window.layout.events = {
+            mousePress = async:callback(function(e, layout)
+                if e.button ~= 1 then return end
+                if userData.dragType == nil then return end
+                userData.dragging = true
+                userData.dragStartAbs = e.position
+                userData.dragStartSize = layout.props.size
+                userData.dragStartPos = layout.props.position
+            end),
+            mouseMove = async:callback(function(e, layout)
+                if userData.dragging and userData.dragStartAbs and userData.dragStartSize and userData.dragStartPos then
+                    local delta = e.position - userData.dragStartAbs
+                    local layerSize = ui.layers[ui.layers.indexOf('Windows')].size
+                    local newSize = userData.dragStartSize
+                    local newPos = userData.dragStartPos
+                    local dX, dY, w, h
+
+                    -- Horizontal resizing
+                    if userData.dragType == constants.DragType.ResizeL or userData.dragType == constants.DragType.ResizeTL or userData.dragType == constants.DragType.ResizeBL then
+                        local maxDeltaX = userData.dragStartSize.x - minWidth
+                        dX = util.clamp(delta.x, -userData.dragStartPos.x, maxDeltaX)
+                        newSize = util.vector2(userData.dragStartSize.x - dX, newSize.y)
+                        newPos = util.vector2(userData.dragStartPos.x + dX, newPos.y)
+                    elseif userData.dragType == constants.DragType.ResizeR or userData.dragType == constants.DragType.ResizeTR or userData.dragType == constants.DragType.ResizeBR then
+                        local maxWidth = layerSize.x - userData.dragStartPos.x
+                        w = util.clamp(userData.dragStartSize.x + delta.x, minWidth, maxWidth)
+                        newSize = util.vector2(w, newSize.y)
+                    end
+
+                    -- Vertical resizing
+                    if userData.dragType == constants.DragType.ResizeT or userData.dragType == constants.DragType.ResizeTL or userData.dragType == constants.DragType.ResizeTR then
+                        local maxDeltaY = userData.dragStartSize.y - minHeight
+                        dY = util.clamp(delta.y, -userData.dragStartPos.y, maxDeltaY)
+                        newSize = util.vector2(newSize.x, userData.dragStartSize.y - dY)
+                        newPos = util.vector2(newPos.x, userData.dragStartPos.y + dY)
+                    elseif userData.dragType == constants.DragType.ResizeB or userData.dragType == constants.DragType.ResizeBL or userData.dragType == constants.DragType.ResizeBR then
+                        local maxHeight = layerSize.y - userData.dragStartPos.y
+                        h = util.clamp(userData.dragStartSize.y + delta.y, minHeight, maxHeight)
+                        newSize = util.vector2(newSize.x, h)
+                    end
+                    
+                    -- Moving
+                    if userData.dragType == constants.DragType.Move then
+                        newPos = userData.dragStartPos + delta
+                        newPos = util.vector2(
+                            util.clamp(newPos.x, 0, layerSize.x - newSize.x),
+                            util.clamp(newPos.y, 0, layerSize.y - newSize.y)
+                        )
+                    end
+
+                    layout.props.size = newSize
+                    layout.props.position = newPos
+
+                    window:update()
+                end
+            end),
+            mouseRelease = async:callback(function(e)
+                if e.button ~= 1 then return end
+                userData.dragging = false
+            end),
+        } 
+    end
+    return window
 end
 
 Templates.scrollBar = function(scrollable)

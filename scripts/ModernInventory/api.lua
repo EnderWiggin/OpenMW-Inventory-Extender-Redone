@@ -38,178 +38,21 @@ API.TooltipBuilders = {
             }
         })
     end,
-    ACTIVE_EFFECT = function(effectId)
-        return API.Templates.MAGIC.activeEffectTooltip(effectId)
-    end,
-    SPELL = function(spellId)
-        return API.Templates.MAGIC.spellTooltip(spellId)
-    end,
     ITEM = function(item)
         return API.Templates.MAGIC.itemTooltip(item)
     end,
 }
 
-API.LineBuilders = {
-    POWER = function(powerId, editMode)
-        local powerRecord = core.magic.spells.records[powerId]
-        local override = API.Spells.getCustomSpell(powerId)
-        local pinned = API.getStat(API.Constants.TrackedStats.PINNED) or {}
-        return {
-            id = powerId,
-            icon = function()
-                if configPlayer.tweaks.b_SpellIcons then
-                    return (override and override.effects and override.effects[1].effect.icon) or powerRecord.effects[1].effect.icon
-                elseif configPlayer.tweaks.b_PinnedSpellIcons and pinned['powers'] and pinned['powers'][powerId] and not editMode then
-                    return 'textures/MagicWindowExtender/pinned_true.dds'
-                else
-                    return nil
-                end
-            end,
-            label = override and override.name or powerRecord.name,
-            value = function()
-                if configPlayer.tweaks.b_MarkUsedPowers and not self.type.spells(self):canUsePower(powerId) then
-                    return { string = ' ' ..l10n('PowerUsed'), color = API.Constants.Colors.DAMAGED }
-                else
-                    return { string = '' }
-                end
-            end,
-            active = function()
-                local selectedSpell = self.type.getSelectedSpell(self)
-                return selectedSpell and selectedSpell.id == powerId
-            end,
-            disabled = function()
-                return configPlayer.tweaks.b_MarkUsedPowers and not self.type.spells(self):canUsePower(powerId)
-            end,
-            onClick = function()
-                if input.isShiftPressed() then
-                    API.Templates.MAGIC.tryDelete(powerId)
-                    return
-                end
-                self.type.setSelectedSpell(self, powerRecord)
-                API.setDirtyDelayed()
-            end,
-            tooltip = function()
-                return API.TooltipBuilders.SPELL(powerId)
-            end,
-            editInfo = {
-                id = powerId,
-                type = 'powers',
-                editing = editMode == true,
-            }
-        }
-    end,
-    SPELL = function(spellId, editMode)
-        local spellRecord = core.magic.spells.records[spellId]
-        local override = API.Spells.getCustomSpell(spellId)
-        local pinned = API.getStat(API.Constants.TrackedStats.PINNED) or {}
-        return {
-            id = spellId,
-            icon = function()
-                if configPlayer.tweaks.b_SpellIcons then
-                    return (override and override.effects and override.effects[1].effect.icon) or spellRecord.effects[1].effect.icon
-                elseif configPlayer.tweaks.b_PinnedSpellIcons and pinned['spells'] and pinned['spells'][spellId] and not editMode then
-                    return 'textures/MagicWindowExtender/pinned_true.dds'
-                else
-                    return nil
-                end
-            end,
-            label = override and override.name or spellRecord.name,
-            value = function()
-                local cost, chance = helpers.getModifiedSpellCost(spellId, false), helpers.getSpellCastChance(spellId)
-                return { string = tostring(' ' ..util.round(cost)) .. '/' .. tostring(chance) }
-            end,
-            active = function()
-                local selectedSpell = self.type.getSelectedSpell(self)
-                return selectedSpell and selectedSpell.id == spellId
-            end,
-            onClick = function()
-                if input.isShiftPressed() then
-                    API.Templates.MAGIC.tryDelete(spellId)
-                    return
-                end
-                self.type.setSelectedSpell(self, spellRecord)
-                API.setDirtyDelayed()
-            end,
-            tooltip = function()
-                return API.TooltipBuilders.SPELL(spellId)
-            end,
-            editInfo = {
-                id = spellId,
-                type = 'spells',
-                editing = editMode == true,
-            },
-        }
-    end,
-    MAGIC_ITEM = function(item, editMode)
-        local itemRecord = item.type.records[item.recordId]
-        local label = itemRecord.name
-        if item.count and item.count > 1 then
-            label = label .. ' (' .. tostring(item.count) .. ')'
-        end
-        local pinned = API.getStat(API.Constants.TrackedStats.PINNED) or {}
-        return {
-            id = item.id,
-            icon = function()
-                if configPlayer.tweaks.b_SpellIcons then
-                    local record = API.Spells.getCustomSpell(itemRecord.enchant) or core.magic.enchantments.records[itemRecord.enchant]
-                    return record.effects[1].effect.icon
-                elseif configPlayer.tweaks.b_PinnedSpellIcons and pinned['magicItems'] and pinned['magicItems'][item.id] and not editMode then
-                    return 'textures/MagicWindowExtender/pinned_true.dds'
-                else
-                    return nil
-                end
-            end,
-            label = label,
-            value = function()
-                local cost, charge
-                if core.magic.enchantments.records[itemRecord.enchant].type == core.magic.ENCHANTMENT_TYPE.CastOnce then
-                    cost, charge = 100, 100
-                else
-                    cost, charge = helpers.getModifiedSpellCost(itemRecord.enchant, true), math.floor(types.Item.itemData(item).enchantmentCharge)
-                end
-                return { string = tostring(' ' ..util.round(cost)) .. '/' .. tostring(charge) }
-            end,
-            active = function()
-                local selectedItem = self.type.getSelectedEnchantedItem(self)
-                return selectedItem and selectedItem.id == item.id
-            end,
-            disabled = function()
-                return not self.type.hasEquipped(self, item)
-            end,
-            onClick = function()
-                self.type.setSelectedEnchantedItem(self, item)
-                API.setDirtyDelayed()
-            end,
-            tooltip = function()
-                return API.TooltipBuilders.ITEM(item)
-            end,
-            editInfo = {
-                id = item.id,
-                type = 'magicItems',
-                editing = editMode == true,
-            },
-        }
-    end,
-}
-
-function API.show(staticMode)
-    windowManager.show(staticMode)
+function API.show(windowName)
+    windowManager.show(windowName)
 end
 
-function API.hide(force)
-    windowManager.hide(force)
+function API.hide(windowName, force)
+    windowManager.hide(windowName, force)
 end
 
-function API.toggle(staticMode)
-    windowManager.toggle(staticMode)
-end
-
-function API.isVisible()
-    return windowManager.isVisible()
-end
-
-function API.isPinned()
-    return windowManager.isPinned()
+function API.getWindow(windowName)
+    return windowManager.windows[windowName]
 end
 
 function API.onFrame()

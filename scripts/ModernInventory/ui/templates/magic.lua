@@ -25,7 +25,7 @@ local Templates = {}
 
 Templates.HEADER_HEIGHT = 20
 Templates.BORDER_WIDTH_TOTAL = 4 * (intRe and 2 or 4)
-Templates.TEXT_SIZE = omwConstants.textNormalSize
+Templates.TEXT_SIZE = BASE.TEXT_SIZE
 Templates.LINE_HEIGHT = Templates.TEXT_SIZE + 2
 Templates.SECTION_DIVIDER_HEIGHT = Templates.LINE_HEIGHT
 Templates.SECTION_INDENT_L = 12
@@ -1718,9 +1718,7 @@ Templates.magicWindow = function(sections, allowPin, scrollPosList)
 
     local selfRecord = omwself.type.records[omwself.recordId]
 
-    local base = BASE.containerWithHeader(getMagicName(), {
-        createPane(constants.Panes.MAIN, sections[constants.Panes.MAIN] or {}),
-    })
+    local base = BASE.window(getMagicName(), {})
 
     base.layer = 'Windows'
     local minWidth = Templates.MIN_INNER_WIDTH + Templates.BORDER_WIDTH_TOTAL + Templates.BOX_OUTER_PADDING * 2

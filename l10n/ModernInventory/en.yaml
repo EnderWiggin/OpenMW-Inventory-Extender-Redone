@@ -6,9 +6,14 @@ ConfigSummary: |-
 RequiresReload: Requires a Lua reload to take effect.
 
 ConfigCategoryWindowOptions: Window Options
-InventoryWindowPinned: Inventory window pinned
-InventoryWindowDimensions: Inventory window dimensions
-BarterInventoryWindowDimensions: Inventory window dimensions (bartering)
+InventoryWindowPinned: Inventory pinned
+InventoryWindowDimensions: Inventory window
+InventoryContainerWindowDimensions: Inventory (container)
+InventoryBarterWindowDimensions: Inventory (barter)
+InventoryCompanionWindowDimensions: Inventory (companion)
+ContainerWindowDimensions: Container window
+BarterWindowDimensions: Barter window
+CompanionWindowDimensions: Companion window
 
 ConfigCategoryTweaks: Tweaks
 

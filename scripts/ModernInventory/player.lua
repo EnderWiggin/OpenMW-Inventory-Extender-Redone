@@ -18,7 +18,15 @@ local helpers = require('scripts.ModernInventory.util.helpers')
 
 local function init()
     if not I.GamepadControls.isControllerMenusEnabled or not I.GamepadControls.isControllerMenusEnabled() then
-        --I.UI.registerWindow('Inventory', API.show, API.hide)
+        local overrides = {
+            'Inventory',
+            -- 'Trade',
+            -- 'Container',
+            -- 'Companion',
+        }
+        for _, windowName in ipairs(overrides) do
+            I.UI.registerWindow(windowName, function() API.show(windowName) end, function() API.hide(windowName) end)
+        end
     elseif configPlayer.misc.b_ShowControllerWarning then
         storage.playerSection('Settings/ModernInventory/5_Misc'):set('b_ShowControllerWarning', false)
         local msg = 'NOTICE:\nModern Inventory is not compatible with controller menus.\nThis message will only appear once.'
