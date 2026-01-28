@@ -105,6 +105,7 @@ C.Strings = {
     YES = 'sYes',
     NO = 'sNo',
     OK = 'sOK',
+    HAND_TO_HAND = 'sSkillHandtohand'
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)

@@ -175,4 +175,13 @@ Helpers.toLookup = function(list)
     return lookup
 end
 
+Helpers.getEquippedName = function()
+    local name = C.Strings.HAND_TO_HAND
+    local selected = self.type.getEquipment(self, types.Actor.EQUIPMENT_SLOT.CarriedRight)
+    if selected then
+        name = selected.type.record(selected).name
+    end
+    return name
+end
+
 return Helpers

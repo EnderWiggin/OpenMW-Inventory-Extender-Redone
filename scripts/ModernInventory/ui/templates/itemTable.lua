@@ -4,7 +4,8 @@ local util = require('openmw.util')
 local async = require('openmw.async')
 
 local constants = require('scripts.ModernInventory.util.constants')
-local base = require('scripts.ModernInventory.ui.templates.base')
+local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
+local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 
 local ItemTable = {}
 
@@ -29,7 +30,7 @@ local function calculateColumnWidths(columns, totalWidth)
     
     local widths = {}
     for i, col in ipairs(columns) do
-        widths[i] = col.width or flexibleWidth
+        widths[i] = col.width
     end
     return widths
 end
@@ -106,6 +107,7 @@ ItemTable.create = function(props)
         if not scrollable then return end
 
         local contentLayer = scrollable.layout.content[1]
+        contentLayer.type = ui.TYPE.Widget
         local viewHeight = size.y - headerHeight
 
         -- Virtualization mathematics
@@ -138,23 +140,19 @@ ItemTable.create = function(props)
                         local val = item[col.id]
                         local textStr = val ~= nil and tostring(val) or ""
                         cellContent = {
-                            template = base.textNormal,
+                            template = baseTemplates.textNormal,
                             props = {
                                 text = textStr,
                                 size = util.vector2(w, rowHeight),
-                                position = util.vector2(5, 0), -- Small padding
+                                autoSize = false,
+                            },
+                            external = {
+                                grow = (w == 0) and 1 or nil,
                             }
                         }
                     end
                     
-                    -- Cell wrapper to position absolutely within row or just flow
-                    table.insert(cells, {
-                        type = ui.TYPE.Container, -- Container allows clipping if needed
-                        props = {
-                            size = util.vector2(w, rowHeight),
-                        },
-                        content = ui.content { cellContent }
-                    })
+                    table.insert(cells, cellContent)
                     currentX = currentX + w
                 end
                 
@@ -201,36 +199,44 @@ ItemTable.create = function(props)
     -- 4. Header Construction
     local headerElements = {}
     for i, col in ipairs(columns) do
-        local w = state.columnWidths[i]
+        local w = state.columnWidths[i] or 0
         local title = col.label or col.id
         
         if state.sortColIndex == i then
             title = title .. (state.sortDir == 'asc' and ' ^' or ' v')
         end
         
-        local btn = base.button(title, function()
-            if state.sortColIndex == i then
-                state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
-            else
-                state.sortColIndex = i
-                state.sortDir = 'asc'
+        local btn = specialTemplates.interactive({
+            onClick = function()
+                if state.sortColIndex == i then
+                    state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
+                else
+                    state.sortColIndex = i
+                    state.sortDir = 'asc'
+                end
+                
+                -- Re-calc widths just in case (optional)
+                sortRows()
+                
+                -- Update header text (quick rebuild of this table is hard, better to refresh whole component or assume simple redraw)
+                -- For simplicity in this template, efficient header updates might require a separate updateHeader function.
+                -- Using a simpler approach: triggering a full re-render of layout isn't possible from here without callback, 
+                -- but we can update button text if we kept references.
+                -- This example relies on the user destroying/re-creating or we implement header update logic. 
+                -- Let's just sort and render body, indicator update is omitted for brevity unless we store button refs.
+                updateRows() 
             end
-            
-            -- Re-calc widths just in case (optional)
-            sortRows()
-            
-            -- Update header text (quick rebuild of this table is hard, better to refresh whole component or assume simple redraw)
-            -- For simplicity in this template, efficient header updates might require a separate updateHeader function.
-            -- Using a simpler approach: triggering a full re-render of layout isn't possible from here without callback, 
-            -- but we can update button text if we kept references.
-            -- This example relies on the user destroying/re-creating or we implement header update logic. 
-            -- Let's just sort and render body, indicator update is omitted for brevity unless we store button refs.
-            updateRows() 
-        end)
-        
-        -- Force button size
-        btn.layout.props.size = util.vector2(w, headerHeight)
-        btn.layout.props.autoSize = false
+        }, {
+            template = baseTemplates.textHeader,
+            props = {
+                text = title,
+                size = util.vector2(w, headerHeight),
+                autoSize = false,
+            },
+            external = {
+                grow = (w == 0) and 1 or nil,
+            }
+        })
         table.insert(headerElements, btn)
     end
     
@@ -249,14 +255,14 @@ ItemTable.create = function(props)
     local totalY = #state.sortedRows * rowHeight
     local flexSize = util.vector2(contentWidth, totalY)
     
-    scrollable = base.scrollable(
+    scrollable = baseTemplates.scrollable(
         util.vector2(size.x, size.y - headerHeight),     -- Widget Size
         dummyContent,                                    -- Initial Content
         flexSize,                                        -- Inner scrollable area size
         0,                                               -- Padding
         0,                                               -- Border
         rowHeight,                                       -- Scroll Step
-        false,                                           -- Always show bar
+        true,                                           -- Always show bar
         function() end,                                  -- onFocusGain
         function() end,                                  -- onFocusLoss
         0,                                               -- Start pos

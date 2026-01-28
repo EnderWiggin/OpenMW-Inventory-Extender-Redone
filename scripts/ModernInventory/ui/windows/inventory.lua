@@ -1,8 +1,11 @@
 local ui = require('openmw.ui')
 local storage = require('openmw.storage')
 local this = require('openmw.self')
+local util = require('openmw.util')
+local v2 = util.vector2
 
 local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
+local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 local ItemTable = require('scripts.ModernInventory.ui.templates.itemTable')
 local Window = require('scripts.ModernInventory.ui.windows.base')
 
@@ -21,7 +24,7 @@ function Inventory:create(ctx)
             Name = record.name,
             Value = helpers.roundToPlaces(record.value, 1),
             Weight = helpers.roundToPlaces(record.weight, 3),
-            ['V/W'] = helpers.roundToPlaces((record.weight > 0) and (record.value / record.weight) or 0, 3),
+            ['V/W'] = helpers.roundToPlaces((record.weight > 0) and (record.value / record.weight) or 0, 2),
         })
     end
     local itemTable = ItemTable.create({
@@ -31,21 +34,23 @@ function Inventory:create(ctx)
             },
             {
                 id = 'Value',
-                width = 128,
+                width = 64,
             },
             {
                 id = 'Weight',
-                width = 128,
+                width = 64,
             },
             {
                 id = 'V/W',
-                width = 128,
+                width = 64,
             }
         },
-        data = data
+        data = data,
+        size = v2(600, 400),
+        rowHeight = specialTemplates.LINE_HEIGHT,
     })
     content:add(itemTable)
-    local element = baseTemplates.window('Inventory', content, true, ctx.pinned)
+    local element = baseTemplates.window(helpers.getEquippedName(), content, true, ctx.pinned)
     self.element = element
     self:loadState()
 
