@@ -9,25 +9,7 @@ local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 
 local ItemTable = {}
 
--- Utility to calculate specific column widths based on fixed/flex layout
-local function calculateColumnWidths(columns, totalWidth)
-    local fixedWidth = 0
-    local flexibleCount = 0
-    
-    for _, col in ipairs(columns) do
-        if col.width and col.width > 0 then
-            fixedWidth = fixedWidth + col.width
-        else
-            flexibleCount = flexibleCount + 1
-        end
-    end
-
-    local remainingWidth = math.max(0, totalWidth - fixedWidth)
-    local flexibleWidth = 0
-    if flexibleCount > 0 then
-        flexibleWidth = remainingWidth / flexibleCount
-    end
-    
+local function setColumnWidths(columns)
     local widths = {}
     for i, col in ipairs(columns) do
         widths[i] = col.width
@@ -53,18 +35,15 @@ local function compareItems(a, b, field, direction)
 end
 
 ItemTable.create = function(props)
-    -- Props unpacking
     local columns = props.columns or {}
     local dataRows = props.data or {}
     local size = props.size or util.vector2(400, 300)
     local rowHeight = props.rowHeight or 30
     local onRowClick = props.onRowClick
     
-    -- Configuration for header height and scrollbar width
     local headerHeight = 30
-    local scrollbarWidth = 16 -- Approximate width from base.lua SCROLL_BAR_OUTER_WIDTH
+    local scrollbarWidth = 16
     
-    -- State variables
     local state = {
         sortedRows = {},      -- List of items after sorting
         sortColIndex = nil,   -- Index of currently sorted column
@@ -72,21 +51,17 @@ ItemTable.create = function(props)
         columnWidths = {}
     }
     
-    -- Initialize processed data
     for _, item in ipairs(dataRows) do
         table.insert(state.sortedRows, item)
     end
     
-    -- Forward references
     local scrollable
     local updateRows
     local sortRows
     
-    -- 1. Calculations
     local contentWidth = math.floor(math.max(0, size.x - scrollbarWidth))
-    state.columnWidths = calculateColumnWidths(columns, contentWidth)
+    state.columnWidths = setColumnWidths(columns)
     
-    -- 2. Sorting Logic
     sortRows = function()
         if not state.sortColIndex then return end
         
@@ -102,7 +77,8 @@ ItemTable.create = function(props)
         end)
     end
 
-    -- 3. Row Update / Virtualization Logic
+    state.rowCache = {} -- Stores generated row layouts by item ID or index
+
     local function renderVisibleRows()
         if not scrollable then return end
 
@@ -122,72 +98,93 @@ ItemTable.create = function(props)
         local indexTo = math.min(#state.sortedRows, startIndex + visibleCount + buffer)
         
         local newRowElements = {}
-        
+
+        local currentContent = contentLayer.content
+        local k = 1
+
         for i = indexFrom, indexTo do
             local item = state.sortedRows[i]
             if item then
-                local rowY = (i - 1) * rowHeight
-                local cells = {}
-                local currentX = 0
-                
-                for cIdx, col in ipairs(columns) do
-                    local w = state.columnWidths[cIdx] or 0
-                    local cellContent
-                    
-                    if col.renderer then
-                        cellContent = col.renderer(item, w, rowHeight)
-                    else
-                        local val = item[col.id]
-                        local textStr = val ~= nil and tostring(val) or ""
-                        cellContent = {
-                            template = baseTemplates.textNormal,
-                            props = {
-                                text = textStr,
-                                size = util.vector2(w, rowHeight),
-                                autoSize = false,
-                            },
-                            external = {
-                                grow = (w == 0) and 1 or nil,
+                local cacheKey = item
+
+                if not state.rowCache[cacheKey] then
+                    local cells = {}
+
+                    for cIdx, col in ipairs(columns) do
+                        local w = state.columnWidths[cIdx] or 0
+                        local cellContent
+
+                        if col.renderer then
+                            cellContent = col.renderer(item, w, rowHeight)
+                        else
+                            local val = item[col.id]
+                            local textStr = val ~= nil and tostring(val) or ""
+                            cellContent = {
+                                template = baseTemplates.textNormal,
+                                props = {
+                                    text = textStr,
+                                    size = util.vector2(w, rowHeight),
+                                    autoSize = false,
+                                },
+                                external = {
+                                    grow = (w == 0) and 1 or nil,
+                                }
                             }
-                        }
+                        end
+
+                        table.insert(cells, cellContent)
                     end
-                    
-                    table.insert(cells, cellContent)
-                    currentX = currentX + w
+
+                    state.rowCache[cacheKey] = specialTemplates.interactive({ onClick = function() end }, {
+                        type = ui.TYPE.Flex,
+                        props = {
+                            horizontal = true,
+                            size = util.vector2(contentWidth, rowHeight),
+                            position = util.vector2(0, 0),
+                        },
+                        content = ui.content(cells),
+                        events = {
+                            mousePress = async:callback(function()
+                                if onRowClick then onRowClick(item) end
+                            end)
+                        },
+                        userData = { item = item }
+                    })
                 end
-                
-                -- The Row Widget
-                local rowWidget = {
-                    type = ui.TYPE.Flex,
-                    props = {
-                        horizontal = true,
-                        position = util.vector2(0, rowY), -- Absolute positioning within the scrolling layer
-                        size = util.vector2(contentWidth, rowHeight),
-                    },
-                    content = ui.content(cells),
-                    events = {
-                        mousePress = async:callback(function()
-                            if onRowClick then onRowClick(item) end
-                        end)
-                    },
-                    userData = { item = item }
-                }
-                
-                table.insert(newRowElements, rowWidget)
+
+                local rowWidget = state.rowCache[cacheKey]
+                local rowY = (i - 1) * rowHeight
+
+                if rowWidget.layout.props.position.y ~= rowY then
+                    rowWidget.layout.props.position = util.vector2(0, rowY)
+                    rowWidget:update()
+                end
+
+                if currentContent[k] ~= rowWidget then
+                    currentContent[k] = rowWidget
+                end
+                k = k + 1
             end
         end
-        
+
+        while k <= #currentContent do
+            currentContent[k] = nil
+            k = k + 1
+        end
+
+        for i = 1, k - 1 do
+            newRowElements[i] = currentContent[i]
+        end
+
         contentLayer.content = ui.content(newRowElements)
         scrollable:update()
     end
-
     updateRows = function()
         if not scrollable then return end
         
         local viewHeight = size.y - headerHeight
         local totalHeight = math.floor(math.max(#state.sortedRows * rowHeight, viewHeight)) -- At least view height to prevent collapse
         
-        -- Update scrollable limits in base widget
         scrollable.layout.userData.update(
             util.vector2(size.x, viewHeight), 
             util.vector2(size.x - scrollbarWidth, totalHeight)
@@ -196,7 +193,6 @@ ItemTable.create = function(props)
         renderVisibleRows()
     end
 
-    -- 4. Header Construction
     local headerElements = {}
     for i, col in ipairs(columns) do
         local w = state.columnWidths[i] or 0
@@ -215,15 +211,7 @@ ItemTable.create = function(props)
                     state.sortDir = 'asc'
                 end
                 
-                -- Re-calc widths just in case (optional)
                 sortRows()
-                
-                -- Update header text (quick rebuild of this table is hard, better to refresh whole component or assume simple redraw)
-                -- For simplicity in this template, efficient header updates might require a separate updateHeader function.
-                -- Using a simpler approach: triggering a full re-render of layout isn't possible from here without callback, 
-                -- but we can update button text if we kept references.
-                -- This example relies on the user destroying/re-creating or we implement header update logic. 
-                -- Let's just sort and render body, indicator update is omitted for brevity unless we store button refs.
                 updateRows() 
             end
         }, {
@@ -249,9 +237,7 @@ ItemTable.create = function(props)
         content = ui.content(headerElements)
     }
 
-    -- 5. Scrollable Creation
     local dummyContent = ui.content({}) 
-    -- flexSize is the total theoretical size. X is fixed, Y depends on rows.
     local totalY = #state.sortedRows * rowHeight
     local flexSize = util.vector2(contentWidth, totalY)
     
@@ -269,17 +255,14 @@ ItemTable.create = function(props)
         'itemTable_Scroll'
     )
     
-    -- Hook the base scroll callback to update virtualization
     local originalOnScroll = scrollable.layout.userData.onScroll
     scrollable.layout.userData.onScroll = function()
         originalOnScroll()
         renderVisibleRows()
     end
     
-    -- Initial population
     updateRows()
 
-    -- 6. Final Wrapper
     local wrapper = ui.create {
         type = ui.TYPE.Flex, 
         props = {
