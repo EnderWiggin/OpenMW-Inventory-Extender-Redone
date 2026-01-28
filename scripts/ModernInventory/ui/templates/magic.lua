@@ -96,7 +96,7 @@ Templates.interactive = function(props, layout)
     end
 
     local function createTooltip(layout)
-        if not Templates.active then return end
+        --if not Templates.active then return end
         Templates.activeTooltip = ui.create(layout.userData.tooltipFn())
         Templates.activeTooltip.layout.name = props.name
         if lastMousePos then

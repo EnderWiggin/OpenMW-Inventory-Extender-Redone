@@ -147,4 +147,15 @@ C.DragType = {
     Move = 'move',
 }
 
+C.Magic = {
+    MagnitudeDisplayType = {
+        NONE = 1,
+        TIMES_INT = 2,
+        FEET = 3,
+        LEVEL = 4,
+        PERCENTAGE = 5,
+        POINTS = 6,
+    }
+}
+
 return C

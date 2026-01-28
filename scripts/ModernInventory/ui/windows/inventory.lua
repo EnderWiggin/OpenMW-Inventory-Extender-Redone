@@ -21,10 +21,11 @@ function Inventory:create(ctx)
     for _, item in ipairs(this.type.inventory(this):getAll()) do
         local record = item.type.record(item)
         table.insert(data, {
-            Name = record.name,
+            Name = record.name .. (item.count > 1 and (' (%d)'):format(item.count) or ''),
             Value = helpers.roundToPlaces(record.value, 1),
             Weight = helpers.roundToPlaces(record.weight, 3),
             ['V/W'] = helpers.roundToPlaces((record.weight > 0) and (record.value / record.weight) or 0, 2),
+            item = item,
         })
     end
     local itemTable = ItemTable.create({

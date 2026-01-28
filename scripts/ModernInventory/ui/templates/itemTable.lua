@@ -33,13 +33,17 @@ local function compareItems(a, b, field, direction)
         return valA > valB
     end
 end
-
 ItemTable.create = function(props)
     local columns = props.columns or {}
     local dataRows = props.data or {}
     local size = props.size or util.vector2(400, 300)
     local rowHeight = props.rowHeight or 30
     local onRowClick = props.onRowClick
+
+    -- New props for default sort logic
+    local defaultSortId = props.defaultSortId
+    local defaultSortIcon = props.defaultSortIcon
+    local fallbackSort = props.fallbackSort
     
     local headerHeight = 30
     local scrollbarWidth = 16
@@ -50,6 +54,16 @@ ItemTable.create = function(props)
         sortDir = 'asc',      -- 'asc' or 'desc'
         columnWidths = {}
     }
+
+    state.columnWidths = setColumnWidths(columns)
+    
+    -- Initialize defaults
+    for i, col in ipairs(columns) do
+        if col.id == defaultSortId then
+            state.sortColIndex = i
+            break
+        end 
+    end
     
     for _, item in ipairs(dataRows) do
         table.insert(state.sortedRows, item)
@@ -60,20 +74,44 @@ ItemTable.create = function(props)
     local sortRows
     
     local contentWidth = math.floor(math.max(0, size.x - scrollbarWidth))
-    state.columnWidths = setColumnWidths(columns)
     
     sortRows = function()
         if not state.sortColIndex then return end
         
         local col = columns[state.sortColIndex]
         local field = col.id
+        local isDefaultCol = (col.id == defaultSortId)
         
         table.sort(state.sortedRows, function(a, b)
-            if col.comparator then
-                return col.comparator(a, b, state.sortDir)
-            else
-                return compareItems(a, b, field, state.sortDir)
+            -- Case 1: If sorting by the default column, strictly use fallback sorter
+            if isDefaultCol and fallbackSort then
+                return fallbackSort(a, b)
             end
+
+            -- Case 2: Standard comparison with tiebreaker
+            local result
+            local areEqual = false
+            
+            if col.comparator then
+                if col.comparator(a, b, state.sortDir) then return true end
+                if col.comparator(b, a, state.sortDir) then return false end
+                areEqual = true
+            else
+                local valA = a[field]
+                local valB = b[field]
+                if valA == valB then 
+                    areEqual = true 
+                else
+                    result = compareItems(a, b, field, state.sortDir)
+                end
+            end
+
+            -- Use fallbackSort as tiebreaker
+            if areEqual and fallbackSort then
+                return fallbackSort(a, b)
+            end
+            
+            return result
         end)
     end
 
@@ -103,9 +141,9 @@ ItemTable.create = function(props)
         local k = 1
 
         for i = indexFrom, indexTo do
-            local item = state.sortedRows[i]
-            if item then
-                local cacheKey = item
+            local row = state.sortedRows[i]
+            if row then
+                local cacheKey = row
 
                 if not state.rowCache[cacheKey] then
                     local cells = {}
@@ -115,9 +153,9 @@ ItemTable.create = function(props)
                         local cellContent
 
                         if col.renderer then
-                            cellContent = col.renderer(item, w, rowHeight)
+                            cellContent = col.renderer(row, w, rowHeight)
                         else
-                            local val = item[col.id]
+                            local val = row[col.id]
                             local textStr = val ~= nil and tostring(val) or ""
                             cellContent = {
                                 template = baseTemplates.textNormal,
@@ -128,6 +166,9 @@ ItemTable.create = function(props)
                                 },
                                 external = {
                                     grow = (w == 0) and 1 or nil,
+                                },
+                                userData = {
+                                    colorable = true,
                                 }
                             }
                         end
@@ -135,7 +176,10 @@ ItemTable.create = function(props)
                         table.insert(cells, cellContent)
                     end
 
-                    state.rowCache[cacheKey] = specialTemplates.interactive({ onClick = function() end }, {
+                    state.rowCache[cacheKey] = specialTemplates.interactive({ 
+                        onClick = function() end,
+                        name = row.item.id,
+                    }, {
                         type = ui.TYPE.Flex,
                         props = {
                             horizontal = true,
@@ -145,10 +189,15 @@ ItemTable.create = function(props)
                         content = ui.content(cells),
                         events = {
                             mousePress = async:callback(function()
-                                if onRowClick then onRowClick(item) end
+                                if onRowClick then onRowClick(row) end
                             end)
                         },
-                        userData = { item = item }
+                        userData = { 
+                            item = row,
+                            tooltipFn = function()
+                                return specialTemplates.itemTooltip(row.item)
+                            end,
+                        }
                     })
                 end
 
@@ -197,9 +246,48 @@ ItemTable.create = function(props)
     for i, col in ipairs(columns) do
         local w = state.columnWidths[i] or 0
         local title = col.label or col.id
+        local isDefaultCol = (col.id == defaultSortId)
         
-        if state.sortColIndex == i then
-            title = title .. (state.sortDir == 'asc' and ' ^' or ' v')
+        local headerWidget
+        
+        if isDefaultCol and defaultSortIcon then
+            headerWidget = {
+                type = ui.TYPE.Flex,
+                props = {
+                    size = util.vector2(w, headerHeight),
+                    horizontal = true,
+                    align = ui.ALIGNMENT.Center,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content({
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = defaultSortIcon,
+                            size = util.vector2(16, 16),
+                        }
+                    }
+                }),
+                external = {
+                    grow = (w == 0) and 1 or nil,
+                }
+            }
+        else
+            if state.sortColIndex == i then
+                title = title .. (state.sortDir == 'asc' and ' ^' or ' v')
+            end
+            
+            headerWidget = {
+                template = baseTemplates.textHeader,
+                props = {
+                    text = title,
+                    size = util.vector2(w, headerHeight),
+                    autoSize = false,
+                },
+                external = {
+                    grow = (w == 0) and 1 or nil,
+                }
+            }
         end
         
         local btn = specialTemplates.interactive({
@@ -214,17 +302,7 @@ ItemTable.create = function(props)
                 sortRows()
                 updateRows() 
             end
-        }, {
-            template = baseTemplates.textHeader,
-            props = {
-                text = title,
-                size = util.vector2(w, headerHeight),
-                autoSize = false,
-            },
-            external = {
-                grow = (w == 0) and 1 or nil,
-            }
-        })
+        }, headerWidget)
         table.insert(headerElements, btn)
     end
     
@@ -261,6 +339,7 @@ ItemTable.create = function(props)
         renderVisibleRows()
     end
     
+    sortRows() -- Initial sort
     updateRows()
 
     local wrapper = ui.create {
