@@ -281,18 +281,31 @@ ItemTable.create = function(props, ctx)
     end
 
     local function updateHeader()
-        if not headerRow then return end
-        
         local contentWidth = getContentWidth()
         headerRow.props.size = util.vector2(contentWidth, headerHeight)
-        
+
         for i, headerCell in ipairs(headerRow.content) do
-            local w = state.columnWidths[i] or 0
-            if headerCell.layout and headerCell.layout.props.size.x ~= w then
-                headerCell.layout.props.size = util.vector2(w, headerHeight)
-                headerCell:update()
+            local col = columns[i]
+            local isDefaultCol = (col.id == defaultSortId)
+            local isSorted = (state.sortColIndex == i)
+            local currentSortIcon = state.sortDir == 'asc' and 'icons/moderninventory/sort_asc.dds' or 'icons/moderninventory/sort_desc.dds'
+
+            if isDefaultCol and defaultSortIcon then
+                -- Show only sort arrow for default column
+                headerCell.layout.content.icon.props.resource = ui.texture { path = isSorted and currentSortIcon or defaultSortIcon }
+            else
+                local icon = headerCell.layout.content.sortIcon
+                icon.props.resource = ui.texture { path = currentSortIcon }
+                icon.props.size = isSorted and util.vector2(16, 16) or util.vector2(0, 0)
             end
+
+            local w = state.columnWidths[i] or 0
+            headerCell.layout.props.size = util.vector2(w, headerHeight)
+            headerCell:update()
         end
+        if not headerRow then return end
+        local contentWidth = getContentWidth()
+        headerRow.props.size = util.vector2(contentWidth, headerHeight)
     end
 
     local headerElements = {}
@@ -314,8 +327,10 @@ ItemTable.create = function(props, ctx)
                 },
                 content = ui.content({
                     {
+                        name = 'icon',
                         type = ui.TYPE.Image,
                         props = {
+                            color = constants.Colors.DEFAULT,
                             resource = ui.texture { path = defaultSortIcon },
                             size = util.vector2(16, 16),
                         }
@@ -323,19 +338,36 @@ ItemTable.create = function(props, ctx)
                 }),
             }
         else
-            if state.sortColIndex == i then
-                title = title .. (state.sortDir == 'asc' and ' ^' or ' v')
-            end
-            
             headerWidget = {
-                template = baseTemplates.textHeader,
+                type = ui.TYPE.Flex,
+                --template = baseTemplates.textHeader,
                 props = {
-                    text = title,
+                    horizontal = true,
                     size = util.vector2(w, headerHeight),
                     autoSize = false,
-                    textAlignV = ui.ALIGNMENT.Center,
-                    textAlignH = col.textAlignH or ui.ALIGNMENT.Start,
+                    align = col.textAlignH or ui.ALIGNMENT.Start,
+                    arrange = ui.ALIGNMENT.Center,
                 },
+                content = ui.content {
+                    {
+                        name = 'title',
+                        template = baseTemplates.textHeader,
+                        props = {
+                            text = title,
+                            autoSize = true,
+                            textAlignV = ui.ALIGNMENT.Center,
+                        },
+                    },
+                    {
+                        name = 'sortIcon',
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = 'white' },
+                            color = constants.Colors.DEFAULT,
+                            size = util.vector2(0, 0),
+                        }
+                    }
+                }
             }
         end
         
@@ -355,6 +387,7 @@ ItemTable.create = function(props, ctx)
                 scrollable.layout.content[1].props.position = util.vector2(0, 0)
             end
             
+            updateHeader()
             updateRows()
             end
         }, headerWidget)
