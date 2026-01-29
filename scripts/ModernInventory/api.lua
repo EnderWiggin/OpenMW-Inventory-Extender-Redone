@@ -108,6 +108,40 @@ function API.getConsoleState()
     return consoleState
 end
 
+local categories = {}
+function API.getCategories()
+    return categories
+end
+
+function API.getCategory(key)
+    for _, category in ipairs(categories) do
+        if category.key:lower() == key:lower() then
+            return category
+        end
+    end
+    return nil
+end
+
+function API.registerCategory(category)
+    for i, existingCategory in ipairs(categories) do
+        if existingCategory.key:lower() == category.key:lower() then
+            categories[i] = category
+            return
+        end
+    end
+
+    table.insert(categories, category)
+end
+
+function API.unregisterCategory(key)
+    for i, existingCategory in ipairs(categories) do
+        if existingCategory.key:lower() == key:lower() then
+            table.remove(categories, i)
+            return
+        end
+    end
+end
+
 return {
     interfaceName = 'ModernInventory',
     interface = API,

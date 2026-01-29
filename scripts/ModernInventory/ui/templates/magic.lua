@@ -627,7 +627,7 @@ Templates.itemTooltip = function(item, showIcon)
             template = BASE.textParagraph,
             props = {
                 text = tooltipData[item.recordId],
-                textColor = constants.Colors.DEFAULT_LIGHT,
+                textColor = constants.Colors.DISABLED,
                 autoSize = true,
                 size = v2(320, 0),
             }

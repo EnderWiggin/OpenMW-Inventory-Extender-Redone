@@ -43,15 +43,16 @@ Column_VW: V/W
 
 # Category
 Category_All: All
-Category_Weapon: Weapon
+Category_Weapon: Weapons
 Category_Armor: Armor
 Category_Clothing: Clothing
-Category_Potion: Potion
-Category_Ingredient: Ingredient
-Category_Scroll: Scroll
-Category_Book: Book
-Category_Key: Key
-Category_Misc: Misc
+Category_Potion: Consumables
+Category_Ingredient: Ingredients
+Category_Scroll: Scrolls
+Category_Book: Books
+Category_Key: Keys
+Category_Tool: Tools
+Category_Misc: Misc.
 
 # Apparatus
 Type_Alembic: Alembic

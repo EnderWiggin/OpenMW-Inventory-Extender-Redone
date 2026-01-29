@@ -1,4 +1,3 @@
--- filepath: c:\MorrowindMods\UserInterface\ModernInventory\scripts\ModernInventory\ui\templates\itemTable.lua
 local ui = require('openmw.ui')
 local util = require('openmw.util')
 local async = require('openmw.async')
@@ -76,6 +75,7 @@ ItemTable.create = function(props, ctx)
         sortDir = 'asc',      -- 'asc' or 'desc'
         columnWidths = {},
         currentSize = size,   
+        filters = {},
     }
 
     setColumnWidths(columns, state)
@@ -109,12 +109,10 @@ ItemTable.create = function(props, ctx)
         local isDefaultCol = (col.id == defaultSortId)
         
         table.sort(state.sortedRows, function(a, b)
-            -- Case 1: If sorting by the default column, strictly use fallback sorter
             if isDefaultCol and fallbackSort then
                 return fallbackSort(a, b, state.sortDir)
             end
 
-            -- Case 2: Standard comparison with tiebreaker
             local result
             local areEqual = false
             
@@ -192,6 +190,7 @@ ItemTable.create = function(props, ctx)
                                     text = textStr,
                                     size = util.vector2(w, rowHeight),
                                     textAlignH = col.textAlignH or ui.ALIGNMENT.Start,
+                                    textAlignV = ui.ALIGNMENT.Center,
                                     autoSize = false,
                                 },
                                 userData = {
@@ -454,6 +453,34 @@ ItemTable.create = function(props, ctx)
         updateHeader()
         updateRows()
         wrapper:update()
+    end
+
+    wrapper.layout.userData.setFilter = function(filterId, filterFn)
+        state.filters[filterId] = filterFn
+    end
+
+    wrapper.layout.userData.refresh = function()
+        -- Re-apply filters
+        state.sortedRows = {}
+        for _, row in ipairs(dataRows) do
+            local include = true
+            for _, filterFn in pairs(state.filters) do
+                if not filterFn(row) then
+                    include = false
+                    break
+                end
+            end
+            if include then
+                table.insert(state.sortedRows, row)
+            end
+        end
+
+        if scrollable and scrollable.layout.content[1] then
+            scrollable.layout.content[1].props.position = util.vector2(0, 0)
+        end
+
+        sortRows()
+        updateRows()
     end
     
     return wrapper

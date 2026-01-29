@@ -1,0 +1,13 @@
+ICONS
+
+All: <a href="https://www.flaticon.com/free-icons/backpack" title="backpack icons">Backpack icons created by deemakdaksina - Flaticon</a>
+Weapon: <a href="https://www.flaticon.com/free-icons/sword" title="sword icons">Sword icons created by Freepik - Flaticon</a>
+Armor: <a href="https://www.flaticon.com/free-icons/warrior" title="warrior icons">Warrior icons created by Freepik - Flaticon</a>
+Clothing: <a href="https://www.flaticon.com/free-icons/hero" title="hero icons">Hero icons created by Tanah Basah - Flaticon</a>
+Potion: <a href="https://www.flaticon.com/free-icons/potion" title="potion icons">Potion icons created by Freepik - Flaticon</a>
+Ingredient: <a href="https://www.flaticon.com/free-icons/mushroom" title="mushroom icons">Mushroom icons created by Kiranshastry - Flaticon</a>
+Scroll: <a href="https://www.flaticon.com/free-icons/diploma" title="diploma icons">Diploma icons created by Slidicon - Flaticon</a>
+Book: <a href="https://www.flaticon.com/free-icons/book" title="book icons">Book icons created by Freepik - Flaticon</a>
+Key: <a href="https://www.flaticon.com/free-icons/success" title="success icons">Success icons created by Aranagraphics - Flaticon</a>
+Tool: <a href="https://www.flaticon.com/free-icons/hammer" title="hammer icons">Hammer icons created by Slidicon - Flaticon</a>
+Miscellaneous: <a href="https://www.flaticon.com/free-icons/more" title="more icons">More icons created by Stockio - Flaticon</a>

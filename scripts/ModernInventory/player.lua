@@ -16,6 +16,8 @@ local API = I.ModernInventory
 local configPlayer = require('scripts.ModernInventory.config.player')
 local helpers = require('scripts.ModernInventory.util.helpers')
 
+local l10n = core.l10n('ModernInventory')
+
 local function init()
     if not configPlayer.window.b_EnableMod then
         return
@@ -44,7 +46,6 @@ end
 local defaultCategories = {
     {
         key = 'All',
-        filter = function() return true end,
     },
     {
         key = 'Weapon',
@@ -94,26 +95,30 @@ local defaultCategories = {
         end,
     },
     {
+        key = 'Tool',
+        filter = function(item)
+            return types.Lockpick.objectIsInstance(item) or
+                   types.Probe.objectIsInstance(item) or
+                   types.Light.objectIsInstance(item) or
+                   types.Apparatus.objectIsInstance(item) or
+                   types.Repair.objectIsInstance(item)
+        end,
+    },
+    {
         key = 'Misc',
         filter = function(item)
-            return not (types.Weapon.objectIsInstance(item) or
-                        types.Armor.objectIsInstance(item) or
-                        types.Clothing.objectIsInstance(item) or
-                        types.Potion.objectIsInstance(item) or
-                        types.Ingredient.objectIsInstance(item) or
-                        types.Book.objectIsInstance(item) or
-                        (types.Miscellaneous.objectIsInstance(item) and
-                            types.Miscellaneous.records[item.recordId].isKey))
+            return types.Miscellaneous.objectIsInstance(item) and not types.Miscellaneous.records[item.recordId].isKey
         end,
     }
 }
 
 for _, category in ipairs(defaultCategories) do
-    -- API.registerCategory{
-    --     l10n = 'ModernInventory',
-    --     key = category.key,
-    --     filter = category.filter,
-    -- }
+    API.registerCategory{
+        key = category.key,
+        name = l10n('Category_' .. category.key),
+        icon = 'icons/moderninventory/categories/' .. category.key .. '.dds',
+        filter = category.filter,
+    }
 end
 
 local wasConsolePressed, wasGameMenuPressed = false, false
