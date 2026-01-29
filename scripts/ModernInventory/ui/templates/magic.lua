@@ -368,54 +368,6 @@ Templates.itemTooltip = function(item, showIcon)
 
     local itemRecord = item.type.record(item)
     local itemData = types.Item.itemData(item)
-    local effectLayouts = {}
-
-    local enchantment
-    local castTypeString
-    local doCharge
-    local maxCharge
-    if itemRecord.enchant then
-        enchantment = core.magic.enchantments.records[itemRecord.enchant]
-        if enchantment then
-            local override = I.MagicWindow and I.MagicWindow.Spells.getCustomSpell(itemRecord.enchant)
-            for i, effect in ipairs(override and override.effects or enchantment.effects) do
-                local effectLayout = {
-                    type = ui.TYPE.Flex,
-                    props = {
-                        horizontal = true,
-                        arrange = ui.ALIGNMENT.Center,
-                    },
-                    content = ui.content {
-                        Templates.effectIcon(effect.id),
-                        BASE.intervalH(4),
-                        textNormal('effect_' .. i, helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect)),
-                    }
-                }
-                if i ~= 1 then
-                    table.insert(effectLayouts, BASE.intervalV(8))
-                end
-                table.insert(effectLayouts, effectLayout)
-            end
-
-            if enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnStrike then
-                castTypeString = constants.Strings.ITEM_CAST_WHEN_STRIKES
-                doCharge = true
-            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnUse then
-                castTypeString = constants.Strings.ITEM_CAST_WHEN_USED
-                doCharge = true
-            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnce then
-                castTypeString = constants.Strings.ITEM_CAST_ONCE
-            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect then
-                castTypeString = constants.Strings.ITEM_CAST_CONSTANT
-            end
-
-            if enchantment.autocalcFlag then
-                maxCharge = helpers.getEnchantMaxCharge(enchantment)
-            else
-                maxCharge = enchantment.charge
-            end
-        end
-    end
 
     local nameString = itemRecord.name
     if item.count > 1 then
@@ -527,17 +479,109 @@ Templates.itemTooltip = function(item, showIcon)
         innerContent:add(textNormal('value', constants.Strings.VALUE .. ': ' .. (itemRecord.value)))
     end
 
+    local enchantment
+    local castTypeString
+    local doCharge
+    local maxCharge
+    if itemRecord.enchant then
+        enchantment = core.magic.enchantments.records[itemRecord.enchant]
+        if enchantment then
+            if enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnStrike then
+                castTypeString = constants.Strings.ITEM_CAST_WHEN_STRIKES
+                doCharge = true
+            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnUse then
+                castTypeString = constants.Strings.ITEM_CAST_WHEN_USED
+                doCharge = true
+            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnce then
+                castTypeString = constants.Strings.ITEM_CAST_ONCE
+            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect then
+                castTypeString = constants.Strings.ITEM_CAST_CONSTANT
+            end
+
+            if enchantment.autocalcFlag then
+                maxCharge = helpers.getEnchantMaxCharge(enchantment)
+            else
+                maxCharge = enchantment.charge
+            end
+        end
+    end
+
     if castTypeString then
         innerContent:add(textNormal('castType', castTypeString))
     end
 
-    if itemRecord.enchant then
+    -- Handle effects for enchantments, potions, and ingredients
+    local effectsToShow = {}
+    
+    if enchantment then
+        -- Enchantment effects
+        local override = I.MagicWindow and I.MagicWindow.Spells.getCustomSpell(itemRecord.enchant)
+        --effectsToShow = override and override.effects or enchantment.effects
+        for i, effect in ipairs(override and override.effects or enchantment.effects) do
+            table.insert(effectsToShow, { effect = effect })
+        end
+    elseif types.Potion.objectIsInstance(item) or types.Ingredient.objectIsInstance(item) then
+        -- Potion effects with visibility based on alchemy skill
+        local alchemy = omwself.type.stats.skills.alchemy(omwself).base
+        local threshold = core.getGMST('fWortChanceValue')
+        local visibleEffectCount = math.floor(alchemy / threshold)
+        if types.Potion.objectIsInstance(item) then
+            visibleEffectCount = visibleEffectCount * 2
+        end
+        for i, effect in ipairs(itemRecord.effects) do
+            table.insert(effectsToShow, {
+                effect = effect,
+                visible = i <= visibleEffectCount
+            })
+        end
+    end
+    
+    -- Build effect layouts if we have any effects
+    if #effectsToShow > 0 then
+        local effectLayouts = {}
+        for i, effectData in ipairs(effectsToShow) do
+            local effect = effectData.effect
+            local isVisible = effectData.visible ~= false
+            local content = ui.content {}
+            
+            if isVisible then
+                content:add(Templates.effectIcon(effect.id))
+                content:add(BASE.intervalH(4))
+                local effectText
+                if types.Potion.objectIsInstance(item) then
+                    effectText = helpers.createSpellEffectString(effect, false, true)
+                elseif types.Ingredient.objectIsInstance(item) then
+                    effectText = helpers.getMagicEffectString(effect)
+                else
+                    -- Enchantment
+                    effectText = helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect)
+                end
+                content:add(textNormal('effect_' .. i, effectText))
+            else
+                content:add(textNormal('effect_' .. i, '?'))
+            end
+            
+            local effectLayout = {
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = content,
+            }
+            
+            if i ~= 1 then
+                table.insert(effectLayouts, BASE.intervalV(8))
+            end
+            table.insert(effectLayouts, effectLayout)
+        end
+        
         innerContent:add(BASE.intervalV(4))
         innerContent:add({
             name = 'effects',
             type = ui.TYPE.Flex,
             props = {
-                arrange = ui.ALIGNMENT.Start,
+                arrange = ui.ALIGNMENT.Center,
             },
             content = ui.content {
                 table.unpack(effectLayouts)

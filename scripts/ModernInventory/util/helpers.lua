@@ -580,7 +580,7 @@ Helpers.createActiveEffectString = function(activeSpellEffect, spellName)
     return string
 end
 
-local function getMagicEffectString(effectParams, attributeId, skillId)
+Helpers.getMagicEffectString = function(effectParams)
     local effect = core.magic.effects.records[effectParams.id]
     if not effect then
         effect = I.MagicWindow and I.MagicWindow.Spells.getCustomEffect(effectParams.id)
@@ -589,13 +589,13 @@ local function getMagicEffectString(effectParams, attributeId, skillId)
         end
     end
 
-    local targetsSkill = effectParams.affectedSkill and skillId
-    local targetsAttribute = effectParams.affectedAttribute and attributeId
+    local affectedSkill = effectParams.affectedSkill
+    local affectedAttribute = effectParams.affectedAttribute
 
     local string
 
     local TYPE = core.magic.EFFECT_TYPE
-    if (targetsSkill or targetsAttribute) then
+    if (affectedSkill or affectedAttribute) then
         if effect.id == TYPE.AbsorbAttribute or effect.id == TYPE.AbsorbSkill then
             string = C.Strings.ABSORB
         elseif effect.id == TYPE.DamageAttribute or effect.id == TYPE.DamageSkill then
@@ -613,11 +613,11 @@ local function getMagicEffectString(effectParams, attributeId, skillId)
         string = effect.name
     end
 
-    if targetsSkill then
-        local skill = core.stats.Skill.records[skillId]
+    if affectedSkill then
+        local skill = core.stats.Skill.records[affectedSkill]
         string = string .. ' ' .. skill.name
-    elseif targetsAttribute then
-        local attribute = core.stats.Attribute.records[attributeId]
+    elseif affectedAttribute then
+        local attribute = core.stats.Attribute.records[affectedAttribute]
         string = string .. ' ' .. attribute.name
     end
 
@@ -626,7 +626,7 @@ end
 
 Helpers.effectListContainsString = function(effectsWithParams, searchString)
     for _, effectParams in ipairs(effectsWithParams) do
-        local string = getMagicEffectString(effectParams, effectParams.affectedAttribute, effectParams.affectedSkill)
+        local string = Helpers.getMagicEffectString(effectParams)
         if string:lower():find(searchString:lower(), 1, true) then
             return true
         end
@@ -644,7 +644,7 @@ Helpers.effectListContainsSchool = function(effectsWithParams, schoolFilter)
     return false
 end
 
-Helpers.createSpellEffectString = function(effectParams, isConstant)
+Helpers.createSpellEffectString = function(effectParams, isConstant, isPotion)
     local effect = core.magic.effects.records[effectParams.id]
     local isCustom = false
     if not effect then
@@ -655,7 +655,7 @@ Helpers.createSpellEffectString = function(effectParams, isConstant)
         isCustom = true
     end
     
-    local string = getMagicEffectString(effectParams, effectParams.affectedAttribute, effectParams.affectedSkill)
+    local string = Helpers.getMagicEffectString(effectParams)
 
     if (effectParams.magnitudeMin or effectParams.magnitudeMax) and effect.hasMagnitude then
         local magnitudeType
@@ -719,13 +719,15 @@ Helpers.createSpellEffectString = function(effectParams, isConstant)
             string = string .. ' ' .. C.Strings.IN .. ' ' .. tostring(effectParams.area) .. ' ' .. C.Strings.FOOT_AREA
         end
 
-        string = string .. ' ' .. C.Strings.ON .. ' '
-        if effectParams.range == core.magic.RANGE.Self then
-            string = string .. C.Strings.RANGE_SELF
-        elseif effectParams.range == core.magic.RANGE.Touch then
-            string = string .. C.Strings.RANGE_TOUCH
-        else
-            string = string .. C.Strings.RANGE_TARGET
+        if not isPotion then
+            string = string .. ' ' .. C.Strings.ON .. ' '
+            if effectParams.range == core.magic.RANGE.Self then
+                string = string .. C.Strings.RANGE_SELF
+            elseif effectParams.range == core.magic.RANGE.Touch then
+                string = string .. C.Strings.RANGE_TOUCH
+            else
+                string = string .. C.Strings.RANGE_TARGET
+            end
         end
     end
 
