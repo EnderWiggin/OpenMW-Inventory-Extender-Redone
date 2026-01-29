@@ -21,49 +21,6 @@ end
 
 local DragAndDrop = {}
 
-local function isGold(item)
-    local id = item.recordId:lower()
-    return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
-end
-
-local function getItemSound(item, upOrDown)
-    local itemRecord = item.type.record(item)
-    local itemStr
-    if types.Armor.objectIsInstance(item) then
-        local skill = I.Combat.getArmorSkill(item)
-        if skill == 'lightarmor' then itemStr = 'armor light'
-        elseif skill == 'mediumarmor' then itemStr = 'armor medium'
-        else itemStr = 'armor heavy' end
-    elseif types.Miscellaneous.objectIsInstance(item) then
-        itemStr = isGold(item) and 'gold' or 'misc'
-    elseif types.Apparatus.objectIsInstance(item) then
-        itemStr = 'apparatus'
-    elseif types.Book.objectIsInstance(item) then
-        itemStr = 'book'
-    elseif types.Clothing.objectIsInstance(item) then
-        itemStr = itemRecord.type == types.Clothing.TYPE.Ring and 'ring' or 'clothes'
-    elseif types.Ingredient.objectIsInstance(item) then
-        itemStr = 'ingredient'
-    elseif types.Light.objectIsInstance(item) then
-        itemStr = 'misc'
-    elseif types.Lockpick.objectIsInstance(item) then
-        itemStr = 'lockpick'
-    elseif types.Potion.objectIsInstance(item) then
-        itemStr = 'potion'
-    elseif types.Probe.objectIsInstance(item) then
-        itemStr = 'probe'
-    elseif types.Repair.objectIsInstance(item) then
-        itemStr = 'repair'
-    elseif types.Weapon.objectIsInstance(item) then
-        local weaponInfo = helpers.getWeaponInfo(item)
-        itemStr = weaponInfo and weaponInfo.soundId
-    end
-
-    if not itemStr then return nil end
-
-    return 'item ' .. itemStr .. ' ' .. upOrDown
-end
-
 function DragAndDrop:getHoveredGameObject(position)
     local pos = camera.getPosition()
     local v = camera.viewportToWorldVector(position)
@@ -97,7 +54,7 @@ function DragAndDrop:startDrag(item, sourceInventory)
     self.sourceInventory = sourceInventory
     
     if self.draggingObject then
-        local upSound = getItemSound(self.draggingObject, 'up')
+        local upSound = helpers.getItemSound(self.draggingObject, 'up')
         if upSound then
             ambient.playSound(upSound)
         end
@@ -116,7 +73,7 @@ end
 
 function DragAndDrop:stopDrag()
     if self.draggingObject then
-        local downSound = getItemSound(self.draggingObject, 'down')
+        local downSound = helpers.getItemSound(self.draggingObject, 'down')
         if downSound then
             ambient.playSound(downSound)
         end
@@ -259,7 +216,7 @@ function DragAndDrop:init(ctx)
                     position = targetPos,
                     options = {
                         onGround = true,
-                        rotation = util.transform.rotateZ(omwself.rotation:getYaw()),
+                        rotation = util.transform.rotateZ(camera.getYaw()),
                     }
                 })
                 self:stopDrag()

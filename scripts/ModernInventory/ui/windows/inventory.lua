@@ -6,6 +6,8 @@ local util = require('openmw.util')
 local v2 = util.vector2
 local I = require('openmw.interfaces')
 local async = require('openmw.async')
+local types = require('openmw.types')
+local ambient = require('openmw.ambient')
 
 local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
@@ -47,6 +49,7 @@ end
 
 function Inventory:create(ctx)
     local self = setmetatable({}, {__index = Inventory})
+    self.ctx = ctx
 
     local content = ui.content {}
     local data = createData()
@@ -106,7 +109,14 @@ function Inventory:create(ctx)
         defaultSortId = 'Icon',
         defaultSortIcon = 'icons/ModernInventory/default_sort.dds',
         fallbackSort = function(a, b, sortDir)
-            -- First, sort by Category
+            -- First, check if items are equipped
+            local aEquipped = omwself.type.hasEquipped(omwself, a.item)
+            local bEquipped = omwself.type.hasEquipped(omwself, b.item)
+            if aEquipped ~= bEquipped then
+                return aEquipped -- equipped items come first (true > false)
+            end
+            
+            -- Second, sort by Category
             local categories = I.ModernInventory.getCategories()
             local indexA, indexB = nil, nil
             for i, category in ipairs(categories) do
@@ -141,7 +151,26 @@ function Inventory:create(ctx)
 
             ctx.dragAndDrop:startDrag(row.item, omwself.type.inventory(omwself))
             self:refresh()
-        end
+        end,
+        onRowActivate = function(row)
+            if omwself.type.hasEquipped(omwself, row.item) then
+                local equipment = omwself.type.getEquipment(omwself)
+                for slot, equippedItem in pairs(equipment) do
+                    if equippedItem == row.item then
+                        equipment[slot] = nil
+                        omwself.type.setEquipment(omwself, equipment)
+                        local sound = helpers.getItemSound(row.item, 'down')
+                        if sound then
+                            ambient.playSound(sound)
+                        end
+                        omwself:sendEvent('MI_Update')
+                        break
+                    end
+                end
+            else
+                core.sendGlobalEvent('UseItem', { object = row.item, actor = omwself })
+            end
+        end,
     }, ctx)
 
     local categoryFilter = CategoryFilter.create({
@@ -223,6 +252,9 @@ local trackedCounts = {}
 function Inventory:updateData()
     local anyChanges = false
     local currentItems = omwself.type.inventory(omwself):getAll()
+
+    local itemTable = helpers.findInLayout(self.element, function(layout) return layout.name == 'itemTable' end)
+    if not itemTable then return end
     
     local currentItemIds = {}
     for _, item in ipairs(currentItems) do
@@ -241,13 +273,12 @@ function Inventory:updateData()
             end
         end
     end
-    
+
     if not anyChanges then
+        itemTable.userData.refresh()
         return
     end
 
-    local itemTable = helpers.findInLayout(self.element, function(layout) return layout.name == 'itemTable' end)
-    if not itemTable then return end
     local data = createData()
     itemTable.userData.updateData(data)
 end

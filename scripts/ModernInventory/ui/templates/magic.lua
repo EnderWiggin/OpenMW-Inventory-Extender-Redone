@@ -53,34 +53,6 @@ local lastMousePos = nil
 
 Templates.createTexture = BASE.createTexture
 
-local function getInteractiveTextColor(layout)
-    local userData = layout.userData or {}
-    if userData.active then
-        if userData.pressed then
-            return constants.Colors.ACTIVE_PRESSED
-        elseif userData.hovering then
-            return constants.Colors.ACTIVE_LIGHT
-        else
-            return constants.Colors.ACTIVE
-        end
-    elseif userData.disabled then
-        if userData.pressed then
-            return constants.Colors.DISABLED_PRESSED
-        elseif userData.hovering then
-            return constants.Colors.DISABLED_LIGHT
-        else
-            return constants.Colors.DISABLED
-        end
-    else
-        if userData.pressed then
-            return constants.Colors.DEFAULT_PRESSED
-        elseif userData.hovering then
-            return constants.Colors.DEFAULT_LIGHT
-        else
-            return userData.baseTextColor or constants.Colors.DEFAULT
-        end
-    end
-end
 
 Templates.interactive = function(props, layout, ctx)
     local function absToRel(absPos)
@@ -118,8 +90,8 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = getInteractiveTextColor(layout)
-                    l.props.color = getInteractiveTextColor(element.layout)
+                    l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    l.props.color = helpers.getInteractiveTextColor(element.layout)
                 end
             end)
             element:update()
@@ -136,8 +108,8 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = getInteractiveTextColor(layout)
-                    l.props.color = getInteractiveTextColor(element.layout)
+                    l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    l.props.color = helpers.getInteractiveTextColor(element.layout)
                 end
             end)
             local result = props.onClick()
@@ -147,6 +119,7 @@ Templates.interactive = function(props, layout, ctx)
         return false
     end)
     element.layout.events.focusLoss = async:callback(function()
+        ctx.focusedInteractive = nil
         element.layout.userData.hovering = false
         if element.layout.userData.tooltipFn then
             if ctx.activeTooltip and ctx.activeTooltip.layout then
@@ -159,8 +132,8 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = getInteractiveTextColor(layout)
-                    l.props.color = getInteractiveTextColor(element.layout)
+                    l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    l.props.color = helpers.getInteractiveTextColor(element.layout)
                 end
             end)
             table.insert(Templates.updateQueue, element)
@@ -168,12 +141,13 @@ Templates.interactive = function(props, layout, ctx)
         return true
     end)
     element.layout.events.focusGain = async:callback(function(e, layout)
+        ctx.focusedInteractive = element
         if props.onClick then
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = getInteractiveTextColor(layout)
-                    l.props.color = getInteractiveTextColor(element.layout)
+                    l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    l.props.color = helpers.getInteractiveTextColor(element.layout)
                 end
             end)
             table.insert(Templates.updateQueue, element)

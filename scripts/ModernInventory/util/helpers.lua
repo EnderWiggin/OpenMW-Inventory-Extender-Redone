@@ -298,6 +298,78 @@ Helpers.getWeaponRangeInFeet = function(item)
     return core.getGMST('fCombatDistance') * reach / unitsPerFoot
 end
 
+Helpers.getInteractiveTextColor = function(layout)
+    local userData = layout.userData or {}
+    if userData.active then
+        if userData.pressed then
+            return C.Colors.ACTIVE_PRESSED
+        elseif userData.hovering then
+            return C.Colors.ACTIVE_LIGHT
+        else
+            return C.Colors.ACTIVE
+        end
+    elseif userData.disabled then
+        if userData.pressed then
+            return C.Colors.DISABLED_PRESSED
+        elseif userData.hovering then
+            return C.Colors.DISABLED_LIGHT
+        else
+            return C.Colors.DISABLED
+        end
+    else
+        if userData.pressed then
+            return C.Colors.DEFAULT_PRESSED
+        elseif userData.hovering then
+            return C.Colors.DEFAULT_LIGHT
+        else
+            return userData.baseTextColor or C.Colors.DEFAULT
+        end
+    end
+end
+
+local function isGold(item)
+    local id = item.recordId:lower()
+    return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
+end
+
+Helpers.getItemSound = function(item, upOrDown)
+    local itemRecord = item.type.record(item)
+    local itemStr
+    if types.Armor.objectIsInstance(item) then
+        local skill = I.Combat.getArmorSkill(item)
+        if skill == 'lightarmor' then itemStr = 'armor light'
+        elseif skill == 'mediumarmor' then itemStr = 'armor medium'
+        else itemStr = 'armor heavy' end
+    elseif types.Miscellaneous.objectIsInstance(item) then
+        itemStr = isGold(item) and 'gold' or 'misc'
+    elseif types.Apparatus.objectIsInstance(item) then
+        itemStr = 'apparatus'
+    elseif types.Book.objectIsInstance(item) then
+        itemStr = 'book'
+    elseif types.Clothing.objectIsInstance(item) then
+        itemStr = itemRecord.type == types.Clothing.TYPE.Ring and 'ring' or 'clothes'
+    elseif types.Ingredient.objectIsInstance(item) then
+        itemStr = 'ingredient'
+    elseif types.Light.objectIsInstance(item) then
+        itemStr = 'misc'
+    elseif types.Lockpick.objectIsInstance(item) then
+        itemStr = 'lockpick'
+    elseif types.Potion.objectIsInstance(item) then
+        itemStr = 'potion'
+    elseif types.Probe.objectIsInstance(item) then
+        itemStr = 'probe'
+    elseif types.Repair.objectIsInstance(item) then
+        itemStr = 'repair'
+    elseif types.Weapon.objectIsInstance(item) then
+        local weaponInfo = Helpers.getWeaponInfo(item)
+        itemStr = weaponInfo and weaponInfo.soundId
+    end
+
+    if not itemStr then return nil end
+
+    return 'item ' .. itemStr .. ' ' .. upOrDown
+end
+
 local magicka = self.type.stats.dynamic.magicka(self)
 local willpower = self.type.stats.attributes.willpower(self)
 local luck = self.type.stats.attributes.luck(self)

@@ -150,4 +150,13 @@ end
 
 windowManager.ctx.dragAndDrop:init(windowManager.ctx)
 
+input.registerTriggerHandler('Activate', async:callback(function()
+    if windowManager.ctx.focusedInteractive and windowManager.ctx.focusedInteractive.layout and
+       windowManager.ctx.focusedInteractive.layout.userData.onActivate then
+        windowManager.ctx.focusedInteractive.layout.userData.onActivate()
+        return true
+    end
+    return false
+end))
+
 return windowManager

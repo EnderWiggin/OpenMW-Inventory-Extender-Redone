@@ -1,10 +1,14 @@
 local ui = require('openmw.ui')
 local util = require('openmw.util')
 local async = require('openmw.async')
+local core = require('openmw.core')
+local omwself = require('openmw.self')
+local auxUi = require('openmw_aux.ui')
 
 local constants = require('scripts.ModernInventory.util.constants')
 local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
+local helpers = require("scripts.ModernInventory.util.helpers")
 
 local ItemTable = {}
 
@@ -147,6 +151,43 @@ ItemTable.create = function(props, ctx)
 
     state.rowCache = {} -- Stores generated row layouts by item ID or index
 
+    local function createContent(row)
+        local cells = ui.content {}
+
+        local totalW = 0
+        for cIdx, col in ipairs(columns) do
+            local w = state.columnWidths[cIdx] or 0
+            local cellContent
+
+            if col.renderer then
+                cellContent = col.renderer(row, w, rowHeight)
+            else
+                local val = row[col.id]
+                local textStr = val ~= nil and tostring(val) or ""
+                if textStr == "0" then textStr = "-" end
+                cellContent = {
+                    template = baseTemplates.textNormal,
+                    props = {
+                        text = textStr,
+                        size = util.vector2(w, rowHeight),
+                        textAlignH = col.textAlignH or ui.ALIGNMENT.Start,
+                        textAlignV = ui.ALIGNMENT.Center,
+                        autoSize = false,
+                    },
+                    userData = {
+                        colorable = true,
+                    }
+                }
+            end
+            cellContent.props.position = util.vector2(totalW, 0)
+            totalW = totalW + w
+
+            cells:add(cellContent)
+        end
+
+        return cells
+    end
+
     local function renderVisibleRows()
         if not scrollable then return end
 
@@ -174,42 +215,11 @@ ItemTable.create = function(props, ctx)
         for i = indexFrom, indexTo do
             local row = state.sortedRows[i]
             if row then
-                local cacheKey = row
-
+                local cacheKey = row.id
+                
+                local anyChanged = false
+                local active = omwself.type.hasEquipped(omwself, row.item)
                 if not state.rowCache[cacheKey] then
-                    local cells = {}
-
-                    local totalW = 0
-                    for cIdx, col in ipairs(columns) do
-                        local w = state.columnWidths[cIdx] or 0
-                        local cellContent
-
-                        if col.renderer then
-                            cellContent = col.renderer(row, w, rowHeight)
-                        else
-                            local val = row[col.id]
-                            local textStr = val ~= nil and tostring(val) or ""
-                            if textStr == "0" then textStr = "-" end
-                            cellContent = {
-                                template = baseTemplates.textNormal,
-                                props = {
-                                    text = textStr,
-                                    size = util.vector2(w, rowHeight),
-                                    textAlignH = col.textAlignH or ui.ALIGNMENT.Start,
-                                    textAlignV = ui.ALIGNMENT.Center,
-                                    autoSize = false,
-                                },
-                                userData = {
-                                    colorable = true,
-                                }
-                            }
-                        end
-                        cellContent.props.position = util.vector2(totalW, 0)
-                        totalW = totalW + w
-
-                        table.insert(cells, cellContent)
-                    end
-
                     state.rowCache[cacheKey] = specialTemplates.interactive({ 
                         onClick = function() 
                             if onRowClick then 
@@ -222,9 +232,13 @@ ItemTable.create = function(props, ctx)
                             size = util.vector2(contentWidth, rowHeight),
                             position = util.vector2(0, 0),
                         },
-                        content = ui.content(cells),
+                        content = createContent(row),
                         userData = { 
-                            item = row,
+                            onActivate = function()
+                                if props.onRowActivate then
+                                    return props.onRowActivate(row)
+                                end
+                            end,
                             tooltipFn = function()
                                 return specialTemplates.itemTooltip(row.item)
                             end,
@@ -234,9 +248,20 @@ ItemTable.create = function(props, ctx)
                     local totalW = 0
                     for cIdx, col in ipairs(columns) do
                         local w = state.columnWidths[cIdx] or 0
-                        local cellContent = state.rowCache[cacheKey].layout.content[cIdx]
+                        local rowWidget = state.rowCache[cacheKey]
+                        local cellContent = rowWidget.layout.content[cIdx]
                         cellContent.props.size = util.vector2(w, rowHeight)
                         cellContent.props.position = util.vector2(totalW, 0)
+                        cellContent.props.textColor = helpers.getInteractiveTextColor(rowWidget.layout)
+                        if cellContent.props.text then
+                            local val = row[col.id]
+                            local textStr = val ~= nil and tostring(val) or ""
+                            if textStr == "0" then textStr = "-" end
+                            if textStr ~= cellContent.props.text then
+                                cellContent.props.text = textStr
+                                anyChanged = true
+                            end
+                        end
                         totalW = totalW + w
                     end
                 end
@@ -244,9 +269,13 @@ ItemTable.create = function(props, ctx)
                 local rowWidget = state.rowCache[cacheKey]
                 local rowY = (i - 1) * rowHeight
 
-                if rowWidget.layout.props.size.x ~= contentWidth or rowWidget.layout.props.position.y ~= rowY then
+                if rowWidget.layout.props.size.x ~= contentWidth 
+                    or rowWidget.layout.props.position.y ~= rowY
+                    or rowWidget.layout.userData.active ~= active
+                    or anyChanged then
                     rowWidget.layout.props.size = util.vector2(contentWidth, rowHeight)
                     rowWidget.layout.props.position = util.vector2(0, rowY)
+                    rowWidget.layout.userData.active = active
                     rowWidget:update()
                 end
 
@@ -507,30 +536,15 @@ ItemTable.create = function(props, ctx)
         -- Remove cache entries for items no longer present
         for itemId, row in pairs(oldItemsMap) do
             if not newItemsMap[itemId] then
-                state.rowCache[row] = nil
+                auxUi.deepDestroy(state.rowCache[row.id])
+                state.rowCache[row.id] = nil
             end
         end
         
         -- Update the dataRows reference
         dataRows = newDataRows
         
-        -- Re-apply filters to the new data
-        state.sortedRows = {}
-        for _, row in ipairs(dataRows) do
-            local include = true
-            for _, filterFn in pairs(state.filters) do
-                if not filterFn(row) then
-                    include = false
-                    break
-                end
-            end
-            if include then
-                table.insert(state.sortedRows, row)
-            end
-        end
-        
-        sortRows()
-        updateRows()
+        wrapper.layout.userData.refresh()
     end
 
     return wrapper
