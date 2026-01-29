@@ -9,8 +9,10 @@ local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 
 local ItemTable = {}
 
+local scrollbarWidth = 24
+
 local function setColumnWidths(columns, state)
-    local contentWidth = math.floor(math.max(0, state.currentSize.x - 16)) -- scrollbarWidth = 16
+    local contentWidth = math.floor(math.max(0, state.currentSize.x - scrollbarWidth)) -- scrollbarWidth = 16
     local widths = {}
     local fixedWidth = 0
     local flexCount = 0
@@ -67,7 +69,6 @@ ItemTable.create = function(props, ctx)
     local fallbackSort = props.fallbackSort
     
     local headerHeight = 30
-    local scrollbarWidth = 16
     
     local state = {
         sortedRows = {},      -- List of items after sorting
@@ -184,11 +185,13 @@ ItemTable.create = function(props, ctx)
                         else
                             local val = row[col.id]
                             local textStr = val ~= nil and tostring(val) or ""
+                            if textStr == "0" then textStr = "-" end
                             cellContent = {
                                 template = baseTemplates.textNormal,
                                 props = {
                                     text = textStr,
                                     size = util.vector2(w, rowHeight),
+                                    textAlignH = col.textAlignH or ui.ALIGNMENT.Start,
                                     autoSize = false,
                                 },
                                 userData = {
@@ -228,7 +231,6 @@ ItemTable.create = function(props, ctx)
                     for cIdx, col in ipairs(columns) do
                         local w = state.columnWidths[cIdx] or 0
                         local cellContent = state.rowCache[cacheKey].layout.content[cIdx]
-                        local helpers = require('scripts.ModernInventory.util.helpers')
                         cellContent.props.size = util.vector2(w, rowHeight)
                         cellContent.props.position = util.vector2(totalW, 0)
                         totalW = totalW + w
@@ -332,6 +334,7 @@ ItemTable.create = function(props, ctx)
                     size = util.vector2(w, headerHeight),
                     autoSize = false,
                     textAlignV = ui.ALIGNMENT.Center,
+                    textAlignH = col.textAlignH or ui.ALIGNMENT.Start,
                 },
             }
         end
@@ -378,7 +381,7 @@ ItemTable.create = function(props, ctx)
         0,
         0,
         rowHeight * 2,
-        true,
+        false,
         function(e)
             ctx.focusedScrollable = e
         end,

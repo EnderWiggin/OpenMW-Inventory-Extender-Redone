@@ -23,15 +23,20 @@ function Inventory:create(ctx)
     local data = {}
     for _, item in ipairs(this.type.inventory(this):getAll()) do
         local record = item.type.record(item)
+        local vw = record.weight > 0 and (record.value / record.weight) or 0
+        local vwPrecision = vw > 10 and 0 or 1
+        vw = helpers.roundToPlaces(vw, vwPrecision)
+        
         table.insert(data, {
             Name = record.name .. (item.count > 1 and (' (%d)'):format(item.count) or ''),
             Value = helpers.roundToPlaces(record.value, 1),
-            Weight = helpers.roundToPlaces(record.weight, 3),
-            ['V/W'] = helpers.roundToPlaces((record.weight > 0) and (record.value / record.weight) or 0, 2),
+            Weight = helpers.roundToPlaces(record.weight, 2),
+            ['V/W'] = vw,
             item = item,
             itemRecord = record,
         })
     end
+    local w = 80 * baseTemplates.TEXT_SIZE / 16
     local itemTable = ItemTable.create({
         columns = {
             {
@@ -63,17 +68,20 @@ function Inventory:create(ctx)
             {
                 id = 'Weight',
                 label = l10n('Column_Weight'),
-                width = 64,
+                width = w,
+                textAlignH = ui.ALIGNMENT.End,
             },
             {
                 id = 'Value',
                 label = l10n('Column_Value'),
-                width = 64,
+                width = w,
+                textAlignH = ui.ALIGNMENT.End,
             },
             {
                 id = 'V/W',
                 label = l10n('Column_VW'),
-                width = 64,
+                width = w,
+                textAlignH = ui.ALIGNMENT.End,
             }
         },
         data = data,

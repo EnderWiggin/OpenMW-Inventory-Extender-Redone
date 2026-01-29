@@ -376,42 +376,44 @@ Templates.itemTooltip = function(item, showIcon)
     local maxCharge
     if itemRecord.enchant then
         enchantment = core.magic.enchantments.records[itemRecord.enchant]
-        local override = I.MagicWindow and I.MagicWindow.Spells.getCustomSpell(itemRecord.enchant)
-        for i, effect in ipairs(override and override.effects or enchantment.effects) do
-            local effectLayout = {
-                type = ui.TYPE.Flex,
-                props = {
-                    horizontal = true,
-                    arrange = ui.ALIGNMENT.Center,
-                },
-                content = ui.content {
-                    Templates.effectIcon(effect.id),
-                    BASE.intervalH(4),
-                    textNormal('effect_' .. i, helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect)),
+        if enchantment then
+            local override = I.MagicWindow and I.MagicWindow.Spells.getCustomSpell(itemRecord.enchant)
+            for i, effect in ipairs(override and override.effects or enchantment.effects) do
+                local effectLayout = {
+                    type = ui.TYPE.Flex,
+                    props = {
+                        horizontal = true,
+                        arrange = ui.ALIGNMENT.Center,
+                    },
+                    content = ui.content {
+                        Templates.effectIcon(effect.id),
+                        BASE.intervalH(4),
+                        textNormal('effect_' .. i, helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect)),
+                    }
                 }
-            }
-            if i ~= 1 then
-                table.insert(effectLayouts, BASE.intervalV(8))
+                if i ~= 1 then
+                    table.insert(effectLayouts, BASE.intervalV(8))
+                end
+                table.insert(effectLayouts, effectLayout)
             end
-            table.insert(effectLayouts, effectLayout)
-        end
 
-        if enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnStrike then
-            castTypeString = constants.Strings.ITEM_CAST_WHEN_STRIKES
-            doCharge = true
-        elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnUse then
-            castTypeString = constants.Strings.ITEM_CAST_WHEN_USED
-            doCharge = true
-        elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnce then
-            castTypeString = constants.Strings.ITEM_CAST_ONCE
-        elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect then
-            castTypeString = constants.Strings.ITEM_CAST_CONSTANT
-        end
+            if enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnStrike then
+                castTypeString = constants.Strings.ITEM_CAST_WHEN_STRIKES
+                doCharge = true
+            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnUse then
+                castTypeString = constants.Strings.ITEM_CAST_WHEN_USED
+                doCharge = true
+            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnce then
+                castTypeString = constants.Strings.ITEM_CAST_ONCE
+            elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect then
+                castTypeString = constants.Strings.ITEM_CAST_CONSTANT
+            end
 
-        if enchantment.autocalcFlag then
-            maxCharge = helpers.getEnchantMaxCharge(enchantment)
-        else
-            maxCharge = enchantment.charge
+            if enchantment.autocalcFlag then
+                maxCharge = helpers.getEnchantMaxCharge(enchantment)
+            else
+                maxCharge = enchantment.charge
+            end
         end
     end
 
