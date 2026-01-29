@@ -142,7 +142,7 @@ function Inventory:create(ctx)
             return category.filter(row.item)
         end)
         itemTable.layout.userData.refresh()
-    end)
+    end, ctx)
 
     content:add(categoryFilter)
 

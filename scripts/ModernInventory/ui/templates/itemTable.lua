@@ -224,7 +224,7 @@ ItemTable.create = function(props, ctx)
                                 return specialTemplates.itemTooltip(row.item)
                             end,
                         }
-                    })
+                    }, ctx)
                 else
                     local totalW = 0
                     for cIdx, col in ipairs(columns) do
@@ -257,7 +257,7 @@ ItemTable.create = function(props, ctx)
             k = k + 1
         end
 
-        for i = 1, k - 1 do
+        for i = 1, #currentContent do
             newRowElements[i] = currentContent[i]
         end
 
@@ -389,7 +389,7 @@ ItemTable.create = function(props, ctx)
             updateHeader()
             updateRows()
             end
-        }, headerWidget)
+        }, headerWidget, ctx)
         table.insert(headerElements, btn)
     end
     

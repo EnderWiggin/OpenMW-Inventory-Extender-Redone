@@ -99,13 +99,12 @@ function API.getWindowElement()
     return windowManager.element
 end
 
-local consoleState = false
 function API.setConsoleState(state)
-    consoleState = state
+    windowManager.ctx.isConsoleOpen = state
 end
 
 function API.getConsoleState()
-    return consoleState
+    return windowManager.ctx.isConsoleOpen
 end
 
 local categories = {}

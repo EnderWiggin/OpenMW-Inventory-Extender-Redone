@@ -10,7 +10,7 @@ local constants = require('scripts.ModernInventory.util.constants')
 
 local CategoryFilter = {}
 
-function CategoryFilter.create(props, onChange)
+function CategoryFilter.create(props, onChange, ctx)
     local maxHeight = props.maxHeight or 48
 
     local layout = {
@@ -82,7 +82,7 @@ function CategoryFilter.create(props, onChange)
                         }, category.key)
                     end,
                 }
-            }))
+            }, ctx))
             if i == #categories then
                 element.layout.content:add({ external = { grow = 1, stretch = 1, } })
             end

@@ -47,12 +47,9 @@ Templates.MIN_WIDTH =
 
 Templates.active = false
 Templates.focusedLabel = nil
-Templates.activeTooltip = nil
 Templates.linesToProcess = {}
 Templates.updateQueue = {}
 local lastMousePos = nil
-local storedScrollPos = {}
-Templates.modalElement = nil
 
 Templates.createTexture = BASE.createTexture
 
@@ -85,7 +82,7 @@ local function getInteractiveTextColor(layout)
     end
 end
 
-Templates.interactive = function(props, layout)
+Templates.interactive = function(props, layout, ctx)
     local function absToRel(absPos)
         local layerSize = ui.layers[ui.layers.indexOf('Notification')].size
         return v2(
@@ -95,15 +92,14 @@ Templates.interactive = function(props, layout)
     end
 
     local function createTooltip(layout)
-        --if not Templates.active then return end
-        Templates.activeTooltip = ui.create(layout.userData.tooltipFn())
-        Templates.activeTooltip.layout.name = props.name
+        ctx.activeTooltip = ui.create(layout.userData.tooltipFn())
+        ctx.activeTooltip.layout.name = props.name
         if lastMousePos then
-            Templates.activeTooltip.layout.props.anchor = v2(absToRel(lastMousePos).x, 0)
-            Templates.activeTooltip.layout.props.position = v2(lastMousePos.x, lastMousePos.y + 32)
+            ctx.activeTooltip.layout.props.anchor = v2(absToRel(lastMousePos).x, 0)
+            ctx.activeTooltip.layout.props.position = v2(lastMousePos.x, lastMousePos.y + 32)
         end
-        Templates.activeTooltip:update()
-        return Templates.activeTooltip
+        ctx.activeTooltip:update()
+        return ctx.activeTooltip
     end
 
     local element = layout.layout and layout or ui.create(layout)
@@ -153,9 +149,9 @@ Templates.interactive = function(props, layout)
     element.layout.events.focusLoss = async:callback(function()
         element.layout.userData.hovering = false
         if element.layout.userData.tooltipFn then
-            if Templates.activeTooltip and Templates.activeTooltip.layout then
-                Templates.activeTooltip.layout.props.visible = false
-                table.insert(Templates.updateQueue, Templates.activeTooltip)
+            if ctx.activeTooltip and ctx.activeTooltip.layout then
+                ctx.activeTooltip.layout.props.visible = false
+                table.insert(Templates.updateQueue, ctx.activeTooltip)
             end
         end
 
@@ -187,106 +183,28 @@ Templates.interactive = function(props, layout)
     element.layout.events.mouseMove = async:callback(function(e, layout)
         element.layout.userData.hovering = true
         if element.layout.userData.tooltipFn then
-            if not Templates.activeTooltip or not Templates.activeTooltip.layout then
-                Templates.activeTooltip = createTooltip(layout)
-            elseif Templates.activeTooltip.layout.name ~= props.name then
-                auxUi.deepDestroy(Templates.activeTooltip)
-                Templates.activeTooltip = createTooltip(layout)
+            if not ctx.activeTooltip or not ctx.activeTooltip.layout then
+                ctx.activeTooltip = createTooltip(layout)
+            elseif ctx.activeTooltip.layout.name ~= props.name then
+                auxUi.deepDestroy(ctx.activeTooltip)
+                ctx.activeTooltip = createTooltip(layout)
             end
-            if Templates.activeTooltip then
-                Templates.activeTooltip.layout.props.visible = true
+            if ctx.activeTooltip then
+                ctx.activeTooltip.layout.props.visible = true
                 local distToBottom = ui.layers[ui.layers.indexOf('Notification')].size.y - (e.position.y - e.offset.y)
                 if distToBottom < ui.layers[ui.layers.indexOf('Notification')].size.y / 2 then
-                    Templates.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 1)
-                    Templates.activeTooltip.layout.props.position = v2(e.position.x, e.position.y - 32)
+                    ctx.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 1)
+                    ctx.activeTooltip.layout.props.position = v2(e.position.x, e.position.y - 32)
                 else
-                    Templates.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 0)
-                    Templates.activeTooltip.layout.props.position = v2(e.position.x, e.position.y + 32)
+                    ctx.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 0)
+                    ctx.activeTooltip.layout.props.position = v2(e.position.x, e.position.y + 32)
                 end
-                Templates.activeTooltip:update()
+                ctx.activeTooltip:update()
                 lastMousePos = e.position
             end
         end
     end)
     return element
-end
-
-Templates.labeledValue = function(props)
-    props.label = props.label or ''
-    props.height = props.height or Templates.LINE_HEIGHT
-    props.labelColor = props.labelColor or constants.Colors.DEFAULT
-    props.valueColor = props.valueColor or constants.Colors.DEFAULT
-    local layout = {
-        name = props.name,
-        type = ui.TYPE.Flex,
-        props = {
-            horizontal = true,
-            size = v2(0, props.height),
-            relativeSize = v2(1, 0),
-        },
-        content = ui.content {
-            {
-                name = 'pre',
-                template = BASE.intervalH(props.indent),
-            },
-            {
-                name = 'icon',
-                type = ui.TYPE.Image,
-                props = {
-                },
-                content = ui.content {}
-            },
-            {
-                name = 'iconPadding',
-                props = {},
-            },
-            {
-                name = 'label',
-                props = {
-                    relativeSize = v2(0, 1),
-                },
-                external = {
-                    grow = 1,
-                },
-                content = ui.content {
-                    {
-                        template = BASE.textNormal,
-                        props = {
-                            text = props.label,
-                            textSize = Templates.TEXT_SIZE,
-                            textColor = props.labelColor,
-                        },
-                        userData = { colorable = true },
-                    }
-                }
-            },
-            {
-                name = 'value',
-                template = BASE.textNormal,
-                props = {
-                    textSize = Templates.TEXT_SIZE,
-                    textColor = props.valueColor,
-                },
-                userData = { colorable = true },
-            }
-        },
-        userData = {
-            type = constants.LineType.LABELED_VALUE,
-            valueType = props.valueType or constants.ValueType.STRING,
-            iconFn = props.iconFn,
-            valueFn = props.valueFn,
-            tooltipFn = props.tooltipFn,
-            visibleFn = props.visibleFn,
-            activeFn = props.activeFn,
-            disabledFn = props.disabledFn,
-        },
-    }
-
-    if props.onClick then
-        return Templates.interactive(props, layout)
-    else 
-        return ui.create(layout)
-    end
 end
 
 Templates.progressBar = function(props)
@@ -748,19 +666,19 @@ Templates.modal = function(content)
     }
 end
 
-Templates.choiceModal = function(headerLayout, choices)
+Templates.choiceModal = function(headerLayout, choices, ctx)
     -- example: choices = { { text = "Yes", onClick = fn }, { text = "No", onClick = fn } }
     local choiceButtons = {}
     for i, choice in ipairs(choices) do
         table.insert(choiceButtons, Templates.interactive({
             onClick = function()
-                if Templates.modalElement then
-                    auxUi.deepDestroy(Templates.modalElement)
-                    Templates.modalElement = nil
+                if ctx.modalElement then
+                    auxUi.deepDestroy(ctx.modalElement)
+                    ctx.modalElement = nil
                 end
                 choice.onClick()
             end,
-        }, BASE.button(choice.text, choice.onClick)))
+        }, BASE.button(choice.text, choice.onClick), ctx))
         if i ~= #choices then
             table.insert(choiceButtons, BASE.intervalH(8))
         end
@@ -804,13 +722,8 @@ Templates.effectIcon = function(effectId)
             size = v2(16, 16),
             resource = BASE.createTexture(effectRecord.icon),
         },
-        userData = {
-            tooltipFn = function()
-                return Templates.activeEffectTooltip(effectId)
-            end,
-        }
     }
-    return Templates.interactive({ name = effectId }, layout)
+    return layout
 end
 
 return Templates

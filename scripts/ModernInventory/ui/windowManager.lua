@@ -15,6 +15,8 @@ local helpers = require('scripts.ModernInventory.util.helpers')
 
 local configPlayer = require('scripts.ModernInventory.config.player')
 
+local DragAndDrop = require('scripts.ModernInventory.ui.dragAndDrop')
+
 local InventoryWindow = require('scripts.ModernInventory.ui.windows.inventory')
 
 local modeArgs = {}
@@ -34,6 +36,9 @@ windowManager.windows = {
 
 windowManager.ctx = {
     focusedScrollable = nil,
+    modalElement = nil,
+    activeTooltip = nil,
+    isConsoleOpen = false,
 }
 
 windowManager.create = function(windowName)
@@ -59,9 +64,9 @@ windowManager.hide = function(windowName, force)
         window:setVisible(false)
         --omwself:sendEvent(constants.Events.WINDOW_HIDDEN)
     end
-    if templates.activeTooltip then
-        auxUi.deepDestroy(templates.activeTooltip)
-        templates.activeTooltip = nil
+    if windowManager.ctx.activeTooltip then
+        auxUi.deepDestroy(windowManager.ctx.activeTooltip)
+        windowManager.ctx.activeTooltip = nil
     end
     window:saveState()
 end
@@ -70,9 +75,9 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
     if newMode then
         modeArgs[newMode] = arg
     end
-    if templates.modalElement then
-        auxUi.deepDestroy(templates.modalElement)
-        templates.modalElement = nil
+    if windowManager.ctx.modalElement then
+        auxUi.deepDestroy(windowManager.ctx.modalElement)
+        windowManager.ctx.modalElement = nil
     end
 end
 
@@ -112,5 +117,7 @@ windowManager.onFrame = function()
         end
     end
 end
+
+DragAndDrop:init(windowManager.ctx)
 
 return windowManager
