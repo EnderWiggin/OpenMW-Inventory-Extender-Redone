@@ -1,10 +1,11 @@
 local core = require('openmw.core')
 local ui = require('openmw.ui')
 local storage = require('openmw.storage')
-local this = require('openmw.self')
+local omwself = require('openmw.self')
 local util = require('openmw.util')
 local v2 = util.vector2
 local I = require('openmw.interfaces')
+local async = require('openmw.async')
 
 local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
@@ -18,18 +19,16 @@ local l10n = core.l10n('ModernInventory')
 
 local Inventory = Window:new()
 
-function Inventory:create(ctx)
-    local self = setmetatable({}, {__index = Inventory})
-
-    local content = ui.content {}
+local function createData()
     local data = {}
-    for _, item in ipairs(this.type.inventory(this):getAll()) do
+    for _, item in ipairs(omwself.type.inventory(omwself):getAll()) do
         local record = item.type.record(item)
         local vw = record.weight > 0 and (record.value / record.weight) or 0
         local vwPrecision = vw > 10 and 0 or 1
         vw = helpers.roundToPlaces(vw, vwPrecision)
         
         table.insert(data, {
+            id = item.id,
             Name = record.name .. (item.count > 1 and (' (%d)'):format(item.count) or ''),
             Value = helpers.roundToPlaces(record.value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
@@ -38,6 +37,20 @@ function Inventory:create(ctx)
             itemRecord = record,
         })
     end
+    return data
+end
+
+function Inventory:update(deep)
+    self:updateData()
+    Window.update(self, deep)
+end
+
+function Inventory:create(ctx)
+    local self = setmetatable({}, {__index = Inventory})
+
+    local content = ui.content {}
+    local data = createData()
+
     local w = 80 * baseTemplates.TEXT_SIZE / 16
 
     local itemTable = ItemTable.create({
@@ -121,6 +134,14 @@ function Inventory:create(ctx)
             local nameB = b.Name:lower()
             return nameA < nameB
         end,
+        onRowClick = function(row)
+            if ctx.dragAndDrop.draggingObject then
+                return true
+            end
+
+            ctx.dragAndDrop:startDrag(row.item, omwself.type.inventory(omwself))
+            self:refresh()
+        end
     }, ctx)
 
     local categoryFilter = CategoryFilter.create({
@@ -141,6 +162,7 @@ function Inventory:create(ctx)
             end
             return category.filter(row.item)
         end)
+        itemTable.layout.userData.resetScroll()
         itemTable.layout.userData.refresh()
     end, ctx)
 
@@ -164,11 +186,70 @@ function Inventory:create(ctx)
         function(layout)
             itemTable.layout.userData.resize(layout.userData.getInnerSize() - v2(0, categoryFilter.layout.props.size.y))
         end,
-        storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get('b_InventoryWindowPinned'))
+        storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get('b_InventoryWindowPinned'),
+        ctx)
     self.element = element
     self:loadState()
     itemTable.layout.userData.resize(self.element.layout.userData.getInnerSize() - v2(0, categoryFilter.layout.props.size.y))
+
+    itemTable.layout.events.mouseRelease = async:callback(function(e)
+        if e.button == 1 then
+            if ctx.dragAndDrop.draggingObject then
+                ctx.dragAndDrop:stopDrag()
+                self:refresh()
+                omwself:sendEvent('MI_Update')
+            end
+        end
+    end)
+
+    itemTable.layout.userData.setFilter('draggedItemFilter', function(row)
+        if ctx.dragAndDrop.draggingObject then
+            return row.item.id ~= ctx.dragAndDrop.draggingObject.id
+        end
+        return true
+    end)
+
     return self
+end
+
+function Inventory:refresh()
+    local itemTable = helpers.findInLayout(self.element, function(layout) return layout.name == 'itemTable' end)
+    if not itemTable then return end
+    itemTable.userData.refresh()
+end
+
+local trackedCounts = {}
+
+function Inventory:updateData()
+    local anyChanges = false
+    local currentItems = omwself.type.inventory(omwself):getAll()
+    
+    local currentItemIds = {}
+    for _, item in ipairs(currentItems) do
+        currentItemIds[item.id] = true
+        if trackedCounts[item.id] ~= item.count then
+            anyChanges = true
+        end
+        trackedCounts[item.id] = item.count
+    end
+    
+    if not anyChanges then
+        for id, _ in pairs(trackedCounts) do
+            if not currentItemIds[id] then
+                anyChanges = true
+                trackedCounts[id] = nil
+            end
+        end
+    end
+    
+    if not anyChanges then
+        return
+    end
+
+    local itemTable = helpers.findInLayout(self.element, function(layout) return layout.name == 'itemTable' end)
+    if not itemTable then return end
+    local data = createData()
+    itemTable.userData.updateData(data)
 end
 
 function Inventory:saveState()

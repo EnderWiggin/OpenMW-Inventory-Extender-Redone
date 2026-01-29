@@ -8,14 +8,61 @@ local camera = require('openmw.camera')
 local omwself = require('openmw.self')
 local v2 = util.vector2
 local auxUi = require('openmw_aux.ui')
+local I = require('openmw.interfaces')
+local ambient = require('openmw.ambient')
 
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
+
+local helpers = require('scripts.ModernInventory.util.helpers')
 
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
 
 local DragAndDrop = {}
+
+local function isGold(item)
+    local id = item.recordId:lower()
+    return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
+end
+
+local function getItemSound(item, upOrDown)
+    local itemRecord = item.type.record(item)
+    local itemStr
+    if types.Armor.objectIsInstance(item) then
+        local skill = I.Combat.getArmorSkill(item)
+        if skill == 'lightarmor' then itemStr = 'armor light'
+        elseif skill == 'mediumarmor' then itemStr = 'armor medium'
+        else itemStr = 'armor heavy' end
+    elseif types.Miscellaneous.objectIsInstance(item) then
+        itemStr = isGold(item) and 'gold' or 'misc'
+    elseif types.Apparatus.objectIsInstance(item) then
+        itemStr = 'apparatus'
+    elseif types.Book.objectIsInstance(item) then
+        itemStr = 'book'
+    elseif types.Clothing.objectIsInstance(item) then
+        itemStr = itemRecord.type == types.Clothing.TYPE.Ring and 'ring' or 'clothes'
+    elseif types.Ingredient.objectIsInstance(item) then
+        itemStr = 'ingredient'
+    elseif types.Light.objectIsInstance(item) then
+        itemStr = 'misc'
+    elseif types.Lockpick.objectIsInstance(item) then
+        itemStr = 'lockpick'
+    elseif types.Potion.objectIsInstance(item) then
+        itemStr = 'potion'
+    elseif types.Probe.objectIsInstance(item) then
+        itemStr = 'probe'
+    elseif types.Repair.objectIsInstance(item) then
+        itemStr = 'repair'
+    elseif types.Weapon.objectIsInstance(item) then
+        local weaponInfo = helpers.getWeaponInfo(item)
+        itemStr = weaponInfo and weaponInfo.soundId
+    end
+
+    if not itemStr then return nil end
+
+    return 'item ' .. itemStr .. ' ' .. upOrDown
+end
 
 function DragAndDrop:getHoveredGameObject(position)
     local pos = camera.getPosition()
@@ -30,51 +77,59 @@ function DragAndDrop:getHoveredGameObject(position)
     end
 	return nearby.asyncCastRenderingRay(async:callback(function(result)
         self.hoveredObject = result.hitObject
-        self.hitPos = result.hitPos
+        if result.hitNormal then
+            local up = util.vector3(0, 0, 1)
+            local dotProduct = result.hitNormal:dot(up)
+            -- Consider valid if normal is facing mostly upward (dot product > ~0.7 means angle < 45 degrees)
+            if dotProduct > 0.7 then
+                self.hitPos = result.hitPos
+            else
+                self.hitPos = nil
+            end
+        else
+            self.hitPos = nil
+        end
     end), pos, pos + v * dist)
-end
-
-function DragAndDrop:init(ctx)
-    self.draggingObject = nil
-    self.sourceInventory = nil
-    self.iconElement = nil
-    self.ctx = ctx
-
-    self.wrapper = ui.create{
-        layer = 'DragBlocker',
-        props = {
-            relativeSize = v2(1, 1),
-            propagateEvents = false,
-        },
-        events = {
-            mouseMove = async:callback(function(e)
-                local layerSize = ui.layers[ui.layers.indexOf('DragBlocker')].size
-                self:getHoveredGameObject(v2(e.position.x / layerSize.x, e.position.y / layerSize.y))
-            end)
-        }
-    }
 end
 
 function DragAndDrop:startDrag(item, sourceInventory)
     self.draggingObject = item
     self.sourceInventory = sourceInventory
-    -- Create dragging icon, etc.
-    -- self.ctx.cursorAttachedIcon = ui.create({
-    --     name = item.id .. '_dragIcon',
-    --     layer = 'Notification',
-    --     props = {
-    --         size = v2(32, 32),
-    --         resource = ui.texture { path = item.type.record(item).icon },
-    --     }
-    -- })
+    
+    if self.draggingObject then
+        local upSound = getItemSound(self.draggingObject, 'up')
+        if upSound then
+            ambient.playSound(upSound)
+        end
+    end
+    self.ctx.cursorAttachedIcon = ui.create({
+        name = item.id .. '_dragIcon',
+        layer = 'Notification',
+        type = ui.TYPE.Image,
+        props = {
+            size = v2(32, 32),
+            resource = ui.texture { path = item.type.record(item).icon },
+            position = self.lastCursorPos or v2(0, 0),
+        }
+    })
 end
 
 function DragAndDrop:stopDrag()
+    if self.draggingObject then
+        local downSound = getItemSound(self.draggingObject, 'down')
+        if downSound then
+            ambient.playSound(downSound)
+        end
+    end
     self.draggingObject = nil
     self.sourceInventory = nil
     if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
         self.ctx.activeTooltip.layout.props.visible = false
         self.ctx.activeTooltip:update()
+    end
+    if self.ctx.cursorAttachedIcon then
+        auxUi.deepDestroy(self.ctx.cursorAttachedIcon)
+        self.ctx.cursorAttachedIcon = nil
     end
 end
 
@@ -88,7 +143,7 @@ end
 
 local function createObjectTooltip(hitObject, position, ctx)
     -- Check if it's an item
-    if types.Item.objectIsInstance(hitObject) then
+    if types.Item.isCarriable(hitObject) then
         ctx.activeTooltip = ui.create(specialTemplates.itemTooltip(hitObject, true))
     elseif ctx.isConsoleOpen then
         ctx.activeTooltip = ui.create(specialTemplates.lineTooltip('"' .. hitObject.recordId .. '"', hitObject.id))
@@ -103,11 +158,11 @@ local function createObjectTooltip(hitObject, position, ctx)
 end
 
 function DragAndDrop:init(ctx)
+    self.lastCursorPos = nil
     self.hoveredObject = nil
     self.lastHoveredObject = nil
     self.draggingObject = nil
     self.sourceInventory = nil
-    self.iconElement = nil
     self.ctx = ctx
 
     self.wrapper = ui.create{
@@ -116,12 +171,29 @@ function DragAndDrop:init(ctx)
             relativeSize = v2(1, 1),
             propagateEvents = false,
         },
-        events = {
-            mouseMove = async:callback(function(e)
-                local layerSize = ui.layers[ui.layers.indexOf('DragBlocker')].size
-                self:getHoveredGameObject(v2(e.position.x / layerSize.x, e.position.y / layerSize.y))
-                
-                -- Update tooltip based on hovered object
+        content = ui.content {
+            {
+                name = 'dropPointer',
+                props = {
+                    relativeSize = v2(0, 0),
+                    pointer = 'drop_ground',
+                    propagateEvents = true,
+                }
+            }
+        }
+    }
+    self.wrapper.layout.events = {
+        mouseMove = async:callback(function(e)
+            local layerSize = ui.layers[ui.layers.indexOf('DragBlocker')].size
+            self:getHoveredGameObject(v2(e.position.x / layerSize.x, e.position.y / layerSize.y))
+            self.lastCursorPos = e.position
+            -- Update tooltip based on hovered object
+            if self.draggingObject then
+                if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
+                    auxUi.deepDestroy(self.ctx.activeTooltip)
+                    self.ctx.activeTooltip = nil
+                end
+            else
                 if self.hoveredObject ~= self.lastHoveredObject then
                     -- Object changed, remake tooltip
                     if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
@@ -146,37 +218,68 @@ function DragAndDrop:init(ctx)
                     end
                     self.ctx.activeTooltip:update()
                 end
-            end),
-            focusLoss = async:callback(function()
-                if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
-                    auxUi.deepDestroy(self.ctx.activeTooltip)
-                    self.ctx.activeTooltip = nil
-                end
-                self.lastHoveredObject = nil
-            end),
-            mousePress = async:callback(function(e)
-                if e.button ~= 1 then return end 
-                if self.draggingObject then
-                    local cell = omwself.cell
-                    core.sendGlobalEvent('MI_Teleport', {
-                        obj = self.draggingObject,
-                        cell = (not cell.isExterior) and cell.name or '',
-                        position = self.hitPos or omwself.position,
-                        options = {
-                            onGround = true,
-                            rotation = util.transform.rotateZ(omwself.rotation:getYaw()),
-                        }
-                    })
-                    self:stopDrag()
+            end
+
+            if self.draggingObject and not self.hitPos then
+                self.wrapper.layout.content.dropPointer.props.relativeSize = v2(1, 1)
+                self.wrapper:update()
+            else
+                self.wrapper.layout.content.dropPointer.props.relativeSize = v2(0, 0)
+                self.wrapper:update()
+            end
+
+            if self.ctx.cursorAttachedIcon then
+                self.ctx.cursorAttachedIcon.layout.props.visible = true
+                self.ctx.cursorAttachedIcon.layout.props.position = e.position
+                self.ctx.cursorAttachedIcon:update()
+            end
+        end),
+        focusLoss = async:callback(function()
+            if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
+                auxUi.deepDestroy(self.ctx.activeTooltip)
+                self.ctx.activeTooltip = nil
+            end
+            self.lastHoveredObject = nil
+            if self.ctx.cursorAttachedIcon then
+                self.ctx.cursorAttachedIcon.layout.props.visible = false
+                self.ctx.cursorAttachedIcon:update()
+            end
+        end),
+        mousePress = async:callback(function(e)
+            if e.button ~= 1 then return end 
+            if self.draggingObject then
+                local cell = omwself.cell
+                local targetPos = self.hitPos or omwself.position
+                local boundingBox = self.draggingObject:getBoundingBox()
+                local offset = util.vector3(0, 0, boundingBox.halfSize.z - boundingBox.center.z)
+                targetPos = targetPos + offset
+                core.sendGlobalEvent('MI_Teleport', {
+                    obj = self.draggingObject,
+                    cell = (not cell.isExterior) and cell.name or '',
+                    position = targetPos,
+                    options = {
+                        onGround = true,
+                        rotation = util.transform.rotateZ(omwself.rotation:getYaw()),
+                    }
+                })
+                self:stopDrag()
+                self.wrapper.layout.content.dropPointer.props.relativeSize = v2(0, 0)
+                self.wrapper:update()
+                omwself:sendEvent('MI_Update')
+            elseif self.hoveredObject then
+                if not self.ctx.isConsoleOpen then
+                    if types.Item.isCarriable(self.hoveredObject) then
+                        self:startDrag(self.hoveredObject, nil)
+                        core.sendGlobalEvent('MI_MoveInto', {
+                            obj = self.hoveredObject,
+                            destination = omwself,
+                        })
+                    end
                 else
-                    self:startDrag(self.hoveredObject, nil)
-                    core.sendGlobalEvent('MI_MoveInto', {
-                        obj = self.hoveredObject,
-                        destination = omwself,
-                    })
+                    ui.setConsoleSelectedObject(self.hoveredObject)
                 end
-            end)
-        }
+            end
+        end)
     }
 end
 

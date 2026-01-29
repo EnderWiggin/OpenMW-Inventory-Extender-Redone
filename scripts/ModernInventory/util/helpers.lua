@@ -196,24 +196,35 @@ Helpers.getWeaponInfo = function(item)
     if record.type == TYPE.Arrow or record.type == TYPE.Bolt then
         return {
             skill = 'marksman',
+            soundId = 'ammo',
             class = C.WeaponClass.Ammo,
         }
         
-    elseif record.type == TYPE.MarksmanBow or record.type == TYPE.MarksmanCrossbow then
+    elseif record.type == TYPE.MarksmanBow then
         return {
             skill = 'marksman',
+            soundId = 'weapon bow',
+            class = C.WeaponClass.Ranged,
+        }
+
+    elseif record.type == TYPE.MarksmanCrossbow then
+        return {
+            skill = 'marksman',
+            soundId = 'weapon crossbow',
             class = C.WeaponClass.Ranged,
         }
 
     elseif record.type == TYPE.MarksmanThrown then
         return {
             skill = 'marksman',
+            soundId = 'weapon blunt',
             class = C.WeaponClass.Thrown,
         }
 
     elseif record.type == TYPE.AxeOneHand then
         return {
             skill = 'axe',
+            soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
@@ -221,6 +232,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.AxeTwoHand then
         return {
             skill = 'axe',
+            soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
@@ -228,6 +240,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.BluntOneHand then
         return {
             skill = 'bluntweapon',
+            soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
@@ -235,6 +248,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.BluntTwoClose or record.type == TYPE.BluntTwoWide then
         return {
             skill = 'bluntweapon',
+            soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
@@ -242,6 +256,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.LongBladeOneHand then
         return {
             skill = 'longblade',
+            soundId = 'weapon longblade',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
@@ -249,6 +264,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.LongBladeTwoHand then
         return {
             skill = 'longblade',
+            soundId = 'weapon longblade',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
@@ -256,6 +272,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.ShortBladeOneHand then
         return {
             skill = 'shortblade',
+            soundId = 'weapon shortblade',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
@@ -263,6 +280,7 @@ Helpers.getWeaponInfo = function(item)
     elseif record.type == TYPE.SpearTwoWide then
         return {
             skill = 'spear',
+            soundId = 'weapon spear',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }

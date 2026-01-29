@@ -635,7 +635,7 @@ local function makeDraggable(borderTemplate, onDragTypeChanged)
     return template
 end
 
-Templates.window = function(title, content, draggable, onDrag, pinned)
+Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
     local baseTemplate = I.MWUI.templates.bordersThick
     local userData = {}
     if draggable then
@@ -743,6 +743,11 @@ Templates.window = function(title, content, draggable, onDrag, pinned)
                 userData.dragStartPos = layout.props.position
             end),
             mouseMove = async:callback(function(e, layout)
+                if ctx.cursorAttachedIcon then
+                    ctx.cursorAttachedIcon.layout.props.visible = true
+                    ctx.cursorAttachedIcon.layout.props.position = e.position
+                    ctx.cursorAttachedIcon:update() 
+                end
                 if userData.dragging and userData.dragStartAbs and userData.dragStartSize and userData.dragStartPos then
                     local delta = e.position - userData.dragStartAbs
                     local layerSize = ui.layers[ui.layers.indexOf('Windows')].size
@@ -791,6 +796,12 @@ Templates.window = function(title, content, draggable, onDrag, pinned)
                     if onDrag then
                         onDrag(window.layout)
                     end
+                end
+            end),
+            focusLoss = async:callback(function()
+                if ctx.cursorAttachedIcon then
+                    ctx.cursorAttachedIcon.layout.props.visible = false
+                    ctx.cursorAttachedIcon:update() 
                 end
             end),
             mouseRelease = async:callback(function(e)

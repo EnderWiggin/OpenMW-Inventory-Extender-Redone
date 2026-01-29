@@ -7,6 +7,7 @@ local omwself = require('openmw.self')
 local async = require('openmw.async')
 local storage = require('openmw.storage')
 local input = require('openmw.input')
+local v2 = util.vector2
 
 local templates = require('scripts.ModernInventory.ui.templates.magic')
 
@@ -39,12 +40,25 @@ windowManager.ctx = {
     modalElement = nil,
     activeTooltip = nil,
     isConsoleOpen = false,
+    dragAndDrop = DragAndDrop,
 }
 
 windowManager.create = function(windowName)
     if windowName == 'Inventory' then
         windowManager.windows[windowName] = InventoryWindow:create(windowManager.ctx)
         return windowManager.windows[windowName]
+    end
+end
+
+windowManager.update = function()
+    for _, window in pairs(windowManager.windows) do
+        if window then
+            if window.updateData then
+                window:updateData()
+            else
+                window:update()
+            end
+        end
     end
 end
 
@@ -78,6 +92,15 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
     if windowManager.ctx.modalElement then
         auxUi.deepDestroy(windowManager.ctx.modalElement)
         windowManager.ctx.modalElement = nil
+    end
+    if windowManager.ctx.activeTooltip then
+        auxUi.deepDestroy(windowManager.ctx.activeTooltip)
+        windowManager.ctx.activeTooltip = nil
+    end
+    if windowManager.ctx.dragAndDrop.wrapper then
+        windowManager.ctx.dragAndDrop.wrapper.layout.props.relativeSize = newMode == 'Interface' and v2(1, 1) or v2(0, 0)
+        windowManager.ctx.dragAndDrop.wrapper:update() 
+        windowManager.ctx.dragAndDrop.lastHoveredObject = nil
     end
 end
 
@@ -116,8 +139,15 @@ windowManager.onFrame = function()
             layout.userData.onScroll()
         end
     end
+
+    -- if updateTimer > 0 then
+    --     updateTimer = updateTimer - dt
+    -- else
+    --     updateTimer = updateInt
+    --     windowManager.update()
+    -- end
 end
 
-DragAndDrop:init(windowManager.ctx)
+windowManager.ctx.dragAndDrop:init(windowManager.ctx)
 
 return windowManager

@@ -5,6 +5,7 @@ local ui = require('openmw.ui')
 local types = require('openmw.types')
 local storage = require('openmw.storage')
 local input = require('openmw.input')
+local I = require('openmw.interfaces')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
 local constants = require('scripts.ModernInventory.util.constants')
@@ -101,6 +102,7 @@ end
 
 function API.setConsoleState(state)
     windowManager.ctx.isConsoleOpen = state
+    windowManager.onUiModeChanged(I.UI.getMode(), I.UI.getMode(), nil)
 end
 
 function API.getConsoleState()
@@ -147,6 +149,9 @@ return {
     eventHandlers = {
         UiModeChanged = function(data)
             windowManager.onUiModeChanged(data.oldMode, data.newMode, data.arg)
+        end,
+        MI_Update = function()
+            windowManager.update()
         end,
     },
 }

@@ -97,6 +97,12 @@ ItemTable.create = function(props, ctx)
     local sortRows
     local headerRow
     
+    local function resetScroll()
+        if scrollable and scrollable.layout.content[1] then
+            scrollable.layout.content[1].props.position = util.vector2(0, 0)
+        end
+    end
+
     local function getContentWidth()
         return math.floor(math.max(0, state.currentSize.x - scrollbarWidth))
     end
@@ -205,7 +211,11 @@ ItemTable.create = function(props, ctx)
                     end
 
                     state.rowCache[cacheKey] = specialTemplates.interactive({ 
-                        onClick = function() end,
+                        onClick = function() 
+                            if onRowClick then 
+                                return onRowClick(row) 
+                            end
+                        end,
                         name = row.item.id,
                     }, {
                         props = {
@@ -213,11 +223,6 @@ ItemTable.create = function(props, ctx)
                             position = util.vector2(0, 0),
                         },
                         content = ui.content(cells),
-                        events = {
-                            mousePress = async:callback(function()
-                                if onRowClick then onRowClick(row) end
-                            end)
-                        },
                         userData = { 
                             item = row,
                             tooltipFn = function()
@@ -381,10 +386,7 @@ ItemTable.create = function(props, ctx)
             
             sortRows()
             
-            -- Scroll to top when sort changes
-            if scrollable and scrollable.layout.content[1] then
-                scrollable.layout.content[1].props.position = util.vector2(0, 0)
-            end
+            resetScroll()
             
             updateHeader()
             updateRows()
@@ -434,6 +436,7 @@ ItemTable.create = function(props, ctx)
     updateRows()
 
     local wrapper = ui.create {
+        name = 'itemTable',
         type = ui.TYPE.Flex, 
         props = {
             vertical = true,
@@ -444,6 +447,7 @@ ItemTable.create = function(props, ctx)
             scrollable
         },
         userData = {},
+        events = {},
     }
     
     wrapper.layout.userData.resize = function(newSize)
@@ -458,6 +462,8 @@ ItemTable.create = function(props, ctx)
     wrapper.layout.userData.setFilter = function(filterId, filterFn)
         state.filters[filterId] = filterFn
     end
+
+    wrapper.layout.userData.resetScroll = resetScroll
 
     wrapper.layout.userData.refresh = function()
         -- Re-apply filters
@@ -475,14 +481,58 @@ ItemTable.create = function(props, ctx)
             end
         end
 
-        if scrollable and scrollable.layout.content[1] then
-            scrollable.layout.content[1].props.position = util.vector2(0, 0)
-        end
-
         sortRows()
         updateRows()
     end
     
+    wrapper.layout.userData.updateData = function(newDataRows)
+        -- Create a map of old items by ID for quick lookup
+        local oldItemsMap = {}
+        for _, row in ipairs(dataRows) do
+            local itemId = row.item and row.item.id or row.id
+            if itemId then
+                oldItemsMap[itemId] = row
+            end
+        end
+        
+        -- Create a map of new items by ID
+        local newItemsMap = {}
+        for _, row in ipairs(newDataRows) do
+            local itemId = row.item and row.item.id or row.id
+            if itemId then
+                newItemsMap[itemId] = row
+            end
+        end
+        
+        -- Remove cache entries for items no longer present
+        for itemId, row in pairs(oldItemsMap) do
+            if not newItemsMap[itemId] then
+                state.rowCache[row] = nil
+            end
+        end
+        
+        -- Update the dataRows reference
+        dataRows = newDataRows
+        
+        -- Re-apply filters to the new data
+        state.sortedRows = {}
+        for _, row in ipairs(dataRows) do
+            local include = true
+            for _, filterFn in pairs(state.filters) do
+                if not filterFn(row) then
+                    include = false
+                    break
+                end
+            end
+            if include then
+                table.insert(state.sortedRows, row)
+            end
+        end
+        
+        sortRows()
+        updateRows()
+    end
+
     return wrapper
 end
 

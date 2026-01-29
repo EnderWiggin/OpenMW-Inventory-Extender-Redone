@@ -1,7 +1,3 @@
-local core = require('openmw.core')
-local world = require('openmw.world')
-local types = require('openmw.types')
-
 return {
     eventHandlers = {
         MI_Teleport = function(props)
@@ -10,7 +6,6 @@ return {
             local cellOrName = props.cell or ''
             local position = props.position
             local options = props.options
-            print("Teleporting object:", obj.id, "to cell:", cellOrName, "at position:", position.x, position.y, position.z)
             obj:teleport(cellOrName, position, options)
         end,
         MI_MoveInto = function(props)

@@ -140,9 +140,9 @@ Templates.interactive = function(props, layout, ctx)
                     l.props.color = getInteractiveTextColor(element.layout)
                 end
             end)
-            props.onClick()
+            local result = props.onClick()
             element:update()
-            return true
+            return result
         end
         return false
     end)
@@ -203,6 +203,7 @@ Templates.interactive = function(props, layout, ctx)
                 lastMousePos = e.position
             end
         end
+        return true
     end)
     return element
 end
@@ -499,7 +500,7 @@ Templates.itemTooltip = function(item, showIcon)
             name = 'effects',
             type = ui.TYPE.Flex,
             props = {
-                arrange = ui.ALIGNMENT.Center,
+                arrange = enchantment and ui.ALIGNMENT.Start or ui.ALIGNMENT.Center,
             },
             content = ui.content {
                 table.unpack(effectLayouts)
