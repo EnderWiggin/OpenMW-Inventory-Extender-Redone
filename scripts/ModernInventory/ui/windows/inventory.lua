@@ -45,7 +45,7 @@ function Inventory:create(type, ctx)
     local content = ui.content {}
     local data = self:createData()
 
-    local w = 80 * baseTemplates.TEXT_SIZE / 16
+    local w = 60 * baseTemplates.TEXT_SIZE / 16
 
     self.itemTable = ItemTable.create({
         columns = {
@@ -225,18 +225,24 @@ function Inventory:create(type, ctx)
         end, ctx)
 
         content:add(self.categoryFilter)
-        content:add({
+
+        self.categoryFilterDivider = {
             template = I.MWUI.templates.horizontalLine,
             props = {
                 size = v2(0, 2),
                 relativeSize = v2(1, 0),
                 position = v2(0, self.categoryFilter.layout.props.size.y),
-            },
-        })
+            }
+        }
+        content:add(self.categoryFilterDivider)
     end
 
     self.updateSize = function(self)
         if self.element then
+            if self.categoryFilter then
+                self.categoryFilter.layout.userData.resizeImages(self.element.layout.userData.getInnerSize().x)
+            end
+
             local categoryFilterSize = v2(0, self.categoryFilter and self.categoryFilter.layout.props.size.y or 0)
             local infoBarSize = v2(0, self.infoBar and self.infoBar.layout.props.size.y or 0)
             self.itemTable.layout.props.position = categoryFilterSize
@@ -247,6 +253,9 @@ function Inventory:create(type, ctx)
             end
             if self.infoBarDivider then
                 self.infoBarDivider.props.position = v2(0, self.itemTable.layout.props.size.y + self.itemTable.layout.props.position.y)
+            end
+            if self.categoryFilterDivider then
+                self.categoryFilterDivider.props.position = v2(0, self.categoryFilter.layout.props.size.y)
             end
         end
     end
@@ -328,7 +337,7 @@ function Inventory:create(type, ctx)
                     {
                         type = ui.TYPE.Image,
                         props = {
-                            resource = ui.texture { path = 'icons/a/tx_shield_steel.dds'},
+                            resource = ui.texture { path = 'icons/a/a_cuirass_ebon.dds'},
                             size = v2(16, 16),
                         }
                     },

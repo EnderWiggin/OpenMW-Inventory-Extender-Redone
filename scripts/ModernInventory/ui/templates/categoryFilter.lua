@@ -94,6 +94,34 @@ function CategoryFilter.create(props, onChange, ctx)
     updateCategories()
 
     element.layout.userData.updateCategories = updateCategories
+
+    local function resizeImages(totalWidth)
+        local categories = I.ModernInventory.getCategories()
+        if #categories == 0 then return end
+        
+        local maxSizePerCategory = totalWidth / #categories
+        local imageSize = math.min(maxHeight - 16, maxSizePerCategory)
+        local imageSizeVec = v2(imageSize, imageSize)
+        
+        local anyChanged = false
+        for _, child in ipairs(element.layout.content) do
+            if child.layout and child.layout.type == ui.TYPE.Image then
+                if child.layout.props.size ~= imageSizeVec then
+                    anyChanged = true
+                    child.layout.props.size = imageSizeVec
+                    child:update()
+                end
+            end
+        end
+        
+        if anyChanged then
+            element.layout.props.size = v2(0, imageSize + 16)
+            element:update()
+        end
+    end
+
+    element.layout.userData.resizeImages = resizeImages
+
     return element
 end
 
