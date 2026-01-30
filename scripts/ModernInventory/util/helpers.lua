@@ -337,7 +337,7 @@ Helpers.doesItemFit = function(item, container)
     return (contEncumbrance + itemWeight) <= contCapacity
 end
 
-local function isGold(item)
+Helpers.isGold = function(item)
     local id = item.recordId:lower()
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
 end
@@ -351,7 +351,7 @@ Helpers.getItemSound = function(item, upOrDown)
         elseif skill == 'mediumarmor' then itemStr = 'armor medium'
         else itemStr = 'armor heavy' end
     elseif types.Miscellaneous.objectIsInstance(item) then
-        itemStr = isGold(item) and 'gold' or 'misc'
+        itemStr = Helpers.isGold(item) and 'gold' or 'misc'
     elseif types.Apparatus.objectIsInstance(item) then
         itemStr = 'apparatus'
     elseif types.Book.objectIsInstance(item) then

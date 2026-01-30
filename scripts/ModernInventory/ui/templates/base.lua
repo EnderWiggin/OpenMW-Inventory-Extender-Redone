@@ -750,6 +750,7 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
                 userData.dragStartPos = layout.props.position
             end),
             mouseMove = async:callback(function(e, layout)
+                ctx.lastCursorPos = e.position
                 if ctx.cursorAttachedIcon then
                     ctx.cursorAttachedIcon.layout.props.visible = true
                     ctx.cursorAttachedIcon.layout.props.position = e.position

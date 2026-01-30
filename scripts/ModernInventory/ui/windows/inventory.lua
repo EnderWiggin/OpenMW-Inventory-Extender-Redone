@@ -33,11 +33,11 @@ function Inventory:update(deep)
     Window.update(self, deep)
 end
 
-function Inventory:create(type, ctx)
+function Inventory:create(windowType, ctx)
     local self = setmetatable({}, {__index = Inventory})
     self.ctx = ctx
 
-    self.type = type
+    self.type = windowType
     if self.type == 'Inventory' then
         self.target = omwself
     end
@@ -152,8 +152,8 @@ function Inventory:create(type, ctx)
                 end
             end
 
-            local nameA = a.Name:lower()
-            local nameB = b.Name:lower()
+            local nameA = (type(a.Name) == "function" and a.Name() or a.Name):lower()
+            local nameB = (type(b.Name) == "function" and b.Name() or b.Name):lower()
             if nameA == nameB then
                 return a.item.recordId < b.item.recordId
             end
@@ -201,41 +201,39 @@ function Inventory:create(type, ctx)
         end,
     }, ctx)
 
-    if self.type == 'Inventory' then
-        self.categoryFilter = CategoryFilter.create({
-            maxHeight = 48,
-        }, function(selectedCategory)
-            local categories = I.ModernInventory.getCategories()
-            local category = nil
-            for _, cat in ipairs(categories) do
-                if cat.key == selectedCategory then
-                    category = cat
-                    break
-                end
+    self.categoryFilter = CategoryFilter.create({
+        maxHeight = 48,
+    }, function(selectedCategory)
+        local categories = I.ModernInventory.getCategories()
+        local category = nil
+        for _, cat in ipairs(categories) do
+            if cat.key == selectedCategory then
+                category = cat
+                break
             end
+        end
 
-            self.itemTable.layout.userData.setFilter('categoryFilter', function(row)
-                if not category or not category.filter then
-                    return true
-                end
-                return category.filter(row.item)
-            end)
-            self.itemTable.layout.userData.resetScroll()
-            self.itemTable.layout.userData.refresh()
-        end, ctx)
+        self.itemTable.layout.userData.setFilter('categoryFilter', function(row)
+            if not category or not category.filter then
+                return true
+            end
+            return category.filter(row.item)
+        end)
+        self.itemTable.layout.userData.resetScroll()
+        self.itemTable.layout.userData.refresh()
+    end, ctx)
 
-        content:add(self.categoryFilter)
+    content:add(self.categoryFilter)
 
-        self.categoryFilterDivider = {
-            template = I.MWUI.templates.horizontalLine,
-            props = {
-                size = v2(0, 2),
-                relativeSize = v2(1, 0),
-                position = v2(0, self.categoryFilter.layout.props.size.y),
-            }
+    self.categoryFilterDivider = {
+        template = I.MWUI.templates.horizontalLine,
+        props = {
+            size = v2(0, 2),
+            relativeSize = v2(1, 0),
+            position = v2(0, self.categoryFilter.layout.props.size.y),
         }
-        content:add(self.categoryFilterDivider)
-    end
+    }
+    content:add(self.categoryFilterDivider)
 
     self.updateSize = function(self)
         if self.element then
@@ -248,7 +246,7 @@ function Inventory:create(type, ctx)
             self.itemTable.layout.props.position = categoryFilterSize
             self.itemTable.layout.userData.resize(self.element.layout.userData.getInnerSize() - categoryFilterSize - infoBarSize)
             if self.infoBar then
-                self.infoBar.layout.props.position = categoryFilterSize + v2(0, self.itemTable.layout.props.size.y)
+                self.infoBar.layout.props.position = categoryFilterSize + v2(0, self.itemTable.layout.props.size.y + 1)
                 self.infoBar:update()
             end
             if self.infoBarDivider then
@@ -394,7 +392,7 @@ function Inventory:create(type, ctx)
 
     self.itemTable.layout.userData.setFilter('draggedItemFilter', function(row)
         if ctx.dragAndDrop.draggingObject then
-            return row.item.id ~= ctx.dragAndDrop.draggingObject.id
+            return row.item.id ~= ctx.dragAndDrop.draggingObject.id or row.item.count > ctx.dragAndDrop.draggingCount
         end
         return true
     end)
@@ -420,7 +418,13 @@ function Inventory:createData()
         
         table.insert(data, {
             id = item.id,
-            Name = record.name .. (item.count > 1 and (' (%d)'):format(item.count) or ''),
+            Name = function()
+                local nonDraggedCount = item.count
+                if self.ctx.dragAndDrop.draggingObject and self.ctx.dragAndDrop.draggingObject.id == item.id then
+                    nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
+                end
+                return record.name .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+            end,
             Value = helpers.roundToPlaces(record.value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
             ['V/W'] = vw,

@@ -46,6 +46,9 @@ local function compareItems(a, b, field, direction)
     local valA = a[field]
     local valB = b[field]
 
+    if type(valA) == 'function' then valA = valA() end
+    if type(valB) == 'function' then valB = valB() end
+
     if type(valA) == 'string' then valA = valA:lower() end
     if type(valB) == 'string' then valB = valB:lower() end
     
@@ -163,6 +166,9 @@ ItemTable.create = function(props, ctx)
                 cellContent = col.renderer(row, w, rowHeight)
             else
                 local val = row[col.id]
+                if type(val) == 'function' then
+                    val = val()
+                end
                 local textStr = val ~= nil and tostring(val) or ""
                 if textStr == "0" then textStr = "-" end
                 cellContent = {
@@ -263,6 +269,9 @@ ItemTable.create = function(props, ctx)
                         cellContent.props.position = util.vector2(totalW, 0)
                         if cellContent.props.text then
                             local val = row[col.id]
+                            if type(val) == 'function' then
+                                val = val()
+                            end
                             local textStr = val ~= nil and tostring(val) or ""
                             if textStr == "0" then textStr = "-" end
                             if textStr ~= cellContent.props.text then

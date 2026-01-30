@@ -54,31 +54,40 @@ function DragAndDrop:getHoveredGameObject(position)
 end
 
 function DragAndDrop:startDrag(item, source)
-    self.draggingObject = item
+    local upSound = helpers.getItemSound(item, 'up')
+    if upSound then
+        ambient.playSound(upSound)
+    end
+
+    self.draggingCount = item.count
+
+    core.sendGlobalEvent('MI_MoveInto', {
+        obj = item,
+        count = self.draggingCount,
+        source = source,
+        destination = omwself,
+        player = omwself,
+        dragStart = true,
+    })   
     
-    if self.draggingObject then
-        local upSound = helpers.getItemSound(self.draggingObject, 'up')
-        if upSound then
-            ambient.playSound(upSound)
-        end
-        
-        core.sendGlobalEvent('MI_MoveInto', {
-            obj = self.draggingObject,
-            source = source,
-            destination = omwself,
-            player = omwself,
-        })
-        
-        self.source = source or omwself
+    self.source = omwself
+end
+
+function DragAndDrop:setDraggingObject(object)
+    self.draggingObject = object
+
+    if self.ctx.cursorAttachedIcon then
+        auxUi.deepDestroy(self.ctx.cursorAttachedIcon)
+        self.ctx.cursorAttachedIcon = nil
     end
     self.ctx.cursorAttachedIcon = ui.create({
-        name = item.id .. '_dragIcon',
+        name = object.id .. '_dragIcon',
         layer = 'Notification',
         type = ui.TYPE.Image,
         props = {
             size = v2(42, 42),
-            resource = ui.texture { path = item.type.record(item).icon },
-            position = self.lastCursorPos or v2(0, 0),
+            resource = ui.texture { path = object.type.record(object).icon },
+            position = self.ctx.lastCursorPos or v2(0, 0),
         }
     })
 end
@@ -97,6 +106,7 @@ function DragAndDrop:transferInto(object, destination)
     if destination then
         core.sendGlobalEvent('MI_MoveInto', {
             obj = object,
+            count = self.draggingCount,
             source = self.source,
             destination = destination,
             player = omwself,
@@ -107,7 +117,7 @@ function DragAndDrop:transferInto(object, destination)
 end
 
 function DragAndDrop:stopDrag(target)
-    if self.draggingObject then
+    if target and self.draggingObject then
         if not self:transferInto(self.draggingObject, target) then
             return false
         end
@@ -151,7 +161,6 @@ end
 function DragAndDrop:init(ctx)
     if not configPlayer.window.b_EnableMod then return end
 
-    self.lastCursorPos = nil
     self.hoveredObject = nil
     self.lastHoveredObject = nil
     self.draggingObject = nil
@@ -179,7 +188,7 @@ function DragAndDrop:init(ctx)
         mouseMove = async:callback(function(e)
             local layerSize = ui.layers[ui.layers.indexOf('DragBlocker')].size
             self:getHoveredGameObject(v2(e.position.x / layerSize.x, e.position.y / layerSize.y))
-            self.lastCursorPos = e.position
+            self.ctx.lastCursorPos = e.position
             -- Update tooltip based on hovered object
             if self.draggingObject then
                 if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
@@ -248,6 +257,8 @@ function DragAndDrop:init(ctx)
                 targetPos = targetPos + offset
                 core.sendGlobalEvent('MI_Teleport', {
                     obj = self.draggingObject,
+                    count = self.draggingCount,
+                    source = self.source,
                     cell = (not cell.isExterior) and cell.name or '',
                     position = targetPos,
                     options = {
@@ -256,6 +267,10 @@ function DragAndDrop:init(ctx)
                     },
                     player = omwself,
                 })
+                local downSound = helpers.getItemSound(self.draggingObject, 'down')
+                if downSound then
+                    ambient.playSound(downSound)
+                end
                 self:stopDrag()
                 self.wrapper.layout.content.dropPointer.props.relativeSize = v2(0, 0)
                 self.wrapper:update()

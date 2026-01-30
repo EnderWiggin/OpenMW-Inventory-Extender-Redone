@@ -153,5 +153,17 @@ return {
         MI_Update = function()
             windowManager.update()
         end,
+        MI_SetDraggingObject = function(props)
+            local obj = props.obj
+            if helpers.isGold(props.obj) then
+                local targetInv = props.target.type.inventory(props.target)
+                local foundGold = targetInv:find('gold_001')
+                if foundGold then
+                    obj = foundGold
+                end
+            end
+
+            windowManager.ctx.dragAndDrop:setDraggingObject(obj)
+        end,
     },
 }
