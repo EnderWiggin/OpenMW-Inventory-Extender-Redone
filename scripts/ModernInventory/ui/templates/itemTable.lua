@@ -535,7 +535,7 @@ ItemTable.create = function(props, ctx)
         
         -- Remove cache entries for items no longer present
         for itemId, row in pairs(oldItemsMap) do
-            if not newItemsMap[itemId] then
+            if not newItemsMap[itemId] and state.rowCache[row.id] then
                 auxUi.deepDestroy(state.rowCache[row.id])
                 state.rowCache[row.id] = nil
             end

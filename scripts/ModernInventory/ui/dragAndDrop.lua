@@ -15,6 +15,8 @@ local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
 
+local configPlayer = require('scripts.ModernInventory.config.player')
+
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
@@ -51,15 +53,23 @@ function DragAndDrop:getHoveredGameObject(position)
     end), pos, pos + v * dist)
 end
 
-function DragAndDrop:startDrag(item, sourceInventory)
+function DragAndDrop:startDrag(item, source)
     self.draggingObject = item
-    self.sourceInventory = sourceInventory
     
     if self.draggingObject then
         local upSound = helpers.getItemSound(self.draggingObject, 'up')
         if upSound then
             ambient.playSound(upSound)
         end
+        
+        core.sendGlobalEvent('MI_MoveInto', {
+            obj = self.draggingObject,
+            source = source,
+            destination = omwself,
+            player = omwself,
+        })
+        
+        self.source = source or omwself
     end
     self.ctx.cursorAttachedIcon = ui.create({
         name = item.id .. '_dragIcon',
@@ -73,15 +83,28 @@ function DragAndDrop:startDrag(item, sourceInventory)
     })
 end
 
-function DragAndDrop:stopDrag()
+function DragAndDrop:transferInto(object, destination)
+    local downSound = helpers.getItemSound(object, 'down')
+    if downSound then
+        ambient.playSound(downSound)
+    end
+
+    if destination then
+        core.sendGlobalEvent('MI_MoveInto', {
+            obj = object,
+            source = self.source,
+            destination = destination,
+            player = omwself,
+        })
+    end
+end
+
+function DragAndDrop:stopDrag(target)
     if self.draggingObject then
-        local downSound = helpers.getItemSound(self.draggingObject, 'down')
-        if downSound then
-            ambient.playSound(downSound)
-        end
+        self:transferInto(self.draggingObject, target)
     end
     self.draggingObject = nil
-    self.sourceInventory = nil
+    self.source = nil
     if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
         self.ctx.activeTooltip.layout.props.visible = false
         self.ctx.activeTooltip:update()
@@ -117,11 +140,13 @@ local function createObjectTooltip(hitObject, position, ctx)
 end
 
 function DragAndDrop:init(ctx)
+    if not configPlayer.window.b_EnableMod then return end
+
     self.lastCursorPos = nil
     self.hoveredObject = nil
     self.lastHoveredObject = nil
     self.draggingObject = nil
-    self.sourceInventory = nil
+    self.source = nil
     self.ctx = ctx
 
     self.wrapper = ui.create{
@@ -228,11 +253,11 @@ function DragAndDrop:init(ctx)
             elseif self.hoveredObject then
                 if not self.ctx.isConsoleOpen then
                     if types.Item.isCarriable(self.hoveredObject) then
-                        self:startDrag(self.hoveredObject, nil)
-                        core.sendGlobalEvent('MI_MoveInto', {
-                            obj = self.hoveredObject,
-                            destination = omwself,
-                        })
+                        -- lame solution, but my cortisol is too high to deal with this properly right now
+                        -- can't activate mwscripts while in menus, so for now just block dragging those from the world
+                        if not self.hoveredObject.type.record(self.hoveredObject).mwscript then
+                            self:startDrag(self.hoveredObject, nil)
+                        end
                     end
                 else
                     ui.setConsoleSelectedObject(self.hoveredObject)

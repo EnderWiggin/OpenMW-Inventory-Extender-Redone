@@ -819,6 +819,11 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
             size.y - BORDER_THICKNESS_THICK * borderMult - HEADER_HEIGHT
         )
     end
+
+    userData.setTitle = function(newTitle)
+        window.layout.content[2].content[1].content[3].props.text = newTitle
+        window:update()
+    end
     return window
 end
 

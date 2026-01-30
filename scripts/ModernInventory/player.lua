@@ -26,7 +26,7 @@ local function init()
         local overrides = {
             'Inventory',
             -- 'Trade',
-            -- 'Container',
+            'Container',
             -- 'Companion',
         }
         for _, windowName in ipairs(overrides) do

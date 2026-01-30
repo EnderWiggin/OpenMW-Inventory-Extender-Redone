@@ -13,6 +13,7 @@ return {
             local obj = props.obj
             local destination = props.destination
             obj:moveInto(destination)
+            props.player:sendEvent('MI_Update')
         end,
         UseItem = function(props)
             props.actor:sendEvent('MI_Update')

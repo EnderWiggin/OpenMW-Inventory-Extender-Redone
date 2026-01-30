@@ -20,13 +20,18 @@ local DragAndDrop = require('scripts.ModernInventory.ui.dragAndDrop')
 
 local InventoryWindow = require('scripts.ModernInventory.ui.windows.inventory')
 
-local modeArgs = {}
-
 local function canShow()
     return not not I.UI.getWindowsForMode('Interface')['Magic']
 end
 
 local windowManager = {}
+
+local validModes = {
+    Interface = true,
+    Barter = true,
+    Container = true,
+    Companion = true,
+}
 
 windowManager.windows = {
     Inventory = nil,
@@ -41,13 +46,16 @@ windowManager.ctx = {
     activeTooltip = nil,
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
+    modeArgs = {},
+    uiMode = nil,
 }
 
 windowManager.create = function(windowName)
-    if windowName == 'Inventory' then
-        windowManager.windows[windowName] = InventoryWindow:create(windowManager.ctx)
-        return windowManager.windows[windowName]
+    if windowName == 'Inventory' or windowName == 'Container' then
+        windowManager.windows[windowName] = InventoryWindow:create(windowName, windowManager.ctx)
     end
+    
+    return windowManager.windows[windowName]
 end
 
 windowManager.update = function()
@@ -59,6 +67,10 @@ windowManager.update = function()
                 window:update()
             end
         end
+    end
+    if windowManager.ctx.activeTooltip then
+        auxUi.deepDestroy(windowManager.ctx.activeTooltip)
+        windowManager.ctx.activeTooltip = nil
     end
 end
 
@@ -86,8 +98,12 @@ windowManager.hide = function(windowName, force)
 end
 
 windowManager.onUiModeChanged = function(oldMode, newMode, arg)
+    if oldMode == 'Container' and windowManager.ctx.modeArgs.Container then
+        windowManager.ctx.modeArgs.Container:sendEvent('MI_ContainerClosed')
+    end
+
     if newMode then
-        modeArgs[newMode] = arg
+        windowManager.ctx.modeArgs[newMode] = arg
     end
     if windowManager.ctx.modalElement then
         auxUi.deepDestroy(windowManager.ctx.modalElement)
@@ -98,9 +114,19 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
         windowManager.ctx.activeTooltip = nil
     end
     if windowManager.ctx.dragAndDrop.wrapper then
-        windowManager.ctx.dragAndDrop.wrapper.layout.props.relativeSize = newMode == 'Interface' and v2(1, 1) or v2(0, 0)
+        windowManager.ctx.dragAndDrop.wrapper.layout.props.relativeSize = validModes[newMode] and v2(1, 1) or v2(0, 0)
         windowManager.ctx.dragAndDrop.wrapper:update() 
         windowManager.ctx.dragAndDrop.lastHoveredObject = nil
+    end
+    windowManager.ctx.uiMode = newMode
+    for _, window in pairs(windowManager.windows) do
+        if window then
+            window:updateTarget()
+            if newMode then
+                window:loadState()
+            end
+            window:update()
+        end
     end
 end
 
