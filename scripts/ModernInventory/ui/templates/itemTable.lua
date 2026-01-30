@@ -218,7 +218,7 @@ ItemTable.create = function(props, ctx)
                 local cacheKey = row.id
                 
                 local anyChanged = false
-                local active = omwself.type.hasEquipped(omwself, row.item)
+                local active = false--omwself.type.hasEquipped(omwself, row.item)
                 if not state.rowCache[cacheKey] then
                     state.rowCache[cacheKey] = specialTemplates.interactive({ 
                         onClick = function() 
@@ -261,6 +261,9 @@ ItemTable.create = function(props, ctx)
                                 cellContent.props.text = textStr
                                 anyChanged = true
                             end
+                        end
+                        if cellContent.content and cellContent.content:indexOf('equippedOverlay') then
+                            cellContent.content.equippedOverlay.props.visible = omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item)
                         end
                         totalW = totalW + w
                     end

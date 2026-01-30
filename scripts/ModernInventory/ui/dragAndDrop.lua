@@ -84,7 +84,7 @@ function DragAndDrop:startDrag(item, source)
 end
 
 function DragAndDrop:transferInto(object, destination)
-    if types.Container.objectIsInstance(destination) then
+    if destination and types.Container.objectIsInstance(destination) then
         local objectWeight = object.type.record(object).weight * object.count
         local destEncumbrance = types.Container.getEncumbrance(destination)
         local destCapacity = types.Container.getCapacity(destination)

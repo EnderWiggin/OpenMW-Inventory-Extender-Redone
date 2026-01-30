@@ -14,9 +14,11 @@ local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 local CategoryFilter = require('scripts.ModernInventory.ui.templates.categoryFilter')
 local ItemTable = require('scripts.ModernInventory.ui.templates.itemTable')
+local InfoBar = require('scripts.ModernInventory.ui.templates.infoBar')
 local Window = require('scripts.ModernInventory.ui.windows.base')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
+local constants = require('scripts.ModernInventory.util.constants')
 
 local l10n = core.l10n('ModernInventory')
 
@@ -82,11 +84,26 @@ function Inventory:create(type, ctx)
                         },
                         content = ui.content {
                             {
+                                name = 'itemIcon',
                                 type = ui.TYPE.Image,
                                 props = {
                                     resource = ui.texture { path = row.itemRecord.icon },
                                     position = v2((width - iconDim) / 2, (height - iconDim) / 2),
                                     size = v2(iconDim, iconDim),
+                                }
+                            },
+                            {
+                                name = 'equippedOverlay',
+                                type = ui.TYPE.Image,
+                                props = {
+                                    resource = ui.texture { 
+                                        path = 'textures/menu_icon_equip.dds',
+                                        size = v2(40, 40),
+                                        offset = v2(2, 2),
+                                    },
+                                    position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                                    size = v2(iconDim, iconDim),
+                                    visible = self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false,
                                 }
                             }
                         }
@@ -245,12 +262,124 @@ function Inventory:create(type, ctx)
     self.updateSize = function(self)
         if self.element then
             local categoryFilterSize = v2(0, self.categoryFilter and self.categoryFilter.layout.props.size.y or 0)
+            local infoBarSize = v2(0, self.infoBar and self.infoBar.layout.props.size.y or 0)
             self.itemTable.layout.props.position = categoryFilterSize
-            self.itemTable.layout.userData.resize(self.element.layout.userData.getInnerSize() - categoryFilterSize)
+            self.itemTable.layout.userData.resize(self.element.layout.userData.getInnerSize() - categoryFilterSize - infoBarSize)
+            if self.infoBar then
+                self.infoBar.layout.props.position = categoryFilterSize + v2(0, self.itemTable.layout.props.size.y)
+                self.infoBar:update()
+            end
+            if self.infoBarDivider then
+                self.infoBarDivider.props.position = v2(0, self.itemTable.layout.props.size.y + self.itemTable.layout.props.position.y)
+            end
         end
     end
 
     content:add(self.itemTable)
+
+    self.infoBar = InfoBar.create({
+        maxHeight = specialTemplates.LINE_HEIGHT + 12,
+    }, ctx)
+    if self.type ~= 'Barter' then
+        self.infoBar.layout.userData.addInfoLayout({}, function(layout)
+            if not self.target then return {} end
+            layout = {
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content {
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = 'icons/weight.dds'},
+                            size = v2(16, 16),
+                        }
+                    },
+                    baseTemplates.intervalH(4),
+                    specialTemplates.progressBar{
+                        size = v2(100, specialTemplates.LINE_HEIGHT + 4),
+                        color = constants.Colors.BAR_MAGIC,
+                        value = self.target.type.getEncumbrance(self.target),
+                        maxValue = self.target.type.getCapacity(self.target),
+                    }
+                }
+            }
+            return layout
+        end)
+    end
+    if self.type == 'Inventory' then
+        self.infoBar.layout.userData.addInfoLayout({}, function(layout)
+            if not self.target then return {} end
+            local goldAmount = self.target.type.inventory(self.target):countOf('gold_001')
+            layout = {
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content {
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = 'icons/gold.dds'},
+                            size = v2(16, 16),
+                        }
+                    },
+                    baseTemplates.intervalH(4),
+                    {
+                        template = baseTemplates.textNormal,
+                        props = {
+                            text = tostring(goldAmount),
+                        }
+                    }
+                }
+            }
+            return layout
+        end) 
+    end
+    if self.type == 'Inventory' then
+        self.infoBar.layout.userData.addInfoLayout({}, function(layout)
+            if not self.target then return {} end
+            layout = {
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content {
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = 'icons/a/tx_shield_steel.dds'},
+                            size = v2(16, 16),
+                        }
+                    },
+                    baseTemplates.intervalH(4),
+                    {
+                        template = baseTemplates.textNormal,
+                        props = {
+                            text = tostring(math.floor(I.Combat.getArmorRating(self.target))),
+                        }
+                    }
+                }
+            }
+            return layout
+        end)
+    end
+
+    self.infoBar.layout.userData.updateAll()
+
+    content:add(self.infoBar)
+    self.infoBarDivider = {
+        template = I.MWUI.templates.horizontalLine,
+        props = {
+            size = v2(0, 2),
+            relativeSize = v2(1, 0),
+        },
+    }
+    content:add(self.infoBarDivider)
 
     local pinned
     if self.type == 'Inventory' then
@@ -274,8 +403,6 @@ function Inventory:create(type, ctx)
         if e.button == 1 then
             if ctx.dragAndDrop.draggingObject then
                 ctx.dragAndDrop:stopDrag(self.target)
-                self:refresh()
-                omwself:sendEvent('MI_Update')
             end
         end
     end)
@@ -299,6 +426,10 @@ function Inventory:updateData()
     if not self.target then return end
     self:setTitle()
     self:setPinnable()
+    if self.infoBar then
+        self.infoBar.layout.userData.updateAll()
+    end
+
     local anyChanges = false
     if not self.trackedCounts then
         self.trackedCounts = {}
