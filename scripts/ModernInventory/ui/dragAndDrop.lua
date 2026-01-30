@@ -84,14 +84,9 @@ function DragAndDrop:startDrag(item, source)
 end
 
 function DragAndDrop:transferInto(object, destination)
-    if destination and types.Container.objectIsInstance(destination) then
-        local objectWeight = object.type.record(object).weight * object.count
-        local destEncumbrance = types.Container.getEncumbrance(destination)
-        local destCapacity = types.Container.getCapacity(destination)
-        if destEncumbrance + objectWeight > destCapacity then
-            ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
-            return false 
-        end
+    if not helpers.doesItemFit(object, destination) then
+        ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
+        return false
     end
 
     local downSound = helpers.getItemSound(object, 'down')

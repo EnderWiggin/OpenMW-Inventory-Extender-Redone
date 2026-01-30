@@ -219,6 +219,13 @@ ItemTable.create = function(props, ctx)
                 
                 local anyChanged = false
                 local active = false--omwself.type.hasEquipped(omwself, row.item)
+                local disabled = false
+                if row.activeFn then
+                    active = row.activeFn(row)
+                end
+                if row.disabledFn then
+                    disabled = row.disabledFn(row)
+                end
                 if not state.rowCache[cacheKey] then
                     state.rowCache[cacheKey] = specialTemplates.interactive({ 
                         onClick = function() 
@@ -242,6 +249,8 @@ ItemTable.create = function(props, ctx)
                             tooltipFn = function()
                                 return specialTemplates.itemTooltip(row.item)
                             end,
+                            active = active,
+                            disabled = disabled,
                         }
                     }, ctx)
                 else
@@ -252,7 +261,6 @@ ItemTable.create = function(props, ctx)
                         local cellContent = rowWidget.layout.content[cIdx]
                         cellContent.props.size = util.vector2(w, rowHeight)
                         cellContent.props.position = util.vector2(totalW, 0)
-                        cellContent.props.textColor = helpers.getInteractiveTextColor(rowWidget.layout)
                         if cellContent.props.text then
                             local val = row[col.id]
                             local textStr = val ~= nil and tostring(val) or ""
@@ -275,10 +283,19 @@ ItemTable.create = function(props, ctx)
                 if rowWidget.layout.props.size.x ~= contentWidth 
                     or rowWidget.layout.props.position.y ~= rowY
                     or rowWidget.layout.userData.active ~= active
+                    or rowWidget.layout.userData.disabled ~= disabled
                     or anyChanged then
                     rowWidget.layout.props.size = util.vector2(contentWidth, rowHeight)
                     rowWidget.layout.props.position = util.vector2(0, rowY)
                     rowWidget.layout.userData.active = active
+                    rowWidget.layout.userData.disabled = disabled
+                    
+                    for cIdx, cellContent in ipairs(rowWidget.layout.content) do
+                        if cellContent.userData and cellContent.userData.colorable then
+                            cellContent.props.textColor = helpers.getInteractiveTextColor(rowWidget.layout)
+                        end
+                    end
+                    
                     rowWidget:update()
                 end
 

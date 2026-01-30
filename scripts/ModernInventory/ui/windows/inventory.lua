@@ -24,30 +24,6 @@ local l10n = core.l10n('ModernInventory')
 
 local Inventory = Window:new()
 
-local function createData(target)
-    if not target then
-        return {}
-    end
-    local data = {}
-    for _, item in ipairs(target.type.inventory(target):getAll()) do
-        local record = item.type.record(item)
-        local vw = record.weight > 0 and (record.value / record.weight) or 0
-        local vwPrecision = vw > 10 and 0 or 1
-        vw = helpers.roundToPlaces(vw, vwPrecision)
-        
-        table.insert(data, {
-            id = item.id,
-            Name = record.name .. (item.count > 1 and (' (%d)'):format(item.count) or ''),
-            Value = helpers.roundToPlaces(record.value, 1),
-            Weight = helpers.roundToPlaces(record.weight, 2),
-            ['V/W'] = vw,
-            item = item,
-            itemRecord = record,
-        })
-    end
-    return data
-end
-
 function Inventory:update(deep)
     if self.updateSize then
         self:updateSize()
@@ -67,7 +43,7 @@ function Inventory:create(type, ctx)
     end
 
     local content = ui.content {}
-    local data = createData(self.target)
+    local data = self:createData()
 
     local w = 80 * baseTemplates.TEXT_SIZE / 16
 
@@ -422,6 +398,38 @@ function Inventory:refresh()
     self.itemTable.layout.userData.refresh()
 end
 
+function Inventory:createData()
+    if not self.target then
+        return {}
+    end
+    local data = {}
+    for _, item in ipairs(self.target.type.inventory(self.target):getAll()) do
+        local record = item.type.record(item)
+        local vw = record.weight > 0 and (record.value / record.weight) or 0
+        local vwPrecision = vw > 10 and 0 or 1
+        vw = helpers.roundToPlaces(vw, vwPrecision)
+        
+        table.insert(data, {
+            id = item.id,
+            Name = record.name .. (item.count > 1 and (' (%d)'):format(item.count) or ''),
+            Value = helpers.roundToPlaces(record.value, 1),
+            Weight = helpers.roundToPlaces(record.weight, 2),
+            ['V/W'] = vw,
+            item = item,
+            itemRecord = record,
+            disabledFn = function()
+                if self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
+                    if not helpers.doesItemFit(item, self.ctx.modeArgs.Container) then
+                        return true
+                    end
+                end
+                return false
+            end,
+        })
+    end
+    return data
+end
+
 function Inventory:updateData()
     if not self.target then return end
     self:setTitle()
@@ -462,7 +470,7 @@ function Inventory:updateData()
         return
     end
 
-    local data = createData(self.target)
+    local data = self:createData()
     self.itemTable.layout.userData.updateData(data)
 end
 

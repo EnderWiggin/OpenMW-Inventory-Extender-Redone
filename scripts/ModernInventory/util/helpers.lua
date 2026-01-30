@@ -327,6 +327,16 @@ Helpers.getInteractiveTextColor = function(layout)
     end
 end
 
+Helpers.doesItemFit = function(item, container)
+    if not container or not types.Container.objectIsInstance(container) then
+        return true
+    end
+    local itemWeight = item.type.record(item).weight * item.count
+    local contEncumbrance = types.Container.getEncumbrance(container)
+    local contCapacity = types.Container.getCapacity(container)
+    return (contEncumbrance + itemWeight) <= contCapacity
+end
+
 local function isGold(item)
     local id = item.recordId:lower()
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
