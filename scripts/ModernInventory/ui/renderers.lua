@@ -23,31 +23,33 @@ local function validateDimension(text)
 end
 
 local function validatedTextInput(value, set, validate)
-    return paddedBox {
+    local innerLayout = {
         template = I.MWUI.templates.textEditLine,
         props = {
             text = tostring(value),
             size = util.vector2(60, 0),
         },
-        events = {
-            textChanged = async:callback(function(text, layout)
-                layout.userData.lastInput = text
-            end),
-            focusLoss = async:callback(function(layout)
-                if not layout.userData.lastInput then return end
-                local number = validate(layout.userData.lastInput)
-                if not number then
-                    set(value)
-                end
-                if number and number ~= value then
-                    set(number)
-                end
-            end),
-        },
         userData = {
             lastInput = nil,
         }
     }
+    innerLayout.events = {
+        textChanged = async:callback(function(text)
+            innerLayout.userData.lastInput = text
+        end),
+        focusLoss = async:callback(function()
+            if not innerLayout.userData.lastInput then return end
+            local number = validate(innerLayout.userData.lastInput)
+            if not number then
+                set(value)
+            end
+            if number and number ~= value then
+                set(number)
+            end
+        end),
+    }
+    local layout = paddedBox(innerLayout)
+    return layout
 end
 
 local function windowDimensionsRenderer(value, set, arg)

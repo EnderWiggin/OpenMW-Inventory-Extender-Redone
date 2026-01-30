@@ -47,7 +47,7 @@ I.Settings.registerGroup {
             key = 'd_InventoryContainerWindowDimensions',
             renderer = 'windowDimensions',
             name = 'InventoryContainerWindowDimensions',
-            default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
+            default = { x = 0.01, y = 0.05, w = 0.4, h = 0.85, }
         },
         {
             key = 'd_InventoryBarterWindowDimensions',
@@ -65,7 +65,7 @@ I.Settings.registerGroup {
             key = 'd_ContainerWindowDimensions',
             renderer = 'windowDimensions',
             name = 'ContainerWindowDimensions',
-            default = { x = 0.49, y = 0.54, w = 0.39, h = 0.38, }
+            default = { x = 0.5, y = 0.05, w = 0.4, h = 0.85, }
         },
         {
             key = 'd_BarterWindowDimensions',
