@@ -36,9 +36,11 @@ function DragAndDrop:getHoveredGameObject(position)
         self.hoveredObject = result.hitObject
         if result.hitNormal then
             local up = util.vector3(0, 0, 1)
-            local dotProduct = result.hitNormal:dot(up)
-            -- Consider valid if normal is facing mostly upward (dot product > ~0.7 means angle < 45 degrees)
-            if dotProduct > 0.7 then
+            local normalLength = result.hitNormal:length()
+            local normalizedNormal = result.hitNormal / normalLength
+            local dotProduct = normalizedNormal:dot(up)
+            
+            if math.acos(dotProduct) < math.rad(30) then
                 self.hitPos = result.hitPos
             else
                 self.hitPos = nil
@@ -64,7 +66,7 @@ function DragAndDrop:startDrag(item, sourceInventory)
         layer = 'Notification',
         type = ui.TYPE.Image,
         props = {
-            size = v2(32, 32),
+            size = v2(42, 42),
             resource = ui.texture { path = item.type.record(item).icon },
             position = self.lastCursorPos or v2(0, 0),
         }
