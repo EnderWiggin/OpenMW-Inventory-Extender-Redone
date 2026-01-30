@@ -813,9 +813,10 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
 
     userData.getInnerSize = function()
         local size = window.layout.props.size
+        local borderMult = intRe and 2 or 4
         return util.vector2(
-            size.x - BORDER_THICKNESS_THICK * 4,
-            size.y - BORDER_THICKNESS_THICK * 4 - HEADER_HEIGHT
+            size.x - BORDER_THICKNESS_THICK * borderMult,
+            size.y - BORDER_THICKNESS_THICK * borderMult - HEADER_HEIGHT
         )
     end
     return window
@@ -929,6 +930,7 @@ Templates.scrollBar = function(scrollable)
                     scrollable.layout.content[1].props.position = util.vector2(0, util.clamp(scrollable.layout.content[1].props.position.y, -scrollable.layout.userData.scrollLimit, 0))
                     scrollable.layout.userData.onScroll()
                 end
+                return true
             end),
             mousePress = async:callback(function(e)
                 if e.button == 1 then
@@ -986,8 +988,14 @@ Templates.scrollable = function(size, content, flexSize, padding, borderThicknes
         },
     }
     scrollWidget.layout.events = {
-        focusGain = async:callback(function() onFocusGain(scrollWidget) end),
-        focusLoss = async:callback(function() onFocusLoss(scrollWidget) end),
+        focusGain = async:callback(function() 
+            onFocusGain(scrollWidget)
+            return true
+        end),
+        focusLoss = async:callback(function() 
+            onFocusLoss(scrollWidget)
+            return true
+        end),
     }
 
     local scrollBar = Templates.scrollBar(scrollWidget)
