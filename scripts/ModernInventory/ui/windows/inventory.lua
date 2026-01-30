@@ -485,10 +485,9 @@ end
 function Inventory:setPinnable()
     if not self.element then return end
 
-    if self.type == 'Inventory' and self.ctx.uiMode == 'Interface' then
+    if self.type == 'Inventory' and (not self.ctx.uiMode or self.ctx.uiMode == 'Interface') then
         self.element.layout.userData.setPinnable(true)
     else
-        self.element.layout.userData.pinned = false
         self.element.layout.userData.setPinnable(false)
     end
 end

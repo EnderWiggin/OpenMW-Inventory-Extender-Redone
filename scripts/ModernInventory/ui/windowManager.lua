@@ -122,7 +122,7 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
     for _, window in pairs(windowManager.windows) do
         if window then
             window:updateTarget()
-            if newMode then
+            if window:isVisible() then
                 window:loadState()
             end
             window:update()
