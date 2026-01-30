@@ -172,7 +172,7 @@ function Inventory:create(type, ctx)
             end
 
             if input.isAltPressed() then
-                if ctx.uiMode == 'Container'then
+                if ctx.uiMode == 'Container' then
                     if self.type == 'Inventory' and ctx.modeArgs.Container then
                         ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container)
                     elseif self.type == 'Container' then

@@ -84,6 +84,16 @@ function DragAndDrop:startDrag(item, source)
 end
 
 function DragAndDrop:transferInto(object, destination)
+    if types.Container.objectIsInstance(destination) then
+        local objectWeight = object.type.record(object).weight * object.count
+        local destEncumbrance = types.Container.getEncumbrance(destination)
+        local destCapacity = types.Container.getCapacity(destination)
+        if destEncumbrance + objectWeight > destCapacity then
+            ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
+            return false 
+        end
+    end
+
     local downSound = helpers.getItemSound(object, 'down')
     if downSound then
         ambient.playSound(downSound)
@@ -97,11 +107,15 @@ function DragAndDrop:transferInto(object, destination)
             player = omwself,
         })
     end
+
+    return true
 end
 
 function DragAndDrop:stopDrag(target)
     if self.draggingObject then
-        self:transferInto(self.draggingObject, target)
+        if not self:transferInto(self.draggingObject, target) then
+            return false
+        end
     end
     self.draggingObject = nil
     self.source = nil

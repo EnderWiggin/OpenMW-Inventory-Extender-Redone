@@ -102,7 +102,7 @@ end
 
 function API.setConsoleState(state)
     windowManager.ctx.isConsoleOpen = state
-    windowManager.onUiModeChanged(I.UI.getMode(), I.UI.getMode(), nil)
+    windowManager.onUiModeChanged(I.UI.getMode(), I.UI.getMode(), windowManager.ctx.modeArgs[I.UI.getMode()])
 end
 
 function API.getConsoleState()
