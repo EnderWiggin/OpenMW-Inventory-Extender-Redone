@@ -714,15 +714,22 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
         events = {},
         userData = userData,
     }
+
     if pinned ~= nil then
+        userData.pinnable = true
         userData.pinned = pinned
-        local pinButton = Templates.pinButton(pinned, function(newPinned)
-            userData.pinned = newPinned
-        end)
-        pinButton.layout.props.anchor = v2(1, 0)
-        pinButton.layout.props.relativePosition = v2(1, 0)
-        window.content:add(pinButton)
+    else
+        userData.pinnable = false
+        userData.pinned = false 
     end
+    local pinButton = Templates.pinButton(userData.pinned, function(newPinned)
+        userData.pinned = newPinned
+    end)
+    pinButton.layout.props.anchor = v2(1, 0)
+    pinButton.layout.props.relativePosition = v2(1, 0)
+    pinButton.layout.props.visible = userData.pinnable
+    window.content:add(pinButton)
+
     window = ui.create(window)
     
     if draggable then
@@ -823,6 +830,17 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
     userData.setTitle = function(newTitle)
         window.layout.content[2].content[1].content[3].props.text = newTitle
         window:update()
+    end
+
+    userData.setPinnable = function(pinnable)
+        userData.pinnable = pinnable
+        if pinnable then
+            pinButton.layout.props.visible = true
+            pinButton:update()
+        else
+            pinButton.layout.props.visible = false
+            pinButton:update()
+        end
     end
     return window
 end

@@ -51,6 +51,7 @@ function Inventory:update(deep)
         self:updateSize()
     end
     self:setTitle()
+    self:setPinnable()
     Window.update(self, deep)
 end
 
@@ -250,6 +251,12 @@ function Inventory:create(type, ctx)
     end
 
     content:add(self.itemTable)
+
+    local pinned
+    if self.type == 'Inventory' then
+        pinned = storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get('b_InventoryWindowPinned')
+    end
+
     local element = baseTemplates.window(
         helpers.getEquippedName(), 
         content, 
@@ -257,7 +264,7 @@ function Inventory:create(type, ctx)
         function(layout)
             self:updateSize()
         end,
-        self.type == 'Inventory' and storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get('b_InventoryWindowPinned'),
+        pinned,
         ctx)
     self.element = element
     self:loadState()
@@ -291,6 +298,7 @@ end
 function Inventory:updateData()
     if not self.target then return end
     self:setTitle()
+    self:setPinnable()
     local anyChanges = false
     if not self.trackedCounts then
         self.trackedCounts = {}
@@ -332,6 +340,17 @@ function Inventory:setTitle()
         self.element.layout.userData.setTitle(helpers.getEquippedName())
     elseif self.target then
         self.element.layout.userData.setTitle(self.target.type.record(self.target).name)
+    end
+end
+
+function Inventory:setPinnable()
+    if not self.element then return end
+
+    if self.type == 'Inventory' and self.ctx.uiMode == 'Interface' then
+        self.element.layout.userData.setPinnable(true)
+    else
+        self.element.layout.userData.pinned = false
+        self.element.layout.userData.setPinnable(false)
     end
 end
 

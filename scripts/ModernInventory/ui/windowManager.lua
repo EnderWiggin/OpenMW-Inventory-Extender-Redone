@@ -177,6 +177,10 @@ end
 windowManager.ctx.dragAndDrop:init(windowManager.ctx)
 
 input.registerTriggerHandler('Activate', async:callback(function()
+    if windowManager.ctx.uiMode == 'Container' or windowManager.ctx.uiMode == 'Barter' or windowManager.ctx.uiMode == 'Companion' then
+        I.UI.removeMode(windowManager.ctx.uiMode)
+        return false
+    end
     if windowManager.ctx.focusedInteractive and windowManager.ctx.focusedInteractive.layout and
        windowManager.ctx.focusedInteractive.layout.userData.onActivate then
         windowManager.ctx.focusedInteractive.layout.userData.onActivate()
