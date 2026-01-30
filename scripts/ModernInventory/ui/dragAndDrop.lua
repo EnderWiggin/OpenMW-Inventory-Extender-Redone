@@ -264,7 +264,15 @@ function DragAndDrop:init(ctx)
                     if types.Item.isCarriable(self.hoveredObject) then
                         -- lame solution, but my cortisol is too high to deal with this properly right now
                         -- can't activate mwscripts while in menus, so for now just block dragging those from the world
-                        if not self.hoveredObject.type.record(self.hoveredObject).mwscript then
+                        local canPickUp = true
+                        local mwscript = self.hoveredObject.type.record(self.hoveredObject).mwscript
+                        if mwscript then
+                            local scriptRecord = core.mwscripts.records[mwscript]
+                            if scriptRecord and scriptRecord.text:lower():find('onactivate') then
+                                canPickUp = false
+                            end
+                        end
+                        if canPickUp then
                             self:startDrag(self.hoveredObject, nil)
                         end
                     end
