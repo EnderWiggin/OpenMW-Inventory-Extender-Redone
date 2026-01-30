@@ -7,6 +7,7 @@ return {
             local position = props.position
             local options = props.options
             obj:teleport(cellOrName, position, options)
+            props.player:sendEvent('MI_Update')
         end,
         MI_MoveInto = function(props)
             if not props.obj or not props.destination then return end

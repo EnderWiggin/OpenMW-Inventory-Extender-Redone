@@ -253,12 +253,12 @@ function DragAndDrop:init(ctx)
                     options = {
                         onGround = true,
                         rotation = util.transform.rotateZ(camera.getYaw()),
-                    }
+                    },
+                    player = omwself,
                 })
                 self:stopDrag()
                 self.wrapper.layout.content.dropPointer.props.relativeSize = v2(0, 0)
                 self.wrapper:update()
-                omwself:sendEvent('MI_Update')
             elseif self.hoveredObject then
                 if not self.ctx.isConsoleOpen then
                     if types.Item.isCarriable(self.hoveredObject) then
