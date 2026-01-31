@@ -1078,6 +1078,177 @@ Templates.scrollable = function(size, content, flexSize, padding, borderThicknes
     return scrollWidget
 end
 
+Templates.slider = function(min, max, current, step, width, onChange)
+    local buttonSize = SCROLL_BAR_INNER_WIDTH
+    local trackPadding = omwConstants.padding
+    local internalWidth = width - (buttonSize * 2) - (trackPadding * 2)
+    local handleWidth = math.max(SCROLL_BAR_INNER_WIDTH, internalWidth / (max - min + 1))
+
+    local function valueToPos(val)
+        local range = max - min
+        if range <= 0 then return 0 end
+        local availableWidth = internalWidth - handleWidth
+        local pct = (util.clamp(val, min, max) - min) / range
+        return pct * availableWidth
+    end
+
+    local function posToValue(pos)
+        local range = max - min
+        if range <= 0 then return min end
+        local availableWidth = internalWidth - handleWidth
+        if availableWidth <= 0 then return min end
+        local pct = util.clamp(pos / availableWidth, 0, 1)
+        return min + (pct * range)
+    end
+
+    local slider = ui.create {
+        name = 'slider',
+        type = ui.TYPE.Flex,
+        props = {
+            size = util.vector2(width, buttonSize),
+            horizontal = true,
+        },
+        userData = {
+            value = current or min,
+            step = step or 1,
+            dragging = false,
+        },
+        content = ui.content {}
+    }
+
+    local function updateHandle()
+        if slider.layout.content[3] and slider.layout.content[3].content[1] then
+            local handle = slider.layout.content[3].content[1]
+            local pos = valueToPos(slider.layout.userData.value)
+            handle.props.position = util.vector2(pos, 0)
+            slider:update()
+        end
+    end
+
+    local function triggerChange(newValue)
+        local clamped = util.clamp(newValue, min, max)
+        if clamped ~= slider.layout.userData.value then
+            slider.layout.userData.value = clamped
+            updateHandle()
+        end
+        if onChange then onChange(clamped) end
+    end
+
+    local function snapValue()
+        local val = slider.layout.userData.value
+        local s = step or 1
+        local snapped = util.clamp(math.floor((val - min) / s + 0.5) * s + min, min, max)
+        if snapped ~= val then
+            triggerChange(snapped)
+        end
+    end
+
+    local leftBtn = {
+        template = intRe and I.MWUI.templates.bordersInvisible or I.MWUI.templates.borders,
+        props = { size = util.vector2(buttonSize, buttonSize) },
+        content = ui.content {{
+            type = ui.TYPE.Image,
+            props = {
+                resource = Templates.createTexture('textures/omw_menu_scroll_left.dds'),
+                size = util.vector2(buttonSize-4, buttonSize-4),
+            }
+        }},
+        events = {
+            mousePress = async:callback(function(e)
+                if e.button ~= 1 then return end
+                ambient.playSound('menu click')
+                triggerChange(slider.layout.userData.value - slider.layout.userData.step)
+            end)
+        }
+    }
+
+    local rightBtn = {
+        template = intRe and I.MWUI.templates.bordersInvisible or I.MWUI.templates.borders,
+        props = { size = util.vector2(buttonSize, buttonSize) },
+        content = ui.content {{
+            type = ui.TYPE.Image,
+            props = {
+                resource = Templates.createTexture('textures/omw_menu_scroll_right.dds'),
+                size = util.vector2(buttonSize-4, buttonSize-4),
+            }
+        }},
+        events = {
+            mousePress = async:callback(function(e)
+                if e.button ~= 1 then return end
+                ambient.playSound('menu click')
+                triggerChange(slider.layout.userData.value + slider.layout.userData.step)
+            end)
+        }
+    }
+
+    local track = {
+        template = intRe and I.MWUI.templates.bordersInvisible or I.MWUI.templates.borders,
+        props = {
+            size = util.vector2(internalWidth, buttonSize),
+        },
+        content = ui.content {
+            {
+                name = 'handle',
+                type = ui.TYPE.Image,
+                props = {
+                    resource = Templates.createTexture('textures/omw_menu_scroll_center_h.dds'),
+                    size = util.vector2(handleWidth, buttonSize - 4),
+                    tileH = true,
+                    position = util.vector2(valueToPos(current or min), 0)
+                },
+                userData = { dragOffset = nil },
+                events = {
+                    mousePress = async:callback(function(e, layout)
+                        if e.button == 1 then
+                            local offset = e.offset.x
+                            layout.userData.dragOffset = offset
+                            return false
+                        end
+                    end),
+                    mouseRelease = async:callback(function(e, layout)
+                        snapValue()
+                        layout.userData.dragOffset = nil 
+                        return false
+                    end)
+                }
+            }
+        },
+        events = {
+            mousePress = async:callback(function(e, layout)
+                if e.button == 1 then
+                    ambient.playSound('menu click')
+                    local val = posToValue(e.offset.x - (handleWidth / 2))
+                    triggerChange(val)
+                    layout.content[1].userData.dragOffset = handleWidth / 2
+                end
+            end),
+            mouseMove = async:callback(function(e, layout)
+                if e.button == 1 and layout.content[1].userData.dragOffset then
+                    local newX = e.offset.x - layout.content[1].userData.dragOffset
+                    triggerChange(posToValue(newX))
+                end
+                return true
+            end),
+            mouseRelease = async:callback(function(e, layout)
+                if e.button == 1 then
+                    snapValue()
+                    layout.content[1].userData.dragOffset = nil
+                end
+            end)
+        }
+    }
+
+    slider.layout.content:add(leftBtn)
+    slider.layout.content:add(Templates.intervalH(trackPadding))
+    slider.layout.content:add(track)
+    slider.layout.content:add(Templates.intervalH(trackPadding))
+    slider.layout.content:add(rightBtn)
+    slider.layout.userData.triggerChange = triggerChange
+
+    slider:update()
+    return slider
+end
+
 Templates.wrapper = {
     layer = 'Windows',
     props = {

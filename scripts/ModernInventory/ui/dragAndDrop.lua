@@ -53,13 +53,13 @@ function DragAndDrop:getHoveredGameObject(position)
     end), pos, pos + v * dist)
 end
 
-function DragAndDrop:startDrag(item, source)
+function DragAndDrop:startDrag(item, source, count)
     local upSound = helpers.getItemSound(item, 'up')
     if upSound then
         ambient.playSound(upSound)
     end
 
-    self.draggingCount = item.count
+    self.draggingCount = util.clamp(count or item.count, 1, item.count)
 
     core.sendGlobalEvent('MI_MoveInto', {
         obj = item,
@@ -92,7 +92,7 @@ function DragAndDrop:setDraggingObject(object)
     })
 end
 
-function DragAndDrop:transferInto(object, destination)
+function DragAndDrop:transferInto(object, destination, count)
     if not helpers.doesItemFit(object, destination) then
         ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
         return false
@@ -103,10 +103,14 @@ function DragAndDrop:transferInto(object, destination)
         ambient.playSound(downSound)
     end
 
+    if count then
+        self.draggingCount = util.clamp(count, 1, object.count)
+    end
+
     if destination then
         core.sendGlobalEvent('MI_MoveInto', {
             obj = object,
-            count = self.draggingCount,
+            count = self.draggingCount or object.count,
             source = self.source,
             destination = destination,
             player = omwself,
@@ -123,6 +127,7 @@ function DragAndDrop:stopDrag(target)
         end
     end
     self.draggingObject = nil
+    self.draggingCount = nil
     self.source = nil
     if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
         self.ctx.activeTooltip.layout.props.visible = false

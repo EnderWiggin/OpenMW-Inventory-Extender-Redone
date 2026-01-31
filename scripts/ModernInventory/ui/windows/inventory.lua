@@ -15,6 +15,7 @@ local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 local CategoryFilter = require('scripts.ModernInventory.ui.templates.categoryFilter')
 local ItemTable = require('scripts.ModernInventory.ui.templates.itemTable')
 local InfoBar = require('scripts.ModernInventory.ui.templates.infoBar')
+local ItemStackModal = require('scripts.ModernInventory.ui.templates.itemStackModal')
 local Window = require('scripts.ModernInventory.ui.windows.base')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
@@ -164,18 +165,36 @@ function Inventory:create(windowType, ctx)
                 return true
             end
 
-            if input.isAltPressed() then
-                if ctx.uiMode == 'Container' then
-                    if self.type == 'Inventory' and ctx.modeArgs.Container then
-                        ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container)
-                    elseif self.type == 'Container' then
-                        ctx.dragAndDrop:transferInto(row.item, omwself)
+            local transfer = input.isAltPressed()
+            local takeAll = input.isShiftPressed()
+            local takeOne = input.isCtrlPressed()
+
+            if transfer and self.ctx.uiMode == 'Interface' then return end
+            local function doAction(count)
+                if transfer then
+                    if self.type == 'Inventory' and ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                        ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container, count)
+                    elseif self.type == 'Container' and ctx.uiMode == 'Container' then
+                        ctx.dragAndDrop:transferInto(row.item, omwself, count)
                     end
+                else
+                    ctx.dragAndDrop:startDrag(row.item, self.target, count)
                 end
-            else
-                ctx.dragAndDrop:startDrag(row.item, self.target)
+                self:refresh()
             end
-            self:refresh()
+
+            if row.item.count > 1 and not takeAll and not takeOne then
+                local modal = ItemStackModal.create({
+                    itemName = row.itemRecord.name,
+                    maxCount = row.item.count,
+                    onConfirm = function(count)
+                        doAction(count)
+                    end,
+                }, ctx)
+                ctx.modalElement = modal
+            else
+                doAction(takeOne and 1 or row.item.count)
+            end
         end,
         onRowActivate = function(row)
             if self.ctx.uiMode ~= 'Interface' then

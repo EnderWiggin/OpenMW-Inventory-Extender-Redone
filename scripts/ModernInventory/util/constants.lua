@@ -121,6 +121,8 @@ C.Strings = {
     SPEED = 'sAttributeSpeed',
     ONE_HANDED = 'sOneHanded',
     TWO_HANDED = 'sTwoHanded',
+    TAKE = 'sTake',
+    CANCEL = 'sCancel',
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)

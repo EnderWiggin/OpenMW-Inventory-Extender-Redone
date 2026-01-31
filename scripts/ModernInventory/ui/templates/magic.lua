@@ -64,6 +64,10 @@ Templates.interactive = function(props, layout, ctx)
     end
 
     local function createTooltip(layout)
+        if ctx.modalElement then
+            return nil
+        end
+
         ctx.activeTooltip = ui.create(layout.userData.tooltipFn())
         ctx.activeTooltip.layout.name = props.name
         if lastMousePos then
