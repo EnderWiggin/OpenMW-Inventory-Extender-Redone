@@ -265,6 +265,16 @@ ItemTable.create = function(props, ctx)
                         local w = state.columnWidths[cIdx] or 0
                         local rowWidget = state.rowCache[cacheKey]
                         local cellContent = rowWidget.layout.content[cIdx]
+
+                        if col.renderer then
+                            local newCellContent = col.renderer(row, w, rowHeight)
+                            if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
+                                rowWidget.layout.content[cIdx] = newCellContent
+                                cellContent = newCellContent
+                                anyChanged = true
+                            end
+                        end
+
                         cellContent.props.size = util.vector2(w, rowHeight)
                         cellContent.props.position = util.vector2(totalW, 0)
                         if cellContent.props.text then
@@ -319,11 +329,19 @@ ItemTable.create = function(props, ctx)
                     rowWidget.layout.userData.active = active
                     rowWidget.layout.userData.disabled = disabled
                     
-                    for cIdx, cellContent in ipairs(rowWidget.layout.content) do
-                        if cellContent.userData and cellContent.userData.colorable then
-                            cellContent.props.textColor = helpers.getInteractiveTextColor(rowWidget.layout)
+                    -- for cIdx, cellContent in ipairs(rowWidget.layout.content) do
+                    --     if cellContent.userData and cellContent.userData.colorable then
+                    --         cellContent.props.textColor = helpers.getInteractiveTextColor(rowWidget.layout)
+                    --     end
+                    -- end
+                    local color = helpers.getInteractiveTextColor(rowWidget.layout)
+                    helpers.forEachInLayout(rowWidget, function(l)
+                        if l.userData and l.userData.colorable then
+                            l.props = l.props or {}
+                            l.props.textColor = color
+                            l.props.color = color
                         end
-                    end
+                    end)
                     
                     rowWidget:update()
                 end

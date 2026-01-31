@@ -20,6 +20,7 @@ local Window = require('scripts.ModernInventory.ui.windows.base')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
 local constants = require('scripts.ModernInventory.util.constants')
+local base = require("scripts.ModernInventory.ui.windows.base")
 
 local l10n = core.l10n('ModernInventory')
 
@@ -90,6 +91,73 @@ function Inventory:create(windowType, ctx)
             {
                 id = 'Name',
                 label = l10n('Column_Name'),
+                renderer = function(row, width, height)
+                    local nonDraggedCount = row.item.count
+                    if self.ctx.dragAndDrop.draggingObject and self.ctx.dragAndDrop.draggingObject.id == row.item.id then
+                        nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
+                    end
+                    local text = row.itemRecord.name .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+
+                    local stolen = false
+                    local enchanted = false
+                    if self.type == 'Inventory' and self.ctx.stolenItems then
+                        stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
+                    end
+                    if row.itemRecord.enchant then
+                        enchanted = true
+                    end
+
+                    local content = ui.content {
+                        {
+                            template = baseTemplates.textNormal,
+                            props = {
+                                text = text,
+                            },
+                            userData = {
+                                colorable = true,
+                            }
+                        },
+                    }
+                    local iconSize = math.min(specialTemplates.LINE_HEIGHT, 12)
+                    if stolen then
+                        content:add(baseTemplates.intervalH(8))
+                        content:add({
+                            type = ui.TYPE.Image,
+                            props = {
+                                resource = ui.texture { path = 'icons/moderninventory/item/stolen.dds' },
+                                size = v2(iconSize, iconSize),
+                                color = constants.Colors.DAMAGED,
+                            },
+                        })
+                    end
+                    if enchanted then
+                        content:add(baseTemplates.intervalH(8))
+                        content:add({
+                            type = ui.TYPE.Image,
+                            props = {
+                                resource = ui.texture { path = 'icons/moderninventory/item/enchanted.dds' },
+                                size = v2(iconSize, iconSize),
+                                color = constants.Colors.BAR_MAGIC,
+                            },
+                        })
+                    end
+
+                    return {
+                        type = ui.TYPE.Flex,
+                        props = {
+                            horizontal = true,
+                            arrange = ui.ALIGNMENT.Center,
+                            autoSize = false,
+                            size = v2(width, height),
+                        },
+                        content = content,
+                        userData = {
+                            text = text,
+                            stolen = stolen,
+                            enchanted = enchanted,
+                        }
+                    }
+                end,
             },
             {
                 id = 'Weight',
@@ -450,13 +518,7 @@ function Inventory:createData()
         
         table.insert(data, {
             id = item.id,
-            Name = function()
-                local nonDraggedCount = item.count
-                if self.ctx.dragAndDrop.draggingObject and self.ctx.dragAndDrop.draggingObject.id == item.id then
-                    nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
-                end
-                return record.name .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
-            end,
+            Name = record.name,
             Value = helpers.roundToPlaces(record.value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
             ['V/W'] = vw,

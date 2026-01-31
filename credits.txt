@@ -1,5 +1,7 @@
 ICONS
 
+Categories
+
 All: <a href="https://www.flaticon.com/free-icons/backpack" title="backpack icons">Backpack icons created by deemakdaksina - Flaticon</a>
 Weapon: <a href="https://www.flaticon.com/free-icons/sword" title="sword icons">Sword icons created by Freepik - Flaticon</a>
 Armor: <a href="https://www.flaticon.com/free-icons/warrior" title="warrior icons">Warrior icons created by Freepik - Flaticon</a>
@@ -11,3 +13,7 @@ Book: <a href="https://www.flaticon.com/free-icons/book" title="book icons">Book
 Key: <a href="https://www.flaticon.com/free-icons/success" title="success icons">Success icons created by Aranagraphics - Flaticon</a>
 Tool: <a href="https://www.flaticon.com/free-icons/hammer" title="hammer icons">Hammer icons created by Slidicon - Flaticon</a>
 Miscellaneous: <a href="https://www.flaticon.com/free-icons/more" title="more icons">More icons created by Stockio - Flaticon</a>
+
+Other icons
+Stolen item: <a href="https://www.flaticon.com/free-icons/hand" title="hand icons">Hand icons created by Freepik - Flaticon</a>
+Enchanted item: <a href="https://www.flaticon.com/free-icons/lightening" title="lightening icons">Lightening icons created by Techno Icons - Flaticon</a>
