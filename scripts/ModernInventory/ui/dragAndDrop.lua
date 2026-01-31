@@ -11,9 +11,11 @@ local auxUi = require('openmw_aux.ui')
 local I = require('openmw.interfaces')
 local ambient = require('openmw.ambient')
 
+local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 
 local helpers = require('scripts.ModernInventory.util.helpers')
+local constants = require('scripts.ModernInventory.util.constants')
 
 local configPlayer = require('scripts.ModernInventory.config.player')
 
@@ -83,11 +85,27 @@ function DragAndDrop:setDraggingObject(object)
     self.ctx.cursorAttachedIcon = ui.create({
         name = object.id .. '_dragIcon',
         layer = 'Notification',
-        type = ui.TYPE.Image,
         props = {
             size = v2(42, 42),
-            resource = ui.texture { path = object.type.record(object).icon },
             position = self.ctx.lastCursorPos or v2(0, 0),
+        },
+        content = ui.content {
+            {
+                type = ui.TYPE.Image,
+                props = {
+                    size = v2(42, 42),
+                    resource = ui.texture { path = object.type.record(object).icon },
+                }
+            },
+            {
+                template = baseTemplates.textNormal,
+                props = {
+                    anchor = v2(1, 1),
+                    relativePosition = v2(1, 1),
+                    text = self.draggingCount > 1 and tostring(self.draggingCount) or '',
+                    textColor = constants.Colors.DEFAULT_LIGHT,
+                },
+            }
         }
     })
 end

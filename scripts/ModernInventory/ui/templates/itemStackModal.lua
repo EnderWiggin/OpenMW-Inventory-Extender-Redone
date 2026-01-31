@@ -18,7 +18,7 @@ function ItemStackModal.create(params, ctx)
     local maxCount = params.maxCount or 1
     local onConfirm = params.onConfirm or function(count) end
 
-    local selectedCount = 1
+    local selectedCount = params.selectedCount or maxCount
     
     local layout = {
         type = ui.TYPE.Flex,
