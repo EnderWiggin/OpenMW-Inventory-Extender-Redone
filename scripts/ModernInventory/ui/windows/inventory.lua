@@ -165,6 +165,10 @@ function Inventory:create(windowType, ctx)
                 return true
             end
 
+            if helpers.isBoundItem(row.item) then
+                return
+            end
+
             local transfer = input.isAltPressed()
             local takeAll = input.isShiftPressed()
             local takeOne = input.isCtrlPressed()

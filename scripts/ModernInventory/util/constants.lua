@@ -182,4 +182,24 @@ C.WeaponClass = {
     Ammo = 4,
 }
 
+local boundItemGMSTs = {
+    "sMagicBoundDaggerID",
+    "sMagicBoundLongswordID",
+    "sMagicBoundMaceID",
+    "sMagicBoundBattleAxeID",
+    "sMagicBoundSpearID",
+    "sMagicBoundLongbowID",
+    "sMagicBoundCuirassID",
+    "sMagicBoundHelmID",
+    "sMagicBoundBootsID",
+    "sMagicBoundShieldID",
+    "sMagicBoundLeftGauntletID",
+    "sMagicBoundRightGauntletID",
+}
+C.BoundItemIDs = {}
+for _, gmst in ipairs(boundItemGMSTs) do
+    local value = core.getGMST(gmst):lower()
+    C.BoundItemIDs[value] = true
+end
+
 return C

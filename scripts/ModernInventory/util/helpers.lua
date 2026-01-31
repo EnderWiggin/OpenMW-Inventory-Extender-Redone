@@ -342,6 +342,10 @@ Helpers.isGold = function(item)
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
 end
 
+Helpers.isBoundItem = function(item)
+    return C.BoundItemIDs[item.recordId:lower()] ~= nil
+end
+
 Helpers.getItemSound = function(item, upOrDown)
     local itemRecord = item.type.record(item)
     local itemStr
