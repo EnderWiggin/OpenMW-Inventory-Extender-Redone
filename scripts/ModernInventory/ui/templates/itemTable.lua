@@ -236,7 +236,7 @@ ItemTable.create = function(props, ctx)
                     state.rowCache[cacheKey] = specialTemplates.interactive({ 
                         onClick = function() 
                             if onRowClick then 
-                                return onRowClick(row) 
+                                return onRowClick(row, state.rowCache[cacheKey]) 
                             end
                         end,
                         name = row.item.id,
@@ -249,7 +249,7 @@ ItemTable.create = function(props, ctx)
                         userData = { 
                             onActivate = function()
                                 if props.onRowActivate then
-                                    return props.onRowActivate(row)
+                                    return props.onRowActivate(row, state.rowCache[cacheKey])
                                 end
                             end,
                             tooltipFn = function()
@@ -280,7 +280,11 @@ ItemTable.create = function(props, ctx)
                             end
                         end
                         if cellContent.content and cellContent.content:indexOf('equippedOverlay') then
-                            cellContent.content.equippedOverlay.props.visible = omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item)
+                            local visible = omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item)
+                            if cellContent.content.equippedOverlay.props.visible ~= visible then
+                                cellContent.content.equippedOverlay.props.visible = visible
+                                anyChanged = true
+                            end
                         end
                         totalW = totalW + w
                     end
@@ -288,6 +292,22 @@ ItemTable.create = function(props, ctx)
 
                 local rowWidget = state.rowCache[cacheKey]
                 local rowY = (i - 1) * rowHeight
+
+                if state.lastUsedRowPos then
+                    if rowY - scrollable.layout.userData.getScrollPos() == state.lastUsedRowPos.y then
+                        ctx.focusedInteractive = rowWidget
+                        if not rowWidget.layout.userData.hovering then
+                            state.lastUsedRowPos = nil
+                            rowWidget.layout.userData.hovering = true
+                            anyChanged = true
+                        end
+                    else
+                        if rowWidget.layout.userData.hovering then
+                            rowWidget.layout.userData.hovering = false
+                            anyChanged = true
+                        end
+                    end
+                end
 
                 if rowWidget.layout.props.size.x ~= contentWidth 
                     or rowWidget.layout.props.position.y ~= rowY
@@ -574,6 +594,10 @@ ItemTable.create = function(props, ctx)
         dataRows = newDataRows
         
         wrapper.layout.userData.refresh()
+    end
+
+    wrapper.layout.userData.getState = function()
+        return state
     end
 
     return wrapper

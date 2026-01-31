@@ -160,7 +160,7 @@ function Inventory:create(windowType, ctx)
             end
             return nameA < nameB
         end,
-        onRowClick = function(row)
+        onRowClick = function(row, rowWidget)
             if ctx.dragAndDrop.draggingObject then
                 return true
             end
@@ -168,6 +168,8 @@ function Inventory:create(windowType, ctx)
             if helpers.isBoundItem(row.item) then
                 return
             end
+
+            self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
 
             local transfer = input.isAltPressed()
             local takeAll = input.isShiftPressed()
@@ -188,6 +190,7 @@ function Inventory:create(windowType, ctx)
             end
 
             if row.item.count > 1 and not takeAll and not takeOne then
+                self.itemTable.layout.userData.getState().lastUsedRowPos = nil
                 local modal = ItemStackModal.create({
                     itemName = row.itemRecord.name,
                     maxCount = row.item.count,
@@ -200,10 +203,13 @@ function Inventory:create(windowType, ctx)
                 doAction(takeOne and 1 or row.item.count)
             end
         end,
-        onRowActivate = function(row)
+        onRowActivate = function(row, rowWidget)
             if self.ctx.uiMode ~= 'Interface' then
                 return
             end
+
+            self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
+
             if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
                 local equipment = omwself.type.getEquipment(omwself)
                 for slot, equippedItem in pairs(equipment) do
@@ -242,6 +248,9 @@ function Inventory:create(windowType, ctx)
             end
             return category.filter(row.item)
         end)
+
+        self.itemTable.layout.userData.getState().lastUsedRowPos = nil
+
         self.itemTable.layout.userData.resetScroll()
         self.itemTable.layout.userData.refresh()
     end, ctx)
@@ -544,6 +553,11 @@ function Inventory:updateTarget()
     if oldTarget ~= self.target then
         self.trackedCounts = nil
     end
+
+    if self.itemTable then
+        self.itemTable.layout.userData.getState().lastUsedRowPos = nil
+    end
+
     self:updateData()
 end
 

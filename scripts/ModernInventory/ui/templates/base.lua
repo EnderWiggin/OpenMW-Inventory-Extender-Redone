@@ -1074,6 +1074,10 @@ Templates.scrollable = function(size, content, flexSize, padding, borderThicknes
     end
 
     scrollWidget.layout.userData.update(size, flexSize)
+
+    scrollWidget.layout.userData.getScrollPos = function()
+        return -scrollWidget.layout.content[1].props.position.y
+    end
     
     return scrollWidget
 end
