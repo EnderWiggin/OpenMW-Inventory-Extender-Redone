@@ -92,7 +92,7 @@ function DragAndDrop:setDraggingObject(object)
     })
 end
 
-function DragAndDrop:transferInto(object, destination, count)
+function DragAndDrop:transferInto(object, destination, source, count)
     if not helpers.doesItemFit(object, destination) then
         ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
         return false
@@ -105,6 +105,10 @@ function DragAndDrop:transferInto(object, destination, count)
 
     if count then
         self.draggingCount = util.clamp(count, 1, object.count)
+    end
+
+    if source then
+        self.source = source
     end
 
     if destination then

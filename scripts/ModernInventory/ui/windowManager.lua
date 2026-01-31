@@ -48,6 +48,7 @@ windowManager.ctx = {
     dragAndDrop = DragAndDrop,
     modeArgs = {},
     uiMode = nil,
+    stolenItems = {},
 }
 
 windowManager.create = function(windowName)

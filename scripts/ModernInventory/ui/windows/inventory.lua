@@ -179,9 +179,9 @@ function Inventory:create(windowType, ctx)
             local function doAction(count)
                 if transfer then
                     if self.type == 'Inventory' and ctx.uiMode == 'Container' and ctx.modeArgs.Container then
-                        ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container, count)
+                        ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container, omwself, count)
                     elseif self.type == 'Container' and ctx.uiMode == 'Container' then
-                        ctx.dragAndDrop:transferInto(row.item, omwself, count)
+                        ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count)
                     end
                 else
                     ctx.dragAndDrop:startDrag(row.item, self.target, count)
@@ -402,7 +402,7 @@ function Inventory:create(windowType, ctx)
     end
 
     local element = baseTemplates.window(
-        helpers.getEquippedName(), 
+        helpers.getEquippedName(omwself), 
         content, 
         true, 
         function(layout)
@@ -521,7 +521,7 @@ end
 
 function Inventory:setTitle()
     if self.type == 'Inventory' then
-        self.element.layout.userData.setTitle(helpers.getEquippedName())
+        self.element.layout.userData.setTitle(helpers.getEquippedName(omwself))
     elseif self.target then
         self.element.layout.userData.setTitle(self.target.type.record(self.target).name)
     end

@@ -56,8 +56,19 @@ function API.getWindow(windowName)
     return windowManager.windows[windowName]
 end
 
+local lastCrimeLevel
+local function checkCrimeLevel()
+    local crimeLevel = types.Player.getCrimeLevel(self)
+    if lastCrimeLevel and crimeLevel < lastCrimeLevel then
+        core.sendGlobalEvent('MI_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
+    end
+    
+    lastCrimeLevel = crimeLevel
+end
+
 function API.onFrame()
     windowManager.onFrame()
+    checkCrimeLevel()
 end
 
 function API.onMouseWheel(v, h)
@@ -146,9 +157,34 @@ end
 return {
     interfaceName = 'ModernInventory',
     interface = API,
+    engineHandlers = {
+        onSave = function()
+            return {
+                stolenItems = windowManager.ctx.stolenItems,
+            }
+        end,
+        onLoad = function(data)
+            if data and data.stolenItems then
+                windowManager.ctx.stolenItems = data.stolenItems
+            end
+        end,
+    },
     eventHandlers = {
         UiModeChanged = function(data)
             windowManager.onUiModeChanged(data.oldMode, data.newMode, data.arg)
+            core.sendGlobalEvent('MI_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
+        end,
+        MI_StoleItem = function(props)
+            print("Player stole item:", props.recordId, "count:", props.count, "victim:", props.victim)
+            windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
+            local id = props.victim.recordId or props.victim.factionId
+            if id then
+                windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) + props.count 
+            end
+        end,
+        MI_ItemsConfiscated = function(props)
+            print(helpers.deepPrint(props.stolenMap))
+            windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
         end,
         MI_Update = function()
             windowManager.update()
