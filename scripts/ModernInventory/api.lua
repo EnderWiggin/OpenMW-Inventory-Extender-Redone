@@ -175,7 +175,7 @@ return {
             core.sendGlobalEvent('MI_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
         end,
         MI_StoleItem = function(props)
-            print("Player stole item:", props.recordId, "count:", props.count, "victim:", props.victim)
+            --print("Player stole item:", props.recordId, "count:", props.count, "victim:", props.victim)
             windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
             local id = props.victim.recordId or props.victim.factionId
             if id then
@@ -183,7 +183,7 @@ return {
             end
         end,
         MI_ItemsConfiscated = function(props)
-            print(helpers.deepPrint(props.stolenMap))
+            --print(helpers.deepPrint(props.stolenMap))
             windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
         end,
         MI_Update = function()

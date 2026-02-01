@@ -288,7 +288,7 @@ local function confiscateStolenItems(data)
     for _, container in ipairs(cell:getAll(types.Container)) do
         if container.recordId == 'stolen_goods' then
             if types.Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
-                print("Confiscating goods to", container)
+                --print("Confiscating goods to", container)
 
                 -- compare with memory
                 local cellId = container.cell.id:lower()
@@ -302,7 +302,7 @@ local function confiscateStolenItems(data)
                     local memCount = memory[recordId] or 0
                     if count > memCount then
                         delta[recordId] = count - memCount
-                        print("newly confiscated item:", recordId, "count:", delta[recordId])
+                        --print("newly confiscated item:", recordId, "count:", delta[recordId])
                     end
                 end
 
@@ -327,7 +327,7 @@ local function confiscateStolenItems(data)
                         totalConfiscated = totalConfiscated + toConfiscate
                     end
                     if (totalConfiscated - (delta[recordId] or 0)) > 0 then
-                        print("Script confiscated item:", recordId, "count:", (totalConfiscated - (delta[recordId] or 0)))
+                        --print("Script confiscated item:", recordId, "count:", (totalConfiscated - (delta[recordId] or 0)))
                     end
                     for victimId, count in pairs(victimCounts) do
                         if totalConfiscated >= count then
