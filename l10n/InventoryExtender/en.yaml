@@ -1,4 +1,4 @@
-ConfigTitle: Modern Inventory
+ConfigTitle: Inventory Extender
 ConfigSummary: |-
   A Lua replacement for the inventory window with a modernized list-based interface.
   --- v%{version} ---

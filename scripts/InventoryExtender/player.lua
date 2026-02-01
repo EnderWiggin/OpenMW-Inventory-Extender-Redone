@@ -34,7 +34,7 @@ local function init()
         end
     elseif configPlayer.misc.b_ShowControllerWarning then
         storage.playerSection('Settings/InventoryExtender/5_Misc'):set('b_ShowControllerWarning', false)
-        local msg = 'NOTICE:\nModern Inventory is not compatible with controller menus.\nThis message will only appear once.'
+        local msg = 'NOTICE:\nInventory Extender is not compatible with controller menus.\nThis message will only appear once.'
         if I.UI.showInteractiveMessage then -- OpenMW 0.50+
             I.UI.showInteractiveMessage(msg, {})
         else
