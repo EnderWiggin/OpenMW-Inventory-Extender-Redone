@@ -122,7 +122,11 @@ C.Strings = {
     ONE_HANDED = 'sOneHanded',
     TWO_HANDED = 'sTwoHanded',
     TAKE = 'sTake',
+    TAKE_ALL = 'sTakeAll',
     CANCEL = 'sCancel',
+    CLOSE = 'sClose',
+    DISPOSE_OF_CORPSE = 'sDisposeOfCorpse',
+    DISPOSE_CORPSE_FAIL = 'sDisposeCorpseFail',
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)

@@ -142,6 +142,26 @@ function DragAndDrop:transferInto(object, destination, source, count)
     return true
 end
 
+function DragAndDrop:moveAll(source, destination)
+    local sourceInv = source.type.inventory(source)
+    for i, item in ipairs(sourceInv:getAll()) do
+        if i == 1 then
+            local upSound = helpers.getItemSound(item, 'up')
+            if upSound then
+                ambient.playSound(upSound)
+            end
+        end
+
+        core.sendGlobalEvent('MI_MoveInto', {
+            obj = item,
+            count = item.count,
+            source = source,
+            destination = destination,
+            player = omwself,
+        })
+    end
+end
+
 function DragAndDrop:stopDrag(target)
     if target and self.draggingObject then
         if not self:transferInto(self.draggingObject, target) then

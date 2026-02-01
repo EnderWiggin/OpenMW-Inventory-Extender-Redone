@@ -98,6 +98,10 @@ Templates.interactive = function(props, layout, ctx)
                 end
             end)
             element:update()
+
+            if props.parent then
+                ctx.updateQueue[props.parent] = true
+            end
             return true
         end
         return false
@@ -117,6 +121,10 @@ Templates.interactive = function(props, layout, ctx)
             end)
             local result = props.onClick()
             element:update()
+
+            if props.parent then
+                ctx.updateQueue[props.parent] = true
+            end
             return result
         end
         return false
@@ -140,6 +148,10 @@ Templates.interactive = function(props, layout, ctx)
                 end
             end)
             ctx.updateQueue[element] = true
+
+            if props.parent then
+                ctx.updateQueue[props.parent] = true
+            end
         end
         return true
     end)
@@ -154,6 +166,10 @@ Templates.interactive = function(props, layout, ctx)
                 end
             end)
             ctx.updateQueue[element] = true
+
+            if props.parent then
+                ctx.updateQueue[props.parent] = true
+            end
         end
         return true
     end)

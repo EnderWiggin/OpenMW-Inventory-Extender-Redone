@@ -29,10 +29,22 @@ local function itemDataEquals(a, b)
     return true
 end
 
+local disposedBodies = {}
+
 local function isStealing(actor, ownerInfo)
     local victim = {}
     if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
-        victim.recordId = ownerInfo.recordId
+        local isDead = disposedBodies[ownerInfo.recordId] or false
+        for _, actor in ipairs(world.activeActors) do
+            if actor.recordId == ownerInfo.recordId and types.Actor.isDead(actor) then
+                isDead = true
+                break
+            end
+        end
+
+        if not isDead then
+            victim.recordId = ownerInfo.recordId
+        end
     end
 
     if ownerInfo.factionId then
@@ -104,7 +116,7 @@ local function moveInto(props)
         ownerInfo = obj.owner
     end
     local victimInfo = isStealing(props.player, ownerInfo)
-    if victimInfo and not helpers.isGold(obj) then
+    if victimInfo then
         local victimActor
         if victimInfo.recordId then
             for _, actor in ipairs(world.activeActors) do
@@ -114,7 +126,9 @@ local function moveInto(props)
                 end
             end
         end
-        props.player:sendEvent('MI_StoleItem', { recordId = obj.recordId, count = props.count, victim = victimInfo })
+        if not helpers.isGold(obj) then
+            props.player:sendEvent('MI_StoleItem', { recordId = obj.recordId, count = props.count, victim = victimInfo })
+        end
         I.Crimes.commitCrime(props.player, {
             type = types.Player.OFFENSE_TYPE.Theft,
             arg = helpers.getItemValue(obj) * props.count,
@@ -357,12 +371,14 @@ return {
         onSave = function()
             return {
                 containerMemory = containerMemory,
+                disposedBodies = disposedBodies,
             }
         end,
         onLoad = function(data)
             initChestLocks()
-            if data and data.containerMemory then
-                containerMemory = data.containerMemory
+            if data then
+                containerMemory = data.containerMemory or {}
+                disposedBodies = data.disposedBodies or {}
             end
         end,
         onUpdate = onUpdate,
@@ -373,6 +389,10 @@ return {
         MI_MoveInto = moveInto,
         MI_UIModeChanged = onUiModeChanged,
         MI_StolenChestInactive = updateChestMemory,
+        MI_DisposeOfCorpse = function(props)
+            disposedBodies[props.target.recordId] = true
+            props.target:remove()
+        end,
         UseItem = function(props)
             props.actor:sendEvent('MI_Update')
         end,

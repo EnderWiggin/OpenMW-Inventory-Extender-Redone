@@ -539,6 +539,47 @@ function Inventory:create(windowType, ctx)
         end)
     end
 
+    if self.type == 'Container' then
+        self.infoBar.layout.userData.addInfoLayout({ external = { grow = 1, stretch = 1 }})
+
+        self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
+            onClick = function()
+                if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                    ctx.dragAndDrop:moveAll(self.target, omwself)
+                    core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.modeArgs.Container })
+                    I.UI.removeMode('Container')
+                end
+            end,
+            parent = self.infoBar,
+        }, baseTemplates.button(constants.Strings.DISPOSE_OF_CORPSE), ctx), function(layout)
+            local visible = false
+            if ctx.modeArgs.Container then
+                visible = types.Actor.objectIsInstance(ctx.modeArgs.Container) and types.Actor.isDead(ctx.modeArgs.Container)
+            end
+            layout.props.visible = visible
+            return layout
+        end)
+
+        self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
+            onClick = function()
+                if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                    ctx.dragAndDrop:moveAll(self.target, omwself)
+                    I.UI.removeMode('Container')
+                end
+            end,
+            parent = self.infoBar,
+        }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx))
+        
+        self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
+            onClick = function()
+                I.UI.removeMode('Container')
+            end,
+            parent = self.infoBar,
+        }, baseTemplates.button(constants.Strings.CLOSE), ctx))
+
+        self.infoBar.layout.userData.addInfoLayout({})
+    end
+
     self.infoBar.layout.userData.updateAll()
 
     content:add(self.infoBar)

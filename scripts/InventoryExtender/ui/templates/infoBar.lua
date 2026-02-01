@@ -23,9 +23,7 @@ function InfoBar.create(props, ctx)
             align = ui.ALIGNMENT.Start,
             arrange = ui.ALIGNMENT.Center,
         },
-        content = ui.content {
-            baseTemplates.intervalH(8),
-        },
+        content = ui.content {},
         userData = {},
     }
 
@@ -35,21 +33,31 @@ function InfoBar.create(props, ctx)
     state.ctx = ctx
 
     local function addInfoLayout(layout, updateFn)
+        layout = layout.layout and layout.layout or layout
         layout.userData = layout.userData or {}
         layout.userData.update = updateFn
-        state.element.layout.content:add(layout)
         state.element.layout.content:add(baseTemplates.intervalH(8))
+        state.element.layout.content:add(layout)
         state.element:update()
     end
 
     local function updateAll()
         for i, child in ipairs(state.element.layout.content) do
-            if child.userData and child.userData.update then
-                local updateFn = child.userData.update
-                child = updateFn(child, state.ctx)
-                child.userData = child.userData or {}
-                child.userData.update = updateFn
-                state.element.layout.content[i] = child
+            local isElement = child.layout ~= nil
+            local userData = isElement and child.layout.userData or child.userData
+            if userData and userData.update then
+                local updateFn = userData.update
+                if updateFn then
+                    local newLayout = updateFn(child, state.ctx)
+                    newLayout.userData = newLayout.userData or {}
+                    newLayout.userData.update = updateFn
+                    if isElement then
+                        child.layout = newLayout
+                        child:update()
+                    else
+                        state.element.layout.content[i] = newLayout
+                    end
+                end
             end
         end
         state.element:update()
