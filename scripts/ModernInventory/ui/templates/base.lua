@@ -748,6 +748,9 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
                 userData.dragStartAbs = e.position
                 userData.dragStartSize = layout.props.size
                 userData.dragStartPos = layout.props.position
+                if userData.dragType == constants.DragType.Move then
+                    ambient.playSound('menu click')
+                end
             end),
             mouseMove = async:callback(function(e, layout)
                 ctx.lastCursorPos = e.position
