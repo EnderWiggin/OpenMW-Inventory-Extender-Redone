@@ -74,11 +74,18 @@ local function moveInto(props)
     local resultingObj = obj
     local destinationInv = destination.type.inventory(destination)
 
+    local isEquipped = false
+    if props.source and types.Actor.objectIsInstance(props.source) then
+        isEquipped = props.source.type.hasEquipped(props.source, obj)
+    end
+
     if not isGold(obj) then
         for _, item in ipairs(destinationInv:findAll(recordId)) do
-            if itemDataEquals(item, obj) then
-                resultingObj = item
-                break
+            if not destination.type.hasEquipped or not destination.type.hasEquipped(destination, item) and not isEquipped then
+                if itemDataEquals(item, obj) then
+                    resultingObj = item
+                    break
+                end
             end
         end
     elseif props.source and props.source ~= props.destination then
