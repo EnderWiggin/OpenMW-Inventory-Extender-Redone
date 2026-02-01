@@ -205,6 +205,34 @@ local function createObjectTooltip(hitObject, position, ctx)
     end
 end
 
+function DragAndDrop:dropAt(object, count, position)
+    local downSound = helpers.getItemSound(object, 'down')
+    if downSound then
+        ambient.playSound(downSound)
+    end
+
+    local boundingBox = object:getBoundingBox()
+    local offset = util.vector3(0, 0, boundingBox.halfSize.z - boundingBox.center.z)
+    local targetPos = position + offset
+    core.sendGlobalEvent('MI_Teleport', {
+        obj = object,
+        count = count or object.count,
+        source = self.source or omwself,
+        cell = (not omwself.cell.isExterior) and omwself.cell.name or '',
+        position = targetPos,
+        options = {
+            rotation = util.transform.rotateZ(camera.getYaw()),
+        },
+        player = omwself,
+    })
+end
+
+function DragAndDrop:dropAtFeet(object, count)
+    local res = nearby.castRay(omwself.position, omwself.position + util.vector3(0, 0, -100000000000))
+    local targetPos = res.hitPos or omwself.position
+    self:dropAt(object, count, targetPos)
+end
+
 function DragAndDrop:init(ctx)
     if not configPlayer.window.b_EnableMod then return end
 
@@ -297,26 +325,10 @@ function DragAndDrop:init(ctx)
         mousePress = async:callback(function(e)
             if e.button ~= 1 then return end 
             if self.draggingObject then
-                local cell = omwself.cell
-                local targetPos = self.hitPos or omwself.position
-                local boundingBox = self.draggingObject:getBoundingBox()
-                local offset = util.vector3(0, 0, boundingBox.halfSize.z - boundingBox.center.z)
-                targetPos = targetPos + offset
-                core.sendGlobalEvent('MI_Teleport', {
-                    obj = self.draggingObject,
-                    count = self.draggingCount,
-                    source = self.source,
-                    cell = (not cell.isExterior) and cell.name or '',
-                    position = targetPos,
-                    options = {
-                        onGround = true,
-                        rotation = util.transform.rotateZ(camera.getYaw()),
-                    },
-                    player = omwself,
-                })
-                local downSound = helpers.getItemSound(self.draggingObject, 'down')
-                if downSound then
-                    ambient.playSound(downSound)
+                if not self.hitPos then
+                    self:dropAtFeet(self.draggingObject, self.draggingCount)
+                else
+                    self:dropAt(self.draggingObject, self.draggingCount, self.hitPos)
                 end
                 self:stopDrag()
                 self.wrapper.layout.content.dropPointer.props.relativeSize = v2(0, 0)

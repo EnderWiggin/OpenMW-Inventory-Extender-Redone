@@ -268,8 +268,6 @@ function Inventory:create(windowType, ctx)
             local takeAll = input.isShiftPressed()
             local takeOne = input.isCtrlPressed()
 
-            if transfer and self.ctx.uiMode == 'Interface' then return end
-
             local itemCount = row.item.count
             if self.ctx.uiMode == 'Barter' then
                 if row.isBartered then
@@ -320,6 +318,8 @@ function Inventory:create(windowType, ctx)
                             ambient.playSound(sound)
                         end
                         omwself:sendEvent('MI_Update')
+                    elseif ctx.uiMode == 'Interface' then
+                        ctx.dragAndDrop:dropAtFeet(row.item, count) 
                     end
                 else
                     ctx.dragAndDrop:startDrag(row.item, self.target, count)
