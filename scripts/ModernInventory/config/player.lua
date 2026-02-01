@@ -1,11 +1,11 @@
 local async = require('openmw.async')
 local storage = require('openmw.storage')
 
-local keybinds = storage.playerSection('Settings/ModernInventory/1_Keybinds')
-local window = storage.playerSection('Settings/ModernInventory/2_WindowOptions')
-local tweaks = storage.playerSection('Settings/ModernInventory/3_Tweaks')
-local modIntegration = storage.playerSection('Settings/ModernInventory/4_ModIntegration')
-local misc = storage.playerSection('Settings/ModernInventory/5_Misc')
+local keybinds = storage.playerSection('Settings/InventoryExtender/1_Keybinds')
+local window = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
+local tweaks = storage.playerSection('Settings/InventoryExtender/3_Tweaks')
+local modIntegration = storage.playerSection('Settings/InventoryExtender/4_ModIntegration')
+local misc = storage.playerSection('Settings/InventoryExtender/5_Misc')
 local configPlayer = {}
 
 local function updateConfig()

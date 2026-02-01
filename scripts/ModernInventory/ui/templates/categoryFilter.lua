@@ -6,11 +6,11 @@ local I = require('openmw.interfaces')
 local async = require('openmw.async')
 local core = require('openmw.core')
 
-local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
-local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
-local constants = require('scripts.ModernInventory.util.constants')
+local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
+local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
+local constants = require('scripts.InventoryExtender.util.constants')
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 
 local CategoryFilter = {}
 
@@ -148,7 +148,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
 
         element.layout.content.categoryBar.content = ui.content {}
 
-        local categories = I.ModernInventory.getCategories()
+        local categories = I.InventoryExtender.getCategories()
         if not state.selectedCategory then
             state.selectedCategory = categories[1] and categories[1].key or nil
         end
@@ -194,7 +194,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             end
         end
 
-        element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.ModernInventory.getCategory(state.selectedCategory).name or '') or ''
+        element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
 
         element:update()
     end
@@ -204,7 +204,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     element.layout.userData.updateCategories = updateCategories
 
     local function resizeImages(totalWidth)
-        local categories = I.ModernInventory.getCategories()
+        local categories = I.InventoryExtender.getCategories()
         if #categories == 0 then return end
         
         local maxSizePerCategory = totalWidth / #categories

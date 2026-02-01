@@ -5,10 +5,10 @@ local core = require('openmw.core')
 local omwself = require('openmw.self')
 local auxUi = require('openmw_aux.ui')
 
-local constants = require('scripts.ModernInventory.util.constants')
-local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
-local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
-local helpers = require("scripts.ModernInventory.util.helpers")
+local constants = require('scripts.InventoryExtender.util.constants')
+local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
+local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
+local helpers = require("scripts.InventoryExtender.util.helpers")
 
 local ItemTable = {}
 
@@ -384,7 +384,7 @@ ItemTable.create = function(props, ctx)
             local col = columns[i]
             local isDefaultCol = (col.id == defaultSortId)
             local isSorted = (state.sortColIndex == i)
-            local currentSortIcon = state.sortDir == 'asc' and 'icons/moderninventory/sort_asc.dds' or 'icons/moderninventory/sort_desc.dds'
+            local currentSortIcon = state.sortDir == 'asc' and 'icons/InventoryExtender/sort_asc.dds' or 'icons/InventoryExtender/sort_desc.dds'
 
             if isDefaultCol and defaultSortIcon then
                 -- Show only sort arrow for default column

@@ -2,25 +2,25 @@ local core = require('openmw.core')
 local input = require('openmw.input')
 local I = require('openmw.interfaces')
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 local versionString = "1.0.0"
 
-local renderers = require('scripts.ModernInventory.ui.renderers')
+local renderers = require('scripts.InventoryExtender.ui.renderers')
 
 I.Settings.registerRenderer('windowDimensions', renderers.windowDimensions)
 
 -- Settings page
 I.Settings.registerPage {
-    key = 'ModernInventory',
-    l10n = 'ModernInventory',
+    key = 'InventoryExtender',
+    l10n = 'InventoryExtender',
     name = 'ConfigTitle',
     description = l10n('ConfigSummary'):gsub('%%{version}', versionString),
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/ModernInventory/2_WindowOptions',
-    page = 'ModernInventory',
-    l10n = 'ModernInventory',
+    key = 'Settings/InventoryExtender/2_WindowOptions',
+    page = 'InventoryExtender',
+    l10n = 'InventoryExtender',
     name = 'ConfigCategoryWindowOptions',
     description = 'RequiresReload',
     permanentStorage = true,
@@ -83,9 +83,9 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/ModernInventory/3_Tweaks',
-    page = 'ModernInventory',
-    l10n = 'ModernInventory',
+    key = 'Settings/InventoryExtender/3_Tweaks',
+    page = 'InventoryExtender',
+    l10n = 'InventoryExtender',
     name = 'ConfigCategoryTweaks',
     description = 'RequiresReload',
     permanentStorage = true,
@@ -101,9 +101,9 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/ModernInventory/4_ModIntegration',
-    page = 'ModernInventory',
-    l10n = 'ModernInventory',
+    key = 'Settings/InventoryExtender/4_ModIntegration',
+    page = 'InventoryExtender',
+    l10n = 'InventoryExtender',
     name = 'ConfigCategoryModIntegration',
     description = 'RequiresReload',
     permanentStorage = true,
@@ -126,9 +126,9 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/ModernInventory/5_Misc',
-    page = 'ModernInventory',
-    l10n = 'ModernInventory',
+    key = 'Settings/InventoryExtender/5_Misc',
+    page = 'InventoryExtender',
+    l10n = 'InventoryExtender',
     name = 'ConfigCategoryMisc',
     permanentStorage = true,
     settings = {

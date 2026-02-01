@@ -2,7 +2,7 @@ local world = require('openmw.world')
 local core = require('openmw.core')
 local types = require('openmw.types')
 
-local PrisonMarkers = require('scripts.ModernInventory.util.prisonMarkers')
+local PrisonMarkers = require('scripts.InventoryExtender.util.prisonMarkers')
 
 local validMarkers = {}
 

@@ -1,12 +1,12 @@
 local core = require('openmw.core')
 local I = require('openmw.interfaces')
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 
 I.Settings.registerGroup {
-    key = 'Settings/ModernInventory/6_Gameplay',
-    page = 'ModernInventory',
-    l10n = 'ModernInventory',
+    key = 'Settings/InventoryExtender/6_Gameplay',
+    page = 'InventoryExtender',
+    l10n = 'InventoryExtender',
     name = 'ConfigCategoryGameplay',
     permanentStorage = true,
     settings = {

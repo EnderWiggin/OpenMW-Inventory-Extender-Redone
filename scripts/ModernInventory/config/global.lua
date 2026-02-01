@@ -1,7 +1,7 @@
 local async = require('openmw.async')
 local storage = require('openmw.storage')
 
-local gameplay = storage.globalSection('Settings/ModernInventory/6_Gameplay')
+local gameplay = storage.globalSection('Settings/InventoryExtender/6_Gameplay')
 local configGlobal = {}
 
 local function updateConfig()

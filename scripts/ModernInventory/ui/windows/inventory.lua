@@ -10,19 +10,19 @@ local types = require('openmw.types')
 local ambient = require('openmw.ambient')
 local input = require('openmw.input')
 
-local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
-local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
-local CategoryFilter = require('scripts.ModernInventory.ui.templates.categoryFilter')
-local ItemTable = require('scripts.ModernInventory.ui.templates.itemTable')
-local InfoBar = require('scripts.ModernInventory.ui.templates.infoBar')
-local ItemStackModal = require('scripts.ModernInventory.ui.templates.itemStackModal')
-local Window = require('scripts.ModernInventory.ui.windows.base')
+local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
+local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
+local CategoryFilter = require('scripts.InventoryExtender.ui.templates.categoryFilter')
+local ItemTable = require('scripts.InventoryExtender.ui.templates.itemTable')
+local InfoBar = require('scripts.InventoryExtender.ui.templates.infoBar')
+local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal')
+local Window = require('scripts.InventoryExtender.ui.windows.base')
 
-local helpers = require('scripts.ModernInventory.util.helpers')
-local constants = require('scripts.ModernInventory.util.constants')
-local base = require("scripts.ModernInventory.ui.windows.base")
+local helpers = require('scripts.InventoryExtender.util.helpers')
+local constants = require('scripts.InventoryExtender.util.constants')
+local base = require("scripts.InventoryExtender.ui.windows.base")
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 
 local Inventory = Window:new()
 
@@ -145,7 +145,7 @@ function Inventory:create(windowType, ctx)
                         content:add({
                             type = ui.TYPE.Image,
                             props = {
-                                resource = ui.texture { path = 'icons/moderninventory/item/stolen.dds' },
+                                resource = ui.texture { path = 'icons/InventoryExtender/item/stolen.dds' },
                                 size = v2(iconSize, iconSize),
                                 color = constants.Colors.DAMAGED,
                             },
@@ -156,7 +156,7 @@ function Inventory:create(windowType, ctx)
                         content:add({
                             type = ui.TYPE.Image,
                             props = {
-                                resource = ui.texture { path = 'icons/moderninventory/item/enchanted.dds' },
+                                resource = ui.texture { path = 'icons/InventoryExtender/item/enchanted.dds' },
                                 size = v2(iconSize, iconSize),
                                 color = constants.Colors.BAR_MAGIC,
                             },
@@ -203,7 +203,7 @@ function Inventory:create(windowType, ctx)
         size = v2(600, 400),
         rowHeight = specialTemplates.LINE_HEIGHT * 1.5,
         defaultSortId = 'Icon',
-        defaultSortIcon = 'icons/ModernInventory/default_sort.dds',
+        defaultSortIcon = 'icons/InventoryExtender/default_sort.dds',
         fallbackSort = function(a, b, sortDir)
             if not self.target then
                 return false
@@ -223,7 +223,7 @@ function Inventory:create(windowType, ctx)
             end
             
             -- Second, sort by Category
-            local categories = I.ModernInventory.getCategories()
+            local categories = I.InventoryExtender.getCategories()
             local indexA, indexB = nil, nil
             for i, category in ipairs(categories) do
                 if category.filter then
@@ -371,7 +371,7 @@ function Inventory:create(windowType, ctx)
     self.categoryFilter = CategoryFilter.create({
         maxHeight = 72,
     }, function(selectedCategory)
-        local categories = I.ModernInventory.getCategories()
+        local categories = I.InventoryExtender.getCategories()
         local category = nil
         for _, cat in ipairs(categories) do
             if cat.key == selectedCategory then
@@ -553,7 +553,7 @@ function Inventory:create(windowType, ctx)
 
     local pinned
     if self.type == 'Inventory' then
-        pinned = storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get('b_InventoryWindowPinned')
+        pinned = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get('b_InventoryWindowPinned')
     end
 
     local element = baseTemplates.window(
@@ -834,16 +834,16 @@ function Inventory:saveState()
     local dims = self:getDimensions()
     if not dims then return end
 
-    storage.playerSection('Settings/ModernInventory/2_WindowOptions'):set(self:getDimensionsKey(), dims)
+    storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set(self:getDimensionsKey(), dims)
     if self.type == 'Inventory' and self.ctx.uiMode == 'Interface' then
-        storage.playerSection('Settings/ModernInventory/2_WindowOptions'):set('b_InventoryWindowPinned', self.element.layout.userData.pinned)
+        storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set('b_InventoryWindowPinned', self.element.layout.userData.pinned)
     end
 end
 
 function Inventory:loadState()
     if not self.element then return end
 
-    local dims = storage.playerSection('Settings/ModernInventory/2_WindowOptions'):get(self:getDimensionsKey())
+    local dims = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get(self:getDimensionsKey())
     if not dims then return end
 
     self:setDimensions(dims)

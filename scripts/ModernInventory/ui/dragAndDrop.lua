@@ -11,13 +11,13 @@ local auxUi = require('openmw_aux.ui')
 local I = require('openmw.interfaces')
 local ambient = require('openmw.ambient')
 
-local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
-local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
+local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
+local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 
-local helpers = require('scripts.ModernInventory.util.helpers')
-local constants = require('scripts.ModernInventory.util.constants')
+local helpers = require('scripts.InventoryExtender.util.helpers')
+local constants = require('scripts.InventoryExtender.util.constants')
 
-local configPlayer = require('scripts.ModernInventory.config.player')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })

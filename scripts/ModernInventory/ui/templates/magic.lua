@@ -11,11 +11,11 @@ local storage = require('openmw.storage')
 
 local omwConstants = require('scripts.omw.mwui.constants')
 
-local BASE = require('scripts.ModernInventory.ui.templates.base')
-local helpers = require('scripts.ModernInventory.util.helpers')
-local constants = require('scripts.ModernInventory.util.constants')
+local BASE = require('scripts.InventoryExtender.ui.templates.base')
+local helpers = require('scripts.InventoryExtender.util.helpers')
+local constants = require('scripts.InventoryExtender.util.constants')
 
-local configPlayer = require('scripts.ModernInventory.config.player')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 
 local v2 = util.vector2
 
@@ -252,7 +252,7 @@ Templates.lineTooltip = function(text, name)
     }, name)
 end
 
-local tooltipData = require('scripts.ModernInventory.interop.tooltips')
+local tooltipData = require('scripts.InventoryExtender.interop.tooltips')
 
 Templates.itemTooltip = function(item, showIcon)
     local function textNormal(name, text)

@@ -8,10 +8,10 @@ local ambient = require('openmw.ambient')
 
 local omwConstants = require('scripts.omw.mwui.constants')
 
-local helpers = require('scripts.ModernInventory.util.helpers')
-local constants = require('scripts.ModernInventory.util.constants')
+local helpers = require('scripts.InventoryExtender.util.helpers')
+local constants = require('scripts.InventoryExtender.util.constants')
 
-local configPlayer = require('scripts.ModernInventory.config.player')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 
 local intRe = configPlayer.modIntegration.b_InterfaceReimagined
 
@@ -21,7 +21,7 @@ local SCROLL_BAR_INNER_WIDTH = 14
 local BORDER_THICKNESS = omwConstants.border
 local BORDER_THICKNESS_THICK = omwConstants.thickBorder
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 
 local Templates = {}
 

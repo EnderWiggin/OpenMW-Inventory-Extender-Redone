@@ -5,10 +5,10 @@ local auxUi = require('openmw_aux.ui')
 local v2 = util.vector2
 local async = require('openmw.async')
 
-local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
-local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
+local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
+local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 
-local constants = require('scripts.ModernInventory.util.constants')
+local constants = require('scripts.InventoryExtender.util.constants')
 
 -- This template shows a modal dialog for selecting the number of items to move in a stack.
 

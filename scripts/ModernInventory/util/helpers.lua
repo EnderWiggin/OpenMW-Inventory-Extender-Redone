@@ -6,9 +6,9 @@ local types = require('openmw.types')
 local isPlayer, self = pcall(require, 'openmw.self')
 local _, debug = pcall(require, 'openmw.debug')
 
-local C = require('scripts.ModernInventory.util.constants')
+local C = require('scripts.InventoryExtender.util.constants')
 
-local configGlobal = require('scripts.ModernInventory.config.global')
+local configGlobal = require('scripts.InventoryExtender.config.global')
 
 local Helpers = {}
 

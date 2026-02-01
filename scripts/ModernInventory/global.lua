@@ -3,9 +3,9 @@ local I = require('openmw.interfaces')
 local world = require('openmw.world')
 local core = require('openmw.core')
 
-local CellUtils = require('scripts.ModernInventory.util.cell')
+local CellUtils = require('scripts.InventoryExtender.util.cell')
 
-local helpers = require('scripts.ModernInventory.util.helpers')
+local helpers = require('scripts.InventoryExtender.util.helpers')
 
 local function itemDataEquals(a, b)
     if not types.Item.objectIsInstance(a) or not types.Item.objectIsInstance(b) then

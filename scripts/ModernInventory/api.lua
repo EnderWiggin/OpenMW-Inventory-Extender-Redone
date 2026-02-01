@@ -7,13 +7,13 @@ local storage = require('openmw.storage')
 local input = require('openmw.input')
 local I = require('openmw.interfaces')
 
-local helpers = require('scripts.ModernInventory.util.helpers')
-local constants = require('scripts.ModernInventory.util.constants')
+local helpers = require('scripts.InventoryExtender.util.helpers')
+local constants = require('scripts.InventoryExtender.util.constants')
 
-local windowManager = require('scripts.ModernInventory.ui.windowManager')
-local configPlayer = require('scripts.ModernInventory.config.player')
+local windowManager = require('scripts.InventoryExtender.ui.windowManager')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 
 local API = {}
 
@@ -22,8 +22,8 @@ API.VERSION = 1
 API.Constants = constants
 
 API.Templates = {
-    BASE = require('scripts.ModernInventory.ui.templates.base'),
-    MAGIC = require('scripts.ModernInventory.ui.templates.magic'),
+    BASE = require('scripts.InventoryExtender.ui.templates.base'),
+    MAGIC = require('scripts.InventoryExtender.ui.templates.magic'),
 }
 
 API.TooltipBuilders = {
@@ -155,7 +155,7 @@ function API.unregisterCategory(key)
 end
 
 return {
-    interfaceName = 'ModernInventory',
+    interfaceName = 'InventoryExtender',
     interface = API,
     engineHandlers = {
         onSave = function()

@@ -2,9 +2,9 @@ local types = require('openmw.types')
 local util = require('openmw.util')
 local self = require('openmw.self')
 
-local helpers = require('scripts.ModernInventory.util.helpers')
+local helpers = require('scripts.InventoryExtender.util.helpers')
 
-local configGlobal = require('scripts.ModernInventory.config.global')
+local configGlobal = require('scripts.InventoryExtender.config.global')
 
 local function barterOffer(npc, basePrice, buying)
     if types.Creature.objectIsInstance(npc) then return basePrice end

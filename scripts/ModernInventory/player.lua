@@ -11,12 +11,12 @@ local util = require('openmw.util')
 local auxUtil = require('openmw_aux.util')
 local v2 = util.vector2
 
-local API = I.ModernInventory
+local API = I.InventoryExtender
 
-local configPlayer = require('scripts.ModernInventory.config.player')
-local helpers = require('scripts.ModernInventory.util.helpers')
+local configPlayer = require('scripts.InventoryExtender.config.player')
+local helpers = require('scripts.InventoryExtender.util.helpers')
 
-local l10n = core.l10n('ModernInventory')
+local l10n = core.l10n('InventoryExtender')
 
 local function init()
     if not configPlayer.window.b_EnableMod then
@@ -33,7 +33,7 @@ local function init()
             I.UI.registerWindow(windowName, function() API.show(windowName) end, function() API.hide(windowName) end)
         end
     elseif configPlayer.misc.b_ShowControllerWarning then
-        storage.playerSection('Settings/ModernInventory/5_Misc'):set('b_ShowControllerWarning', false)
+        storage.playerSection('Settings/InventoryExtender/5_Misc'):set('b_ShowControllerWarning', false)
         local msg = 'NOTICE:\nModern Inventory is not compatible with controller menus.\nThis message will only appear once.'
         if I.UI.showInteractiveMessage then -- OpenMW 0.50+
             I.UI.showInteractiveMessage(msg, {})
@@ -116,7 +116,7 @@ for _, category in ipairs(defaultCategories) do
     API.registerCategory{
         key = category.key,
         name = l10n('Category_' .. category.key),
-        icon = 'icons/moderninventory/categories/' .. category.key .. '.dds',
+        icon = 'icons/InventoryExtender/categories/' .. category.key .. '.dds',
         filter = category.filter,
     }
 end

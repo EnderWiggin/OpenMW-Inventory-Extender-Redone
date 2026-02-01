@@ -3,7 +3,7 @@ local auxUi = require('openmw_aux.ui')
 local util = require('openmw.util')
 local v2 = util.vector2
 local ui = require('openmw.ui')
-local helpers = require('scripts.ModernInventory.util.helpers')
+local helpers = require('scripts.InventoryExtender.util.helpers')
 
 local Window = {}
 
