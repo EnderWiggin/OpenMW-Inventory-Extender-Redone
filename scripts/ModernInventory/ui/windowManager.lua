@@ -26,9 +26,8 @@ end
 
 local windowManager = {}
 
-local validModes = {
+local validDragModes = {
     Interface = true,
-    Barter = true,
     Container = true,
     Companion = true,
 }
@@ -49,10 +48,21 @@ windowManager.ctx = {
     modeArgs = {},
     uiMode = nil,
     stolenItems = {},
+    barterItems = {
+        selling = {},
+        buying = {},
+    },
+}
+
+local showing = {
+    Inventory = false,
+    Trade = false,
+    Container = false,
+    Companion = false,
 }
 
 windowManager.create = function(windowName)
-    if windowName == 'Inventory' or windowName == 'Container' then
+    if windowName == 'Inventory' or windowName == 'Container' or windowName == 'Trade' then
         windowManager.windows[windowName] = InventoryWindow:create(windowName, windowManager.ctx)
     end
     
@@ -80,7 +90,7 @@ windowManager.show = function(windowName)
         windowManager.create(windowName)
     end
 
-    windowManager.windows[windowName]:setVisible(true)
+    showing[windowName] = true
 end
 
 windowManager.hide = function(windowName, force)
@@ -88,8 +98,7 @@ windowManager.hide = function(windowName, force)
     if not window or not window:isVisible() then return end
 
     if not window:isPinned() or force then
-        window:setVisible(false)
-        --omwself:sendEvent(constants.Events.WINDOW_HIDDEN)
+        showing[windowName] = false
     end
     if windowManager.ctx.activeTooltip then
         auxUi.deepDestroy(windowManager.ctx.activeTooltip)
@@ -99,6 +108,11 @@ windowManager.hide = function(windowName, force)
 end
 
 windowManager.onUiModeChanged = function(oldMode, newMode, arg)
+    windowManager.ctx.barterItems = {
+        selling = {},
+        buying = {},
+    }
+
     if oldMode == 'Container' and windowManager.ctx.modeArgs.Container then
         windowManager.ctx.modeArgs.Container:sendEvent('MI_ContainerClosed')
     end
@@ -115,18 +129,20 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
         windowManager.ctx.activeTooltip = nil
     end
     if windowManager.ctx.dragAndDrop.wrapper then
-        windowManager.ctx.dragAndDrop.wrapper.layout.props.relativeSize = validModes[newMode] and v2(1, 1) or v2(0, 0)
+        windowManager.ctx.dragAndDrop.wrapper.layout.props.relativeSize = validDragModes[newMode] and v2(1, 1) or v2(0, 0)
         windowManager.ctx.dragAndDrop.wrapper:update() 
         windowManager.ctx.dragAndDrop.lastHoveredObject = nil
     end
     windowManager.ctx.uiMode = newMode
-    for _, window in pairs(windowManager.windows) do
+    for name, window in pairs(windowManager.windows) do
         if window then
-            window:updateTarget()
-            if window:isVisible() then
+            if showing[name] then
                 window:loadState()
+                window:setVisible(true)
+            else
+                window:setVisible(false)
             end
-            window:update()
+            window:updateTarget()
         end
     end
 end

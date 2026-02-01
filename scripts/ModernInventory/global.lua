@@ -5,10 +5,7 @@ local core = require('openmw.core')
 
 local CellUtils = require('scripts.ModernInventory.util.cell')
 
-local function isGold(item)
-    local id = item.recordId:lower()
-    return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
-end
+local helpers = require('scripts.ModernInventory.util.helpers')
 
 local function itemDataEquals(a, b)
     if not types.Item.objectIsInstance(a) or not types.Item.objectIsInstance(b) then
@@ -51,7 +48,7 @@ local function teleport(props)
     if not props.obj or not props.position then return end
     local obj = props.obj
     local count = props.count or obj.count
-    if isGold(obj) then
+    if helpers.isGold(obj) then
         obj = props.source.type.inventory(props.source):find('gold_001') or obj
     end
 
@@ -79,7 +76,7 @@ local function moveInto(props)
         isEquipped = props.source.type.hasEquipped(props.source, obj)
     end
 
-    if not isGold(obj) then
+    if not helpers.isGold(obj) then
         for _, item in ipairs(destinationInv:findAll(recordId)) do
             if not destination.type.hasEquipped or not destination.type.hasEquipped(destination, item) and not isEquipped then
                 if itemDataEquals(item, obj) then
@@ -93,7 +90,7 @@ local function moveInto(props)
         obj = sourceInv:find('gold_001') or obj
     end
 
-    if props.count ~= obj.count or isGold(obj) then
+    if props.count ~= obj.count or helpers.isGold(obj) then
         obj = obj:split(props.count or obj.count)
         if props.source ~= props.destination then
             resultingObj = obj
@@ -107,7 +104,7 @@ local function moveInto(props)
         ownerInfo = obj.owner
     end
     local victimInfo = isStealing(props.player, ownerInfo)
-    if victimInfo and not isGold(obj) then
+    if victimInfo and not helpers.isGold(obj) then
         local victimActor
         if victimInfo.recordId then
             for _, actor in ipairs(world.activeActors) do
@@ -120,7 +117,7 @@ local function moveInto(props)
         props.player:sendEvent('MI_StoleItem', { recordId = obj.recordId, count = props.count, victim = victimInfo })
         I.Crimes.commitCrime(props.player, {
             type = types.Player.OFFENSE_TYPE.Theft,
-            arg = obj.type.record(obj).value * props.count,
+            arg = helpers.getItemValue(obj) * props.count,
             faction = victimInfo.factionId,
             victim = victimActor,
         })
@@ -128,7 +125,7 @@ local function moveInto(props)
 
     obj:moveInto(destination)
     
-    if props.dragStart and isGold(obj) then
+    if props.dragStart and helpers.isGold(obj) then
         local foundGold = destinationInv:find('gold_001')
         if foundGold then
             resultingObj = foundGold
@@ -152,7 +149,7 @@ local checkStolenBooks = {}
 local function onItemActivated(item, actor)
     if not types.Item.isCarriable(item) then return true end
     local victim = isStealing(actor, item.owner)
-    if victim and not isGold(item) then
+    if victim and not helpers.isGold(item) then
         if types.Book.objectIsInstance(item) then
             checkStolenBooks[actor.id] = checkStolenBooks[actor.id] or {}
             table.insert(checkStolenBooks[actor.id], { actor = actor, item = item, victim = victim, prevCount = actor.type.inventory(actor):countOf(item.recordId) })

@@ -25,7 +25,7 @@ local function init()
     if not I.GamepadControls.isControllerMenusEnabled or not I.GamepadControls.isControllerMenusEnabled() then
         local overrides = {
             'Inventory',
-            -- 'Trade',
+            'Trade',
             'Container',
             -- 'Companion',
         }

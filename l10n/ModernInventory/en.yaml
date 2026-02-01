@@ -34,6 +34,11 @@ ShowControllerWarning: Show controller warning
 ShowControllerWarningDesc: |-
   Show a warning message if controller menus are enabled, since the window replacer is not compatible with them.
 
+ConfigCategoryGameplay: Gameplay
+SoulGemValueRebalance: Soul gem value rebalance
+SoulGemValueRebalanceDesc: |-
+  Make the value of filled soul gems dependent only on soul magnitude.
+
 # Column
 Column_Name: Name
 Column_Type: Type

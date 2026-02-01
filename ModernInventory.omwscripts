@@ -1,4 +1,5 @@
 MENU: scripts/ModernInventory/settings/player.lua
+GLOBAL: scripts/ModernInventory/settings/global.lua
 GLOBAL: scripts/ModernInventory/global.lua
 PLAYER: scripts/ModernInventory/api.lua
 PLAYER: scripts/ModernInventory/player.lua

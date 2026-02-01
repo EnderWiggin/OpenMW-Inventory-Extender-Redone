@@ -259,6 +259,14 @@ ItemTable.create = function(props, ctx)
                             disabled = disabled,
                         }
                     }, ctx)
+                    local color = helpers.getInteractiveTextColor(state.rowCache[cacheKey].layout)
+                    helpers.forEachInLayout(state.rowCache[cacheKey], function(l)
+                        if l.userData and l.userData.colorable then
+                            l.props = l.props or {}
+                            l.props.textColor = color
+                            l.props.color = color
+                        end
+                    end)
                 else
                     local totalW = 0
                     for cIdx, col in ipairs(columns) do
@@ -329,11 +337,6 @@ ItemTable.create = function(props, ctx)
                     rowWidget.layout.userData.active = active
                     rowWidget.layout.userData.disabled = disabled
                     
-                    -- for cIdx, cellContent in ipairs(rowWidget.layout.content) do
-                    --     if cellContent.userData and cellContent.userData.colorable then
-                    --         cellContent.props.textColor = helpers.getInteractiveTextColor(rowWidget.layout)
-                    --     end
-                    -- end
                     local color = helpers.getInteractiveTextColor(rowWidget.layout)
                     helpers.forEachInLayout(rowWidget, function(l)
                         if l.userData and l.userData.colorable then

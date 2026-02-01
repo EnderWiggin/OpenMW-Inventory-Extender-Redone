@@ -266,7 +266,7 @@ Templates.itemTooltip = function(item, showIcon)
     local itemRecord = item.type.record(item)
     local itemData = types.Item.itemData(item)
 
-    local nameString = itemRecord.name
+    local nameString = helpers.getItemName(item)
     if item.count > 1 then
         nameString = nameString .. ' (' .. item.count .. ')'
     end
@@ -372,8 +372,9 @@ Templates.itemTooltip = function(item, showIcon)
         end
     end
 
-    if itemRecord.value > 0 and itemRecord.id ~= 'gold_001' then
-        innerContent:add(textNormal('value', constants.Strings.VALUE .. ': ' .. (itemRecord.value)))
+    local value = helpers.getItemValue(item)
+    if value > 0 and itemRecord.id ~= 'gold_001' then
+        innerContent:add(textNormal('value', constants.Strings.VALUE .. ': ' .. (value)))
     end
 
     local enchantment
@@ -555,7 +556,7 @@ Templates.itemTooltip = function(item, showIcon)
                     resource = BASE.createTexture('icons/gold.dds'),
                 }
             })
-            flexContent:add(textNormal(nil, ' ' .. util.round(itemRecord.value)))
+            flexContent:add(textNormal(nil, ' ' .. util.round(value)))
         end
 
         if itemRecord.weight > 0 then

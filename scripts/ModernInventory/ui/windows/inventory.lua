@@ -96,7 +96,24 @@ function Inventory:create(windowType, ctx)
                     if self.ctx.dragAndDrop.draggingObject and self.ctx.dragAndDrop.draggingObject.id == row.item.id then
                         nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
                     end
-                    local text = row.itemRecord.name .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+
+                    if self.ctx.uiMode == 'Barter' then
+                        if row.isBartered then
+                            if self.type == 'Inventory' then
+                                nonDraggedCount = self.ctx.barterItems.buying[row.item.id] or 0
+                            else
+                                nonDraggedCount = self.ctx.barterItems.selling[row.item.id] or 0
+                            end
+                        else
+                            if self.type == 'Inventory' then
+                                nonDraggedCount = nonDraggedCount - (self.ctx.barterItems.selling[row.item.id] or 0)
+                            elseif self.type == 'Trade' then
+                                nonDraggedCount = nonDraggedCount - (self.ctx.barterItems.buying[row.item.id] or 0)
+                            end
+                        end
+                    end
+
+                    local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
 
                     local stolen = false
                     local enchanted = false
@@ -188,6 +205,10 @@ function Inventory:create(windowType, ctx)
                 return false
             end
 
+            if a.isBartered ~= b.isBartered then
+                return a.isBartered
+            end
+
             -- First, check if items are equipped
             if self.target.type.hasEquipped then
                 local aEquipped = self.target.type.hasEquipped(self.target, a.item)
@@ -239,17 +260,62 @@ function Inventory:create(windowType, ctx)
 
             self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
 
-            local transfer = input.isAltPressed()
+            local transfer = input.isAltPressed() or self.ctx.uiMode == 'Barter'
             local takeAll = input.isShiftPressed()
             local takeOne = input.isCtrlPressed()
 
             if transfer and self.ctx.uiMode == 'Interface' then return end
+
+            local itemCount = row.item.count
+            if self.ctx.uiMode == 'Barter' then
+                if row.isBartered then
+                    if self.type == 'Inventory' then
+                        itemCount = self.ctx.barterItems.buying[row.item.id] or 0
+                    else
+                        itemCount = self.ctx.barterItems.selling[row.item.id] or 0
+                    end
+                else
+                    if self.type == 'Inventory' then
+                        itemCount = itemCount - (self.ctx.barterItems.selling[row.item.id] or 0)
+                    elseif self.type == 'Trade' then
+                        itemCount = itemCount - (self.ctx.barterItems.buying[row.item.id] or 0)
+                    end
+                end
+            end
+
             local function doAction(count)
                 if transfer then
-                    if self.type == 'Inventory' and ctx.uiMode == 'Container' and ctx.modeArgs.Container then
-                        ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container, omwself, count)
-                    elseif self.type == 'Container' and ctx.uiMode == 'Container' then
-                        ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count)
+                    if ctx.uiMode == 'Container' then
+                        if self.type == 'Inventory' and ctx.modeArgs.Container then
+                            ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container, omwself, count)
+                        elseif self.type == 'Container' then
+                            ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count)
+                        end
+                    elseif ctx.uiMode == 'Barter' then
+                        if row.isBartered then
+                            if self.type == 'Inventory' then
+                                ctx.barterItems.buying[row.item.id] = ctx.barterItems.buying[row.item.id] - count
+                                if ctx.barterItems.buying[row.item.id] <= 0 then
+                                    ctx.barterItems.buying[row.item.id] = nil
+                                end
+                            else
+                                ctx.barterItems.selling[row.item.id] = ctx.barterItems.selling[row.item.id] - count
+                                if ctx.barterItems.selling[row.item.id] <= 0 then
+                                    ctx.barterItems.selling[row.item.id] = nil
+                                end
+                            end
+                        else
+                            if self.type == 'Inventory' then
+                                ctx.barterItems.selling[row.item.id] = (ctx.barterItems.selling[row.item.id] or 0) + count 
+                            else
+                                ctx.barterItems.buying[row.item.id] = (ctx.barterItems.buying[row.item.id] or 0) + count
+                            end
+                        end
+                        local sound = helpers.getItemSound(row.item, 'down')
+                        if sound then
+                            ambient.playSound(sound)
+                        end
+                        omwself:sendEvent('MI_Update')
                     end
                 else
                     ctx.dragAndDrop:startDrag(row.item, self.target, count)
@@ -257,18 +323,18 @@ function Inventory:create(windowType, ctx)
                 self:refresh()
             end
 
-            if row.item.count > 1 and not takeAll and not takeOne then
+            if itemCount > 1 and not takeAll and not takeOne then
                 self.itemTable.layout.userData.getState().lastUsedRowPos = nil
                 local modal = ItemStackModal.create({
                     itemName = row.itemRecord.name,
-                    maxCount = row.item.count,
+                    maxCount = itemCount,
                     onConfirm = function(count)
                         doAction(count)
                     end,
                 }, ctx)
                 ctx.modalElement = modal
             else
-                doAction(takeOne and 1 or row.item.count)
+                doAction(takeOne and 1 or itemCount)
             end
         end,
         onRowActivate = function(row, rowWidget)
@@ -363,7 +429,7 @@ function Inventory:create(windowType, ctx)
     self.infoBar = InfoBar.create({
         maxHeight = specialTemplates.LINE_HEIGHT + 12,
     }, ctx)
-    if self.type ~= 'Barter' then
+    if self.type ~= 'Trade' then
         self.infoBar.layout.userData.addInfoLayout({}, function(layout)
             if not self.target then return {} end
             layout = {
@@ -392,10 +458,15 @@ function Inventory:create(windowType, ctx)
             return layout
         end)
     end
-    if self.type == 'Inventory' then
+    if self.type == 'Inventory' or self.type == 'Trade' then
         self.infoBar.layout.userData.addInfoLayout({}, function(layout)
             if not self.target then return {} end
-            local goldAmount = self.target.type.inventory(self.target):countOf('gold_001')
+            local goldAmount
+            if self.type == 'Inventory' then
+                goldAmount = self.target.type.inventory(self.target):countOf('gold_001')
+            else
+                goldAmount = self.target.type.getBarterGold(self.target)
+            end
             layout = {
                 type = ui.TYPE.Flex,
                 props = {
@@ -497,6 +568,56 @@ function Inventory:create(windowType, ctx)
         return true
     end)
 
+    self.itemTable.layout.userData.setFilter('barterFilter', function(row)
+        if self.ctx.uiMode == 'Barter' then
+            if helpers.isGold(row.item) then
+                return false
+            end
+
+            local barterNpc = self.ctx.modeArgs.Barter
+            if not barterNpc then
+                return false
+            end
+            local services = barterNpc.type.record(barterNpc).servicesOffered
+
+            local canTrade = true
+            if services.MagicItems and row.itemRecord.enchant then
+                canTrade = true
+            else
+                for t, serviceName in pairs(constants.TypeToService) do
+                    if types[t].objectIsInstance(row.item) then
+                        if not services[serviceName] then
+                            return false
+                        end
+                        break
+                    end
+                end 
+            end
+        
+            if self.type == 'Inventory' then
+                if row.isBartered then
+                    return self.ctx.barterItems.buying[row.item.id] and self.ctx.barterItems.buying[row.item.id] > 0
+                end
+
+                local sellingCount = self.ctx.barterItems.selling[row.item.id] or 0
+                return row.item.count > sellingCount
+            elseif self.type == 'Trade' then
+                if self.target.type.hasEquipped(self.target, row.item) then
+                    return false
+                end
+
+                if row.isBartered then
+                    return self.ctx.barterItems.selling[row.item.id] and self.ctx.barterItems.selling[row.item.id] > 0
+                end
+
+                local buyingCount = self.ctx.barterItems.buying[row.item.id] or 0
+                return row.item.count > buyingCount
+            end
+        else
+            return not row.isBartered
+        end
+    end)
+
     return self
 end
 
@@ -509,31 +630,61 @@ function Inventory:createData()
     if not self.target then
         return {}
     end
-    local data = {}
-    for _, item in ipairs(self.target.type.inventory(self.target):getAll()) do
+    
+    local function createRowData(item, isBartered)
         local record = item.type.record(item)
-        local vw = record.weight > 0 and (record.value / record.weight) or 0
+        local value = helpers.getItemValue(item)
+        local vw = record.weight > 0 and (value / record.weight) or 0
         local vwPrecision = vw > 10 and 0 or 1
-        vw = helpers.roundToPlaces(vw, vwPrecision)
         
-        table.insert(data, {
+        local rowData = {
             id = item.id,
-            Name = record.name,
-            Value = helpers.roundToPlaces(record.value, 1),
+            Name = helpers.getItemName(item),
+            Value = helpers.roundToPlaces(value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
-            ['V/W'] = vw,
+            ['V/W'] = helpers.roundToPlaces(vw, vwPrecision),
             item = item,
             itemRecord = record,
-            disabledFn = function()
-                if self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
-                    if not helpers.doesItemFit(item, self.ctx.modeArgs.Container) then
-                        return true
-                    end
-                end
-                return false
-            end,
-        })
+            isBartered = isBartered,
+        }
+        
+        if not isBartered and self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
+            rowData.disabledFn = function()
+                return not helpers.doesItemFit(item, self.ctx.modeArgs.Container)
+            end
+        end
+        
+        if isBartered then
+            rowData.activeFn = function() return true end
+        end
+        
+        return rowData
     end
+    
+    local data = {}
+    
+    -- Add primary inventory
+    local thisInv = self.type == 'Trade' 
+        and helpers.getMerchantItems(self.target) 
+        or self.target.type.inventory(self.target):getAll()
+    
+    for _, item in ipairs(thisInv) do
+        table.insert(data, createRowData(item, false))
+    end
+    
+    -- Add bartered items from other inventory
+    if self.ctx.uiMode == 'Barter' then
+        local otherInv = self.type == 'Inventory'
+            and (self.ctx.modeArgs.Barter and helpers.getMerchantItems(self.ctx.modeArgs.Barter))
+            or (self.type == 'Trade' and omwself.type.inventory(omwself):getAll())
+        
+        if otherInv then
+            for _, item in ipairs(otherInv) do
+                table.insert(data, createRowData(item, true))
+            end
+        end
+    end
+    
     return data
 end
 
@@ -546,6 +697,10 @@ function Inventory:updateData()
     end
 
     local anyChanges = false
+    if self.ctx.uiMode == 'Barter' then
+        anyChanges = true
+    end
+
     if not self.trackedCounts then
         self.trackedCounts = {}
         anyChanges = true
@@ -610,6 +765,13 @@ function Inventory:updateTarget()
         else
             self.target = nil
         end
+    elseif self.type == 'Trade' then
+        local modeArgs = self.ctx.modeArgs
+        if modeArgs and modeArgs.Barter then
+            self.target = modeArgs.Barter
+        else
+            self.target = nil
+        end
     end
 
     if oldTarget ~= self.target then
@@ -624,7 +786,7 @@ function Inventory:updateTarget()
 end
 
 function Inventory:getDimensionsKey()
-    if self.type == 'Barter' then
+    if self.type == 'Trade' then
         return 'd_BarterWindowDimensions'
     elseif self.type == 'Container' then
         return 'd_ContainerWindowDimensions'

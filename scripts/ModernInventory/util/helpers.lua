@@ -8,6 +8,8 @@ local _, debug = pcall(require, 'openmw.debug')
 
 local C = require('scripts.ModernInventory.util.constants')
 
+local configGlobal = require('scripts.ModernInventory.config.global')
+
 local Helpers = {}
 
 Helpers.shallowCopy = function(tbl)
@@ -289,6 +291,38 @@ Helpers.getWeaponInfo = function(item)
     end
 end
 
+Helpers.getItemName = function(item)
+    local soul = item.type.itemData(item).soul
+    local baseName = item.type.record(item).name
+    if soul then
+        local soulRecord = types.Creature.records[soul]
+        if soulRecord then
+            return baseName .. ' (' .. soulRecord.name .. ')'
+        end
+    end
+    return baseName
+end
+
+Helpers.getItemValue = function(item)
+    local soul = item.type.itemData(item).soul
+    local baseValue = item.type.record(item).value
+    if not soul then return baseValue end
+
+    local soulRecord = types.Creature.records[soul]
+    local soulValue = soulRecord and soulRecord.soulValue or 0
+    if configGlobal.gameplay.b_SoulGemValueRebalance then
+        soulValue = 0.0001 * (soulValue ^ 3) + 2 * soulValue
+
+        if item.recordId:lower() == 'misc_soulgem_azura' then
+            return baseValue + math.modf(soulValue)
+        else
+            return math.modf(soulValue)
+        end
+    else
+        return baseValue * soulValue
+    end
+end
+
 Helpers.getWeaponRangeInFeet = function(item)
     if not types.Weapon.objectIsInstance(item) then
         return 0
@@ -338,6 +372,32 @@ Helpers.doesItemFit = function(item, container)
     return (contEncumbrance + itemWeight) <= contCapacity
 end
 
+Helpers.getMerchantItems = function(npc)
+    local all = {}
+    local carried = npc.type.inventory(npc):getAll()
+    for _, item in ipairs(carried) do
+        table.insert(all, item)
+    end
+    local success, nearby = pcall(require, 'openmw.nearby')
+    if success then
+        for _, item in ipairs(nearby.items) do
+            if item.owner.recordId == npc.recordId then
+                table.insert(all, item)
+            end
+        end
+        for _, container in ipairs(nearby.containers) do
+            if container.owner.recordId == npc.recordId then
+                local inv = container.type.inventory(container)
+                local contItems = inv:getAll()
+                for _, item in ipairs(contItems) do
+                    table.insert(all, item)
+                end
+            end
+        end
+    end
+    return all
+end
+
 Helpers.isGold = function(item)
     local id = item.recordId:lower()
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
@@ -385,24 +445,24 @@ Helpers.getItemSound = function(item, upOrDown)
     return 'item ' .. itemStr .. ' ' .. upOrDown
 end
 
+local FATIGUE_BASE = core.getGMST('fFatigueBase')
+local FATIGUE_MULT = core.getGMST('fFatigueMult')
+Helpers.getFatigueTerm = function(actor)
+    local fatigueStat = actor.type.stats.dynamic.fatigue(actor)
+    local normalizedFatigue
+    if fatigueStat.base == 0 then
+        normalizedFatigue = 1
+    else
+        normalizedFatigue = math.max(0, fatigueStat.current / fatigueStat.base)
+    end
+
+    return FATIGUE_BASE - FATIGUE_MULT * (1 - normalizedFatigue)
+end
+
 if isPlayer then
     local magicka = self.type.stats.dynamic.magicka(self)
     local willpower = self.type.stats.attributes.willpower(self)
     local luck = self.type.stats.attributes.luck(self)
-
-    local FATIGUE_BASE = core.getGMST('fFatigueBase')
-    local FATIGUE_MULT = core.getGMST('fFatigueMult')
-    local FATIGUE_STAT = self.type.stats.dynamic.fatigue(self)
-    Helpers.getFatigueTerm = function()
-        local normalizedFatigue
-        if FATIGUE_STAT.base == 0 then
-            normalizedFatigue = 1
-        else
-            normalizedFatigue = math.max(0, FATIGUE_STAT.current / FATIGUE_STAT.base)
-        end
-
-        return FATIGUE_BASE - FATIGUE_MULT * (1 - normalizedFatigue)
-    end
 
     local chargeMult = {
         [core.magic.ENCHANTMENT_TYPE.CastOnStrike] = core.getGMST('iMagicItemChargeStrike'),

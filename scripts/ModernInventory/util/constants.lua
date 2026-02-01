@@ -202,4 +202,19 @@ for _, gmst in ipairs(boundItemGMSTs) do
     C.BoundItemIDs[value] = true
 end
 
+C.TypeToService = {
+    Weapon = "Weapon",
+    Armor = "Armor",
+    Clothing = "Clothing",
+    Book = "Books",
+    Potion = "Potions",
+    Ingredient = "Ingredients",
+    Lockpick = "Picks",
+    Probe = "Probes",
+    Light = "Lights",
+    Apparatus = "Apparatus",
+    Repair = "RepairItem",
+    Miscellaneous = "Misc",
+}
+
 return C
