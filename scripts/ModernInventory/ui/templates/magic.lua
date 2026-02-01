@@ -48,7 +48,6 @@ Templates.MIN_WIDTH =
 Templates.active = false
 Templates.focusedLabel = nil
 Templates.linesToProcess = {}
-Templates.updateQueue = {}
 local lastMousePos = nil
 
 Templates.createTexture = BASE.createTexture
@@ -128,7 +127,7 @@ Templates.interactive = function(props, layout, ctx)
         if element.layout.userData.tooltipFn then
             if ctx.activeTooltip and ctx.activeTooltip.layout then
                 ctx.activeTooltip.layout.props.visible = false
-                table.insert(Templates.updateQueue, ctx.activeTooltip)
+                ctx.updateQueue[ctx.activeTooltip] = true
             end
         end
 
@@ -140,7 +139,7 @@ Templates.interactive = function(props, layout, ctx)
                     l.props.color = helpers.getInteractiveTextColor(element.layout)
                 end
             end)
-            table.insert(Templates.updateQueue, element)
+            ctx.updateQueue[element] = true
         end
         return true
     end)
@@ -154,7 +153,7 @@ Templates.interactive = function(props, layout, ctx)
                     l.props.color = helpers.getInteractiveTextColor(element.layout)
                 end
             end)
-            table.insert(Templates.updateQueue, element)
+            ctx.updateQueue[element] = true
         end
         return true
     end)

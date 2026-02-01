@@ -297,13 +297,6 @@ ItemTable.create = function(props, ctx)
                                 anyChanged = true
                             end
                         end
-                        if cellContent.content and cellContent.content:indexOf('equippedOverlay') then
-                            local visible = omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item)
-                            if cellContent.content.equippedOverlay.props.visible ~= visible then
-                                cellContent.content.equippedOverlay.props.visible = visible
-                                anyChanged = true
-                            end
-                        end
                         totalW = totalW + w
                     end
                 end

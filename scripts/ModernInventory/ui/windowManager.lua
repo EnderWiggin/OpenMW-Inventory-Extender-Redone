@@ -52,6 +52,7 @@ windowManager.ctx = {
         selling = {},
         buying = {},
     },
+    updateQueue = {},
 }
 
 local showing = {
@@ -163,10 +164,10 @@ local updateInt = 0.5
 local updateTimer = 0
 
 windowManager.onFrame = function()
-    for _, el in ipairs(templates.updateQueue) do
-        el:update()
+    for element in pairs(windowManager.ctx.updateQueue) do
+        element:update()
     end
-    templates.updateQueue = {}
+    windowManager.ctx.updateQueue = {}
 
     local dt = core.getRealFrameDuration()
 

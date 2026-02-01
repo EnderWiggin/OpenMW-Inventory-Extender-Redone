@@ -56,11 +56,26 @@ function Inventory:create(windowType, ctx)
                 width = specialTemplates.LINE_HEIGHT * 1.5 + 8,
                 renderer = function(row, width, height)
                     local iconDim = math.min(width, height) -- keep square
+                    local visible = row.isBartered or (self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false)
                     return {
                         props = {
                             size = v2(width, height),
                         },
                         content = ui.content {
+                            {
+                                name = 'itemBackground',
+                                type = ui.TYPE.Image,
+                                props = {
+                                    resource = ui.texture { 
+                                        path = row.isBartered and 'textures/menu_icon_barter.dds' or 'textures/menu_icon_equip.dds',
+                                        size = v2(40, 40),
+                                        offset = row.isBartered and v2(4, 4) or v2(2, 2),
+                                    },
+                                    position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                                    size = v2(iconDim, iconDim),
+                                    visible = visible,
+                                }
+                            },
                             {
                                 name = 'itemIcon',
                                 type = ui.TYPE.Image,
@@ -70,20 +85,9 @@ function Inventory:create(windowType, ctx)
                                     size = v2(iconDim, iconDim),
                                 }
                             },
-                            {
-                                name = 'equippedOverlay',
-                                type = ui.TYPE.Image,
-                                props = {
-                                    resource = ui.texture { 
-                                        path = 'textures/menu_icon_equip.dds',
-                                        size = v2(40, 40),
-                                        offset = v2(2, 2),
-                                    },
-                                    position = v2((width - iconDim) / 2, (height - iconDim) / 2),
-                                    size = v2(iconDim, iconDim),
-                                    visible = self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false,
-                                }
-                            }
+                        },
+                        userData = {
+                            bgrVisible = visible,
                         }
                     }
                 end
@@ -365,7 +369,7 @@ function Inventory:create(windowType, ctx)
     }, ctx)
 
     self.categoryFilter = CategoryFilter.create({
-        maxHeight = 48,
+        maxHeight = 72,
     }, function(selectedCategory)
         local categories = I.ModernInventory.getCategories()
         local category = nil
@@ -386,6 +390,18 @@ function Inventory:create(windowType, ctx)
         self.itemTable.layout.userData.getState().lastUsedRowPos = nil
 
         self.itemTable.layout.userData.resetScroll()
+        self.itemTable.layout.userData.refresh()
+    end, 
+    function(searchText)
+        self.itemTable.layout.userData.setFilter('searchFilter', function(row)
+            if not searchText or searchText == '' then
+                return true
+            end
+            local name = helpers.getItemName(row.item):lower()
+            local searchLower = searchText:lower()
+            return name:find(searchLower, 1, true) ~= nil
+        end)
+
         self.itemTable.layout.userData.refresh()
     end, ctx)
 
@@ -654,9 +670,9 @@ function Inventory:createData()
             end
         end
         
-        if isBartered then
-            rowData.activeFn = function() return true end
-        end
+        -- if isBartered then
+        --     rowData.activeFn = function() return true end
+        -- end
         
         return rowData
     end
@@ -752,6 +768,13 @@ function Inventory:setPinnable()
     else
         self.element.layout.userData.setPinnable(false)
     end
+end
+
+function Inventory:setVisible(visible)
+    if self.categoryFilter then
+        self.categoryFilter.layout.userData.clearSearch()
+    end
+    Window.setVisible(self, visible)
 end
 
 function Inventory:updateTarget()

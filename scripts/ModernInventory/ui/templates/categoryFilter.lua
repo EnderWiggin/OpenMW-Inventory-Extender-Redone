@@ -3,44 +3,150 @@ local util = require('openmw.util')
 local v2 = util.vector2
 local auxUi = require('openmw_aux.ui')
 local I = require('openmw.interfaces')
+local async = require('openmw.async')
+local core = require('openmw.core')
 
 local baseTemplates = require('scripts.ModernInventory.ui.templates.base')
 local specialTemplates = require('scripts.ModernInventory.ui.templates.magic')
 local constants = require('scripts.ModernInventory.util.constants')
 
+local l10n = core.l10n('ModernInventory')
+
 local CategoryFilter = {}
 
-function CategoryFilter.create(props, onChange, ctx)
+function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local maxHeight = props.maxHeight or 48
 
-    local layout = {
+    local topBarHeight = specialTemplates.LINE_HEIGHT * 1.5
+    local categoryBarHeight = maxHeight - topBarHeight
+
+    local element
+    local placeholder = l10n('UI_SearchBarPlaceholder')
+    local function createSearchBar(text)
+        return {
+            name = 'searchBar',
+            template = I.MWUI.templates.box,
+            content = ui.content {
+                {
+                    template = I.MWUI.templates.padding,
+                    content = ui.content {
+                        {
+                            template = I.MWUI.templates.textEditLine,
+                            props = {
+                                size = v2(200, topBarHeight - 12),
+                                text = text,
+                                textColor = text == placeholder and constants.Colors.DISABLED or constants.Colors.DEFAULT,
+                            },
+                            events = {
+                                textChanged = async:callback(function(text, layout)
+                                    layout.props.text = text
+                                    if layout.props.textColor == constants.Colors.DISABLED then
+                                        layout.props.textColor = constants.Colors.DEFAULT
+                                        element:update()
+                                    end
+                                    if onSearchChange then
+                                        onSearchChange(text)
+                                    end
+                                end),
+                                focusGain = async:callback(function(_, layout)
+                                    if layout.props.text == placeholder then
+                                        layout.props.text = ''
+                                        element:update()
+                                    end
+                                end),
+                                focusLoss = async:callback(function(_, layout)
+                                    if layout.props.text == '' then
+                                        layout.props.text = placeholder
+                                    end
+                                    local indexOfBar = element.layout.content.topBar.content:indexOf('searchBar')
+                                    local indexOfProxy = element.layout.content.topBar.content:indexOf('searchBarProxy')
+
+                                    element.layout.content.topBar.content.searchBar = nil
+                                    element.layout.content.topBar.content.searchBarProxy = nil
+
+                                    element.layout.content.topBar.content:insert(indexOfBar, { name = 'searchBarProxy' })
+                                    element.layout.content.topBar.content:insert(indexOfProxy, createSearchBar(layout.props.text))
+                                    ctx.updateQueue[element] = true
+                                end),
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    end
+
+    local topBarLayout = {
+        name = 'topBar',
         type = ui.TYPE.Flex,
         props = {
             horizontal = true,
             autoSize = false,
-            size = v2(0, maxHeight),
+            size = v2(0, topBarHeight),
+            relativeSize = v2(1, 0),
+            align = ui.ALIGNMENT.Start,
+            arrange = ui.ALIGNMENT.Center,
+        },
+        content = ui.content {
+            baseTemplates.intervalH(8),
+            {
+                name = 'selectedCategoryName',
+                template = baseTemplates.textHeader,
+                props = {
+                    text = '',
+                    textSize = topBarHeight,
+                },
+            },
+            {
+                external = { grow = 1, stretch = 1, }
+            },
+            createSearchBar(placeholder),
+            {
+                name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
+            },
+            baseTemplates.intervalH(2),
+        }
+    }
+
+    local categoryBarLayout = {
+        name = 'categoryBar',
+        type = ui.TYPE.Flex,
+        props = {
+            horizontal = true,
+            autoSize = false,
+            position = v2(0, topBarHeight),
+            size = v2(0, categoryBarHeight),
             relativeSize = v2(1, 0),
             align = ui.ALIGNMENT.Start,
             arrange = ui.ALIGNMENT.Center,
         },
         content = ui.content {},
-        userData = {},
     }
 
     local state = {
         selectedCategory = nil,
     }
 
-    local element = ui.create(layout)
+    element = ui.create({
+        props = {
+            size = v2(0, maxHeight),
+            relativeSize = v2(1, 0),
+        },
+        content = ui.content {
+            topBarLayout,
+            categoryBarLayout,
+        },
+        userData = {},
+    })
 
     local updateCategories
 
     updateCategories = function()
-        for i = #element.layout.content, 1, -1 do
-            auxUi.deepDestroy(element.layout.content[i])
+        for i = #element.layout.content.categoryBar.content, 1, -1 do
+            auxUi.deepDestroy(element.layout.content.categoryBar.content[i])
         end
 
-        element.layout.content = ui.content {}
+        element.layout.content.categoryBar.content = ui.content {}
 
         local categories = I.ModernInventory.getCategories()
         if not state.selectedCategory then
@@ -49,14 +155,14 @@ function CategoryFilter.create(props, onChange, ctx)
 
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
-            element.layout.content:add({ external = { grow = 1, stretch = 1, } })
-            element.layout.content:add(specialTemplates.interactive({
+            element.layout.content.categoryBar.content:add({ external = { grow = 1, stretch = 1, } })
+            element.layout.content.categoryBar.content:add(specialTemplates.interactive({
                 onClick = function()
                     if state.selectedCategory ~= category.key then
                         state.selectedCategory = category.key
                         updateCategories()
-                        if onChange then
-                            onChange(state.selectedCategory)
+                        if onCategoryChange then
+                            onCategoryChange(state.selectedCategory)
                         end
                     end
                 end,
@@ -65,7 +171,7 @@ function CategoryFilter.create(props, onChange, ctx)
                 type = ui.TYPE.Image,
                 props = {
                     resource = ui.texture { path = category.icon },
-                    size = v2(maxHeight - 16, maxHeight - 16),
+                    size = v2(categoryBarHeight - 16, categoryBarHeight - 16),
                     color = isSelected and constants.Colors.ACTIVE or constants.Colors.DEFAULT,
                 },
                 userData = {
@@ -84,9 +190,11 @@ function CategoryFilter.create(props, onChange, ctx)
                 }
             }, ctx))
             if i == #categories then
-                element.layout.content:add({ external = { grow = 1, stretch = 1, } })
+                element.layout.content.categoryBar.content:add({ external = { grow = 1, stretch = 1, } })
             end
         end
+
+        element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.ModernInventory.getCategory(state.selectedCategory).name or '') or ''
 
         element:update()
     end
@@ -100,11 +208,11 @@ function CategoryFilter.create(props, onChange, ctx)
         if #categories == 0 then return end
         
         local maxSizePerCategory = totalWidth / #categories
-        local imageSize = math.min(maxHeight - 16, maxSizePerCategory)
+        local imageSize = math.min(categoryBarHeight - 16, maxSizePerCategory)
         local imageSizeVec = v2(imageSize, imageSize)
         
         local anyChanged = false
-        for _, child in ipairs(element.layout.content) do
+        for _, child in ipairs(element.layout.content.categoryBar.content) do
             if child.layout and child.layout.type == ui.TYPE.Image then
                 if child.layout.props.size ~= imageSizeVec then
                     anyChanged = true
@@ -115,12 +223,21 @@ function CategoryFilter.create(props, onChange, ctx)
         end
         
         if anyChanged then
-            element.layout.props.size = v2(0, imageSize + 16)
+            element.layout.props.size = v2(0, topBarHeight + imageSize + 16)
             element:update()
         end
     end
 
     element.layout.userData.resizeImages = resizeImages
+
+    local function clearSearch()
+        element.layout.content.topBar.content.searchBar = createSearchBar(placeholder)
+        element:update()
+        if onSearchChange then
+            onSearchChange('')
+        end
+    end
+    element.layout.userData.clearSearch = clearSearch
 
     return element
 end

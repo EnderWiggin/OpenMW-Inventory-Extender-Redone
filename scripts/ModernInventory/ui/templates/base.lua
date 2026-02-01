@@ -809,7 +809,7 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
             focusLoss = async:callback(function()
                 if ctx.cursorAttachedIcon then
                     ctx.cursorAttachedIcon.layout.props.visible = false
-                    ctx.cursorAttachedIcon:update() 
+                    ctx.updateQueue[ctx.cursorAttachedIcon] = true
                 end
             end),
             mouseRelease = async:callback(function(e)
