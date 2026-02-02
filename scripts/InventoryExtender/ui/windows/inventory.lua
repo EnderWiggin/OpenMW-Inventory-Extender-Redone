@@ -454,6 +454,7 @@ function Inventory:create(windowType, ctx)
     if self.type ~= 'Trade' then
         self.infoBar.layout.userData.addInfoLayout({}, function(layout)
             if not self.target then return {} end
+            if self.type == 'Container' and types.Container.objectIsInstance(self.target) and types.Container.record(self.target).isOrganic then return {} end
             layout = {
                 type = ui.TYPE.Flex,
                 props = {
@@ -919,6 +920,9 @@ function Inventory:createData()
         
         if not isBartered and self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
             rowData.disabledFn = function()
+                if self.ctx.modeArgs.Container and types.Container.objectIsInstance(self.ctx.modeArgs.Container) and types.Container.record(self.ctx.modeArgs.Container).isOrganic then
+                    return true
+                end
                 return not helpers.doesItemFit(item, self.ctx.modeArgs.Container)
             end
         end

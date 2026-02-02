@@ -111,17 +111,17 @@ function DragAndDrop:setDraggingObject(object)
 end
 
 function DragAndDrop:transferInto(object, destination, source, count)
-    if not helpers.doesItemFit(object, destination) then
-        ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
-        return false
-    end
-
     if types.Container.objectIsInstance(destination) then
         local destRecord = destination.type.record(destination)
         if destRecord.isOrganic then
             ui.showMessage(constants.Strings.CONTAINER_ORGANIC)
             return false
         end
+    end
+    
+    if not helpers.doesItemFit(object, destination) then
+        ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
+        return false
     end
 
     local downSound = helpers.getItemSound(object, 'down')
