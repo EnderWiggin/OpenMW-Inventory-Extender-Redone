@@ -43,6 +43,7 @@ windowManager.ctx = {
     focusedScrollable = nil,
     modalElement = nil,
     activeTooltip = nil,
+    tooltipModifiers = {},
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     modeArgs = {},

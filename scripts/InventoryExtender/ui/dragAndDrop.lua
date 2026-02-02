@@ -200,7 +200,7 @@ end
 local function createObjectTooltip(hitObject, position, ctx)
     -- Check if it's an item
     if types.Item.isCarriable(hitObject) then
-        ctx.activeTooltip = ui.create(specialTemplates.itemTooltip(hitObject, true))
+        ctx.activeTooltip = ui.create(specialTemplates.itemTooltip(hitObject, true, ctx))
     elseif ctx.isConsoleOpen then
         ctx.activeTooltip = ui.create(specialTemplates.lineTooltip('"' .. hitObject.recordId .. '"', hitObject.id))
     end

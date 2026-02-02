@@ -253,7 +253,7 @@ ItemTable.create = function(props, ctx)
                                 end
                             end,
                             tooltipFn = function()
-                                return specialTemplates.itemTooltip(row.item)
+                                return specialTemplates.itemTooltip(row.item, false, ctx)
                             end,
                             active = active,
                             disabled = disabled,

@@ -26,24 +26,6 @@ API.Templates = {
     MAGIC = require('scripts.InventoryExtender.ui.templates.magic'),
 }
 
-API.TooltipBuilders = {
-    TEXT = function(params)
-        return API.Templates.MAGIC.tooltip(4, ui.content {
-            {
-                template = API.Templates.BASE.textParagraph,
-                props = {
-                    size = util.vector2(params.width or 300, 0),
-                    text = params.text or '',
-                    autoSize = true,
-                }
-            }
-        })
-    end,
-    ITEM = function(item)
-        return API.Templates.MAGIC.itemTooltip(item)
-    end,
-}
-
 function API.show(windowName)
     windowManager.show(windowName)
 end
@@ -152,6 +134,20 @@ function API.unregisterCategory(key)
             return
         end
     end
+end
+
+-- Tooltip Modifiers
+-- These are functions that take the base tooltip layout, make modifications, and return the modified layout
+-- They are called in sequence when building tooltips
+-- Signature: function(item, layout) -> layout
+function API.registerTooltipModifier(id, modifier)
+    for _, existingModifier in ipairs(windowManager.ctx.tooltipModifiers) do
+        if existingModifier.id:lower() == id:lower() then
+            existingModifier.modifier = modifier
+            return
+        end
+    end
+    table.insert(windowManager.ctx.tooltipModifiers, { id = id, modifier = modifier })
 end
 
 return {

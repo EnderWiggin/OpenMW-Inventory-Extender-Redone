@@ -270,7 +270,7 @@ end
 
 local tooltipData = require('scripts.InventoryExtender.interop.tooltips')
 
-Templates.itemTooltip = function(item, showIcon)
+Templates.itemTooltip = function(item, showIcon, ctx)
     local function textNormal(name, text)
         return { name = name, template = BASE.textNormal, props = { text = text } }
     end
@@ -611,7 +611,7 @@ Templates.itemTooltip = function(item, showIcon)
         innerContent[2] = nil -- remove extra interval if no details
     end
 
-    return Templates.tooltip(8, ui.content {
+    local layout = Templates.tooltip(8, ui.content {
         {
             name = 'tooltip',
             type = ui.TYPE.Flex,
@@ -622,6 +622,14 @@ Templates.itemTooltip = function(item, showIcon)
             content = innerContent,
         }
     }, item.id)
+
+    if ctx and ctx.tooltipModifiers then
+        for _, modifier in ipairs(ctx.tooltipModifiers) do
+            layout = modifier.modifier(item, layout) or layout
+        end
+    end
+
+    return layout
 end
 
 Templates.sectionDivider = {
