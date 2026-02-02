@@ -21,6 +21,7 @@ local Window = require('scripts.InventoryExtender.ui.windows.base')
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
 local base = require("scripts.InventoryExtender.ui.windows.base")
+local barterUtils = require('scripts.InventoryExtender.util.barter')
 
 local l10n = core.l10n('InventoryExtender')
 
@@ -104,15 +105,15 @@ function Inventory:create(windowType, ctx)
                     if self.ctx.uiMode == 'Barter' then
                         if row.isBartered then
                             if self.type == 'Inventory' then
-                                nonDraggedCount = self.ctx.barterItems.buying[row.item.id] or 0
+                                nonDraggedCount = (self.ctx.barterState.buying[row.item.id] or {}).count or 0
                             else
-                                nonDraggedCount = self.ctx.barterItems.selling[row.item.id] or 0
+                                nonDraggedCount = (self.ctx.barterState.selling[row.item.id] or {}).count or 0
                             end
                         else
                             if self.type == 'Inventory' then
-                                nonDraggedCount = nonDraggedCount - (self.ctx.barterItems.selling[row.item.id] or 0)
+                                nonDraggedCount = nonDraggedCount - ((self.ctx.barterState.selling[row.item.id] or {}).count or 0)
                             elseif self.type == 'Trade' then
-                                nonDraggedCount = nonDraggedCount - (self.ctx.barterItems.buying[row.item.id] or 0)
+                                nonDraggedCount = nonDraggedCount - ((self.ctx.barterState.buying[row.item.id] or {}).count or 0)
                             end
                         end
                     end
@@ -272,15 +273,15 @@ function Inventory:create(windowType, ctx)
             if self.ctx.uiMode == 'Barter' then
                 if row.isBartered then
                     if self.type == 'Inventory' then
-                        itemCount = self.ctx.barterItems.buying[row.item.id] or 0
+                        itemCount = (self.ctx.barterState.buying[row.item.id] or {}).count or 0
                     else
-                        itemCount = self.ctx.barterItems.selling[row.item.id] or 0
+                        itemCount = (self.ctx.barterState.selling[row.item.id] or {}).count or 0
                     end
                 else
                     if self.type == 'Inventory' then
-                        itemCount = itemCount - (self.ctx.barterItems.selling[row.item.id] or 0)
+                        itemCount = itemCount - ((self.ctx.barterState.selling[row.item.id] or {}).count or 0)
                     elseif self.type == 'Trade' then
-                        itemCount = itemCount - (self.ctx.barterItems.buying[row.item.id] or 0)
+                        itemCount = itemCount - ((self.ctx.barterState.buying[row.item.id] or {}).count or 0)
                     end
                 end
             end
@@ -296,27 +297,30 @@ function Inventory:create(windowType, ctx)
                     elseif ctx.uiMode == 'Barter' then
                         if row.isBartered then
                             if self.type == 'Inventory' then
-                                ctx.barterItems.buying[row.item.id] = ctx.barterItems.buying[row.item.id] - count
-                                if ctx.barterItems.buying[row.item.id] <= 0 then
-                                    ctx.barterItems.buying[row.item.id] = nil
+                                ctx.barterState.buying[row.item.id].count = ctx.barterState.buying[row.item.id].count - count
+                                if ctx.barterState.buying[row.item.id].count <= 0 then
+                                    ctx.barterState.buying[row.item.id] = nil
                                 end
                             else
-                                ctx.barterItems.selling[row.item.id] = ctx.barterItems.selling[row.item.id] - count
-                                if ctx.barterItems.selling[row.item.id] <= 0 then
-                                    ctx.barterItems.selling[row.item.id] = nil
+                                ctx.barterState.selling[row.item.id].count = ctx.barterState.selling[row.item.id].count - count
+                                if ctx.barterState.selling[row.item.id].count <= 0 then
+                                    ctx.barterState.selling[row.item.id] = nil
                                 end
                             end
                         else
                             if self.type == 'Inventory' then
-                                ctx.barterItems.selling[row.item.id] = (ctx.barterItems.selling[row.item.id] or 0) + count 
+                                ctx.barterState.selling[row.item.id] = ctx.barterState.selling[row.item.id] or { item = row.item, count = 0 }
+                                ctx.barterState.selling[row.item.id].count = ctx.barterState.selling[row.item.id].count + count
                             else
-                                ctx.barterItems.buying[row.item.id] = (ctx.barterItems.buying[row.item.id] or 0) + count
+                                ctx.barterState.buying[row.item.id] = ctx.barterState.buying[row.item.id] or { item = row.item, count = 0 }
+                                ctx.barterState.buying[row.item.id].count = ctx.barterState.buying[row.item.id].count + count
                             end
                         end
                         local sound = helpers.getItemSound(row.item, 'down')
                         if sound then
                             ambient.playSound(sound)
                         end
+                        barterUtils.updateOffer(ctx)
                         omwself:sendEvent('MI_Update')
                     elseif ctx.uiMode == 'Interface' then
                         ctx.dragAndDrop:dropAtFeet(row.item, count) 
@@ -580,6 +584,198 @@ function Inventory:create(windowType, ctx)
         self.infoBar.layout.userData.addInfoLayout({})
     end
 
+    if self.type == 'Trade' then
+        self.infoBar.layout.userData.addInfoLayout({
+            name = 'barterControls',
+            type = ui.TYPE.Flex,
+            external = {
+                grow = 1,
+                stretch = 1,
+            },
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+                align = ui.ALIGNMENT.End,
+                autoSize = false,
+            },
+            content = ui.content {
+                { external = { grow = 1, stretch = 1 } },
+                {
+                    name = 'totalBalanceLabel',
+                    template = baseTemplates.textNormal,
+                    props = {
+                        text = l10n('UI_Barter_Gain'),
+                    },
+                },
+                baseTemplates.intervalH(8),
+                specialTemplates.interactive({
+                    onClick = function()
+                        if ctx.barterState.totalBalance == 0 then
+                            ctx.barterState.currentBalance = 0
+                        end
+                        if ctx.barterState.currentBalance < 0 then
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + 1
+                        else
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - 1
+                        end
+                        self.infoBar.layout.userData.updateAll()
+                    end,
+                    --parent = self.infoBar,
+                }, baseTemplates.button('-'), ctx),
+                baseTemplates.intervalH(4),
+                {
+                    name = 'totalBalanceBox',
+                    template = I.MWUI.templates.box,
+                    content = ui.content {
+                        {
+                            template = I.MWUI.templates.padding,
+                            content = ui.content {
+                                {
+                                    name = 'totalBalanceEdit',
+                                    template = I.MWUI.templates.textEditLine,
+                                    props = {
+                                        size = v2(80, specialTemplates.LINE_HEIGHT),
+                                        text = tostring(ctx.barterState.currentBalance),
+                                    },
+                                    events = {
+                                        textChanged = async:callback(function(text, layout)
+                                            local num = tonumber(text)
+                                            if num then
+                                                local previousBalance = ctx.barterState.currentBalance
+
+                                                ctx.barterState.currentBalance = (previousBalance >= 0 and 1 or -1) * math.floor(num)
+                                                if ctx.barterState.currentBalance == 0 then
+                                                    --ctx.barterState.currentBalance = previousBalance
+                                                end
+
+                                                if num ~= math.abs(num) then
+                                                    layout.props.text = tostring(math.abs(num))
+                                                end
+                                            end
+                                            self.infoBar.layout.userData.updateAll() 
+                                        end),
+                                    },
+                                }
+                            }
+                        }
+                    }
+                },
+                baseTemplates.intervalH(4),
+                specialTemplates.interactive({
+                    onClick = function()
+                        if ctx.barterState.totalBalance == 0 then
+                            ctx.barterState.currentBalance = 0
+                        end
+                        if ctx.barterState.currentBalance < 0 then
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - 1
+                        else
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + 1
+                        end
+                        self.infoBar.layout.userData.updateAll()
+                    end,
+                    --parent = self.infoBar,
+                }, baseTemplates.button('+'), ctx),
+                baseTemplates.intervalH(4),
+                specialTemplates.interactive({
+                    onClick = function()
+                        ctx.barterState.currentBalance = types.Actor.getBarterGold(self.target)
+                        self.infoBar.layout.userData.updateAll()
+                    end,
+                    --parent = self.infoBar,
+                }, baseTemplates.button(l10n('UI_Barter_Max')), ctx),
+                { external = { grow = 1, stretch = 1 } },
+                specialTemplates.interactive({
+                    onClick = function()
+                        if ctx.barterState.totalBalance == 0 then
+                            ctx.barterState.currentBalance = 0
+                        end
+
+                        if not next(ctx.barterState.selling) and not next(ctx.barterState.buying) then
+                            ui.showMessage(constants.Strings.BARTER_NO_ITEMS)
+                            return
+                        end
+
+                        local playerGold = omwself.type.inventory(omwself):countOf('gold_001')
+                        if ctx.barterState.currentBalance < 0 and playerGold < math.abs(ctx.barterState.currentBalance) then
+                            ui.showMessage(constants.Strings.BARTER_PC_TOO_POOR)
+                            return
+                        end
+
+                        if ctx.barterState.currentBalance > 0 then
+                            local merchantGold = self.target.type.getBarterGold(self.target)
+                            if merchantGold < ctx.barterState.currentBalance then
+                                ui.showMessage(constants.Strings.BARTER_MERCHANT_TOO_POOR)
+                                return
+                            end
+                        end
+
+                        for _, entry in pairs(ctx.barterState.selling) do
+                            if ctx.stolenItems[entry.item.recordId] and ctx.stolenItems[entry.item.recordId][self.target.recordId] then
+                                I.UI.setMode(nil)
+                                ui.showMessage(string.format(constants.Strings.THATS_MINE, entry.item.type.record(entry.item).name))
+                                core.sendGlobalEvent('MI_ConfiscateToOwner', {
+                                    item = entry.item,
+                                    count = entry.count,
+                                    player = omwself,
+                                    victim = self.target,
+                                    stolenMap = ctx.stolenItems,
+                                })
+                                return
+                            end
+                        end
+
+                        local offerAccepted = barterUtils.haggle(self.target, ctx.barterState.currentBalance, ctx.barterState.currentMerchantOffer)
+                        if types.NPC.objectIsInstance(self.target) then
+                            local dispositionDelta = offerAccepted and core.getGMST('iBarterSuccessDisposition') or core.getGMST('iBarterFailDisposition')
+                            core.sendGlobalEvent('MI_ModDisposition', {
+                                target = self.target,
+                                player = omwself,
+                                amount = dispositionDelta,
+                            })
+                        end
+
+                        if not offerAccepted then
+                            ui.showMessage(constants.Strings.BARTER_REFUSED)
+                            return
+                        end
+
+                        core.sendGlobalEvent('MI_FinalizeBarter', {
+                            player = omwself,
+                            merchant = self.target,
+                            barterState = ctx.barterState,
+                        })
+
+                        ambient.playSound('item gold up')
+                        ctx.barterState.success = true
+                        I.UI.removeMode('Barter')
+                    end,
+                    parent = self.infoBar,
+                }, baseTemplates.button(constants.Strings.OFFER), ctx),
+                baseTemplates.intervalH(8),
+                specialTemplates.interactive({
+                    onClick = function()
+                        I.UI.removeMode('Barter')
+                    end,
+                    parent = self.infoBar,
+                }, baseTemplates.button(constants.Strings.CANCEL), ctx),
+            }
+        }, function(layout)
+            if not next(ctx.barterState.selling) and not next(ctx.barterState.buying) then
+                ctx.barterState.currentBalance = 0
+            end
+
+            if ctx.barterState.currentBalance < 0 then
+                layout.content.totalBalanceLabel.props.text = l10n('UI_Barter_Spend')
+            else
+                layout.content.totalBalanceLabel.props.text = l10n('UI_Barter_Gain')
+            end
+
+            layout.content.totalBalanceBox.content[1].content.totalBalanceEdit.props.text = tostring(math.abs(ctx.barterState.currentBalance))
+            return layout
+        end)
+        self.infoBar.layout.userData.addInfoLayout({})
+    end
+
     self.infoBar.layout.userData.updateAll()
 
     content:add(self.infoBar)
@@ -653,10 +849,10 @@ function Inventory:create(windowType, ctx)
         
             if self.type == 'Inventory' then
                 if row.isBartered then
-                    return self.ctx.barterItems.buying[row.item.id] and self.ctx.barterItems.buying[row.item.id] > 0
+                    return self.ctx.barterState.buying[row.item.id] and self.ctx.barterState.buying[row.item.id].count > 0
                 end
 
-                local sellingCount = self.ctx.barterItems.selling[row.item.id] or 0
+                local sellingCount = self.ctx.barterState.selling[row.item.id] and self.ctx.barterState.selling[row.item.id].count or 0
                 return row.item.count > sellingCount
             elseif self.type == 'Trade' then
                 if self.target.type.hasEquipped(self.target, row.item) then
@@ -664,10 +860,10 @@ function Inventory:create(windowType, ctx)
                 end
 
                 if row.isBartered then
-                    return self.ctx.barterItems.selling[row.item.id] and self.ctx.barterItems.selling[row.item.id] > 0
+                    return self.ctx.barterState.selling[row.item.id] and self.ctx.barterState.selling[row.item.id].count > 0
                 end
 
-                local buyingCount = self.ctx.barterItems.buying[row.item.id] or 0
+                local buyingCount = self.ctx.barterState.buying[row.item.id] and self.ctx.barterState.buying[row.item.id].count or 0
                 return row.item.count > buyingCount
             end
         else

@@ -127,7 +127,17 @@ C.Strings = {
     CLOSE = 'sClose',
     DISPOSE_OF_CORPSE = 'sDisposeOfCorpse',
     DISPOSE_CORPSE_FAIL = 'sDisposeCorpseFail',
+    OFFER = 'sBarterDialog8',
+    BARTER_NO_ITEMS = 'sBarterDialog11',
+    BARTER_PC_TOO_POOR = 'sBarterDialog1',
+    BARTER_NPC_TOO_POOR = 'sBarterDialog2',
+    BARTER_REFUSED = 'sNotifyMessage9',
+    BARTER_THANK_YOU = 'sBarterDialog5',
+    TOTAL_SOLD = 'sTotalSold',
+    TOTAL_COST = 'sTotalCost',
+    MAX_SALE = 'sMaxSale',
     CONTAINER_ORGANIC = 'sContentsMessage2',
+    THATS_MINE = 'sNotifyMessage49',
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)

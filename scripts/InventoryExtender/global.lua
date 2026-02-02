@@ -357,10 +357,64 @@ local function confiscateStolenItems(data)
                 containerMemory[cellId] = current
 
                 types.Lockable.lock(container, MI_LOCK_LEVEL)
-                data.player:sendEvent('MI_ItemsConfiscated', { container = container, stolenMap = data.stolenMap })
+                data.player:sendEvent('MI_ItemsConfiscated', { stolenMap = data.stolenMap })
                 return
             end
             break
+        end
+    end
+end
+
+local function confiscateToOwner(data)
+    if not data.stolenMap[data.item.recordId] then
+        return
+    end
+
+    local toRemove = math.min(data.count, data.stolenMap[data.item.recordId][data.victim.recordId] or 0)
+    data.stolenMap[data.item.recordId][data.victim.recordId] = (data.stolenMap[data.item.recordId][data.victim.recordId] or 0) - toRemove
+    if data.stolenMap[data.item.recordId][data.victim.recordId] <= 0 then
+        data.stolenMap[data.item.recordId][data.victim.recordId] = nil
+    end
+    if not next(data.stolenMap[data.item.recordId]) then
+        data.stolenMap[data.item.recordId] = nil
+    end
+
+    I.Crimes.commitCrime(data.player, {
+        type = types.Player.OFFENSE_TYPE.Theft,
+        arg = helpers.getItemValue(data.item) * toRemove,
+        victim = data.victim,
+        victimAware = true,
+    })
+    data.item:split(toRemove):moveInto(types.Actor.inventory(data.victim))
+    data.player:sendEvent('MI_ItemsConfiscated', { stolenMap = data.stolenMap })
+end
+
+local function finalizeBarter(props)
+    for _, entry in pairs(props.barterState.selling) do
+        local item = entry.item
+        if entry.count < entry.item.count then
+            item = item:split(entry.count)
+        end
+        item:moveInto(props.merchant)
+    end
+    for _, entry in pairs(props.barterState.buying) do
+        local item = entry.item
+        if entry.count < entry.item.count then
+            item = item:split(entry.count)
+        end
+        item:moveInto(props.player)
+    end
+    if props.barterState.currentBalance ~= 0 then
+        if props.barterState.currentBalance < 0 then
+            local gold = types.Actor.inventory(props.player):find('gold_001')
+            if gold then
+                gold:remove(-props.barterState.currentBalance)
+            end
+            types.NPC.setBarterGold(props.merchant, types.NPC.getBarterGold(props.merchant) + -props.barterState.currentBalance)
+        else
+            local gold = world.createObject('gold_001', props.barterState.currentBalance)
+            gold:moveInto(types.Actor.inventory(props.player))
+            types.NPC.setBarterGold(props.merchant, types.NPC.getBarterGold(props.merchant) - props.barterState.currentBalance)
         end
     end
 end
@@ -385,13 +439,18 @@ return {
     },
     eventHandlers = {
         MI_TryConfiscate = confiscateStolenItems,
+        MI_ConfiscateToOwner = confiscateToOwner,
         MI_Teleport = teleport,
         MI_MoveInto = moveInto,
+        MI_FinalizeBarter = finalizeBarter,
         MI_UIModeChanged = onUiModeChanged,
         MI_StolenChestInactive = updateChestMemory,
         MI_DisposeOfCorpse = function(props)
             disposedBodies[props.target.recordId] = true
             props.target:remove()
+        end,
+        MI_ModDisposition = function(props)
+            types.NPC.modifyBaseDisposition(props.target, props.player, props.amount)
         end,
         UseItem = function(props)
             props.actor:sendEvent('MI_Update')

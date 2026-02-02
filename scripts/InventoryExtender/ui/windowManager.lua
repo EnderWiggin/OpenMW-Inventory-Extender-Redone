@@ -48,9 +48,12 @@ windowManager.ctx = {
     modeArgs = {},
     uiMode = nil,
     stolenItems = {},
-    barterItems = {
+    barterState = {
         selling = {},
         buying = {},
+        currentMerchantOffer = 0,
+        currentBalance = 0,
+        totalBalance = 0,
     },
     updateQueue = {},
 }
@@ -109,9 +112,17 @@ windowManager.hide = function(windowName, force)
 end
 
 windowManager.onUiModeChanged = function(oldMode, newMode, arg)
-    windowManager.ctx.barterItems = {
+    if oldMode == 'Barter' and windowManager.ctx.barterState.success then
+        ui.showMessage(constants.Strings.BARTER_THANK_YOU, {
+            showInDialogue = true,
+        })
+    end
+
+    windowManager.ctx.barterState = {
         selling = {},
         buying = {},
+        currentMerchantOffer = 0,
+        currentBalance = 0,
     }
 
     if oldMode == 'Container' and windowManager.ctx.modeArgs.Container then

@@ -107,3 +107,6 @@ Type_ShortBladeOneHand: Short Blade
 Type_SpearTwoWide: Spear
 
 UI_SearchBarPlaceholder: Search...
+UI_Barter_Spend: "Spend:"
+UI_Barter_Gain: "Gain:"
+UI_Barter_Max: Max
