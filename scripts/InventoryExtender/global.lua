@@ -321,8 +321,8 @@ end
 local function initChestLocks()
     local prisonCells = CellUtils.getPrisonCells()
     for id in pairs(prisonCells) do
-        local cell = world.getCellById(id)
-        if cell then
+        local success, cell = pcall(world.getCellById, id)
+        if success and cell then
             for _, container in ipairs(cell:getAll(types.Container)) do
                 if container.recordId == 'stolen_goods' then
                     if types.Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
@@ -341,8 +341,8 @@ local function confiscateStolenItems(data)
         return
     end
 
-    local cell = world.getCellById(closestMarker.interior)
-    if not cell then
+    local success, cell = pcall(world.getCellById, closestMarker.interior)
+    if not success or not cell then
         return
     end
 

@@ -53,7 +53,8 @@ local function getClosestMarkerFromExteriorPosition(position)
 
         if gridSize == 0 then
             -- Immediate match, check existence now as it's the best possible case
-            if world.getCellById(marker.interior) then
+            local success = pcall(world.getCellById, marker.interior)
+            if success then
                 return marker
             end
         elseif gridSize <= minGridSize then
@@ -115,7 +116,8 @@ local function getClosestMarkerFromExteriorPosition(position)
     table.sort(bestMarkers, function(a, b) return a.sortDistance < b.sortDistance end)
 
     for _, info in ipairs(bestMarkers) do
-        if world.getCellById(info.marker.interior) then
+        local success = pcall(world.getCellById, info.marker.interior)
+        if success then
             return info.marker
         end
     end
