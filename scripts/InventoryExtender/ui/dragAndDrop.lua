@@ -116,6 +116,14 @@ function DragAndDrop:transferInto(object, destination, source, count)
         return false
     end
 
+    if types.Container.objectIsInstance(destination) then
+        local destRecord = destination.type.record(destination)
+        if destRecord.isOrganic then
+            ui.showMessage(constants.Strings.CONTAINER_ORGANIC)
+            return false
+        end
+    end
+
     local downSound = helpers.getItemSound(object, 'down')
     if downSound then
         ambient.playSound(downSound)

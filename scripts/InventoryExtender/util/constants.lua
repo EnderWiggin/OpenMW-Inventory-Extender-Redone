@@ -127,6 +127,7 @@ C.Strings = {
     CLOSE = 'sClose',
     DISPOSE_OF_CORPSE = 'sDisposeOfCorpse',
     DISPOSE_CORPSE_FAIL = 'sDisposeCorpseFail',
+    CONTAINER_ORGANIC = 'sContentsMessage2',
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)
