@@ -448,6 +448,9 @@ local function finalizeBarter(props)
             types.NPC.setBarterGold(props.merchant, types.NPC.getBarterGold(props.merchant) - props.barterState.currentBalance)
         end
     end
+    props.player:sendEvent('MI_BarterFinalized', {
+        skillGain = props.skillGain,
+    })
 end
 
 return {

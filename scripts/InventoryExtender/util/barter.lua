@@ -73,12 +73,7 @@ local function haggle(npc, playerOffer, merchantOffer)
         skillGain = math.floor(100 * (initialMerchantOffer - finalPrice) / initialMerchantOffer)
     end
 
-    I.SkillProgression.skillUsed('mercantile', {
-        skillGain = skillGain,
-        useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
-    })
-
-    return true
+    return true, skillGain
 end
 
 local function getBarterOffer(merchant, basePrice, buying)

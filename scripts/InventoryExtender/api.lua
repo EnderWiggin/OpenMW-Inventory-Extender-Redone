@@ -206,5 +206,11 @@ return {
 
             windowManager.ctx.dragAndDrop:setDraggingObject(obj)
         end,
+        MI_BarterFinalized = function(props)
+            I.SkillProgression.skillUsed('mercantile', {
+                skillGain = props.skillGain,
+                useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
+            })
+        end,
     },
 }

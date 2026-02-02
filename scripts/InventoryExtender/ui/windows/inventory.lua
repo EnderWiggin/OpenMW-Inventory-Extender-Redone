@@ -721,7 +721,7 @@ function Inventory:create(windowType, ctx)
                         if ctx.barterState.currentBalance > 0 then
                             local merchantGold = self.target.type.getBarterGold(self.target)
                             if merchantGold < ctx.barterState.currentBalance then
-                                ui.showMessage(constants.Strings.BARTER_MERCHANT_TOO_POOR)
+                                ui.showMessage(constants.Strings.BARTER_NPC_TOO_POOR)
                                 return
                             end
                         end
@@ -741,7 +741,7 @@ function Inventory:create(windowType, ctx)
                             end
                         end
 
-                        local offerAccepted = barterUtils.haggle(self.target, ctx.barterState.currentBalance, ctx.barterState.currentMerchantOffer)
+                        local offerAccepted, skillGain = barterUtils.haggle(self.target, ctx.barterState.currentBalance, ctx.barterState.currentMerchantOffer)
                         if types.NPC.objectIsInstance(self.target) then
                             local dispositionDelta = offerAccepted and core.getGMST('iBarterSuccessDisposition') or core.getGMST('iBarterFailDisposition')
                             core.sendGlobalEvent('MI_ModDisposition', {
@@ -760,6 +760,7 @@ function Inventory:create(windowType, ctx)
                             player = omwself,
                             merchant = self.target,
                             barterState = ctx.barterState,
+                            skillGain = skillGain,
                         })
 
                         ambient.playSound('item gold up')
