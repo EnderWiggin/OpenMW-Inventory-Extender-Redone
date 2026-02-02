@@ -22,6 +22,7 @@ local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
 local base = require("scripts.InventoryExtender.ui.windows.base")
 local barterUtils = require('scripts.InventoryExtender.util.barter')
+local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorpses')
 
 local l10n = core.l10n('InventoryExtender')
 
@@ -554,7 +555,12 @@ function Inventory:create(windowType, ctx)
                 onClick = function()
                     if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
                         ctx.dragAndDrop:moveAll(self.target, omwself)
-                        core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.modeArgs.Container })
+                        
+                        if persistentCorpses[self.target.recordId] then
+                            ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
+                        else
+                            core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.modeArgs.Container })
+                        end
                         I.UI.removeMode('Container')
                     end
                 end,
