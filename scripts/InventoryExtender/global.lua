@@ -398,8 +398,21 @@ local function confiscateToOwner(data)
     data.player:sendEvent('MI_ItemsConfiscated', { stolenMap = data.stolenMap })
 end
 
+local function setItemData(item, data)
+    local itemData = types.Item.itemData(item)
+    if data.condition then
+        itemData.condition = data.condition
+    end
+    if data.enchantmentCharge then
+        itemData.enchantmentCharge = data.enchantmentCharge
+    end
+    if data.soul then
+        itemData.soul = data.soul
+    end
+end
+
 local function finalizeBarter(props)
-    local function transferItems(entries, destination)
+    local function transferItems(entries, destination, restock)
         for _, entry in pairs(entries) do
             local remainingCount = entry.count
             
@@ -409,19 +422,34 @@ local function finalizeBarter(props)
                     
                     local takeCount = math.min(stackItem.count, remainingCount)
                     local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
+
+                    if restock and stackItem.parentContainer and types.Item.isRestocking(stackItem) then
+                        local containerInv = stackItem.parentContainer.type.inventory(stackItem.parentContainer)
+                        local newItem = world.createObject(stackItem.recordId, takeCount)
+                        setItemData(newItem, stackItem.type.itemData(stackItem))
+                        newItem:moveInto(containerInv)
+                    end
                     
                     item:moveInto(destination)
                     remainingCount = remainingCount - takeCount
                 end
             else
                 local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
+
+                if restock and entry.item.parentContainer and types.Item.isRestocking(entry.item) then
+                    local containerInv = entry.item.parentContainer.type.inventory(entry.item.parentContainer)
+                    local newItem = world.createObject(entry.item.recordId, entry.count)
+                    setItemData(newItem, entry.item.type.itemData(entry.item))
+                    newItem:moveInto(containerInv)
+                end
+
                 item:moveInto(destination)
             end
         end
     end
     
-    transferItems(props.barterState.selling, props.merchant)
-    transferItems(props.barterState.buying, props.player)
+    transferItems(props.barterState.selling, props.merchant, false)
+    transferItems(props.barterState.buying, props.player, true)
     
     if props.barterState.currentBalance ~= 0 then
         if props.barterState.currentBalance < 0 then
