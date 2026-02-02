@@ -376,17 +376,39 @@ Helpers.doesItemFit = function(item, container)
     return (contEncumbrance + itemWeight) <= contCapacity
 end
 
+Helpers.itemDataEquals = function(a, b)
+    if not types.Item.objectIsInstance(a) or not types.Item.objectIsInstance(b) then
+        return false
+    end
+
+    local itemDataA = types.Item.itemData(a)
+    local itemDataB = types.Item.itemData(b)
+
+    local fieldsToCheck = {
+        'condition',
+        'enchantmentCharge',
+        'soul',
+    }
+
+    for _, field in ipairs(fieldsToCheck) do
+        if itemDataA[field] ~= itemDataB[field] then
+            return false
+        end
+    end
+    return true
+end
+
 Helpers.getMerchantItems = function(npc)
-    local all = {}
+    local unmerged = {}
     local carried = npc.type.inventory(npc):getAll()
     for _, item in ipairs(carried) do
-        table.insert(all, item)
+        table.insert(unmerged, item)
     end
     local success, nearby = pcall(require, 'openmw.nearby')
     if success then
         for _, item in ipairs(nearby.items) do
             if item.owner.recordId == npc.recordId then
-                table.insert(all, item)
+                table.insert(unmerged, item)
             end
         end
         for _, container in ipairs(nearby.containers) do
@@ -394,12 +416,40 @@ Helpers.getMerchantItems = function(npc)
                 local inv = container.type.inventory(container)
                 local contItems = inv:getAll()
                 for _, item in ipairs(contItems) do
-                    table.insert(all, item)
+                    table.insert(unmerged, item)
                 end
             end
         end
     end
-    return all
+
+    local virtualMerged = {}
+    for _, item in ipairs(unmerged) do
+        local key = item.recordId:lower()
+        if virtualMerged[key] then
+            local existing = false
+            for _, virtualStack in ipairs(virtualMerged[key]) do
+                if Helpers.itemDataEquals(item, virtualStack.stacks[1]) then
+                    existing = true
+                    table.insert(virtualStack.stacks, item)
+                    virtualStack.totalCount = virtualStack.totalCount + item.count
+                    break
+                end
+            end
+            if not existing then
+                table.insert(virtualMerged[key], {
+                    stacks = { item },
+                    totalCount = item.count,
+                })
+            end
+        else
+            virtualMerged[key] = { {
+                stacks = { item },
+                totalCount = item.count,
+            } }
+        end
+    end
+
+    return virtualMerged
 end
 
 Helpers.isGold = function(item)

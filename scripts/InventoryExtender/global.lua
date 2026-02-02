@@ -7,28 +7,6 @@ local CellUtils = require('scripts.InventoryExtender.util.cell')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 
-local function itemDataEquals(a, b)
-    if not types.Item.objectIsInstance(a) or not types.Item.objectIsInstance(b) then
-        return false
-    end
-
-    local itemDataA = types.Item.itemData(a)
-    local itemDataB = types.Item.itemData(b)
-
-    local fieldsToCheck = {
-        'condition',
-        'enchantmentCharge',
-        'soul',
-    }
-
-    for _, field in ipairs(fieldsToCheck) do
-        if itemDataA[field] ~= itemDataB[field] then
-            return false
-        end
-    end
-    return true
-end
-
 local disposedBodies = {}
 
 local function isStealing(actor, ownerInfo)
@@ -99,7 +77,7 @@ local function moveInto(props)
     if not helpers.isGold(obj) then
         for _, item in ipairs(destinationInv:findAll(recordId)) do
             if not destination.type.hasEquipped or not destination.type.hasEquipped(destination, item) and not isEquipped then
-                if itemDataEquals(item, obj) then
+                if helpers.itemDataEquals(item, obj) then
                     resultingObj = item
                     break
                 end
@@ -421,20 +399,30 @@ local function confiscateToOwner(data)
 end
 
 local function finalizeBarter(props)
-    for _, entry in pairs(props.barterState.selling) do
-        local item = entry.item
-        if entry.count < entry.item.count then
-            item = item:split(entry.count)
+    local function transferItems(entries, destination)
+        for _, entry in pairs(entries) do
+            local remainingCount = entry.count
+            
+            if entry.stacks then
+                for _, stackItem in ipairs(entry.stacks) do
+                    if remainingCount <= 0 then break end
+                    
+                    local takeCount = math.min(stackItem.count, remainingCount)
+                    local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
+                    
+                    item:moveInto(destination)
+                    remainingCount = remainingCount - takeCount
+                end
+            else
+                local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
+                item:moveInto(destination)
+            end
         end
-        item:moveInto(props.merchant)
     end
-    for _, entry in pairs(props.barterState.buying) do
-        local item = entry.item
-        if entry.count < entry.item.count then
-            item = item:split(entry.count)
-        end
-        item:moveInto(props.player)
-    end
+    
+    transferItems(props.barterState.selling, props.merchant)
+    transferItems(props.barterState.buying, props.player)
+    
     if props.barterState.currentBalance ~= 0 then
         if props.barterState.currentBalance < 0 then
             local gold = types.Actor.inventory(props.player):find('gold_001')
