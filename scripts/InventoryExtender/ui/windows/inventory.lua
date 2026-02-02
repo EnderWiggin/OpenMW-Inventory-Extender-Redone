@@ -51,6 +51,32 @@ function Inventory:create(windowType, ctx)
 
     local w = 60 * baseTemplates.TEXT_SIZE / 16
 
+    local function onRowActivate(row, rowWidget)
+        if self.ctx.uiMode ~= 'Interface' then
+            return
+        end
+
+        self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
+
+        if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
+            local equipment = omwself.type.getEquipment(omwself)
+            for slot, equippedItem in pairs(equipment) do
+                if equippedItem == row.item then
+                    equipment[slot] = nil
+                    omwself.type.setEquipment(omwself, equipment)
+                    local sound = helpers.getItemSound(row.item, 'down')
+                    if sound then
+                        ambient.playSound(sound)
+                    end
+                    self.target:sendEvent('MI_Update')
+                    break
+                end
+            end
+        else
+            core.sendGlobalEvent('UseItem', { object = row.item, actor = self.target })
+        end
+    end
+
     self.itemTable = ItemTable.create({
         columns = {
             {
@@ -270,6 +296,11 @@ function Inventory:create(windowType, ctx)
             local takeAll = input.isShiftPressed()
             local takeOne = input.isCtrlPressed()
 
+            if takeAll and takeOne then
+                onRowActivate(row, rowWidget)
+                return
+            end
+
             local itemCount = row.getCount()
             if self.ctx.uiMode == 'Barter' then
                 if row.isBartered then
@@ -348,31 +379,7 @@ function Inventory:create(windowType, ctx)
                 doAction(takeOne and 1 or itemCount)
             end
         end,
-        onRowActivate = function(row, rowWidget)
-            if self.ctx.uiMode ~= 'Interface' then
-                return
-            end
-
-            self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
-
-            if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
-                local equipment = omwself.type.getEquipment(omwself)
-                for slot, equippedItem in pairs(equipment) do
-                    if equippedItem == row.item then
-                        equipment[slot] = nil
-                        omwself.type.setEquipment(omwself, equipment)
-                        local sound = helpers.getItemSound(row.item, 'down')
-                        if sound then
-                            ambient.playSound(sound)
-                        end
-                        self.target:sendEvent('MI_Update')
-                        break
-                    end
-                end
-            else
-                core.sendGlobalEvent('UseItem', { object = row.item, actor = self.target })
-            end
-        end,
+        onRowActivate = onRowActivate,
     }, ctx)
 
     self.categoryFilter = CategoryFilter.create({
