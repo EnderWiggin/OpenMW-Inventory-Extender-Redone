@@ -19,6 +19,8 @@ local constants = require('scripts.InventoryExtender.util.constants')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 
+local l10n = core.l10n('InventoryExtender')
+
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
@@ -351,6 +353,8 @@ function DragAndDrop:init(ctx)
                         end
                         if canPickUp then
                             self:startDrag(self.hoveredObject, nil)
+                        else
+                            ui.showMessage(l10n('UI_Msg_ScriptedItem')) 
                         end
                     end
                 else

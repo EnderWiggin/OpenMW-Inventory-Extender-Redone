@@ -110,3 +110,5 @@ UI_SearchBarPlaceholder: Search...
 UI_Barter_Spend: "Spend:"
 UI_Barter_Gain: "Gain:"
 UI_Barter_Max: Max
+
+UI_Msg_ScriptedItem: This item cannot be picked up from the inventory.
