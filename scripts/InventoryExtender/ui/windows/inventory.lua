@@ -662,7 +662,7 @@ function Inventory:create(windowType, ctx)
                             content = ui.content {
                                 {
                                     name = 'totalBalanceEdit',
-                                    template = I.MWUI.templates.textEditLine,
+                                    template = baseTemplates.textEditLine,
                                     props = {
                                         size = v2(80, specialTemplates.LINE_HEIGHT),
                                         text = tostring(ctx.barterState.currentBalance),

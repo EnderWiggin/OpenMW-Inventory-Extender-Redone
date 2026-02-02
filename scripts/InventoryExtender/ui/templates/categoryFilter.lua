@@ -31,7 +31,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                     template = I.MWUI.templates.padding,
                     content = ui.content {
                         {
-                            template = I.MWUI.templates.textEditLine,
+                            template = baseTemplates.textEditLine,
                             props = {
                                 size = v2(200, topBarHeight - 12),
                                 text = text,

@@ -25,7 +25,7 @@ local l10n = core.l10n('InventoryExtender')
 
 local Templates = {}
 
-Templates.TEXT_SIZE = omwConstants.textNormalSize
+Templates.TEXT_SIZE = configPlayer.window.i_TextSizeOverride > 0 and configPlayer.window.i_TextSizeOverride or omwConstants.textNormalSize
 
 Templates.TEXTURES = {}
 Templates.createTexture = function(path)

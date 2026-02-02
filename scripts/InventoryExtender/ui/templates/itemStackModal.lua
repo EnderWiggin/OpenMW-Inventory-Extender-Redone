@@ -55,7 +55,7 @@ function ItemStackModal.create(params, ctx)
     end)
 
     textEdit = {
-        template = I.MWUI.templates.textEditLine,
+        template = baseTemplates.textEditLine,
         props = {
             text = tostring(selectedCount),
             size = v2(100, 0),

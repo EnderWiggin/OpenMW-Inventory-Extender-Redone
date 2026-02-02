@@ -32,6 +32,17 @@ I.Settings.registerGroup {
             default = true,
         },
         {
+            key = 'i_TextSizeOverride',
+            renderer = 'number',
+            name = 'TextSizeOverride',
+            description = 'TextSizeOverrideDesc',
+            default = 0,
+            argument = {
+                integer = true,
+                min = 0,
+            }
+        },
+        {
             key = 'b_InventoryWindowPinned',
             renderer = 'checkbox',
             name = 'InventoryWindowPinned',
