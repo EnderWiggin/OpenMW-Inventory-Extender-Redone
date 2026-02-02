@@ -304,6 +304,10 @@ Helpers.getItemName = function(item)
 end
 
 Helpers.getItemValue = function(item)
+    if Helpers.isGold(item) then
+        return 1
+    end
+
     local soul = item.type.itemData(item).soul
     local baseValue = item.type.record(item).value
     if not soul then return baseValue end

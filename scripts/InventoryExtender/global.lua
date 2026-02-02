@@ -74,6 +74,14 @@ local function teleport(props)
     props.player:sendEvent('MI_Update')
 end
 
+local function getCompanionProfit(npc)
+    local script = world.mwscript.getLocalScript(npc)
+    if script then
+        return script.variables.minimumprofit
+    end
+    return nil
+end
+
 local function moveInto(props)
     if not props.obj or not props.destination then return end
     local obj = props.obj
@@ -100,6 +108,29 @@ local function moveInto(props)
     elseif props.source and props.source ~= props.destination then
         local sourceInv = props.source.type.inventory(props.source)
         obj = sourceInv:find('gold_001') or obj
+    end
+
+    if props.source then
+        local profit = getCompanionProfit(props.source)
+        if profit then
+            profit = profit - (helpers.getItemValue(obj) * props.count)
+            world.mwscript.getLocalScript(props.source).variables.minimumprofit = profit
+            props.player:sendEvent('MI_CompanionProfit', {
+                companion = props.source,
+                profit = profit,
+            })
+        end
+    end
+    if props.destination ~= props.source then
+        local profit = getCompanionProfit(props.destination)
+        if profit then
+            profit = profit + (helpers.getItemValue(obj) * props.count)
+            world.mwscript.getLocalScript(props.destination).variables.minimumprofit = profit
+            props.player:sendEvent('MI_CompanionProfit', {
+                companion = props.destination,
+                profit = profit,
+            })
+        end
     end
 
     if props.count ~= obj.count or helpers.isGold(obj) then

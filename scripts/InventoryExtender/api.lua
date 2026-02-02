@@ -161,11 +161,13 @@ return {
         onSave = function()
             return {
                 stolenItems = windowManager.ctx.stolenItems,
+                companionProfit = windowManager.ctx.companionProfit,
             }
         end,
         onLoad = function(data)
-            if data and data.stolenItems then
-                windowManager.ctx.stolenItems = data.stolenItems
+            if data then
+                windowManager.ctx.stolenItems = data.stolenItems or {}
+                windowManager.ctx.companionProfit = data.companionProfit or {}
             end
         end,
     },
@@ -188,6 +190,9 @@ return {
         end,
         MI_Update = function()
             windowManager.update()
+        end,
+        MI_CompanionProfit = function(props)
+            windowManager.ctx.companionProfit[props.companion.id] = props.profit
         end,
         MI_SetDraggingObject = function(props)
             local obj = props.obj

@@ -138,6 +138,7 @@ C.Strings = {
     MAX_SALE = 'sMaxSale',
     CONTAINER_ORGANIC = 'sContentsMessage2',
     THATS_MINE = 'sNotifyMessage49',
+    PROFIT_VALUE = 'sProfitValue',
 }
 for key, gmst in pairs(C.Strings) do
     C.Strings[key] = core.getGMST(gmst)

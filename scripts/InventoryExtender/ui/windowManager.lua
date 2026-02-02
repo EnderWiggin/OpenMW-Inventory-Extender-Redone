@@ -55,6 +55,7 @@ windowManager.ctx = {
         currentBalance = 0,
         totalBalance = 0,
     },
+    companionProfit = {},
     updateQueue = {},
 }
 
@@ -66,7 +67,7 @@ local showing = {
 }
 
 windowManager.create = function(windowName)
-    if windowName == 'Inventory' or windowName == 'Container' or windowName == 'Trade' then
+    if windowName == 'Inventory' or windowName == 'Container' or windowName == 'Trade' or windowName == 'Companion' then
         windowManager.windows[windowName] = InventoryWindow:create(windowName, windowManager.ctx)
     end
     

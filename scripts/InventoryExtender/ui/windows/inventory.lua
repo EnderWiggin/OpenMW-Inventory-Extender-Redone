@@ -288,10 +288,12 @@ function Inventory:create(windowType, ctx)
 
             local function doAction(count)
                 if transfer then
-                    if ctx.uiMode == 'Container' then
-                        if self.type == 'Inventory' and ctx.modeArgs.Container then
-                            ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs.Container, omwself, count)
-                        elseif self.type == 'Container' then
+                    if ctx.uiMode == 'Container' or ctx.uiMode == 'Companion' then
+                        if self.type == 'Inventory' then
+                            if ctx.modeArgs[ctx.uiMode] then
+                                ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs[ctx.uiMode], omwself, count)
+                            end
+                        else
                             ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count)
                         end
                     elseif ctx.uiMode == 'Barter' then
@@ -543,40 +545,54 @@ function Inventory:create(windowType, ctx)
         end)
     end
 
-    if self.type == 'Container' then
+    if self.type == 'Container' or self.type == 'Companion' then
         self.infoBar.layout.userData.addInfoLayout({ external = { grow = 1, stretch = 1 }})
 
-        self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
-            onClick = function()
-                if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
-                    ctx.dragAndDrop:moveAll(self.target, omwself)
-                    core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.modeArgs.Container })
-                    I.UI.removeMode('Container')
+        if self.type == 'Container' then
+            self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
+                onClick = function()
+                    if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                        ctx.dragAndDrop:moveAll(self.target, omwself)
+                        core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.modeArgs.Container })
+                        I.UI.removeMode('Container')
+                    end
+                end,
+                parent = self.infoBar,
+            }, baseTemplates.button(constants.Strings.DISPOSE_OF_CORPSE), ctx), function(layout)
+                local visible = false
+                if ctx.modeArgs.Container then
+                    visible = types.Actor.objectIsInstance(ctx.modeArgs.Container) and types.Actor.isDead(ctx.modeArgs.Container)
                 end
-            end,
-            parent = self.infoBar,
-        }, baseTemplates.button(constants.Strings.DISPOSE_OF_CORPSE), ctx), function(layout)
-            local visible = false
-            if ctx.modeArgs.Container then
-                visible = types.Actor.objectIsInstance(ctx.modeArgs.Container) and types.Actor.isDead(ctx.modeArgs.Container)
-            end
-            layout.props.visible = visible
-            return layout
-        end)
+                layout.props.visible = visible
+                return layout
+            end)
 
-        self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
-            onClick = function()
-                if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
-                    ctx.dragAndDrop:moveAll(self.target, omwself)
-                    I.UI.removeMode('Container')
-                end
-            end,
-            parent = self.infoBar,
-        }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx))
+            self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
+                onClick = function()
+                    if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                        ctx.dragAndDrop:moveAll(self.target, omwself)
+                        I.UI.removeMode('Container')
+                    end
+                end,
+                parent = self.infoBar,
+            }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx))
+        end
+
+        if self.type == 'Companion' then
+            self.infoBar.layout.userData.addInfoLayout({
+                template = baseTemplates.textNormal,
+                props = {},
+            }, function(layout)
+                if self.target == nil then return layout end
+                local profit = ctx.companionProfit[self.target.id]
+                layout.props.text = profit and (constants.Strings.PROFIT_VALUE .. ': ' .. tostring(profit)) or ''
+                return layout
+            end)
+        end
         
         self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
             onClick = function()
-                I.UI.removeMode('Container')
+                I.UI.removeMode(self.type)
             end,
             parent = self.infoBar,
         }, baseTemplates.button(constants.Strings.CLOSE), ctx))
@@ -1018,10 +1034,10 @@ function Inventory:updateTarget()
     local oldTarget = self.target
     if self.type == 'Inventory' then
         self.target = omwself
-    elseif self.type == 'Container' then
+    elseif self.type == 'Container' or self.type == 'Companion' then
         local modeArgs = self.ctx.modeArgs
-        if modeArgs and modeArgs.Container then
-            self.target = modeArgs.Container
+        if modeArgs and modeArgs[self.type] then
+            self.target = modeArgs[self.type]
         else
             self.target = nil
         end

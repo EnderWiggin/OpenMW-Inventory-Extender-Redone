@@ -27,7 +27,7 @@ local function init()
             'Inventory',
             'Trade',
             'Container',
-            -- 'Companion',
+            'Companion',
         }
         for _, windowName in ipairs(overrides) do
             I.UI.registerWindow(windowName, function() API.show(windowName) end, function() API.hide(windowName) end)
