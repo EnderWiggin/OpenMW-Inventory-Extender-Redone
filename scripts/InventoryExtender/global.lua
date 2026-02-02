@@ -10,6 +10,9 @@ local helpers = require('scripts.InventoryExtender.util.helpers')
 local disposedBodies = {}
 
 local function isStealing(actor, ownerInfo)
+    if not ownerInfo then
+        return false
+    end
     local victim = {}
     if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
         local isDead = disposedBodies[ownerInfo.recordId] or false
@@ -164,6 +167,46 @@ local function moveInto(props)
     props.player:sendEvent('MI_Update')
     
     return obj
+end
+
+local function moveAll(props)
+    if not props.source or not props.destination then return end
+
+    local sourceInv = props.source.type.inventory(props.source)
+    local items = sourceInv:getAll()
+
+    local victimInfo = isStealing(props.player, props.source.owner)
+    local victimActor
+    if victimInfo then
+        if victimInfo.recordId then
+            for _, actor in ipairs(world.activeActors) do
+                if actor.recordId == victimInfo.recordId then
+                    victimActor = actor
+                    break
+                end
+            end
+        end
+    end
+
+    local totalCrimeValue = 0
+    for _, item in ipairs(items) do
+        if victimInfo then
+            if not helpers.isGold(item) then
+                props.player:sendEvent('MI_StoleItem', { recordId = item.recordId, count = item.count, victim = victimInfo })
+            end
+            totalCrimeValue = totalCrimeValue + (helpers.getItemValue(item) * item.count)
+        end
+        item:moveInto(props.destination)
+    end
+
+    if victimInfo then
+        I.Crimes.commitCrime(props.player, {
+            type = types.Player.OFFENSE_TYPE.Theft,
+            arg = totalCrimeValue,
+            faction = victimInfo.factionId,
+            victim = victimActor,
+        })
+    end
 end
 
 local checkStolenNextUpdate = {}
@@ -492,6 +535,7 @@ return {
         MI_ConfiscateToOwner = confiscateToOwner,
         MI_Teleport = teleport,
         MI_MoveInto = moveInto,
+        MI_MoveAll = moveAll,
         MI_FinalizeBarter = finalizeBarter,
         MI_UIModeChanged = onUiModeChanged,
         MI_StolenChestInactive = updateChestMemory,
