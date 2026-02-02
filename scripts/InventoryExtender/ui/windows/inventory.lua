@@ -904,6 +904,9 @@ function Inventory:createData()
     
     local function createRowData(item, isBartered, isVirtual)
         local itemStack = isVirtual and item.stacks[1] or item
+
+        if not types.Item.isCarriable(itemStack) then return nil end
+
         local record = itemStack.type.record(itemStack)
         local value = helpers.getItemValue(itemStack)
         local vw = record.weight > 0 and (value / record.weight) or 0
@@ -925,17 +928,16 @@ function Inventory:createData()
                 else
                     return itemStack.count
                 end
-            end
-        }
-        
-        if not isBartered and self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
-            rowData.disabledFn = function()
-                if self.ctx.modeArgs.Container and types.Container.objectIsInstance(self.ctx.modeArgs.Container) and types.Container.record(self.ctx.modeArgs.Container).isOrganic then
-                    return true
+            end,
+            disabledFn = function()
+                if not isBartered and self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
+                    if self.ctx.modeArgs.Container and types.Container.objectIsInstance(self.ctx.modeArgs.Container) and types.Container.record(self.ctx.modeArgs.Container).isOrganic then
+                        return true
+                    end
+                    return not helpers.doesItemFit(itemStack, self.ctx.modeArgs.Container)
                 end
-                return not helpers.doesItemFit(itemStack, self.ctx.modeArgs.Container)
-            end
-        end
+            end,
+        }
         
         -- if isBartered then
         --     rowData.activeFn = function() return true end
