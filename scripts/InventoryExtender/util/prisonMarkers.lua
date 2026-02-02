@@ -1,16 +1,3 @@
--- We can't get marker information from Lua, so for now I need to hardcode locations here.
--- Not comprehensive, but covers:
--- Morrowind.esm
--- Tribunal.esm
--- Bloodmoon.esm
--- TR_Mainland.esm
--- Sky_Main.esm
--- Cyr_Main.esm
--- Starwind.esm
-
-local util = require('openmw.util')
-local v2 = util.vector2
-
 local PrisonMarkers = {}
 
 PrisonMarkers['Morrowind.esm'] = {
@@ -172,6 +159,25 @@ PrisonMarkers['Cyr_Main.esm'] = {
         x = -136,
         y = -51,
         interior = "Charach, Guardhouse"
+    },
+}
+
+PrisonMarkers['The Doors of Oblivion 1.4.esp'] = {
+    {
+        cell = "Oblivion, Clavicus Vile's Realm",
+        interior = "Oblivion, Caprice: Overseer Guardhouse"
+    },
+}
+
+PrisonMarkers['BT_Whitewolf_2_0.esm'] = {
+    {
+        x = -17,
+        y = 23,
+        interior = "Solstheim, LoKKen Castle Prison"
+    },
+    {
+        cell = "Solstheim, LoKKen Castle Prison",
+        interior = "Solstheim, LoKKen Castle Prison"
     },
 }
 
