@@ -96,6 +96,7 @@ ItemTable.create = function(props, ctx)
         currentSize = size,   
         filters = {},
         viewMode = props.viewMode or 'ItemViewMode_Table',
+        parentWindow = props.parentWindow,
     }
 
     setColumnWidths(columns, state)
@@ -461,9 +462,9 @@ ItemTable.create = function(props, ctx)
                 local targetH = isGrid and itemSize or rowHeight
                
                 local targetYCompare = targetY
-                if isGrid then targetYCompare = math.floor((i-1) / itemsPerRow) * itemSize end
+                --if isGrid then targetYCompare = math.floor((i-1) / itemsPerRow) * itemSize end
 
-                if state.lastUsedRowPos then
+                if not isGrid and state.lastUsedRowPos and state.parentWindow:isFocused() then
                     if targetYCompare - scrollable.layout.userData.getScrollPos() == state.lastUsedRowPos.y then
                         ctx.focusedInteractive = rowWidget
                         if not rowWidget.layout.userData.hovering then

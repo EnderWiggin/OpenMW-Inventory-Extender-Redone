@@ -419,6 +419,7 @@ function Inventory:create(windowType, ctx)
             base.userData.count = count
             return base
         end,
+        parentWindow = self,
     }, ctx)
 
     self.categoryFilter = CategoryFilter.create({
