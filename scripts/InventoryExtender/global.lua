@@ -467,26 +467,24 @@ local function finalizeBarter(props)
                     local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
 
                     if restock and stackItem.parentContainer and types.Item.isRestocking(stackItem) then
-                        local containerInv = stackItem.parentContainer.type.inventory(stackItem.parentContainer)
                         local newItem = world.createObject(stackItem.recordId, takeCount)
                         setItemData(newItem, stackItem.type.itemData(stackItem))
-                        newItem:moveInto(containerInv)
+                        newItem:moveInto(destination)
+                    else
+                        item:moveInto(destination)
                     end
-                    
-                    item:moveInto(destination)
                     remainingCount = remainingCount - takeCount
                 end
             else
                 local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
 
                 if restock and entry.item.parentContainer and types.Item.isRestocking(entry.item) then
-                    local containerInv = entry.item.parentContainer.type.inventory(entry.item.parentContainer)
                     local newItem = world.createObject(entry.item.recordId, entry.count)
                     setItemData(newItem, entry.item.type.itemData(entry.item))
-                    newItem:moveInto(containerInv)
+                    newItem:moveInto(destination)
+                else
+                    item:moveInto(destination)
                 end
-
-                item:moveInto(destination)
             end
         end
     end
