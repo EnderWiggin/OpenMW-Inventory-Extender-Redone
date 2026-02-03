@@ -88,6 +88,9 @@ Templates.interactive = function(props, layout, ctx)
             return false
         end
         if props.onClick then
+            if props.canClick and not props.canClick() then
+                return false
+            end
             element.layout.userData.pressed = true
             ambient.playSound('menu click')
             helpers.forEachInLayout(element.layout, function(l)
@@ -111,6 +114,9 @@ Templates.interactive = function(props, layout, ctx)
             return false
         end
         if props.onClick then
+            if not element.layout.userData.pressed then
+                return false
+            end
             element.layout.userData.pressed = false
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then

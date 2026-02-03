@@ -38,10 +38,22 @@ function Window:setVisible(visible)
     self:update()
 end
 
+function Window:isPinnable()
+    if not self.element then return false end
+
+    return self.element.layout.userData.pinnable
+end
+
 function Window:isPinned()
     if not self.element then return false end
 
     return self.element.layout.userData.pinned
+end
+
+function Window:isFocused()
+    if not self.element then return false end
+
+    return self.element.layout.props.focused
 end
 
 function Window:getDimensions()

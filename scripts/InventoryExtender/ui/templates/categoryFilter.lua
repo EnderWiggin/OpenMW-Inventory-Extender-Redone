@@ -20,17 +20,32 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local topBarHeight = specialTemplates.LINE_HEIGHT * 1.5
     local categoryBarHeight = maxHeight - topBarHeight
 
-    local element
+    local element, createSearchBar
     local placeholder = l10n('UI_SearchBarPlaceholder')
-    local function createSearchBar(text)
+
+    local function replaceSearchBar(text)
+        local indexOfBar = element.layout.content.topBar.content:indexOf('searchBar')
+        local indexOfProxy = element.layout.content.topBar.content:indexOf('searchBarProxy')
+
+        element.layout.content.topBar.content.searchBar = nil
+        element.layout.content.topBar.content.searchBarProxy = nil
+
+        element.layout.content.topBar.content:insert(indexOfBar, { name = 'searchBarProxy' })
+        element.layout.content.topBar.content:insert(indexOfProxy, createSearchBar(text))
+        ctx.updateQueue[element] = true
+    end
+
+    createSearchBar = function(text)
         return {
             name = 'searchBar',
             template = I.MWUI.templates.box,
             content = ui.content {
                 {
+                    name = 'padding',
                     template = I.MWUI.templates.padding,
                     content = ui.content {
                         {
+                            name = 'textEdit',
                             template = baseTemplates.textEditLine,
                             props = {
                                 size = v2(200, topBarHeight - 12),
@@ -58,15 +73,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                                     if layout.props.text == '' then
                                         layout.props.text = placeholder
                                     end
-                                    local indexOfBar = element.layout.content.topBar.content:indexOf('searchBar')
-                                    local indexOfProxy = element.layout.content.topBar.content:indexOf('searchBarProxy')
-
-                                    element.layout.content.topBar.content.searchBar = nil
-                                    element.layout.content.topBar.content.searchBarProxy = nil
-
-                                    element.layout.content.topBar.content:insert(indexOfBar, { name = 'searchBarProxy' })
-                                    element.layout.content.topBar.content:insert(indexOfProxy, createSearchBar(layout.props.text))
-                                    ctx.updateQueue[element] = true
+                                    replaceSearchBar(layout.props.text)
                                 end),
                             }
                         }
@@ -238,6 +245,35 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         end
     end
     element.layout.userData.clearSearch = clearSearch
+
+    local function cycleCategory(i)
+        local categories = I.InventoryExtender.getCategories()
+        if #categories == 0 then return end
+
+        local currentIndex = 1
+        for index, category in ipairs(categories) do
+            if category.key == state.selectedCategory then
+                currentIndex = index
+                break
+            end
+        end
+
+        local newIndex = currentIndex + i
+        if newIndex < 1 then
+            newIndex = #categories
+        elseif newIndex > #categories then
+            newIndex = 1
+        end
+
+        state.selectedCategory = categories[newIndex].key
+        updateCategories()
+        if onCategoryChange then
+            onCategoryChange(state.selectedCategory)
+        end
+
+        replaceSearchBar(element.layout.content.topBar.content.searchBar.content.padding.content.textEdit.props.text)
+    end
+    element.layout.userData.cycleCategory = cycleCategory
 
     return element
 end

@@ -293,8 +293,8 @@ function Inventory:create(windowType, ctx)
             self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
 
             local transfer = input.isAltPressed() or I.UI.getMode() == 'Barter'
-            local takeAll = input.isShiftPressed()
-            local takeOne = input.isCtrlPressed()
+            local takeAll = input.isShiftPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerRight) > 0.5
+            local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
 
             if takeAll and takeOne then
                 onRowActivate(row, rowWidget)
@@ -917,6 +917,34 @@ function Inventory:create(windowType, ctx)
     return self
 end
 
+function Inventory:onControllerButtonPress(id)
+    if id == input.CONTROLLER_BUTTON.LeftShoulder then
+        if self.categoryFilter then
+            self.categoryFilter.layout.userData.cycleCategory(-1)
+            return
+        end
+    elseif id == input.CONTROLLER_BUTTON.RightShoulder then
+        if self.categoryFilter then
+            self.categoryFilter.layout.userData.cycleCategory(1)
+            return
+        end
+    elseif id == input.CONTROLLER_BUTTON.A then
+        if self.ctx.focusedInteractive and self.ctx.focusedInteractive.layout and self.ctx.focusedInteractive.layout.userData.onRowActivate then
+            self.ctx.focusedInteractive.layout.userData.onRowActivate()
+            return
+        end
+    elseif id == input.CONTROLLER_BUTTON.Y then
+        if self.ctx.dragAndDrop.draggingObject then
+            self.ctx.dragAndDrop:stopDrag(self.target)
+            return
+        end
+        if self.ctx.focusedInteractive and self.ctx.focusedInteractive.layout and self.ctx.focusedInteractive.layout.userData.onRowClick then
+            self.ctx.focusedInteractive.layout.userData.onRowClick()
+            return
+        end
+    end
+end
+
 function Inventory:refresh()
     if not self.itemTable then return end
     self.itemTable.layout.userData.refresh()
@@ -1072,18 +1100,6 @@ function Inventory:setPinnable()
     else
         self.element.layout.userData.setPinnable(false)
     end
-end
-
-function Inventory:isPinnable()
-    if not self.element then return false end
-
-    return self.element.layout.userData.pinnable
-end
-
-function Inventory:isPinned()
-    if not self.element then return false end
-
-    return self.element.layout.userData.pinned
 end
 
 function Inventory:setVisible(visible)

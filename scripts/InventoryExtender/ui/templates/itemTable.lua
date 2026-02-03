@@ -4,6 +4,7 @@ local async = require('openmw.async')
 local core = require('openmw.core')
 local omwself = require('openmw.self')
 local auxUi = require('openmw_aux.ui')
+local input = require('openmw.input')
 
 local constants = require('scripts.InventoryExtender.util.constants')
 local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
@@ -233,8 +234,16 @@ ItemTable.create = function(props, ctx)
                     disabled = row.disabledFn(row)
                 end
                 if not state.rowCache[cacheKey] then
-                    state.rowCache[cacheKey] = specialTemplates.interactive({ 
-                        onClick = function() 
+                    state.rowCache[cacheKey] = specialTemplates.interactive({
+                        canClick = function()
+                            for _, button in pairs(input.CONTROLLER_BUTTON) do
+                                if input.isControllerButtonPressed(button) then
+                                    return false
+                                end
+                            end
+                            return true
+                        end,
+                        onClick = function()
                             if onRowClick then 
                                 return onRowClick(row, state.rowCache[cacheKey]) 
                             end
@@ -247,9 +256,14 @@ ItemTable.create = function(props, ctx)
                         },
                         content = createContent(row),
                         userData = { 
-                            onActivate = function()
+                            onRowActivate = function()
                                 if props.onRowActivate then
                                     return props.onRowActivate(row, state.rowCache[cacheKey])
+                                end
+                            end,
+                            onRowClick = function()
+                                if onRowClick then 
+                                    return onRowClick(row, state.rowCache[cacheKey]) 
                                 end
                             end,
                             tooltipFn = function()
@@ -308,7 +322,6 @@ ItemTable.create = function(props, ctx)
                     if rowY - scrollable.layout.userData.getScrollPos() == state.lastUsedRowPos.y then
                         ctx.focusedInteractive = rowWidget
                         if not rowWidget.layout.userData.hovering then
-                            state.lastUsedRowPos = nil
                             rowWidget.layout.userData.hovering = true
                             anyChanged = true
                         end

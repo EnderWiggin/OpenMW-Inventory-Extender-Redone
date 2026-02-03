@@ -191,6 +191,9 @@ return {
                 categoriesChanged = false
             end
         end,
+        onControllerButtonPress = function(id)
+            windowManager.onControllerButtonPress(id)
+        end,
     },
     eventHandlers = {
         UiModeChanged = function(data)

@@ -216,17 +216,38 @@ windowManager.onFrame = function()
     -- end
 end
 
+windowManager.onControllerButtonPress = function(id)
+    if id == input.CONTROLLER_BUTTON.Y and windowManager.ctx.modalElement then
+        auxUi.deepDestroy(windowManager.ctx.modalElement)
+        windowManager.ctx.modalElement = nil
+        return
+    end
+
+    for _, window in pairs(windowManager.windows) do
+        if window:isFocused() then
+            window:onControllerButtonPress(id)
+            return
+        end
+    end
+end
+
 windowManager.ctx.dragAndDrop:init(windowManager.ctx)
 
 input.registerTriggerHandler('Activate', async:callback(function()
+    for _, button in pairs(input.CONTROLLER_BUTTON) do
+        if input.isControllerButtonPressed(button) then
+            return
+        end
+    end
+
     local mode = I.UI.getMode()
     if mode == 'Container' or mode == 'Barter' or mode == 'Companion' then
         I.UI.removeMode(mode)
         return false
     end
     if windowManager.ctx.focusedInteractive and windowManager.ctx.focusedInteractive.layout and
-       windowManager.ctx.focusedInteractive.layout.userData.onActivate then
-        windowManager.ctx.focusedInteractive.layout.userData.onActivate()
+       windowManager.ctx.focusedInteractive.layout.userData.onRowActivate then
+        windowManager.ctx.focusedInteractive.layout.userData.onRowActivate()
         return true
     end
     return false
