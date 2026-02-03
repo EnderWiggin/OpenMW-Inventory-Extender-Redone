@@ -162,7 +162,6 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
 
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
-            element.layout.content.categoryBar.content:add({ external = { grow = 1, stretch = 1, } })
             element.layout.content.categoryBar.content:add(specialTemplates.interactive({
                 onClick = function()
                     if state.selectedCategory ~= category.key then
@@ -175,14 +174,24 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 end,
                 name = category.key,
             }, {
-                type = ui.TYPE.Image,
-                props = {
-                    resource = ui.texture { path = category.icon },
-                    size = v2(categoryBarHeight - 16, categoryBarHeight - 16),
-                    color = isSelected and constants.Colors.ACTIVE or constants.Colors.DEFAULT,
+                external = { grow = 1, stretch = 1, },
+                content = ui.content {
+                    {
+                        name = 'categoryIcon',
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = category.icon },
+                            size = v2(categoryBarHeight - 16, categoryBarHeight - 16),
+                            relativePosition = v2(0.5, 0.5),
+                            anchor = v2(0.5, 0.5),
+                            color = isSelected and constants.Colors.ACTIVE or constants.Colors.DEFAULT,
+                        },
+                        userData = {
+                            colorable = true,
+                        }
+                    }
                 },
                 userData = {
-                    colorable = true,
                     active = isSelected,
                     tooltipFn = function()
                         return specialTemplates.tooltip(4, ui.content {
@@ -196,9 +205,6 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                     end,
                 }
             }, ctx))
-            if i == #categories then
-                element.layout.content.categoryBar.content:add({ external = { grow = 1, stretch = 1, } })
-            end
         end
 
         element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
@@ -220,10 +226,10 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         
         local anyChanged = false
         for _, child in ipairs(element.layout.content.categoryBar.content) do
-            if child.layout and child.layout.type == ui.TYPE.Image then
-                if child.layout.props.size ~= imageSizeVec then
+            if child.layout and child.layout.content.categoryIcon then
+                if child.layout.content.categoryIcon.props.size ~= imageSizeVec then
                     anyChanged = true
-                    child.layout.props.size = imageSizeVec
+                    child.layout.content.categoryIcon.props.size = imageSizeVec
                     child:update()
                 end
             end
