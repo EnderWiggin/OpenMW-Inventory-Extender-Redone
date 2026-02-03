@@ -479,9 +479,9 @@ ItemTable.create = function(props, ctx)
                     end
                 end
 
-                if rowWidget.layout.props.size.x ~= targetW 
-                    or rowWidget.layout.props.position.y ~= targetY
-                    or rowWidget.layout.props.position.x ~= targetX
+                if math.abs(rowWidget.layout.props.size.x - targetW) > 0.1
+                    or math.abs(rowWidget.layout.props.position.y - targetY) > 0.1
+                    or math.abs(rowWidget.layout.props.position.x - targetX) > 0.1
                     or rowWidget.layout.userData.active ~= active
                     or rowWidget.layout.userData.disabled ~= disabled
                     or anyChanged then
