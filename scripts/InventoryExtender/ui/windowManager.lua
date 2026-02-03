@@ -47,6 +47,7 @@ windowManager.ctx = {
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     windowArgs = {},
+    modeArgs = {},
     lastUiMode = nil,
     stolenItems = {},
     barterState = {
@@ -98,6 +99,10 @@ windowManager.update = function()
 end
 
 windowManager.show = function(windowName, arg)
+    if windowManager.ctx.resettingMode then
+        return
+    end
+
     windowManager.ctx.windowArgs[windowName] = arg
 
     if not windowManager.windows[windowName] then
@@ -112,6 +117,10 @@ windowManager.show = function(windowName, arg)
 end
 
 windowManager.hide = function(windowName, arg, force)
+    if windowManager.ctx.resettingMode then
+        return
+    end
+
     showing[windowName] = false
     local window = windowManager.windows[windowName]
     if not window or not window:isVisible() then return end
@@ -127,8 +136,16 @@ windowManager.hide = function(windowName, arg, force)
     end
 end
 
-windowManager.onUiModeChanged = function(oldMode, newMode)
+windowManager.onUiModeChanged = function(oldMode, newMode, arg)
+    if windowManager.ctx.resettingMode then
+        return
+    end
+
     windowManager.ctx.lastUiMode = newMode
+
+    if arg then
+        windowManager.ctx.modeArgs[newMode] = arg
+    end
 
     if oldMode == 'Barter' and windowManager.ctx.barterState.success then
         ui.showMessage(constants.Strings.BARTER_THANK_YOU, {
@@ -188,6 +205,16 @@ local updateInt = 0.5
 local updateTimer = 0
 
 windowManager.onFrame = function()
+    if windowManager.ctx.resettingModeProcessed then
+        windowManager.ctx.resettingModeProcessed = false
+        windowManager.ctx.resettingMode = false
+        return
+    end
+
+    if windowManager.ctx.resettingMode then
+        windowManager.ctx.resettingModeProcessed = true
+    end
+
     for element in pairs(windowManager.ctx.updateQueue) do
         element:update()
     end

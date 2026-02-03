@@ -228,7 +228,7 @@ return {
                 end
             end
 
-            windowManager.ctx.dragAndDrop:setDraggingObject(obj)
+            windowManager.ctx.dragAndDrop:setDraggingObject(obj, props.resetMode)
         end,
         MI_BarterFinalized = function(props)
             I.SkillProgression.skillUsed('mercantile', {

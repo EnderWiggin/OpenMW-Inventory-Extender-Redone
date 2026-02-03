@@ -77,7 +77,7 @@ function DragAndDrop:startDrag(item, source, count)
     self.source = omwself
 end
 
-function DragAndDrop:setDraggingObject(object)
+function DragAndDrop:setDraggingObject(object, resetMode)
     self.draggingObject = object
 
     if self.ctx.cursorAttachedIcon then
@@ -111,6 +111,14 @@ function DragAndDrop:setDraggingObject(object)
             }
         }
     })
+
+    if resetMode then
+        local mode = I.UI.getMode()
+        local modeArgs = self.ctx.modeArgs[mode] and { target = self.ctx.modeArgs[mode] } or nil
+        self.ctx.resettingMode = true
+        I.UI.removeMode(mode)
+        I.UI.addMode(mode, modeArgs)
+    end
 end
 
 function DragAndDrop:transferInto(object, destination, source, count)
@@ -342,21 +350,7 @@ function DragAndDrop:init(ctx)
             elseif self.hoveredObject then
                 if not self.ctx.isConsoleOpen then
                     if types.Item.isCarriable(self.hoveredObject) then
-                        -- lame solution, but my cortisol is too high to deal with this properly right now
-                        -- can't activate mwscripts while in menus, so for now just block dragging those from the world
-                        local canPickUp = true
-                        local mwscript = self.hoveredObject.type.record(self.hoveredObject).mwscript
-                        if mwscript then
-                            local scriptRecord = core.mwscripts.records[mwscript]
-                            if scriptRecord and scriptRecord.text:lower():find('onactivate') then
-                                canPickUp = false
-                            end
-                        end
-                        if canPickUp then
-                            self:startDrag(self.hoveredObject, nil)
-                        else
-                            ui.showMessage(l10n('UI_Msg_ScriptedItem')) 
-                        end
+                        self:startDrag(self.hoveredObject, nil)
                     end
                 else
                     ui.setConsoleSelectedObject(self.hoveredObject)

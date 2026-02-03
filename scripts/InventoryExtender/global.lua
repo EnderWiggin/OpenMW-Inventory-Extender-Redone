@@ -86,9 +86,60 @@ local function moveInto(props)
                 end
             end
         end
-    elseif props.source and props.source ~= props.destination then
-        local sourceInv = props.source.type.inventory(props.source)
-        obj = sourceInv:find('gold_001') or obj
+    else
+        if props.source and props.source ~= props.destination then
+            local sourceInv = props.source.type.inventory(props.source)
+            obj = sourceInv:find('gold_001') or obj
+        end
+        resultingObj = destinationInv:find('gold_001') or resultingObj
+    end
+
+    local ownerInfo
+    if props.source and types.Container.objectIsInstance(props.source) then
+        ownerInfo = props.source.owner
+    else
+        ownerInfo = obj.owner
+    end
+    local victimInfo = isStealing(props.player, ownerInfo)
+    local victimActor
+    if victimInfo then
+        if victimInfo.recordId then
+            for _, actor in ipairs(world.activeActors) do
+                if actor.recordId == victimInfo.recordId then
+                    victimActor = actor
+                    break
+                end
+            end
+        end
+        if not helpers.isGold(obj) then
+            props.player:sendEvent('MI_StoleItem', { recordId = obj.recordId, count = props.count, victim = victimInfo })
+        end
+    end
+
+    if props.dragStart and not props.source then
+        local mwscript = obj.type.record(obj).mwscript
+        if mwscript then
+            local scriptRecord = core.mwscripts.records[mwscript]
+            if scriptRecord and scriptRecord.text:lower():find('onactivate') then
+                world._runStandardActivationAction(obj, props.player)
+                props.player:sendEvent('MI_SetDraggingObject', {
+                    obj = resultingObj,
+                    target = destination,
+                    resetMode = true,
+                })
+                props.player:sendEvent('MI_Update')
+                return
+            end
+        end
+    end
+
+    if victimInfo then
+        I.Crimes.commitCrime(props.player, {
+            type = types.Player.OFFENSE_TYPE.Theft,
+            arg = helpers.getItemValue(obj) * props.count,
+            faction = victimInfo.factionId,
+            victim = victimActor,
+        })
     end
 
     if props.source then
@@ -119,34 +170,6 @@ local function moveInto(props)
         if props.source ~= props.destination then
             resultingObj = obj
         end
-    end
-
-    local ownerInfo
-    if props.source and types.Container.objectIsInstance(props.source) then
-        ownerInfo = props.source.owner
-    else
-        ownerInfo = obj.owner
-    end
-    local victimInfo = isStealing(props.player, ownerInfo)
-    if victimInfo then
-        local victimActor
-        if victimInfo.recordId then
-            for _, actor in ipairs(world.activeActors) do
-                if actor.recordId == victimInfo.recordId then
-                    victimActor = actor
-                    break
-                end
-            end
-        end
-        if not helpers.isGold(obj) then
-            props.player:sendEvent('MI_StoleItem', { recordId = obj.recordId, count = props.count, victim = victimInfo })
-        end
-        I.Crimes.commitCrime(props.player, {
-            type = types.Player.OFFENSE_TYPE.Theft,
-            arg = helpers.getItemValue(obj) * props.count,
-            faction = victimInfo.factionId,
-            victim = victimActor,
-        })
     end
 
     obj:moveInto(destination)
