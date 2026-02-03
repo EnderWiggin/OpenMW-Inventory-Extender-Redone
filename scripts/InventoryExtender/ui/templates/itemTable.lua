@@ -15,7 +15,17 @@ local ItemTable = {}
 
 local scrollbarWidth = 24
 
-local function setColumnWidths(columns, state)
+local function getScrollbarWidth(scrollable)
+    if not scrollable then
+        return 0
+    elseif scrollable.layout.userData.canScroll then
+        return scrollbarWidth
+    else
+        return 0
+    end
+end
+
+local function setColumnWidths(columns, state, scrollable)
     local contentWidth = math.floor(math.max(0, state.currentSize.x - scrollbarWidth)) -- scrollbarWidth = 16
     local widths = {}
     local fixedWidth = 0
@@ -74,6 +84,7 @@ ItemTable.create = function(props, ctx)
     local defaultSortId = props.defaultSortId
     local defaultSortIcon = props.defaultSortIcon
     local fallbackSort = props.fallbackSort
+    local gridIconSize = props.gridIconSize or 40
     
     local headerHeight = 30
     
@@ -113,7 +124,7 @@ ItemTable.create = function(props, ctx)
     end
 
     local function getContentWidth()
-        return math.floor(math.max(0, state.currentSize.x - scrollbarWidth))
+        return math.floor(math.max(0, state.currentSize.x - getScrollbarWidth(scrollable)))
     end
     
     sortRows = function()
@@ -207,7 +218,7 @@ ItemTable.create = function(props, ctx)
         -- Grid calculations
         local isGrid = state.viewMode == 'ItemViewMode_Grid'
         local gridItemRenderer = props.gridItemRenderer
-        local baseItemSize = props.gridIconSize or 40
+        local baseItemSize = gridIconSize
         local itemSize = baseItemSize
         local itemsPerRow = 1
         local effectiveRowHeight = rowHeight
@@ -519,7 +530,7 @@ ItemTable.create = function(props, ctx)
         
         local totalHeight
         if state.viewMode == 'ItemViewMode_Grid' then
-            local baseItemSize = props.gridIconSize or 48
+            local baseItemSize = gridIconSize
             local cols = math.floor(contentWidth / baseItemSize)
             if cols < 1 then cols = 1 end
             local itemSize = contentWidth / cols
@@ -531,7 +542,7 @@ ItemTable.create = function(props, ctx)
         
         scrollable.layout.userData.update(
             util.vector2(state.currentSize.x, viewHeight), 
-            util.vector2(state.currentSize.x - scrollbarWidth, totalHeight)
+            util.vector2(state.currentSize.x - getScrollbarWidth(scrollable), totalHeight)
         )
         
         renderVisibleRows()

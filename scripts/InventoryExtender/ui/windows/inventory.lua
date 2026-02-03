@@ -95,7 +95,8 @@ function Inventory:create(windowType, ctx)
                             size = v2(40, 40),
                             offset = row.isBartered and v2(4, 4) or v2(2, 2),
                         },
-                        position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                        anchor = v2(0.5, 0.5),
+                        relativePosition = v2(0.5, 0.5),
                         size = v2(iconDim, iconDim),
                         visible = visible,
                     }
@@ -105,7 +106,8 @@ function Inventory:create(windowType, ctx)
                     type = ui.TYPE.Image,
                     props = {
                         resource = ui.texture { path = row.itemRecord.icon },
-                        position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                        anchor = v2(0.5, 0.5),
+                        relativePosition = v2(0.5, 0.5),
                         size = v2(iconDim, iconDim),
                     }
                 },
@@ -286,6 +288,9 @@ function Inventory:create(windowType, ctx)
             local nameA = (type(a.Name) == "function" and a.Name() or a.Name):lower()
             local nameB = (type(b.Name) == "function" and b.Name() or b.Name):lower()
             if nameA == nameB then
+                if a.item.recordId == b.item.recordId then
+                    return a.item.id < b.item.id
+                end
                 return a.item.recordId < b.item.recordId
             end
             return nameA < nameB
@@ -393,6 +398,8 @@ function Inventory:create(windowType, ctx)
         viewMode = configPlayer.window.s_ItemViewMode,
         gridItemRenderer = function(row, itemSize)
             local base = iconRenderer(row, itemSize, itemSize)
+
+            base.content.itemIcon.props.size = v2(itemSize - 8, itemSize - 8)
 
             local count = getNonDraggedCount(row)
             if count and count > 1 then
