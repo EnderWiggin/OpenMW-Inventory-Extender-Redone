@@ -345,25 +345,17 @@ function Inventory:create(windowType, ctx)
                         end
                     elseif mode == 'Barter' then
                         if row.isBartered then
-                            if self.type == 'Inventory' then
-                                ctx.barterState.buying[row.item.id].count = ctx.barterState.buying[row.item.id].count - count
-                                if ctx.barterState.buying[row.item.id].count <= 0 then
-                                    ctx.barterState.buying[row.item.id] = nil
-                                end
-                            else
-                                ctx.barterState.selling[row.item.id].count = ctx.barterState.selling[row.item.id].count - count
-                                if ctx.barterState.selling[row.item.id].count <= 0 then
-                                    ctx.barterState.selling[row.item.id] = nil
+                            local table = self.type == 'Inventory' and ctx.barterState.buying or ctx.barterState.selling
+                            if table[row.item.id] then
+                                table[row.item.id].count = table[row.item.id].count - count
+                                if table[row.item.id].count <= 0 then
+                                    table[row.item.id] = nil
                                 end
                             end
                         else
-                            if self.type == 'Inventory' then
-                                ctx.barterState.selling[row.item.id] = ctx.barterState.selling[row.item.id] or { item = row.item, stacks = row.virtualStacks, count = 0 }
-                                ctx.barterState.selling[row.item.id].count = ctx.barterState.selling[row.item.id].count + count
-                            else
-                                ctx.barterState.buying[row.item.id] = ctx.barterState.buying[row.item.id] or { item = row.item, stacks = row.virtualStacks, count = 0 }
-                                ctx.barterState.buying[row.item.id].count = ctx.barterState.buying[row.item.id].count + count
-                            end
+                            local table = self.type == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
+                            table[row.item.id] = table[row.item.id] or { item = row.item, stacks = row.virtualStacks, count = 0 }
+                            table[row.item.id].count = math.min(table[row.item.id].count + count, row.getCount())
                         end
                         local sound = helpers.getItemSound(row.item, 'down')
                         if sound then
