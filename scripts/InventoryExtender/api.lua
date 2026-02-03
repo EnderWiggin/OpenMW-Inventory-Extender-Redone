@@ -6,6 +6,7 @@ local types = require('openmw.types')
 local storage = require('openmw.storage')
 local input = require('openmw.input')
 local I = require('openmw.interfaces')
+local auxUi = require('openmw_aux.ui')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
@@ -26,12 +27,12 @@ API.Templates = {
     MAGIC = require('scripts.InventoryExtender.ui.templates.magic'),
 }
 
-function API.show(windowName)
-    windowManager.show(windowName)
+function API.show(windowName, arg)
+    windowManager.show(windowName, arg)
 end
 
-function API.hide(windowName, force)
-    windowManager.hide(windowName, force)
+function API.hide(windowName, arg, force)
+    windowManager.hide(windowName, arg, force)
 end
 
 function API.getWindow(windowName)
@@ -95,7 +96,11 @@ end
 
 function API.setConsoleState(state)
     windowManager.ctx.isConsoleOpen = state
-    windowManager.onUiModeChanged(I.UI.getMode(), I.UI.getMode(), windowManager.ctx.modeArgs[I.UI.getMode()])
+    if windowManager.ctx.activeTooltip then
+        auxUi.deepDestroy(windowManager.ctx.activeTooltip)
+        windowManager.ctx.activeTooltip = nil
+    end
+    windowManager.ctx.dragAndDrop.lastHoveredObject = nil
 end
 
 function API.getConsoleState()
@@ -103,6 +108,7 @@ function API.getConsoleState()
 end
 
 local categories = {}
+local categoriesChanged = false
 function API.getCategories()
     return categories
 end
@@ -123,6 +129,7 @@ function API.registerCategory(category)
             return
         end
     end
+    categoriesChanged = true
 
     table.insert(categories, category)
 end
@@ -134,6 +141,7 @@ function API.unregisterCategory(key)
             return
         end
     end
+    categoriesChanged = true
 end
 
 -- Tooltip Modifiers
@@ -164,6 +172,23 @@ return {
             if data then
                 windowManager.ctx.stolenItems = data.stolenItems or {}
                 windowManager.ctx.companionProfit = data.companionProfit or {}
+            end
+            windowManager.init()
+        end,
+        onInit = function()
+            windowManager.init()
+        end,
+        onUpdate = function()
+            if categoriesChanged then
+                for _, window in pairs(windowManager.windows) do
+                    if window.categoryFilter then
+                        window.categoryFilter.layout.userData.updateCategories()
+                    end
+                    if window.itemTable then
+                        window.itemTable.layout.userData.refresh()
+                    end
+                end
+                categoriesChanged = false
             end
         end,
     },

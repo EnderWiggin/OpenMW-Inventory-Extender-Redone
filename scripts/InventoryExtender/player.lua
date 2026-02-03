@@ -30,7 +30,7 @@ local function init()
             'Companion',
         }
         for _, windowName in ipairs(overrides) do
-            I.UI.registerWindow(windowName, function() API.show(windowName) end, function() API.hide(windowName) end)
+            I.UI.registerWindow(windowName, function(arg) API.show(windowName, arg) end, function(arg) API.hide(windowName, arg) end)
         end
     elseif configPlayer.misc.b_ShowControllerWarning then
         storage.playerSection('Settings/InventoryExtender/5_Misc'):set('b_ShowControllerWarning', false)

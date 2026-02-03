@@ -52,7 +52,7 @@ function Inventory:create(windowType, ctx)
     local w = 60 * baseTemplates.TEXT_SIZE / 16
 
     local function onRowActivate(row, rowWidget)
-        if self.ctx.uiMode ~= 'Interface' then
+        if I.UI.getMode() ~= 'Interface' then
             return
         end
 
@@ -129,7 +129,7 @@ function Inventory:create(windowType, ctx)
                         nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
                     end
 
-                    if self.ctx.uiMode == 'Barter' then
+                    if I.UI.getMode() == 'Barter' then
                         if row.isBartered then
                             if self.type == 'Inventory' then
                                 nonDraggedCount = (self.ctx.barterState.buying[row.item.id] or {}).count or 0
@@ -292,7 +292,7 @@ function Inventory:create(windowType, ctx)
 
             self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
 
-            local transfer = input.isAltPressed() or self.ctx.uiMode == 'Barter'
+            local transfer = input.isAltPressed() or I.UI.getMode() == 'Barter'
             local takeAll = input.isShiftPressed()
             local takeOne = input.isCtrlPressed()
 
@@ -302,7 +302,7 @@ function Inventory:create(windowType, ctx)
             end
 
             local itemCount = row.getCount()
-            if self.ctx.uiMode == 'Barter' then
+            if I.UI.getMode() == 'Barter' then
                 if row.isBartered then
                     if self.type == 'Inventory' then
                         itemCount = (self.ctx.barterState.buying[row.item.id] or {}).count or 0
@@ -320,15 +320,16 @@ function Inventory:create(windowType, ctx)
 
             local function doAction(count)
                 if transfer then
-                    if ctx.uiMode == 'Container' or ctx.uiMode == 'Companion' then
+                    local mode = I.UI.getMode()
+                    if mode == 'Container' or mode == 'Companion' then
                         if self.type == 'Inventory' then
-                            if ctx.modeArgs[ctx.uiMode] then
-                                ctx.dragAndDrop:transferInto(row.item, ctx.modeArgs[ctx.uiMode], omwself, count)
+                            if ctx.windowArgs[mode] then
+                                ctx.dragAndDrop:transferInto(row.item, ctx.windowArgs[mode], omwself, count)
                             end
                         else
                             ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count)
                         end
-                    elseif ctx.uiMode == 'Barter' then
+                    elseif mode == 'Barter' then
                         if row.isBartered then
                             if self.type == 'Inventory' then
                                 ctx.barterState.buying[row.item.id].count = ctx.barterState.buying[row.item.id].count - count
@@ -356,7 +357,7 @@ function Inventory:create(windowType, ctx)
                         end
                         barterUtils.updateOffer(ctx)
                         omwself:sendEvent('MI_Update')
-                    elseif ctx.uiMode == 'Interface' then
+                    elseif mode == 'Interface' then
                         ctx.dragAndDrop:dropAtFeet(row.item, count) 
                     end
                 else
@@ -560,13 +561,13 @@ function Inventory:create(windowType, ctx)
         if self.type == 'Container' then
             self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
                 onClick = function()
-                    if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                    if I.UI.getMode() == 'Container' and ctx.windowArgs.Container then
                         ctx.dragAndDrop:moveAll(self.target, omwself)
                         
                         if persistentCorpses[self.target.recordId] then
                             ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
                         else
-                            core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.modeArgs.Container })
+                            core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.windowArgs.Container })
                         end
                         I.UI.removeMode('Container')
                     end
@@ -574,8 +575,8 @@ function Inventory:create(windowType, ctx)
                 parent = self.infoBar,
             }, baseTemplates.button(constants.Strings.DISPOSE_OF_CORPSE), ctx), function(layout)
                 local visible = false
-                if ctx.modeArgs.Container then
-                    visible = types.Actor.objectIsInstance(ctx.modeArgs.Container) and types.Actor.isDead(ctx.modeArgs.Container)
+                if ctx.windowArgs.Container then
+                    visible = types.Actor.objectIsInstance(ctx.windowArgs.Container) and types.Actor.isDead(ctx.windowArgs.Container)
                 end
                 layout.props.visible = visible
                 return layout
@@ -583,7 +584,7 @@ function Inventory:create(windowType, ctx)
 
             self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
                 onClick = function()
-                    if ctx.uiMode == 'Container' and ctx.modeArgs.Container then
+                    if I.UI.getMode() == 'Container' and ctx.windowArgs.Container then
                         ctx.dragAndDrop:moveAll(self.target, omwself)
                         I.UI.removeMode('Container')
                     end
@@ -853,12 +854,12 @@ function Inventory:create(windowType, ctx)
     end)
 
     self.itemTable.layout.userData.setFilter('barterFilter', function(row)
-        if self.ctx.uiMode == 'Barter' then
+        if I.UI.getMode() == 'Barter' then
             if helpers.isGold(row.item) then
                 return false
             end
 
-            local barterNpc = self.ctx.modeArgs.Barter
+            local barterNpc = self.ctx.windowArgs.Trade
             if not barterNpc then
                 return false
             end
@@ -902,6 +903,13 @@ function Inventory:create(windowType, ctx)
         end
     end)
 
+    self:setPinnable()
+    if self:isPinnable() and self:isPinned() then
+        self:setVisible(true)
+    else
+        self:setVisible(false)
+    end
+
     return self
 end
 
@@ -943,11 +951,11 @@ function Inventory:createData()
                 end
             end,
             disabledFn = function()
-                if not isBartered and self.ctx.uiMode == 'Container' and self.type == 'Inventory' then
-                    if self.ctx.modeArgs.Container and types.Container.objectIsInstance(self.ctx.modeArgs.Container) and types.Container.record(self.ctx.modeArgs.Container).isOrganic then
+                if not isBartered and I.UI.getMode() == 'Container' and self.type == 'Inventory' then
+                    if self.ctx.windowArgs.Container and types.Container.objectIsInstance(self.ctx.windowArgs.Container) and types.Container.record(self.ctx.windowArgs.Container).isOrganic then
                         return true
                     end
-                    return not helpers.doesItemFit(itemStack, self.ctx.modeArgs.Container)
+                    return not helpers.doesItemFit(itemStack, self.ctx.windowArgs.Container)
                 end
             end,
         }
@@ -975,13 +983,13 @@ function Inventory:createData()
     end
     
     -- Add bartered items from other inventory
-    if self.ctx.uiMode == 'Barter' then
+    if I.UI.getMode() == 'Barter' then
         if self.type == 'Trade' then
             for _, item in ipairs(omwself.type.inventory(omwself):getAll()) do
                 table.insert(data, createRowData(item, true, false))
             end
         else
-            local barterNpc = self.ctx.modeArgs.Barter
+            local barterNpc = self.ctx.windowArgs.Trade
             if barterNpc then
                 for _, recordId in pairs(helpers.getMerchantItems(barterNpc)) do
                     for _, virtualItem in ipairs(recordId) do
@@ -996,6 +1004,7 @@ function Inventory:createData()
 end
 
 function Inventory:updateData()
+    if self.type == 'Inventory' then print('Updating Inventory data') end
     if not self.target then return end
     self:setTitle()
     self:setPinnable()
@@ -1004,7 +1013,7 @@ function Inventory:updateData()
     end
 
     local anyChanges = false
-    if self.ctx.uiMode == 'Barter' then
+    if self.ctx.lastUiMode == 'Barter' then
         anyChanges = true
     end
 
@@ -1035,10 +1044,12 @@ function Inventory:updateData()
     end
 
     if not anyChanges then
+        if self.type == 'Inventory' then print('No changes detected in Inventory') end
         self.itemTable.layout.userData.refresh()
         return
     end
 
+    if self.type == 'Inventory' then print('Changes detected in Inventory, updating data') end
     local data = self:createData()
     self.itemTable.layout.userData.updateData(data)
 end
@@ -1054,16 +1065,30 @@ end
 function Inventory:setPinnable()
     if not self.element then return end
 
-    if self.type == 'Inventory' and (not self.ctx.uiMode or self.ctx.uiMode == 'Interface') then
+    local mode = I.UI.getMode()
+    if self.type == 'Inventory' and (not mode or mode == 'Interface') then
         self.element.layout.userData.setPinnable(true)
     else
         self.element.layout.userData.setPinnable(false)
     end
 end
 
+function Inventory:isPinnable()
+    if not self.element then return false end
+
+    return self.element.layout.userData.pinnable
+end
+
+function Inventory:isPinned()
+    if not self.element then return false end
+
+    return self.element.layout.userData.pinned
+end
+
 function Inventory:setVisible(visible)
     if self.categoryFilter then
         self.categoryFilter.layout.userData.clearSearch()
+        self.categoryFilter.layout.userData.updateCategories()
     end
     Window.setVisible(self, visible)
 end
@@ -1072,17 +1097,10 @@ function Inventory:updateTarget()
     local oldTarget = self.target
     if self.type == 'Inventory' then
         self.target = omwself
-    elseif self.type == 'Container' or self.type == 'Companion' then
-        local modeArgs = self.ctx.modeArgs
-        if modeArgs and modeArgs[self.type] then
-            self.target = modeArgs[self.type]
-        else
-            self.target = nil
-        end
-    elseif self.type == 'Trade' then
-        local modeArgs = self.ctx.modeArgs
-        if modeArgs and modeArgs.Barter then
-            self.target = modeArgs.Barter
+    else
+        local windowArgs = self.ctx.windowArgs
+        if windowArgs and windowArgs[self.type] then
+            self.target = windowArgs[self.type]
         else
             self.target = nil
         end
@@ -1107,11 +1125,11 @@ function Inventory:getDimensionsKey()
     elseif self.type == 'Companion' then
         return 'd_CompanionWindowDimensions'
     else
-        if self.ctx.uiMode == 'Barter' then
+        if I.UI.getMode() == 'Barter' then
             return 'd_InventoryBarterWindowDimensions'
-        elseif self.ctx.uiMode == 'Container' then
+        elseif I.UI.getMode() == 'Container' then
             return 'd_InventoryContainerWindowDimensions'
-        elseif self.ctx.uiMode == 'Companion' then
+        elseif I.UI.getMode() == 'Companion' then
             return 'd_InventoryCompanionWindowDimensions'
         else
             return 'd_InventoryWindowDimensions'
@@ -1125,8 +1143,8 @@ function Inventory:saveState()
     local dims = self:getDimensions()
     if not dims then return end
 
-    storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set(self:getDimensionsKey(), dims)
-    if self.type == 'Inventory' and self.ctx.uiMode == 'Interface' then
+    storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set(self.stateKey, dims)
+    if self.type == 'Inventory' and self:isPinnable() then
         storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set('b_InventoryWindowPinned', self.element.layout.userData.pinned)
     end
 end
@@ -1134,7 +1152,8 @@ end
 function Inventory:loadState()
     if not self.element then return end
 
-    local dims = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get(self:getDimensionsKey())
+    self.stateKey = self:getDimensionsKey()
+    local dims = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get(self.stateKey)
     if not dims then return end
 
     self:setDimensions(dims)

@@ -46,8 +46,8 @@ windowManager.ctx = {
     tooltipModifiers = {},
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
-    modeArgs = {},
-    uiMode = nil,
+    windowArgs = {},
+    lastUiMode = nil,
     stolenItems = {},
     barterState = {
         selling = {},
@@ -75,6 +75,12 @@ windowManager.create = function(windowName)
     return windowManager.windows[windowName]
 end
 
+windowManager.init = function()
+    for _, windowName in ipairs{"Inventory", "Trade", "Container", "Companion"} do
+        windowManager.create(windowName)
+    end
+end
+
 windowManager.update = function()
     for _, window in pairs(windowManager.windows) do
         if window then
@@ -91,29 +97,39 @@ windowManager.update = function()
     end
 end
 
-windowManager.show = function(windowName)
+windowManager.show = function(windowName, arg)
+    windowManager.ctx.windowArgs[windowName] = arg
+
     if not windowManager.windows[windowName] then
         windowManager.create(windowName)
     end
 
     showing[windowName] = true
+
+    windowManager.windows[windowName]:loadState()
+    windowManager.windows[windowName]:setVisible(true)
+    windowManager.windows[windowName]:updateTarget()
 end
 
-windowManager.hide = function(windowName, force)
+windowManager.hide = function(windowName, arg, force)
+    showing[windowName] = false
     local window = windowManager.windows[windowName]
     if not window or not window:isVisible() then return end
 
-    if not window:isPinned() or force then
-        showing[windowName] = false
+    window:saveState()
+
+    if not (window:isPinned() and I.UI.getMode() == nil) or force then
+        window:setVisible(false)
     end
     if windowManager.ctx.activeTooltip then
         auxUi.deepDestroy(windowManager.ctx.activeTooltip)
         windowManager.ctx.activeTooltip = nil
     end
-    window:saveState()
 end
 
-windowManager.onUiModeChanged = function(oldMode, newMode, arg)
+windowManager.onUiModeChanged = function(oldMode, newMode)
+    windowManager.ctx.lastUiMode = newMode
+
     if oldMode == 'Barter' and windowManager.ctx.barterState.success then
         ui.showMessage(constants.Strings.BARTER_THANK_YOU, {
             showInDialogue = true,
@@ -127,13 +143,10 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
         currentBalance = 0,
     }
 
-    if oldMode == 'Container' and windowManager.ctx.modeArgs.Container then
-        windowManager.ctx.modeArgs.Container:sendEvent('MI_ContainerClosed')
+    if oldMode == 'Container' and windowManager.ctx.windowArgs.Container then
+        windowManager.ctx.windowArgs.Container:sendEvent('MI_ContainerClosed')
     end
 
-    if newMode then
-        windowManager.ctx.modeArgs[newMode] = arg
-    end
     if windowManager.ctx.modalElement then
         auxUi.deepDestroy(windowManager.ctx.modalElement)
         windowManager.ctx.modalElement = nil
@@ -147,16 +160,14 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
         windowManager.ctx.dragAndDrop.wrapper:update() 
         windowManager.ctx.dragAndDrop.lastHoveredObject = nil
     end
-    windowManager.ctx.uiMode = newMode
-    for name, window in pairs(windowManager.windows) do
-        if window then
-            if showing[name] then
-                window:loadState()
-                window:setVisible(true)
-            else
-                window:setVisible(false)
-            end
-            window:updateTarget()
+
+    for windowName, window in pairs(windowManager.windows) do
+        window:loadState()
+        if not window:isPinnable() and window:isVisible() and not showing[windowName] and newMode ~= nil then
+            window:setVisible(false)
+        elseif window:isPinnable() and window:isPinned() and not window:isVisible() and newMode == nil then
+            window:setVisible(true)
+            window:updateData()
         end
     end
 end
@@ -208,8 +219,9 @@ end
 windowManager.ctx.dragAndDrop:init(windowManager.ctx)
 
 input.registerTriggerHandler('Activate', async:callback(function()
-    if windowManager.ctx.uiMode == 'Container' or windowManager.ctx.uiMode == 'Barter' or windowManager.ctx.uiMode == 'Companion' then
-        I.UI.removeMode(windowManager.ctx.uiMode)
+    local mode = I.UI.getMode()
+    if mode == 'Container' or mode == 'Barter' or mode == 'Companion' then
+        I.UI.removeMode(mode)
         return false
     end
     if windowManager.ctx.focusedInteractive and windowManager.ctx.focusedInteractive.layout and

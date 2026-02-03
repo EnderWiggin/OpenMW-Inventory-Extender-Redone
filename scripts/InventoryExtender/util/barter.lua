@@ -98,7 +98,7 @@ end
 
 local function updateOffer(ctx)
     local state = ctx.barterState
-    local merchant = ctx.modeArgs.Barter
+    local merchant = ctx.windowArgs.Trade
     if not state or not merchant then
         return
     end
