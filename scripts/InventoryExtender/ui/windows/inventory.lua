@@ -18,6 +18,7 @@ local InfoBar = require('scripts.InventoryExtender.ui.templates.infoBar')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal')
 local Window = require('scripts.InventoryExtender.ui.windows.base')
 
+local configPlayer = require('scripts.InventoryExtender.config.player')
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
 local base = require("scripts.InventoryExtender.ui.windows.base")
@@ -77,73 +78,81 @@ function Inventory:create(windowType, ctx)
         end
     end
 
+    local iconRenderer = function(row, width, height)
+        local iconDim = math.min(width, height) -- keep square
+        local visible = row.isBartered or (self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false)
+        return {
+            props = {
+                size = v2(width, height),
+            },
+            content = ui.content {
+                {
+                    name = 'itemBackground',
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = ui.texture { 
+                            path = row.isBartered and 'textures/menu_icon_barter.dds' or 'textures/menu_icon_equip.dds',
+                            size = v2(40, 40),
+                            offset = row.isBartered and v2(4, 4) or v2(2, 2),
+                        },
+                        position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                        size = v2(iconDim, iconDim),
+                        visible = visible,
+                    }
+                },
+                {
+                    name = 'itemIcon',
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = ui.texture { path = row.itemRecord.icon },
+                        position = v2((width - iconDim) / 2, (height - iconDim) / 2),
+                        size = v2(iconDim, iconDim),
+                    }
+                },
+            },
+            userData = {
+                bgrVisible = visible,
+            }
+        }
+    end
+
+    local function getNonDraggedCount(row)
+        local nonDraggedCount = row.getCount()
+        if self.ctx.dragAndDrop.draggingObject and self.ctx.dragAndDrop.draggingObject.id == row.item.id then
+            nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
+        end
+
+        if I.UI.getMode() == 'Barter' then
+            if row.isBartered then
+                if self.type == 'Inventory' then
+                    nonDraggedCount = (self.ctx.barterState.buying[row.item.id] or {}).count or 0
+                else
+                    nonDraggedCount = (self.ctx.barterState.selling[row.item.id] or {}).count or 0
+                end
+            else
+                if self.type == 'Inventory' then
+                    nonDraggedCount = nonDraggedCount - ((self.ctx.barterState.selling[row.item.id] or {}).count or 0)
+                elseif self.type == 'Trade' then
+                    nonDraggedCount = nonDraggedCount - ((self.ctx.barterState.buying[row.item.id] or {}).count or 0)
+                end
+            end
+        end
+
+        return nonDraggedCount
+    end
+
     self.itemTable = ItemTable.create({
         columns = {
             {
                 id = 'Icon',
                 width = specialTemplates.LINE_HEIGHT * 1.5 + 8,
-                renderer = function(row, width, height)
-                    local iconDim = math.min(width, height) -- keep square
-                    local visible = row.isBartered or (self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false)
-                    return {
-                        props = {
-                            size = v2(width, height),
-                        },
-                        content = ui.content {
-                            {
-                                name = 'itemBackground',
-                                type = ui.TYPE.Image,
-                                props = {
-                                    resource = ui.texture { 
-                                        path = row.isBartered and 'textures/menu_icon_barter.dds' or 'textures/menu_icon_equip.dds',
-                                        size = v2(40, 40),
-                                        offset = row.isBartered and v2(4, 4) or v2(2, 2),
-                                    },
-                                    position = v2((width - iconDim) / 2, (height - iconDim) / 2),
-                                    size = v2(iconDim, iconDim),
-                                    visible = visible,
-                                }
-                            },
-                            {
-                                name = 'itemIcon',
-                                type = ui.TYPE.Image,
-                                props = {
-                                    resource = ui.texture { path = row.itemRecord.icon },
-                                    position = v2((width - iconDim) / 2, (height - iconDim) / 2),
-                                    size = v2(iconDim, iconDim),
-                                }
-                            },
-                        },
-                        userData = {
-                            bgrVisible = visible,
-                        }
-                    }
-                end
+                renderer = iconRenderer,
             },
             {
                 id = 'Name',
                 label = l10n('Column_Name'),
                 renderer = function(row, width, height)
-                    local nonDraggedCount = row.getCount()
-                    if self.ctx.dragAndDrop.draggingObject and self.ctx.dragAndDrop.draggingObject.id == row.item.id then
-                        nonDraggedCount = nonDraggedCount - self.ctx.dragAndDrop.draggingCount
-                    end
-
-                    if I.UI.getMode() == 'Barter' then
-                        if row.isBartered then
-                            if self.type == 'Inventory' then
-                                nonDraggedCount = (self.ctx.barterState.buying[row.item.id] or {}).count or 0
-                            else
-                                nonDraggedCount = (self.ctx.barterState.selling[row.item.id] or {}).count or 0
-                            end
-                        else
-                            if self.type == 'Inventory' then
-                                nonDraggedCount = nonDraggedCount - ((self.ctx.barterState.selling[row.item.id] or {}).count or 0)
-                            elseif self.type == 'Trade' then
-                                nonDraggedCount = nonDraggedCount - ((self.ctx.barterState.buying[row.item.id] or {}).count or 0)
-                            end
-                        end
-                    end
+                    local nonDraggedCount = getNonDraggedCount(row)
 
                     local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
 
@@ -381,6 +390,28 @@ function Inventory:create(windowType, ctx)
             end
         end,
         onRowActivate = onRowActivate,
+        viewMode = configPlayer.window.s_ItemViewMode,
+        gridItemRenderer = function(row, itemSize)
+            local base = iconRenderer(row, itemSize, itemSize)
+
+            local count = getNonDraggedCount(row)
+            if count and count > 1 then
+                base.content:add({
+                    type = ui.TYPE.Text,
+                    template = baseTemplates.textNormal,
+                    props = {
+                        text = tostring(count),
+                        textSize = 12,
+                        anchor = util.vector2(1, 1),
+                        relativePosition = util.vector2(1, 1),
+                        textColor = constants.Colors.DEFAULT_LIGHT,
+                        textShadow = true,
+                    }
+                })
+            end
+            base.userData.count = count
+            return base
+        end,
     }, ctx)
 
     self.categoryFilter = CategoryFilter.create({
@@ -1168,6 +1199,10 @@ end
 
 function Inventory:loadState()
     if not self.element then return end
+
+    if self.itemTable then
+        self.itemTable.layout.userData.setViewMode(configPlayer.window.s_ItemViewMode)
+    end
 
     self.stateKey = self:getDimensionsKey()
     local dims = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get(self.stateKey)

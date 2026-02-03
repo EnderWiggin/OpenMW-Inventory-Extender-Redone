@@ -84,6 +84,7 @@ ItemTable.create = function(props, ctx)
         columnWidths = {},
         currentSize = size,   
         filters = {},
+        viewMode = props.viewMode or 'ItemViewMode_Table',
     }
 
     setColumnWidths(columns, state)
@@ -203,16 +204,40 @@ ItemTable.create = function(props, ctx)
         local viewHeight = state.currentSize.y - headerHeight
         local contentWidth = getContentWidth()
 
+        -- Grid calculations
+        local isGrid = state.viewMode == 'ItemViewMode_Grid'
+        local gridItemRenderer = props.gridItemRenderer
+        local baseItemSize = props.gridIconSize or 40
+        local itemSize = baseItemSize
+        local itemsPerRow = 1
+        local effectiveRowHeight = rowHeight
+
+        if isGrid then
+            itemsPerRow = math.floor(contentWidth / baseItemSize)
+            if itemsPerRow < 1 then itemsPerRow = 1 end
+            -- Distribute remaining space
+            itemSize = contentWidth / itemsPerRow
+            effectiveRowHeight = itemSize
+        end
+
         -- Virtualization mathematics
         -- contentLayer.props.position.y is negative when scrolled down
         local scrollY = -contentLayer.props.position.y
-        local startIndex = math.floor(scrollY / rowHeight)
-        local visibleCount = math.ceil(viewHeight / rowHeight)
+        local startRowIndex = math.floor(scrollY / effectiveRowHeight)
+        local visibleRowCount = math.ceil(viewHeight / effectiveRowHeight)
         
         -- Add buffer to render slightly outside viewport for smoothness
         local buffer = 1
-        local indexFrom = math.max(1, startIndex + 1 - buffer)
-        local indexTo = math.min(#state.sortedRows, startIndex + visibleCount + buffer)
+        -- Calculate index range
+        local indexFrom, indexTo
+        if isGrid then
+            indexFrom = math.max(1, (startRowIndex - buffer) * itemsPerRow + 1)
+            local endRowIndex = startRowIndex + visibleRowCount + buffer
+            indexTo = math.min(#state.sortedRows, endRowIndex * itemsPerRow)
+        else
+            indexFrom = math.max(1, startRowIndex + 1 - buffer)
+            indexTo = math.min(#state.sortedRows, startRowIndex + visibleRowCount + buffer)
+        end
         
         local newRowElements = {}
 
@@ -225,7 +250,7 @@ ItemTable.create = function(props, ctx)
                 local cacheKey = row.id
                 
                 local anyChanged = false
-                local active = false--omwself.type.hasEquipped(omwself, row.item)
+                local active = false
                 local disabled = false
                 if row.activeFn then
                     active = row.activeFn(row)
@@ -234,6 +259,56 @@ ItemTable.create = function(props, ctx)
                     disabled = row.disabledFn(row)
                 end
                 if not state.rowCache[cacheKey] then
+                    local widgetContent
+                    if isGrid then
+                        if gridItemRenderer then
+                            local rendered = gridItemRenderer(row, itemSize)
+                            if rendered[1] then
+                                widgetContent = rendered
+                            else
+                                widgetContent = ui.content { rendered }
+                            end
+                        else
+                            local iconPath = row.icon
+                            if not iconPath and row.item then
+                                iconPath = row.item.type.record(row.item).icon
+                            end
+                            if not iconPath then iconPath = 'icons/default icon.dds' end
+
+                            local count = row.count
+                            if not count and row.item then count = row.item.count end
+                            
+                            local iconContent = ui.content {
+                                {
+                                    type = ui.TYPE.Image,
+                                    props = {
+                                        resource = ui.texture { path = iconPath },
+                                        size = util.vector2(itemSize - 8, itemSize - 8),
+                                        relativePosition = util.vector2(0.5, 0.5),
+                                        anchor = util.vector2(0.5, 0.5),
+                                    },
+                                }
+                            }
+                            
+                            if count and count > 1 then
+                                iconContent:add({
+                                    type = ui.TYPE.Text,
+                                    template = baseTemplates.textNormal,
+                                    props = {
+                                        text = tostring(count),
+                                        textSize = 12,
+                                        anchor = util.vector2(1, 1),
+                                        relativePosition = util.vector2(0.9, 0.9), -- slightly padded
+                                        textColor = constants.Colors.DEFAULT_LIGHT,
+                                    }
+                                })
+                            end
+                            widgetContent = iconContent
+                        end
+                    else
+                        widgetContent = createContent(row)
+                    end
+
                     state.rowCache[cacheKey] = specialTemplates.interactive({
                         canClick = function()
                             for _, button in pairs(input.CONTROLLER_BUTTON) do
@@ -248,13 +323,13 @@ ItemTable.create = function(props, ctx)
                                 return onRowClick(row, state.rowCache[cacheKey]) 
                             end
                         end,
-                        name = row.item.id,
+                        name = row.item and row.item.id or 'item',
                     }, {
                         props = {
-                            size = util.vector2(contentWidth, rowHeight),
+                            size = util.vector2(isGrid and itemSize or contentWidth, isGrid and itemSize or rowHeight),
                             position = util.vector2(0, 0),
                         },
-                        content = createContent(row),
+                        content = widgetContent,
                         userData = { 
                             onRowActivate = function()
                                 if props.onRowActivate then
@@ -267,10 +342,16 @@ ItemTable.create = function(props, ctx)
                                 end
                             end,
                             tooltipFn = function()
-                                return specialTemplates.itemTooltip(row.item, false, ctx)
+                                if row.item then
+                                    return specialTemplates.itemTooltip(row.item, false, ctx)
+                                elseif row.tooltip then
+                                    return baseTemplates.lineTooltip(row.tooltip)
+                                end
+                                return nil
                             end,
                             active = active,
                             disabled = disabled,
+                            lastGridSize = isGrid and itemSize or nil,
                         }
                     }, ctx)
                     local color = helpers.getInteractiveTextColor(state.rowCache[cacheKey].layout)
@@ -282,44 +363,97 @@ ItemTable.create = function(props, ctx)
                         end
                     end)
                 else
-                    local totalW = 0
-                    for cIdx, col in ipairs(columns) do
-                        local w = state.columnWidths[cIdx] or 0
+                    if isGrid then
                         local rowWidget = state.rowCache[cacheKey]
-                        local cellContent = rowWidget.layout.content[cIdx]
+                        if gridItemRenderer then
+                            local lastSize = rowWidget.layout.userData.lastGridSize or 0
+                            
+                            local rendered = gridItemRenderer(row, itemSize)
+                            local newContent = rendered[1] and rendered or ui.content { rendered }
 
-                        if col.renderer then
-                            local newCellContent = col.renderer(row, w, rowHeight)
-                            if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
-                                rowWidget.layout.content[cIdx] = newCellContent
-                                cellContent = newCellContent
+                            local userDataChanged = false
+                            local currentContent = rowWidget.layout.content
+                            local u1 = currentContent and currentContent[1] and currentContent[1].userData
+                            local u2 = newContent[1] and newContent[1].userData
+                            
+                            if u1 and u2 then
+                                userDataChanged = not helpers.mapEquals(u1, u2)
+                            elseif u1 ~= u2 then
+                                userDataChanged = true
+                            end
+
+                            if math.abs(lastSize - itemSize) > 0.1 or userDataChanged then
+                                rowWidget.layout.content = newContent
+                                rowWidget.layout.userData.lastGridSize = itemSize
+                                anyChanged = true
+                            end
+                        else
+                            local icon = rowWidget.layout.content[1]
+                            local currentIconSize = icon.props.size and icon.props.size.x or 0
+                            local newIconSize = itemSize - 8
+                            if math.abs(currentIconSize - newIconSize) > 0.1 then
+                                icon.props.size = util.vector2(newIconSize, newIconSize)
                                 anyChanged = true
                             end
                         end
+                    else
+                        local totalW = 0
+                        for cIdx, col in ipairs(columns) do
+                            local w = state.columnWidths[cIdx] or 0
+                            local rowWidget = state.rowCache[cacheKey]
+                            local cellContent = rowWidget.layout.content[cIdx]
 
-                        cellContent.props.size = util.vector2(w, rowHeight)
-                        cellContent.props.position = util.vector2(totalW, 0)
-                        if cellContent.props.text then
-                            local val = row[col.id]
-                            if type(val) == 'function' then
-                                val = val()
+                            if col.renderer then
+                                local newCellContent = col.renderer(row, w, rowHeight)
+                                if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
+                                    rowWidget.layout.content[cIdx] = newCellContent
+                                    cellContent = newCellContent
+                                    anyChanged = true
+                                end
                             end
-                            local textStr = val ~= nil and tostring(val) or ""
-                            if textStr == "0" then textStr = "-" end
-                            if textStr ~= cellContent.props.text then
-                                cellContent.props.text = textStr
-                                anyChanged = true
+
+                            cellContent.props.size = util.vector2(w, rowHeight)
+                            cellContent.props.position = util.vector2(totalW, 0)
+                            if cellContent.props.text then
+                                local val = row[col.id]
+                                if type(val) == 'function' then
+                                    val = val()
+                                end
+                                local textStr = val ~= nil and tostring(val) or ""
+                                if textStr == "0" then textStr = "-" end
+                                if textStr ~= cellContent.props.text then
+                                    cellContent.props.text = textStr
+                                    anyChanged = true
+                                end
                             end
+                            totalW = totalW + w
                         end
-                        totalW = totalW + w
                     end
                 end
 
                 local rowWidget = state.rowCache[cacheKey]
-                local rowY = (i - 1) * rowHeight
+                
+                local targetX = 0
+                local targetY = 0
+                
+                if isGrid then
+                    local gridIndex = i - 1
+                    local gridRow = math.floor(gridIndex / itemsPerRow)
+                    local gridCol = gridIndex % itemsPerRow
+                    targetX = gridCol * itemSize
+                    targetY = gridRow * itemSize
+                else
+                    targetY = (i - 1) * rowHeight
+                end
+
+                local targetW = isGrid and itemSize or contentWidth
+                local targetH = isGrid and itemSize or rowHeight
+               
+                local targetYCompare = targetY
+                if isGrid then targetYCompare = math.floor((i-1) / itemsPerRow) * itemSize end
 
                 if state.lastUsedRowPos then
-                    if rowY - scrollable.layout.userData.getScrollPos() == state.lastUsedRowPos.y then
+                    if targetYCompare - scrollable.layout.userData.getScrollPos() == state.lastUsedRowPos.y then
                         ctx.focusedInteractive = rowWidget
                         if not rowWidget.layout.userData.hovering then
                             rowWidget.layout.userData.hovering = true
@@ -333,13 +467,15 @@ ItemTable.create = function(props, ctx)
                     end
                 end
 
-                if rowWidget.layout.props.size.x ~= contentWidth 
-                    or rowWidget.layout.props.position.y ~= rowY
+                if rowWidget.layout.props.size.x ~= targetW 
+                    or rowWidget.layout.props.position.y ~= targetY
+                    or rowWidget.layout.props.position.x ~= targetX
                     or rowWidget.layout.userData.active ~= active
                     or rowWidget.layout.userData.disabled ~= disabled
                     or anyChanged then
-                    rowWidget.layout.props.size = util.vector2(contentWidth, rowHeight)
-                    rowWidget.layout.props.position = util.vector2(0, rowY)
+                    
+                    rowWidget.layout.props.size = util.vector2(targetW, targetH)
+                    rowWidget.layout.props.position = util.vector2(targetX, targetY)
                     rowWidget.layout.userData.active = active
                     rowWidget.layout.userData.disabled = disabled
                     
@@ -379,7 +515,19 @@ ItemTable.create = function(props, ctx)
         if not scrollable then return end
         
         local viewHeight = state.currentSize.y - headerHeight
-        local totalHeight = math.floor(math.max(#state.sortedRows * rowHeight, viewHeight))
+        local contentWidth = getContentWidth()
+        
+        local totalHeight
+        if state.viewMode == 'ItemViewMode_Grid' then
+            local baseItemSize = props.gridIconSize or 48
+            local cols = math.floor(contentWidth / baseItemSize)
+            if cols < 1 then cols = 1 end
+            local itemSize = contentWidth / cols
+            local rows = math.ceil(#state.sortedRows / cols)
+            totalHeight = math.floor(math.max(rows * itemSize, viewHeight))
+        else
+            totalHeight = math.floor(math.max(#state.sortedRows * rowHeight, viewHeight))
+        end
         
         scrollable.layout.userData.update(
             util.vector2(state.currentSize.x, viewHeight), 
@@ -566,6 +714,19 @@ ItemTable.create = function(props, ctx)
 
     wrapper.layout.userData.setFilter = function(filterId, filterFn)
         state.filters[filterId] = filterFn
+    end
+
+    wrapper.layout.userData.setViewMode = function(mode)
+        if state.viewMode == mode then return end
+        state.viewMode = mode
+        -- Clear cache
+        for k, v in pairs(state.rowCache) do
+            auxUi.deepDestroy(v)
+        end
+        state.rowCache = {}
+        
+        updateRows()
+        wrapper:update()
     end
 
     wrapper.layout.userData.resetScroll = resetScroll

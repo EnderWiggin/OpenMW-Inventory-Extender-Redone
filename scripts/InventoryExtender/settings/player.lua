@@ -32,6 +32,20 @@ I.Settings.registerGroup {
             default = true,
         },
         {
+            key = 's_ItemViewMode',
+            renderer = 'select',
+            name = 'ItemViewMode',
+            description = 'ItemViewModeDesc',
+            default = 'ItemViewMode_Table',
+            argument = {
+                l10n = 'InventoryExtender',
+                items = {
+                    'ItemViewMode_Table',
+                    'ItemViewMode_Grid',
+                },
+            }
+        },
+        {
             key = 'i_TextSizeOverride',
             renderer = 'number',
             name = 'TextSizeOverride',

@@ -7,6 +7,11 @@ RequiresReload: Requires a Lua reload to take effect.
 
 ConfigCategoryWindowOptions: Window Options
 EnableMod: Enable mod
+ItemViewMode: Item view mode
+ItemViewModeDesc: |-
+  Choose between a detailed table view or a vanilla-style grid view.
+ItemViewMode_Table: Table
+ItemViewMode_Grid: Grid
 TextSizeOverride: Text size override
 TextSizeOverrideDesc: |-
   Override the default text size used in the inventory window. 

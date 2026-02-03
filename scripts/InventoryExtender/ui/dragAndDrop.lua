@@ -106,6 +106,7 @@ function DragAndDrop:setDraggingObject(object)
                     relativePosition = v2(1, 1),
                     text = self.draggingCount > 1 and tostring(self.draggingCount) or '',
                     textColor = constants.Colors.DEFAULT_LIGHT,
+                    textShadow = true,
                 },
             }
         }
