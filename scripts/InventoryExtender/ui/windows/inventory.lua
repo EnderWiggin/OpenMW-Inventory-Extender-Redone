@@ -309,6 +309,10 @@ function Inventory:create(windowType, ctx)
                 return
             end
 
+            if not rowWidget then
+                return
+            end
+
             self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
 
             local transfer = input.isAltPressed() or I.UI.getMode() == 'Barter'

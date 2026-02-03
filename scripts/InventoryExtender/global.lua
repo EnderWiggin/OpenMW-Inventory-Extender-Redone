@@ -459,31 +459,33 @@ local function finalizeBarter(props)
         for _, entry in pairs(entries) do
             local remainingCount = entry.count
             
-            if entry.stacks then
-                for _, stackItem in ipairs(entry.stacks) do
-                    if remainingCount <= 0 then break end
-                    
-                    local takeCount = math.min(stackItem.count, remainingCount)
-                    local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
+            if entry.count > 0 then
+                if entry.stacks then
+                    for _, stackItem in ipairs(entry.stacks) do
+                        if remainingCount <= 0 then break end
 
-                    if restock and stackItem.parentContainer and types.Item.isRestocking(stackItem) then
-                        local newItem = world.createObject(stackItem.recordId, takeCount)
-                        setItemData(newItem, stackItem.type.itemData(stackItem))
+                        local takeCount = math.min(stackItem.count, remainingCount)
+                        local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
+
+                        if restock and stackItem.parentContainer and types.Item.isRestocking(stackItem) then
+                            local newItem = world.createObject(stackItem.recordId, takeCount)
+                            setItemData(newItem, stackItem.type.itemData(stackItem))
+                            newItem:moveInto(destination)
+                        else
+                            item:moveInto(destination)
+                        end
+                        remainingCount = remainingCount - takeCount
+                    end
+                else
+                    local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
+
+                    if restock and entry.item.parentContainer and types.Item.isRestocking(entry.item) then
+                        local newItem = world.createObject(entry.item.recordId, entry.count)
+                        setItemData(newItem, entry.item.type.itemData(entry.item))
                         newItem:moveInto(destination)
                     else
                         item:moveInto(destination)
                     end
-                    remainingCount = remainingCount - takeCount
-                end
-            else
-                local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
-
-                if restock and entry.item.parentContainer and types.Item.isRestocking(entry.item) then
-                    local newItem = world.createObject(entry.item.recordId, entry.count)
-                    setItemData(newItem, entry.item.type.itemData(entry.item))
-                    newItem:moveInto(destination)
-                else
-                    item:moveInto(destination)
                 end
             end
         end
