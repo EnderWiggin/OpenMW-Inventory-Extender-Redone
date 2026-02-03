@@ -360,7 +360,7 @@ function Inventory:create(windowType, ctx)
                         else
                             local table = self.type == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
                             table[row.item.id] = table[row.item.id] or { item = row.item, stacks = row.virtualStacks, count = 0 }
-                            table[row.item.id].count = math.min(table[row.item.id].count + count, row.getCount())
+                            table[row.item.id].count = math.min(table[row.item.id].count + count, itemCount)
                         end
                         local sound = helpers.getItemSound(row.item, 'down')
                         if sound then
@@ -1082,7 +1082,7 @@ function Inventory:updateData()
     end
 
     local anyChanges = false
-    if self.ctx.lastUiMode == 'Barter' then
+    if I.UI.getMode() == 'Barter' or self.ctx.lastUiMode == 'Barter' then
         anyChanges = true
     end
 

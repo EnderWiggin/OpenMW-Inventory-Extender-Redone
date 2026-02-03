@@ -780,6 +780,9 @@ ItemTable.create = function(props, ctx)
             if itemId then
                 newItemsMap[itemId] = row
             end
+            if row.virtualStacks then
+                state.rowCache[row.id] = nil
+            end
         end
         
         -- Remove cache entries for items no longer present
