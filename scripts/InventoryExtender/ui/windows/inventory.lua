@@ -79,8 +79,12 @@ function Inventory:create(windowType, ctx)
     end
 
     local iconRenderer = function(row, width, height)
-        local iconDim = math.min(width, height) -- keep square
-        local visible = row.isBartered or (self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false)
+        local iconDim = math.min(width, height)
+        local equipped = self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false
+        local bgrVisible = row.isBartered or equipped
+        local magicString = row.itemRecord.enchant and '_magic' or ''
+        local postString = (row.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or '_none'
+        local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
         return {
             props = {
                 size = v2(width, height),
@@ -91,14 +95,14 @@ function Inventory:create(windowType, ctx)
                     type = ui.TYPE.Image,
                     props = {
                         resource = ui.texture { 
-                            path = row.isBartered and 'textures/menu_icon_barter.dds' or 'textures/menu_icon_equip.dds',
+                            path = bgrPath,
                             size = v2(40, 40),
-                            offset = row.isBartered and v2(4, 4) or v2(2, 2),
+                            offset = bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2),
                         },
                         anchor = v2(0.5, 0.5),
                         relativePosition = v2(0.5, 0.5),
                         size = v2(iconDim, iconDim),
-                        visible = visible,
+                        visible = bgrVisible,
                     }
                 },
                 {
@@ -113,7 +117,8 @@ function Inventory:create(windowType, ctx)
                 },
             },
             userData = {
-                bgrVisible = visible,
+                bgrVisible = bgrVisible,
+                bgrPath = bgrPath,
             }
         }
     end
@@ -392,6 +397,7 @@ function Inventory:create(windowType, ctx)
             local base = iconRenderer(row, itemSize, itemSize)
 
             base.content.itemIcon.props.size = v2(itemSize - 8, itemSize - 8)
+            base.content.itemBackground.props.visible = true
 
             local count = getNonDraggedCount(row)
             if count and count > 1 then
@@ -409,6 +415,7 @@ function Inventory:create(windowType, ctx)
                 })
             end
             base.userData.count = count
+            base.userData.bgrVisible = true
             return base
         end,
         parentWindow = self,
