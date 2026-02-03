@@ -858,6 +858,10 @@ function Inventory:create(windowType, ctx)
             if helpers.isGold(row.item) then
                 return false
             end
+            
+            if row.item.type.record(row.item).isKey then
+                return false
+            end
 
             local barterNpc = self.ctx.windowArgs.Trade
             if not barterNpc then

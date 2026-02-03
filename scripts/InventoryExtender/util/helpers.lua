@@ -308,6 +308,10 @@ Helpers.getItemValue = function(item)
         return 1
     end
 
+    if item.type.record(item).isKey then
+        return 0
+    end
+
     local soul = item.type.itemData(item).soul
     local baseValue = item.type.record(item).value
     if not soul then return baseValue end

@@ -563,7 +563,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
         local flexContent = ui.content {}
 
-        if itemRecord.value > 0 and itemRecord.id ~= 'gold_001' then
+        if value > 0 and itemRecord.id ~= 'gold_001' then
             flexContent:add({
                 type = ui.TYPE.Image,
                 props = {
