@@ -1008,7 +1008,6 @@ function Inventory:createData()
 end
 
 function Inventory:updateData()
-    if self.type == 'Inventory' then print('Updating Inventory data') end
     if not self.target then return end
     self:setTitle()
     self:setPinnable()
@@ -1048,12 +1047,10 @@ function Inventory:updateData()
     end
 
     if not anyChanges then
-        if self.type == 'Inventory' then print('No changes detected in Inventory') end
         self.itemTable.layout.userData.refresh()
         return
     end
 
-    if self.type == 'Inventory' then print('Changes detected in Inventory, updating data') end
     local data = self:createData()
     self.itemTable.layout.userData.updateData(data)
 end
