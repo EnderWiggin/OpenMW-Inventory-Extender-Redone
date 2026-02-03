@@ -1085,6 +1085,10 @@ Templates.scrollable = function(size, content, flexSize, padding, borderThicknes
     scrollWidget.layout.userData.getScrollPos = function()
         return -scrollWidget.layout.content[1].props.position.y
     end
+
+    scrollWidget.layout.userData.setScrollStep = function(newStep)
+        scrollWidget.layout.userData.scrollStep = newStep
+    end
     
     return scrollWidget
 end

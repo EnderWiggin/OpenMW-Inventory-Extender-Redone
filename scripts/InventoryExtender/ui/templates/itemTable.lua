@@ -232,6 +232,8 @@ ItemTable.create = function(props, ctx)
             effectiveRowHeight = itemSize
         end
 
+        scrollable.layout.userData.setScrollStep(isGrid and itemSize or rowHeight)
+
         -- Virtualization mathematics
         -- contentLayer.props.position.y is negative when scrolled down
         local scrollY = -contentLayer.props.position.y
