@@ -177,6 +177,7 @@ windowManager.onUiModeChanged = function(oldMode, newMode, arg)
         windowManager.ctx.dragAndDrop.wrapper:update() 
         windowManager.ctx.dragAndDrop.lastHoveredObject = nil
     end
+    windowManager.ctx.dragAndDrop:stopDrag()
 
     for windowName, window in pairs(windowManager.windows) do
         window:loadState()
