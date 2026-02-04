@@ -7,7 +7,6 @@ local types = require('openmw.types')
 local omwself = require('openmw.self')
 local async = require('openmw.async')
 local ambient = require('openmw.ambient')
-local storage = require('openmw.storage')
 
 local omwConstants = require('scripts.omw.mwui.constants')
 

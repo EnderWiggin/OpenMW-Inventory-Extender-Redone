@@ -1,5 +1,4 @@
 local I = require('openmw.interfaces')
-local self = require('openmw.self')
 local core = require('openmw.core')
 local input = require('openmw.input')
 local async = require('openmw.async')
@@ -7,14 +6,9 @@ local storage = require('openmw.storage')
 local ui = require('openmw.ui')
 local types = require('openmw.types')
 
-local util = require('openmw.util')
-local auxUtil = require('openmw_aux.util')
-local v2 = util.vector2
-
 local API = I.InventoryExtender
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
-local helpers = require('scripts.InventoryExtender.util.helpers')
 
 local l10n = core.l10n('InventoryExtender')
 

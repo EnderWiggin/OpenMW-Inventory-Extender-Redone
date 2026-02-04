@@ -21,7 +21,6 @@ local Window = require('scripts.InventoryExtender.ui.windows.base')
 local configPlayer = require('scripts.InventoryExtender.config.player')
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
-local base = require("scripts.InventoryExtender.ui.windows.base")
 local barterUtils = require('scripts.InventoryExtender.util.barter')
 local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorpses')
 

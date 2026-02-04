@@ -2,7 +2,6 @@ local types = require('openmw.types')
 local util = require('openmw.util')
 local self = require('openmw.self')
 local core = require('openmw.core')
-local I = require('openmw.interfaces')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 

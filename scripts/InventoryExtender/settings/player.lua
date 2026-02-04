@@ -1,5 +1,4 @@
 local core = require('openmw.core')
-local input = require('openmw.input')
 local I = require('openmw.interfaces')
 
 local l10n = core.l10n('InventoryExtender')

@@ -21,8 +21,6 @@ local SCROLL_BAR_INNER_WIDTH = 14
 local BORDER_THICKNESS = omwConstants.border
 local BORDER_THICKNESS_THICK = omwConstants.thickBorder
 
-local l10n = core.l10n('InventoryExtender')
-
 local Templates = {}
 
 Templates.TEXT_SIZE = configPlayer.window.i_TextSizeOverride > 0 and configPlayer.window.i_TextSizeOverride or omwConstants.textNormalSize

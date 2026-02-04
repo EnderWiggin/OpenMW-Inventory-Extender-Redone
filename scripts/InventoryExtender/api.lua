@@ -1,10 +1,6 @@
 local core = require('openmw.core')
 local self = require('openmw.self')
-local util = require('openmw.util')
-local ui = require('openmw.ui')
 local types = require('openmw.types')
-local storage = require('openmw.storage')
-local input = require('openmw.input')
 local I = require('openmw.interfaces')
 local auxUi = require('openmw_aux.ui')
 
@@ -12,9 +8,6 @@ local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
 
 local windowManager = require('scripts.InventoryExtender.ui.windowManager')
-local configPlayer = require('scripts.InventoryExtender.config.player')
-
-local l10n = core.l10n('InventoryExtender')
 
 local API = {}
 
@@ -28,11 +21,11 @@ API.Templates = {
 }
 
 function API.show(windowName, arg)
-    windowManager.show(windowName, arg)
+    windowManager:show(windowName, arg)
 end
 
 function API.hide(windowName, arg, force)
-    windowManager.hide(windowName, arg, force)
+    windowManager:hide(windowName, arg, force)
 end
 
 function API.getWindow(windowName)
@@ -50,48 +43,16 @@ local function checkCrimeLevel()
 end
 
 function API.onFrame()
-    windowManager.onFrame()
+    windowManager:onFrame()
     checkCrimeLevel()
 end
 
 function API.onMouseWheel(v, h)
-    windowManager.onMouseWheel(v, h)
+    windowManager:onMouseWheel(v, h)
 end
 
 function API.update()
-    windowManager.update()
-end
-
-function API.trackStat(statId, getter)
-    windowManager.trackStat(statId, getter)
-end
-
-function API.untrackStat(statId)
-    windowManager.untrackStat(statId)
-end
-
-function API.setStat(statId, value, forceUpdate)
-    if forceUpdate or not helpers.tableEquals(value, windowManager.stats[statId]) then
-        windowManager.changedStats[statId] = true
-        windowManager.stats[statId] = value
-        windowManager.updateTrackedSections()
-    end
-end
-
-function API.getStat(statId)
-    return windowManager.stats[statId]
-end
-
-function API.setDirty()
-    windowManager.needsRedraw = true
-end
-
-function API.setDirtyDelayed()
-    windowManager.needsRedrawDelayed = true
-end
-
-function API.getWindowElement()
-    return windowManager.element
+    windowManager:update()
 end
 
 function API.setConsoleState(state)
@@ -173,10 +134,10 @@ return {
                 windowManager.ctx.stolenItems = data.stolenItems or {}
                 windowManager.ctx.companionProfit = data.companionProfit or {}
             end
-            windowManager.init()
+            windowManager:init()
         end,
         onInit = function()
-            windowManager.init()
+            windowManager:init()
         end,
         onUpdate = function()
             if categoriesChanged then
@@ -192,12 +153,12 @@ return {
             end
         end,
         onControllerButtonPress = function(id)
-            windowManager.onControllerButtonPress(id)
+            windowManager:onControllerButtonPress(id)
         end,
     },
     eventHandlers = {
         UiModeChanged = function(data)
-            windowManager.onUiModeChanged(data.oldMode, data.newMode, data.arg)
+            windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
             core.sendGlobalEvent('MI_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
         end,
         MI_StoleItem = function(props)
@@ -213,7 +174,7 @@ return {
             windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
         end,
         MI_Update = function()
-            windowManager.update()
+            windowManager:update()
         end,
         MI_CompanionProfit = function(props)
             windowManager.ctx.companionProfit[props.companion.id] = props.profit

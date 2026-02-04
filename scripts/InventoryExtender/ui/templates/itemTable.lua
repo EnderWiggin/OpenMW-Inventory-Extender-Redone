@@ -1,8 +1,5 @@
 local ui = require('openmw.ui')
 local util = require('openmw.util')
-local async = require('openmw.async')
-local core = require('openmw.core')
-local omwself = require('openmw.self')
 local auxUi = require('openmw_aux.ui')
 local input = require('openmw.input')
 

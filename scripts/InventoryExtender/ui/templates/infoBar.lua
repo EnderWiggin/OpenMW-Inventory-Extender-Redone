@@ -1,12 +1,8 @@
 local ui = require('openmw.ui')
 local util = require('openmw.util')
 local v2 = util.vector2
-local auxUi = require('openmw_aux.ui')
-local I = require('openmw.interfaces')
 
 local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
-local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
-local constants = require('scripts.InventoryExtender.util.constants')
 
 local InfoBar = {}
 

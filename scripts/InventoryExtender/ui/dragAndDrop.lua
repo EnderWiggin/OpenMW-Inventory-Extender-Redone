@@ -19,8 +19,6 @@ local constants = require('scripts.InventoryExtender.util.constants')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 
-local l10n = core.l10n('InventoryExtender')
-
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
