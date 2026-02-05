@@ -711,6 +711,7 @@ function Inventory:create(windowType, ctx)
                                     },
                                     events = {
                                         textChanged = async:callback(function(text, layout)
+                                            layout.props.text = text
                                             local num = tonumber(text)
                                             if num then
                                                 local previousBalance = ctx.barterState.currentBalance
@@ -720,11 +721,12 @@ function Inventory:create(windowType, ctx)
                                                     --ctx.barterState.currentBalance = previousBalance
                                                 end
 
-                                                if num ~= math.abs(num) then
-                                                    layout.props.text = tostring(math.abs(num))
+                                                local changed = num ~= math.abs(num)
+                                                layout.props.text = tostring(math.abs(num))
+                                                if changed then
+                                                    self.infoBar.layout.userData.updateAll() 
                                                 end
                                             end
-                                            self.infoBar.layout.userData.updateAll() 
                                         end),
                                     },
                                 }
