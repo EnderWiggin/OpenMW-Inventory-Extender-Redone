@@ -228,18 +228,21 @@ function Inventory:create(windowType, ctx)
                 label = l10n('Column_Weight'),
                 width = w,
                 textAlignH = ui.ALIGNMENT.End,
+                defaultOrder = 'desc',
             },
             {
                 id = 'Value',
                 label = l10n('Column_Value'),
                 width = w,
                 textAlignH = ui.ALIGNMENT.End,
+                defaultOrder = 'desc',
             },
             {
                 id = 'V/W',
                 label = l10n('Column_VW'),
                 width = w,
                 textAlignH = ui.ALIGNMENT.End,
+                defaultOrder = 'desc',
             }
         },
         data = data,

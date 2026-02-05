@@ -641,19 +641,20 @@ ItemTable.create = function(props, ctx)
         
         local btn = specialTemplates.interactive({
             onClick = function()
-            if state.sortColIndex == i then
-                state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
-            else
-                state.sortColIndex = i
-                state.sortDir = 'asc'
-            end
-            
-            sortRows()
-            
-            resetScroll()
-            
-            updateHeader()
-            updateRows()
+                local defaultDir = col.defaultOrder or 'asc'
+                if state.sortColIndex == i then
+                    state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
+                else
+                    state.sortColIndex = i
+                    state.sortDir = defaultDir
+                end
+                
+                sortRows()
+                
+                resetScroll()
+                
+                updateHeader()
+                updateRows()
             end
         }, headerWidget, ctx)
         table.insert(headerElements, btn)
