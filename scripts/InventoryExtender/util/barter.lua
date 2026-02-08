@@ -13,9 +13,12 @@ local function getEffectiveValue(item, count)
 
     local x
     if types.Weapon.objectIsInstance(item) or types.Armor.objectIsInstance(item) then
-        local condition = itemData.condition or 0
-        local maxCondition = itemRecord.health
-        x = basePrice * (condition / maxCondition)
+        local condition = itemData.condition
+        if condition then
+            x = basePrice * (condition / itemRecord.health)
+        else
+            x = basePrice
+        end
     elseif types.Lockpick.objectIsInstance(item) or types.Probe.objectIsInstance(item) or types.Repair.objectIsInstance(item) then
         local uses = itemData.condition or 0
         local maxUses = itemRecord.maxCondition
