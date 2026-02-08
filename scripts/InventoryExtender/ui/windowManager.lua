@@ -102,6 +102,12 @@ function WindowManager:show(windowName, arg)
     self.windows[windowName]:loadState()
     self.windows[windowName]:setVisible(true)
     self.windows[windowName]:updateTarget()
+
+    for name, window in pairs(self.windows) do
+        if name ~= windowName and showing[name] then
+            window:refresh()
+        end
+    end
 end
 
 function WindowManager:hide(windowName, arg, force)

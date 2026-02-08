@@ -405,10 +405,11 @@ local function confiscateStolenItems(data)
                         end
                         local itemCount = item.count
                         local toConfiscate = math.min(itemCount, totalToConfiscate - totalConfiscated)
+                        local toMove = item
                         if toConfiscate < itemCount then
-                            item = item:split(toConfiscate)
+                            toMove = item:split(toConfiscate)
                         end
-                        item:moveInto(container, toConfiscate)
+                        toMove:moveInto(container, toConfiscate)
                         current[recordId] = (current[recordId] or 0) + toConfiscate
                         totalConfiscated = totalConfiscated + toConfiscate
                     end

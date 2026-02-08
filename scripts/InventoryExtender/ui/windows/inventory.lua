@@ -449,7 +449,7 @@ function Inventory:create(windowType, ctx)
         self.itemTable.layout.userData.getState().lastUsedRowPos = nil
 
         self.itemTable.layout.userData.resetScroll()
-        self.itemTable.layout.userData.refresh()
+        self:refresh()
     end, 
     function(searchText)
         self.itemTable.layout.userData.setFilter('searchFilter', function(row)
@@ -461,7 +461,7 @@ function Inventory:create(windowType, ctx)
             return name:find(searchLower, 1, true) ~= nil
         end)
 
-        self.itemTable.layout.userData.refresh()
+        self:refresh()
     end, ctx)
 
     content:add(self.categoryFilter)
