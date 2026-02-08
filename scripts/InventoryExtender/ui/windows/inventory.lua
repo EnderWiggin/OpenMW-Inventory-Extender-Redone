@@ -366,7 +366,7 @@ function Inventory:create(windowType, ctx)
                         else
                             local table = self.type == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
                             table[row.item.id] = table[row.item.id] or { item = row.item, stacks = row.virtualStacks, count = 0 }
-                            table[row.item.id].count = math.min(table[row.item.id].count + count, itemCount)
+                            table[row.item.id].count = math.min(table[row.item.id].count + count, row.getCount())
                         end
                         local sound = helpers.getItemSound(row.item, 'down')
                         if sound then
