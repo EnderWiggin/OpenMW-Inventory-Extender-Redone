@@ -32,6 +32,9 @@ WindowManager.ctx = {
     modalElement = nil,
     activeTooltip = nil,
     tooltipModifiers = {},
+    overrides = {
+        equipped = {},
+    },
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     windowArgs = {},
@@ -67,6 +70,14 @@ end
 function WindowManager:init()
     for _, windowName in ipairs{"Inventory", "Trade", "Container", "Companion"} do
         self:create(windowName)
+    end
+end
+
+function WindowManager:refresh()
+    for _, window in pairs(self.windows) do
+        if window and window:isVisible() then
+            window:refresh()
+        end
     end
 end
 

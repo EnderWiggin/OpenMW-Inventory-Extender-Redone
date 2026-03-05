@@ -6,3 +6,4 @@
 - Enter should make offer if text input is focused in barter window
 - Search should match known effects on items
 - Don't show magic background in table view
+- Prison search should probably use last exterior cell instead of BFS

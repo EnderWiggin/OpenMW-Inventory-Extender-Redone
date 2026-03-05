@@ -79,7 +79,7 @@ function Inventory:create(windowType, ctx)
 
     local iconRenderer = function(row, width, height)
         local iconDim = math.min(width, height)
-        local equipped = self.target.type.hasEquipped and self.target.type.hasEquipped(self.target, row.item) or false
+        local equipped = helpers.isItemEquipped(row.item, self.target, ctx.overrides.equipped)
         local bgrVisible = row.isBartered or equipped
         local magicString = row.itemRecord.enchant and '_magic' or ''
         local postString = (row.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or '_none'
@@ -259,13 +259,10 @@ function Inventory:create(windowType, ctx)
                 return a.isBartered
             end
 
-            -- First, check if items are equipped
-            if self.target.type.hasEquipped then
-                local aEquipped = self.target.type.hasEquipped(self.target, a.item)
-                local bEquipped = self.target.type.hasEquipped(self.target, b.item)
-                if aEquipped ~= bEquipped then
-                    return aEquipped -- equipped items come first (true > false)
-                end
+            local aEquipped = helpers.isItemEquipped(a.item, self.target, ctx.overrides.equipped)
+            local bEquipped = helpers.isItemEquipped(b.item, self.target, ctx.overrides.equipped)
+            if aEquipped ~= bEquipped then
+                return aEquipped -- equipped items come first (true > false)
             end
             
             -- Second, sort by Category

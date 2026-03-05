@@ -190,6 +190,20 @@ Helpers.getEquippedName = function(actor)
     return name
 end
 
+Helpers.isItemEquipped = function(item, actor, overrides)
+    if overrides then
+        for i = #overrides, 1, -1 do
+            local result = overrides[i].handler(item, actor)
+            if result ~= nil then
+                return result
+            end
+        end
+    end
+
+    if not actor.type.hasEquipped then return false end
+    return actor.type.hasEquipped(actor, item)
+end
+
 Helpers.getWeaponInfo = function(item)
     if not types.Weapon.objectIsInstance(item) then
         return nil

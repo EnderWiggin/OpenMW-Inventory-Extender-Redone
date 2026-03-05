@@ -51,6 +51,10 @@ function API.onMouseWheel(v, h)
     windowManager:onMouseWheel(v, h)
 end
 
+function API.refresh()
+    windowManager:refresh()
+end
+
 function API.update()
     windowManager:update()
 end
@@ -105,10 +109,12 @@ function API.unregisterCategory(key)
     categoriesChanged = true
 end
 
--- Tooltip Modifiers
--- These are functions that take the base tooltip layout, make modifications, and return the modified layout
--- They are called in sequence when building tooltips
--- Signature: function(item, layout) -> layout
+--- Register a tooltip modifier function.
+--- Modifiers are called in reverse order of registration, and each modifier receives the current modified layout.
+--- The passed layout is a direct reference and can be modified in-place.
+--- Optionally, a modifier can return a new layout to replace the current one entirely.
+--- @param id string A unique identifier for the modifier
+--- @param modifier fun(item: GameObject, layout: Layout):Layout|nil The modifier function
 function API.registerTooltipModifier(id, modifier)
     for _, existingModifier in ipairs(windowManager.ctx.tooltipModifiers) do
         if existingModifier.id:lower() == id:lower() then
@@ -117,6 +123,21 @@ function API.registerTooltipModifier(id, modifier)
         end
     end
     table.insert(windowManager.ctx.tooltipModifiers, { id = id, modifier = modifier })
+end
+
+--- Register a function to override the equipped status of items in the inventory.
+--- Handlers are called in reverse order of registration until one returns a non-nil value, at which point that value is used as the result. 
+--- If no handlers return a non-nil value, the default value is used.
+--- @param id string A unique identifier for the override
+--- @param handler fun(item: GameObject, actor: Actor):boolean|nil The override function
+function API.registerEquippedOverride(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.overrides.equipped) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.overrides.equipped, { id = id, handler = handler })
 end
 
 return {
