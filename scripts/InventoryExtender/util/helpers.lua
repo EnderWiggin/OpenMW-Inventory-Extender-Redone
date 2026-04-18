@@ -384,11 +384,11 @@ Helpers.getInteractiveTextColor = function(layout)
     end
 end
 
-Helpers.doesItemFit = function(item, container)
+Helpers.doesItemFit = function(item, container, count)
     if not container or not types.Container.objectIsInstance(container) then
         return true
     end
-    local itemWeight = item.type.record(item).weight * item.count
+    local itemWeight = item.type.record(item).weight * (count or item.count)
     local contEncumbrance = types.Container.getEncumbrance(container)
     local contCapacity = types.Container.getCapacity(container)
     return (contEncumbrance + itemWeight) <= contCapacity

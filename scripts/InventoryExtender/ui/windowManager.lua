@@ -148,7 +148,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
 
     self.ctx.lastUiMode = newMode
 
-    if arg then
+    if newMode and arg then
         self.ctx.modeArgs[newMode] = arg
     end
 

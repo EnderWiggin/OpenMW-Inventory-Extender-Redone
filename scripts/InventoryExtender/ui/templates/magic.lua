@@ -328,6 +328,10 @@ Templates.itemTooltip = function(item, showIcon, ctx)
     end
 
     if types.Armor.objectIsInstance(item) then
+        if configPlayer.tweaks.b_CondensedWeightValue then
+            local skillString = core.getGMST('sSkill' .. I.Combat.getArmorSkill(item))
+            innerContent:add(textNormal('type', constants.Strings.TYPE .. ' ' .. skillString))
+        end
         innerContent:add(textNormal('armorRating', constants.Strings.ARMOR_RATING .. ': ' .. math.modf(I.Combat.getEffectiveArmorRating(item, omwself))))
         innerContent:add(textNormal('condition', conditionString))
     end
@@ -558,12 +562,6 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         end
         if innerContent:indexOf('value') then
             innerContent.value = nil
-        end
-
-        
-        if types.Armor.objectIsInstance(item) then
-            local skillString = core.getGMST('sSkill' .. I.Combat.getArmorSkill(item))
-            innerContent:insert(3, textNormal('type', constants.Strings.TYPE .. ' ' .. skillString)) 
         end
 
         local flexContent = ui.content {}

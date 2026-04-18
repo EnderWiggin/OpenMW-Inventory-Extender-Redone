@@ -16,7 +16,6 @@ end
 
 local CELL_SIZE_IN_UNITS = 8192
 local ESM4_CELL_SIZE_IN_UNITS = 4096
-local isESM4 = false
 
 local function isEsm4Ext(worldspaceId)
     return worldspaceId ~= nil

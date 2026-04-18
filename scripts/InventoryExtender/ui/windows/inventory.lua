@@ -506,6 +506,7 @@ function Inventory:create(windowType, ctx)
             if not self.target then return {} end
             if self.type == 'Container' and types.Container.objectIsInstance(self.target) and types.Container.record(self.target).isOrganic then return {} end
             layout = {
+                name = 'encumbrance',
                 type = ui.TYPE.Flex,
                 props = {
                     horizontal = true,
@@ -541,6 +542,7 @@ function Inventory:create(windowType, ctx)
                 goldAmount = self.target.type.getBarterGold(self.target)
             end
             layout = {
+                name = 'gold',
                 type = ui.TYPE.Flex,
                 props = {
                     horizontal = true,
@@ -570,6 +572,7 @@ function Inventory:create(windowType, ctx)
         self.infoBar.layout.userData.addInfoLayout({}, function(layout)
             if not self.target then return {} end
             layout = {
+                name = 'armorRating',
                 type = ui.TYPE.Flex,
                 props = {
                     horizontal = true,
@@ -1030,7 +1033,7 @@ function Inventory:createData()
                     if self.ctx.windowArgs.Container and types.Container.objectIsInstance(self.ctx.windowArgs.Container) and types.Container.record(self.ctx.windowArgs.Container).isOrganic then
                         return true
                     end
-                    return not helpers.doesItemFit(itemStack, self.ctx.windowArgs.Container)
+                    return not helpers.doesItemFit(itemStack, self.ctx.windowArgs.Container, 1)
                 end
             end,
         }

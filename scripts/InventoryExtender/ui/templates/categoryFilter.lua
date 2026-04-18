@@ -91,8 +91,9 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             autoSize = false,
             size = v2(0, topBarHeight),
             relativeSize = v2(1, 0),
+            position = v2(0, 4),
             align = ui.ALIGNMENT.Start,
-            arrange = ui.ALIGNMENT.Center,
+            arrange = ui.ALIGNMENT.Start,
         },
         content = ui.content {
             baseTemplates.intervalH(8),
@@ -111,7 +112,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             {
                 name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
             },
-            baseTemplates.intervalH(2),
+            baseTemplates.intervalH(8),
         }
     }
 
