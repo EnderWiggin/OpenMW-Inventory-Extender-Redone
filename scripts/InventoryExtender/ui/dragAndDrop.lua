@@ -223,8 +223,10 @@ function DragAndDrop:dropAt(object, count, position)
         ambient.playSound(downSound)
     end
 
-    local boundingBox = object:getBoundingBox()
-    local offset = util.vector3(0, 0, boundingBox.halfSize.z - boundingBox.center.z)
+    local box = object:getBoundingBox()
+    local boundMin = box.center - box.halfSize
+    local boundMax = box.center + box.halfSize
+    local offset = util.vector3(0, 0, (boundMax.z + boundMin.z) / 2 - box.center.z)
     local targetPos = position + offset
     core.sendGlobalEvent('MI_Teleport', {
         obj = object,
