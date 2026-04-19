@@ -239,7 +239,6 @@ for _, itemType in ipairs(bbItemTypes) do
         for _, suffix in ipairs(bbSuffixes) do
             local id = bbBase .. itemType .. '_' .. level .. suffix
             C.BoundItemIDs[id:lower()] = true
-            print(string.format("Added Bound Item ID: %s", id))
         end
     end
 end
