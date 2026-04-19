@@ -368,14 +368,7 @@ ItemTable.create = function(props, ctx)
                     }, ctx)
                     local color = helpers.getInteractiveTextColor(state.rowCache[cacheKey].layout)
                     helpers.forEachInLayout(state.rowCache[cacheKey], function(l)
-                        if l.userData and l.userData.colorable then
-                            l.props = l.props or {}
-                            if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
-                                l.props.textColor = color
-                            elseif l.type == ui.TYPE.Image then
-                                l.props.color = color
-                            end
-                        end
+                        helpers.setInteractiveColor(l, color)
                     end)
                 else
                     if isGrid then
@@ -496,14 +489,7 @@ ItemTable.create = function(props, ctx)
                     
                     local color = helpers.getInteractiveTextColor(rowWidget.layout)
                     helpers.forEachInLayout(rowWidget, function(l)
-                        if l.userData and l.userData.colorable then
-                            l.props = l.props or {}
-                            if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
-                                l.props.textColor = color
-                            elseif l.type == ui.TYPE.Image then
-                                l.props.color = color
-                            end
-                        end
+                        helpers.setInteractiveColor(l, color)
                     end)
                     
                     rowWidget:update()

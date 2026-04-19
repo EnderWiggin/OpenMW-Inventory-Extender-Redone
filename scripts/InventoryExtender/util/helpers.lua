@@ -5,6 +5,7 @@ local types = require('openmw.types')
 
 local isPlayer, self = pcall(require, 'openmw.self')
 local _, debug = pcall(require, 'openmw.debug')
+local _, ui = pcall(require, 'openmw.ui')
 
 local C = require('scripts.InventoryExtender.util.constants')
 
@@ -970,6 +971,17 @@ if isPlayer then
         end
 
         return string
+    end
+
+    Helpers.setInteractiveColor = function(layout, color)
+        if layout.userData and layout.userData.colorable then
+            layout.props = layout.props or {}
+            if layout.type == ui.TYPE.Text or layout.type == ui.TYPE.TextEdit or (layout.template and (layout.template.type == ui.TYPE.Text or layout.template.type == ui.TYPE.TextEdit)) then
+                layout.props.textColor = color
+            elseif layout.type == ui.TYPE.Image or (layout.template and layout.template.type == ui.TYPE.Image) then
+                layout.props.color = color
+            end
+        end
     end
 end
 

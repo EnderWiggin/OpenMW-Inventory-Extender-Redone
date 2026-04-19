@@ -92,15 +92,9 @@ Templates.interactive = function(props, layout, ctx)
             end
             element.layout.userData.pressed = true
             ambient.playSound('menu click')
+            local color = helpers.getInteractiveTextColor(element.layout)
             helpers.forEachInLayout(element.layout, function(l)
-                if l.userData and l.userData.colorable then
-                    l.props = l.props or {}
-                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
-                        l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    elseif l.type == ui.TYPE.Image then
-                        l.props.color = helpers.getInteractiveTextColor(element.layout)
-                    end
-                end
+                helpers.setInteractiveColor(l, color)
             end)
             element:update()
 
@@ -120,15 +114,9 @@ Templates.interactive = function(props, layout, ctx)
                 return false
             end
             element.layout.userData.pressed = false
+            local color = helpers.getInteractiveTextColor(element.layout)
             helpers.forEachInLayout(element.layout, function(l)
-                if l.userData and l.userData.colorable then
-                    l.props = l.props or {}
-                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
-                        l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    elseif l.type == ui.TYPE.Image then
-                        l.props.color = helpers.getInteractiveTextColor(element.layout)
-                    end
-                end
+                helpers.setInteractiveColor(l, color)
             end)
             local result = props.onClick()
             element:update()
@@ -151,15 +139,9 @@ Templates.interactive = function(props, layout, ctx)
         end
 
         if props.onClick then
+            local color = helpers.getInteractiveTextColor(element.layout)
             helpers.forEachInLayout(element.layout, function(l)
-                if l.userData and l.userData.colorable then
-                    l.props = l.props or {}
-                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
-                        l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    elseif l.type == ui.TYPE.Image then
-                        l.props.color = helpers.getInteractiveTextColor(element.layout)
-                    end
-                end
+                helpers.setInteractiveColor(l, color)
             end)
             ctx.updateQueue[element] = true
 
@@ -172,15 +154,9 @@ Templates.interactive = function(props, layout, ctx)
     element.layout.events.focusGain = async:callback(function(e, layout)
         ctx.focusedInteractive = element
         if props.onClick then
+            local color = helpers.getInteractiveTextColor(element.layout)
             helpers.forEachInLayout(element.layout, function(l)
-                if l.userData and l.userData.colorable then
-                    l.props = l.props or {}
-                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
-                        l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    elseif l.type == ui.TYPE.Image then
-                        l.props.color = helpers.getInteractiveTextColor(element.layout)
-                    end
-                end
+                helpers.setInteractiveColor(l, color)
             end)
             ctx.updateQueue[element] = true
 
