@@ -8,6 +8,7 @@ local input = require('openmw.input')
 local v2 = util.vector2
 
 local constants = require('scripts.InventoryExtender.util.constants')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 
 local DragAndDrop = require('scripts.InventoryExtender.ui.dragAndDrop')
 local InventoryWindow = require('scripts.InventoryExtender.ui.windows.inventory')
@@ -142,6 +143,10 @@ function WindowManager:hide(windowName, arg, force)
 end
 
 function WindowManager:onUiModeChanged(oldMode, newMode, arg)
+    if not configPlayer.window.b_EnableMod then
+        return
+    end
+
     if self.ctx.resettingMode then
         return
     end
