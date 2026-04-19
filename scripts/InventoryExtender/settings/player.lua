@@ -45,6 +45,16 @@ I.Settings.registerGroup {
             }
         },
         {
+            key = 'f_TableRowHeightMult',
+            renderer = 'number',
+            name = 'TableRowHeightMult',
+            description = 'TableRowHeightMultDesc',
+            default = 1.5,
+            argument = {
+                min = 0.1,
+            }
+        },
+        {
             key = 'i_TextSizeOverride',
             renderer = 'number',
             name = 'TextSizeOverride',

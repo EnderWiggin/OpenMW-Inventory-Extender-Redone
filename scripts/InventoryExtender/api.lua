@@ -110,7 +110,7 @@ function API.unregisterCategory(key)
 end
 
 --- Register a tooltip modifier function.
---- Modifiers are called in reverse order of registration, and each modifier receives the current modified layout.
+--- Modifiers are called in order of registration, and each modifier receives the current modified layout.
 --- The passed layout is a direct reference and can be modified in-place.
 --- Optionally, a modifier can return a new layout to replace the current one entirely.
 --- @param id string A unique identifier for the modifier

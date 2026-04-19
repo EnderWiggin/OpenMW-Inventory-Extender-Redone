@@ -247,7 +247,7 @@ function Inventory:create(windowType, ctx)
         },
         data = data,
         size = v2(600, 400),
-        rowHeight = specialTemplates.LINE_HEIGHT * 1.5,
+        rowHeight = specialTemplates.LINE_HEIGHT * configPlayer.window.f_TableRowHeightMult,
         defaultSortId = 'Icon',
         defaultSortIcon = 'icons/InventoryExtender/default_sort.dds',
         fallbackSort = function(a, b, sortDir)

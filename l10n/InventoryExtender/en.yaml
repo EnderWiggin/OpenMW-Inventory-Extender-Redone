@@ -12,6 +12,9 @@ ItemViewModeDesc: |-
   Choose between a detailed table view or a vanilla-style grid view.
 ItemViewMode_Table: Table
 ItemViewMode_Grid: Grid
+TableRowHeightMult: Table row height multiplier
+TableRowHeightMultDesc: |-
+  Adjust the height of rows in the table view, as a multiplier of text size.
 TextSizeOverride: Text size override
 TextSizeOverrideDesc: |-
   Override the default text size used in the inventory window. 
