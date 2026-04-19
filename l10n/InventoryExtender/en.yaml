@@ -15,6 +15,9 @@ ItemViewMode_Grid: Grid
 TableRowHeightMult: Table row height multiplier
 TableRowHeightMultDesc: |-
   Adjust the height of rows in the table view, as a multiplier of text size.
+TableScrollStep: Table scroll step
+TableScrollStepDesc: |-
+  Adjust the scroll step of the table view, in number of rows.
 TextSizeOverride: Text size override
 TextSizeOverrideDesc: |-
   Override the default text size used in the inventory window. 

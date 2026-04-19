@@ -4,6 +4,7 @@ local auxUi = require('openmw_aux.ui')
 local input = require('openmw.input')
 
 local constants = require('scripts.InventoryExtender.util.constants')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
 local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 local helpers = require("scripts.InventoryExtender.util.helpers")
@@ -230,7 +231,7 @@ ItemTable.create = function(props, ctx)
             effectiveRowHeight = itemSize
         end
 
-        scrollable.layout.userData.setScrollStep(isGrid and itemSize or rowHeight * 2)
+        scrollable.layout.userData.setScrollStep(isGrid and itemSize or rowHeight * configPlayer.window.i_TableScrollStep)
 
         -- Virtualization mathematics
         -- contentLayer.props.position.y is negative when scrolled down

@@ -55,6 +55,16 @@ I.Settings.registerGroup {
             }
         },
         {
+            key = 'i_TableScrollStep',
+            renderer = 'number',
+            name = 'TableScrollStep',
+            description = 'TableScrollStepDesc',
+            default = 2,
+            argument = {
+                min = 0.1,
+            }
+        },
+        {
             key = 'i_TextSizeOverride',
             renderer = 'number',
             name = 'TextSizeOverride',
