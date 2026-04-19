@@ -53,7 +53,7 @@ end
 function Window:isFocused()
     if not self.element then return false end
 
-    return self.element.layout.props.focused
+    return self.element.layout.userData.focused
 end
 
 function Window:getDimensions()

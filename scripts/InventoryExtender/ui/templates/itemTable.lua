@@ -210,6 +210,7 @@ ItemTable.create = function(props, ctx)
 
         local contentLayer = scrollable.layout.content[1]
         contentLayer.type = ui.TYPE.Widget
+        contentLayer.props.autoSize = nil
         local viewHeight = state.currentSize.y - headerHeight
         local contentWidth = getContentWidth()
 
@@ -369,8 +370,11 @@ ItemTable.create = function(props, ctx)
                     helpers.forEachInLayout(state.rowCache[cacheKey], function(l)
                         if l.userData and l.userData.colorable then
                             l.props = l.props or {}
-                            l.props.textColor = color
-                            l.props.color = color
+                            if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
+                                l.props.textColor = color
+                            elseif l.type == ui.TYPE.Image then
+                                l.props.color = color
+                            end
                         end
                     end)
                 else
@@ -494,8 +498,11 @@ ItemTable.create = function(props, ctx)
                     helpers.forEachInLayout(rowWidget, function(l)
                         if l.userData and l.userData.colorable then
                             l.props = l.props or {}
-                            l.props.textColor = color
-                            l.props.color = color
+                            if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
+                                l.props.textColor = color
+                            elseif l.type == ui.TYPE.Image then
+                                l.props.color = color
+                            end
                         end
                     end)
                     
@@ -704,7 +711,6 @@ ItemTable.create = function(props, ctx)
         name = 'itemTable',
         type = ui.TYPE.Flex, 
         props = {
-            vertical = true,
             size = size,
         },
         content = ui.content {

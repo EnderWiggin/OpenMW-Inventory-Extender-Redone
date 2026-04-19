@@ -95,8 +95,11 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
+                        l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    elseif l.type == ui.TYPE.Image then
+                        l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    end
                 end
             end)
             element:update()
@@ -120,8 +123,11 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
+                        l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    elseif l.type == ui.TYPE.Image then
+                        l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    end
                 end
             end)
             local result = props.onClick()
@@ -148,8 +154,11 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
+                        l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    elseif l.type == ui.TYPE.Image then
+                        l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    end
                 end
             end)
             ctx.updateQueue[element] = true
@@ -166,8 +175,11 @@ Templates.interactive = function(props, layout, ctx)
             helpers.forEachInLayout(element.layout, function(l)
                 if l.userData and l.userData.colorable then
                     l.props = l.props or {}
-                    l.props.textColor = helpers.getInteractiveTextColor(layout)
-                    l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit then
+                        l.props.textColor = helpers.getInteractiveTextColor(layout)
+                    elseif l.type == ui.TYPE.Image then
+                        l.props.color = helpers.getInteractiveTextColor(element.layout)
+                    end
                 end
             end)
             ctx.updateQueue[element] = true
