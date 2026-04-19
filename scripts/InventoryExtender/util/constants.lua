@@ -218,6 +218,32 @@ for _, gmst in ipairs(boundItemGMSTs) do
     C.BoundItemIDs[value] = true
 end
 
+-- TD Bound Items
+local err, trData = pcall(require, 'scripts.tr_spells.trData')
+if trData and trData.BOUND_ITEMS then
+    for _, data in pairs(trData.BOUND_ITEMS) do
+        for _, itemId in ipairs(data.items) do
+            C.BoundItemIDs[itemId:lower()] = true
+        end
+    end 
+end
+
+-- Bound Balance Bound Items
+local bbBase = 'momw_bb_bound_'
+local bbItemTypes = { 'battle_axe', 'boots', 'cuirass', 'dagger', 'gauntletl', 'gauntletr', 'greaves', 'helm', 'longbow', 'longsword', 'mace', 'pauldronl', 'pauldronr', 'shield', 'spear' }
+local bbLevels = { 'i', 'ii', 'iii', 'iv', 'v', 'vi' }
+local bbSuffixes = { '', '_td', '_tw', '_oaab' }
+
+for _, itemType in ipairs(bbItemTypes) do
+    for _, level in ipairs(bbLevels) do
+        for _, suffix in ipairs(bbSuffixes) do
+            local id = bbBase .. itemType .. '_' .. level .. suffix
+            C.BoundItemIDs[id:lower()] = true
+            print(string.format("Added Bound Item ID: %s", id))
+        end
+    end
+end
+
 C.TypeToService = {
     Weapon = "Weapon",
     Armor = "Armor",
