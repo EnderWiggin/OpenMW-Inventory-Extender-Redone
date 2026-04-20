@@ -300,6 +300,13 @@ function Inventory:create(windowType, ctx)
             return nameA < nameB
         end,
         onRowClick = function(row, rowWidget)
+            for i = #ctx.handlers.onRowClick, 1, -1 do
+                local handler = ctx.handlers.onRowClick[i]
+                if handler.handler(row, ctx) == false then
+                    return false
+                end
+            end
+
             if ctx.dragAndDrop.draggingObject then
                 return true
             end

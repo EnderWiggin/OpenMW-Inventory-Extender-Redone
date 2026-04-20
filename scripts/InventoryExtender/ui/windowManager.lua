@@ -36,6 +36,9 @@ WindowManager.ctx = {
     overrides = {
         equipped = {},
     },
+    handlers = {
+        onRowClick = {},
+    },
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     windowArgs = {},

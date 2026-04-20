@@ -140,6 +140,20 @@ function API.registerEquippedOverride(id, handler)
     table.insert(windowManager.ctx.overrides.equipped, { id = id, handler = handler })
 end
 
+--- Register a function to handle clicks on item rows in the inventory.
+--- Handlers are called in reverse order of registration until one returns false, at which point the click is not processed further. If all handlers return true, the default click behavior is executed.
+--- @param id string A unique identifier for the handler
+--- @param handler fun(row: table, ctx: table):boolean? The handler function
+function API.registerRowClickHandler(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowClick) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.handlers.onRowClick, { id = id, handler = handler })
+end
+
 return {
     interfaceName = 'InventoryExtender',
     interface = API,
