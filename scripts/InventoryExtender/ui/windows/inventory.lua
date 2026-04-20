@@ -160,6 +160,7 @@ function Inventory:create(windowType, ctx)
                 id = 'Icon',
                 width = specialTemplates.LINE_HEIGHT * 1.5 + 8,
                 renderer = iconRenderer,
+                visible = true,
             },
             {
                 id = 'Name',
@@ -229,6 +230,7 @@ function Inventory:create(windowType, ctx)
                         }
                     }
                 end,
+                visible = true,
             },
             {
                 id = 'Weight',
@@ -236,6 +238,7 @@ function Inventory:create(windowType, ctx)
                 width = w,
                 textAlignH = ui.ALIGNMENT.End,
                 defaultOrder = 'desc',
+                visible = true,
             },
             {
                 id = 'Value',
@@ -243,6 +246,7 @@ function Inventory:create(windowType, ctx)
                 width = w,
                 textAlignH = ui.ALIGNMENT.End,
                 defaultOrder = 'desc',
+                visible = true,
             },
             {
                 id = 'V/W',
@@ -250,6 +254,7 @@ function Inventory:create(windowType, ctx)
                 width = w,
                 textAlignH = ui.ALIGNMENT.End,
                 defaultOrder = 'desc',
+                visible = true,
             }
         },
         data = data,
