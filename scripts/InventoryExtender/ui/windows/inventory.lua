@@ -52,6 +52,13 @@ function Inventory:create(windowType, ctx)
     local w = 60 * baseTemplates.TEXT_SIZE / 16
 
     local function onRowActivate(row, rowWidget)
+        for i = #ctx.handlers.onRowActivate, 1, -1 do
+            local handler = ctx.handlers.onRowActivate[i]
+            if handler.handler(row, ctx, self.type) == false then
+                return false
+            end
+        end
+
         if I.UI.getMode() ~= 'Interface' then
             return
         end
@@ -302,7 +309,7 @@ function Inventory:create(windowType, ctx)
         onRowClick = function(row, rowWidget)
             for i = #ctx.handlers.onRowClick, 1, -1 do
                 local handler = ctx.handlers.onRowClick[i]
-                if handler.handler(row, ctx) == false then
+                if handler.handler(row, ctx, self.type) == false then
                     return false
                 end
             end

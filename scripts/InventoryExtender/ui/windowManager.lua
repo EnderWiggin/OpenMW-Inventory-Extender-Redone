@@ -38,6 +38,7 @@ WindowManager.ctx = {
     },
     handlers = {
         onRowClick = {},
+        onRowActivate = {},
     },
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
