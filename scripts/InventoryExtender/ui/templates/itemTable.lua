@@ -30,11 +30,13 @@ local function setColumnWidths(columns, state, scrollable)
     local flexCount = 0
     
     for i, col in ipairs(columns) do
-        if col.width then
-            widths[i] = col.width
-            fixedWidth = fixedWidth + col.width
-        else
-            flexCount = flexCount + 1
+        if col.visible ~= false then
+            if col.width then
+                widths[i] = col.width
+                fixedWidth = fixedWidth + col.width
+            else
+                flexCount = flexCount + 1
+            end
         end
     end
     
@@ -42,7 +44,7 @@ local function setColumnWidths(columns, state, scrollable)
     local flexWidth = flexCount > 0 and math.floor(remainingWidth / flexCount) or 0
     
     for i, col in ipairs(columns) do
-        if not col.width then
+        if col.visible ~= false and not col.width then
             widths[i] = flexWidth
         end
     end
@@ -90,6 +92,7 @@ ItemTable.create = function(props, ctx)
         sortedRows = {},      -- List of items after sorting
         sortColIndex = nil,   -- Index of currently sorted column
         sortDir = 'asc',      -- 'asc' or 'desc'
+        columns = columns,
         columnWidths = {},
         currentSize = size,   
         filters = {},
@@ -206,7 +209,7 @@ ItemTable.create = function(props, ctx)
         return cells
     end
 
-    local function renderVisibleRows()
+    local function renderVisibleRows(forceRedraw)
         if not scrollable then return end
 
         local contentLayer = scrollable.layout.content[1]
@@ -271,7 +274,7 @@ ItemTable.create = function(props, ctx)
                 if row.disabledFn then
                     disabled = row.disabledFn(row)
                 end
-                if not state.rowCache[cacheKey] then
+                if (not state.rowCache[cacheKey]) or forceRedraw then
                     local widgetContent
                     if isGrid then
                         if gridItemRenderer then
@@ -409,27 +412,29 @@ ItemTable.create = function(props, ctx)
                             local rowWidget = state.rowCache[cacheKey]
                             local cellContent = rowWidget.layout.content[cIdx]
 
-                            if col.renderer then
-                                local newCellContent = col.renderer(row, w, rowHeight)
-                                if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
-                                    rowWidget.layout.content[cIdx] = newCellContent
-                                    cellContent = newCellContent
-                                    anyChanged = true
+                            if cellContent then
+                                if col.renderer then
+                                    local newCellContent = col.renderer(row, w, rowHeight)
+                                    if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
+                                        rowWidget.layout.content[cIdx] = newCellContent
+                                        cellContent = newCellContent
+                                        anyChanged = true
+                                    end
                                 end
-                            end
 
-                            cellContent.props.size = util.vector2(w, rowHeight)
-                            cellContent.props.position = util.vector2(totalW, 0)
-                            if cellContent.props.text then
-                                local val = row[col.id]
-                                if type(val) == 'function' then
-                                    val = val()
-                                end
-                                local textStr = val ~= nil and tostring(val) or ""
-                                if textStr == "0" then textStr = "-" end
-                                if textStr ~= cellContent.props.text then
-                                    cellContent.props.text = textStr
-                                    anyChanged = true
+                                cellContent.props.size = util.vector2(w, rowHeight)
+                                cellContent.props.position = util.vector2(totalW, 0)
+                                if cellContent.props.text then
+                                    local val = row[col.id]
+                                    if type(val) == 'function' then
+                                        val = val()
+                                    end
+                                    local textStr = val ~= nil and tostring(val) or ""
+                                    if textStr == "0" then textStr = "-" end
+                                    if textStr ~= cellContent.props.text then
+                                        cellContent.props.text = textStr
+                                        anyChanged = true
+                                    end
                                 end
                             end
                             totalW = totalW + w
@@ -510,7 +515,7 @@ ItemTable.create = function(props, ctx)
         scrollable:update()
     end
     
-    updateRows = function()
+    updateRows = function(forceRedraw)
         if not scrollable then return end
         
         local viewHeight = state.currentSize.y - headerHeight
@@ -528,12 +533,12 @@ ItemTable.create = function(props, ctx)
             totalHeight = math.floor(math.max(#state.sortedRows * rowHeight, viewHeight))
         end
         
+        renderVisibleRows(forceRedraw)
+
         scrollable.layout.userData.update(
             util.vector2(state.currentSize.x, viewHeight), 
             util.vector2(state.currentSize.x - getScrollbarWidth(scrollable), totalHeight)
         )
-        
-        renderVisibleRows()
     end
 
     local function updateHeader()
@@ -564,98 +569,100 @@ ItemTable.create = function(props, ctx)
         headerRow.props.size = util.vector2(contentWidth, headerHeight)
     end
 
-    local headerElements = {}
-    for i, col in ipairs(columns) do
-        local w = state.columnWidths[i] or 0
-        local title = col.label or col.id
-        local isDefaultCol = (col.id == defaultSortId)
-        
-        local headerWidget
-        
-        if isDefaultCol and defaultSortIcon then
-            headerWidget = {
-                type = ui.TYPE.Flex,
-                props = {
-                    size = util.vector2(w, headerHeight),
-                    horizontal = true,
-                    align = ui.ALIGNMENT.Center,
-                    arrange = ui.ALIGNMENT.Center,
-                },
-                content = ui.content({
-                    {
-                        name = 'icon',
-                        type = ui.TYPE.Image,
-                        props = {
-                            color = constants.Colors.DEFAULT,
-                            resource = ui.texture { path = defaultSortIcon },
-                            size = util.vector2(16, 16),
-                        }
-                    }
-                }),
-            }
-        else
-            headerWidget = {
-                type = ui.TYPE.Flex,
-                --template = baseTemplates.textHeader,
-                props = {
-                    horizontal = true,
-                    size = util.vector2(w, headerHeight),
-                    autoSize = false,
-                    align = col.textAlignH or ui.ALIGNMENT.Start,
-                    arrange = ui.ALIGNMENT.Center,
-                },
-                content = ui.content {
-                    {
-                        name = 'title',
-                        template = baseTemplates.textHeader,
-                        props = {
-                            text = title,
-                            autoSize = true,
-                            textAlignV = ui.ALIGNMENT.Center,
-                        },
+    local function createHeader()
+        local headerElements = {}
+        for i, col in ipairs(columns) do
+            local w = state.columnWidths[i] or 0
+            local title = col.label or col.id
+            local isDefaultCol = (col.id == defaultSortId)
+            
+            local headerWidget
+            
+            if isDefaultCol and defaultSortIcon then
+                headerWidget = {
+                    type = ui.TYPE.Flex,
+                    props = {
+                        size = util.vector2(w, headerHeight),
+                        horizontal = true,
+                        align = ui.ALIGNMENT.Center,
+                        arrange = ui.ALIGNMENT.Center,
                     },
-                    {
-                        name = 'sortIcon',
-                        type = ui.TYPE.Image,
-                        props = {
-                            resource = ui.texture { path = 'white' },
-                            color = constants.Colors.DEFAULT,
-                            size = util.vector2(0, 0),
+                    content = ui.content({
+                        {
+                            name = 'icon',
+                            type = ui.TYPE.Image,
+                            props = {
+                                color = constants.Colors.DEFAULT,
+                                resource = ui.texture { path = defaultSortIcon },
+                                size = util.vector2(16, 16),
+                            }
+                        }
+                    }),
+                }
+            else
+                headerWidget = {
+                    type = ui.TYPE.Flex,
+                    --template = baseTemplates.textHeader,
+                    props = {
+                        horizontal = true,
+                        size = util.vector2(w, headerHeight),
+                        autoSize = false,
+                        align = col.textAlignH or ui.ALIGNMENT.Start,
+                        arrange = ui.ALIGNMENT.Center,
+                    },
+                    content = ui.content {
+                        {
+                            name = 'title',
+                            template = baseTemplates.textHeader,
+                            props = {
+                                text = title,
+                                autoSize = true,
+                                textAlignV = ui.ALIGNMENT.Center,
+                            },
+                        },
+                        {
+                            name = 'sortIcon',
+                            type = ui.TYPE.Image,
+                            props = {
+                                resource = ui.texture { path = 'white' },
+                                color = constants.Colors.DEFAULT,
+                                size = util.vector2(0, 0),
+                            }
                         }
                     }
                 }
-            }
+            end
+            
+            local btn = specialTemplates.interactive({
+                onClick = function()
+                    local defaultDir = col.defaultOrder or 'asc'
+                    if state.sortColIndex == i then
+                        state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
+                    else
+                        state.sortColIndex = i
+                        state.sortDir = defaultDir
+                    end
+                    
+                    sortRows()
+                    
+                    resetScroll()
+                    
+                    updateHeader()
+                    updateRows()
+                end
+            }, headerWidget, ctx)
+            table.insert(headerElements, btn)
         end
         
-        local btn = specialTemplates.interactive({
-            onClick = function()
-                local defaultDir = col.defaultOrder or 'asc'
-                if state.sortColIndex == i then
-                    state.sortDir = (state.sortDir == 'asc') and 'desc' or 'asc'
-                else
-                    state.sortColIndex = i
-                    state.sortDir = defaultDir
-                end
-                
-                sortRows()
-                
-                resetScroll()
-                
-                updateHeader()
-                updateRows()
-            end
-        }, headerWidget, ctx)
-        table.insert(headerElements, btn)
+        headerRow = {
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                size = util.vector2(getContentWidth(), headerHeight),
+            },
+            content = ui.content(headerElements)
+        }
     end
-    
-    headerRow = {
-        type = ui.TYPE.Flex,
-        props = {
-            horizontal = true,
-            size = util.vector2(getContentWidth(), headerHeight),
-        },
-        content = ui.content(headerElements)
-    }
 
     local dummyContent = ui.content({}) 
     local totalY = #state.sortedRows * rowHeight
@@ -685,6 +692,7 @@ ItemTable.create = function(props, ctx)
         renderVisibleRows()
     end
     
+    createHeader()
     sortRows()
     updateRows()
 
@@ -788,6 +796,16 @@ ItemTable.create = function(props, ctx)
 
     wrapper.layout.userData.getState = function()
         return state
+    end
+
+    -- Use this after editing state.columns directly
+    wrapper.layout.userData.redrawColumns = function()
+        setColumnWidths(state.columns, state)
+        createHeader()
+        updateHeader()
+        wrapper.layout.content[1] = headerRow
+        updateRows(true)
+        wrapper:update()
     end
 
     return wrapper
