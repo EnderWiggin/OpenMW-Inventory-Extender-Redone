@@ -87,7 +87,7 @@ function Inventory:create(windowType, ctx)
     local iconRenderer = function(row, width, height)
         local iconDim = math.min(width, height)
         local equipped = helpers.isItemEquipped(row.item, self.target, ctx.overrides.equipped)
-        local bgrVisible = row.isBartered or equipped
+        local bgrVisible = row.isBartered or equipped or (row.itemRecord.enchant ~= nil)
         local magicString = row.itemRecord.enchant and '_magic' or ''
         local postString = (row.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or '_none'
         local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
