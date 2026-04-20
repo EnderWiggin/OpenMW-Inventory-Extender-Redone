@@ -223,17 +223,12 @@ function DragAndDrop:dropAt(object, count, position)
         ambient.playSound(downSound)
     end
 
-    local box = object:getBoundingBox()
-    local boundMin = box.center - box.halfSize
-    local boundMax = box.center + box.halfSize
-    local offset = util.vector3(0, 0, (boundMax.z + boundMin.z) / 2 - box.center.z)
-    local targetPos = position + offset
     core.sendGlobalEvent('MI_Teleport', {
         obj = object,
         count = count or object.count,
         source = self.source or omwself,
         cell = (not omwself.cell.isExterior) and omwself.cell.name or '',
-        position = targetPos,
+        position = position + util.vector3(0, 0, 0.1),
         options = {
             rotation = util.transform.rotateZ(camera.getYaw()),
         },

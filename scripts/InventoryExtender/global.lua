@@ -2,6 +2,7 @@ local types = require('openmw.types')
 local I = require('openmw.interfaces')
 local world = require('openmw.world')
 local core = require('openmw.core')
+local util = require('openmw.util')
 
 local CellUtils = require('scripts.InventoryExtender.util.cell')
 
@@ -52,6 +53,23 @@ local function teleport(props)
     local position = props.position
     local options = props.options
     obj:teleport(cellOrName, position, options)
+    core.sendGlobalEvent('MI_PostTeleport', {
+        obj = obj,
+        position = position,
+        cell = cellOrName,
+        options = options,
+        player = props.player,
+    })
+end
+
+local function postTeleport(props)
+    local obj = props.obj
+    local box = obj:getBoundingBox()
+    local localCenter = box.center - obj.position
+    local offset = util.vector3(0, 0, box.halfSize.z - localCenter.z)
+
+    obj:teleport(obj.cell, obj.position + offset)
+
     props.player:sendEvent('MI_Update')
 end
 
@@ -558,6 +576,7 @@ return {
         MI_TryConfiscate = confiscateStolenItems,
         MI_ConfiscateToOwner = confiscateToOwner,
         MI_Teleport = teleport,
+        MI_PostTeleport = postTeleport,
         MI_MoveInto = moveInto,
         MI_MoveAll = moveAll,
         MI_FinalizeBarter = finalizeBarter,
