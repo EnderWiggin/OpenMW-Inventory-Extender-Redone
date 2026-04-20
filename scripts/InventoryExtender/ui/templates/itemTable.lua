@@ -367,10 +367,7 @@ ItemTable.create = function(props, ctx)
                             lastGridSize = isGrid and itemSize or nil,
                         }
                     }, ctx)
-                    local color = helpers.getInteractiveTextColor(state.rowCache[cacheKey].layout)
-                    helpers.forEachInLayout(state.rowCache[cacheKey], function(l)
-                        helpers.setInteractiveColor(l, color)
-                    end)
+                    helpers.setInteractiveColor(state.rowCache[cacheKey].layout)
                 else
                     if isGrid then
                         local rowWidget = state.rowCache[cacheKey]
@@ -488,10 +485,7 @@ ItemTable.create = function(props, ctx)
                     rowWidget.layout.userData.active = active
                     rowWidget.layout.userData.disabled = disabled
                     
-                    local color = helpers.getInteractiveTextColor(rowWidget.layout)
-                    helpers.forEachInLayout(rowWidget, function(l)
-                        helpers.setInteractiveColor(l, color)
-                    end)
+                    helpers.setInteractiveColor(rowWidget.layout)
                     
                     rowWidget:update()
                 end

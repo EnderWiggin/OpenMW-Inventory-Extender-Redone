@@ -356,35 +356,6 @@ Helpers.getWeaponRangeInFeet = function(item)
     return core.getGMST('fCombatDistance') * reach / unitsPerFoot
 end
 
-Helpers.getInteractiveTextColor = function(layout)
-    local userData = layout.userData or {}
-    if userData.active then
-        if userData.pressed then
-            return C.Colors.ACTIVE_PRESSED
-        elseif userData.hovering then
-            return C.Colors.ACTIVE_LIGHT
-        else
-            return C.Colors.ACTIVE
-        end
-    elseif userData.disabled then
-        if userData.pressed then
-            return C.Colors.DISABLED_PRESSED
-        elseif userData.hovering then
-            return C.Colors.DISABLED_LIGHT
-        else
-            return C.Colors.DISABLED
-        end
-    else
-        if userData.pressed then
-            return C.Colors.DEFAULT_PRESSED
-        elseif userData.hovering then
-            return C.Colors.DEFAULT_LIGHT
-        else
-            return userData.baseTextColor or C.Colors.DEFAULT
-        end
-    end
-end
-
 Helpers.doesItemFit = function(item, container, count)
     if not container or not types.Container.objectIsInstance(container) then
         return true
@@ -973,15 +944,46 @@ if isPlayer then
         return string
     end
 
-    Helpers.setInteractiveColor = function(layout, color)
-        if layout.userData and layout.userData.colorable then
-            layout.props = layout.props or {}
-            if layout.type == ui.TYPE.Text or layout.type == ui.TYPE.TextEdit or (layout.template and (layout.template.type == ui.TYPE.Text or layout.template.type == ui.TYPE.TextEdit)) then
-                layout.props.textColor = color
-            elseif layout.type == ui.TYPE.Image or (layout.template and layout.template.type == ui.TYPE.Image) then
-                layout.props.color = color
+    Helpers.setInteractiveColor = function(layout)
+        layout = layout.layout or layout
+        local userData = layout.userData or {}
+        Helpers.forEachInLayout(layout, function(l)
+            if l.userData and l.userData.colorable then
+                local color
+                if userData.active then
+                    if userData.pressed then
+                        color = C.Colors.ACTIVE_PRESSED
+                    elseif userData.hovering then
+                        color = C.Colors.ACTIVE_LIGHT
+                    else
+                        color = C.Colors.ACTIVE
+                    end
+                elseif userData.disabled then
+                    if userData.pressed then
+                        color = C.Colors.DISABLED_PRESSED
+                    elseif userData.hovering then
+                        color = C.Colors.DISABLED_LIGHT
+                    else
+                        color = C.Colors.DISABLED
+                    end
+                else
+                    if userData.pressed then
+                        color = l.userData.pressColor or C.Colors.DEFAULT_DARK
+                    elseif userData.hovering then
+                        color = l.userData.hoverColor or C.Colors.DEFAULT_LIGHT
+                    else
+                        color = l.userData.baseColor or C.Colors.DEFAULT
+                    end
+                end
+
+                l.props = l.props or {}
+                if l.type == ui.TYPE.Text or l.type == ui.TYPE.TextEdit or (l.template and (l.template.type == ui.TYPE.Text or l.template.type == ui.TYPE.TextEdit)) then
+                    l.props.textColor = color
+                elseif l.type == ui.TYPE.Image or (l.template and l.template.type == ui.TYPE.Image) then
+                    l.props.color = color
+                end
             end
-        end
+        end)
     end
 end
 

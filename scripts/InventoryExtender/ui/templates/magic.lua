@@ -92,10 +92,7 @@ Templates.interactive = function(props, layout, ctx)
             end
             element.layout.userData.pressed = true
             ambient.playSound('menu click')
-            local color = helpers.getInteractiveTextColor(element.layout)
-            helpers.forEachInLayout(element.layout, function(l)
-                helpers.setInteractiveColor(l, color)
-            end)
+            helpers.setInteractiveColor(element.layout)
             element:update()
 
             if props.parent then
@@ -114,10 +111,7 @@ Templates.interactive = function(props, layout, ctx)
                 return false
             end
             element.layout.userData.pressed = false
-            local color = helpers.getInteractiveTextColor(element.layout)
-            helpers.forEachInLayout(element.layout, function(l)
-                helpers.setInteractiveColor(l, color)
-            end)
+            helpers.setInteractiveColor(element.layout)
             local result = props.onClick()
             element:update()
 
@@ -139,10 +133,7 @@ Templates.interactive = function(props, layout, ctx)
         end
 
         if props.onClick then
-            local color = helpers.getInteractiveTextColor(element.layout)
-            helpers.forEachInLayout(element.layout, function(l)
-                helpers.setInteractiveColor(l, color)
-            end)
+            helpers.setInteractiveColor(element.layout)
             ctx.updateQueue[element] = true
 
             if props.parent then
@@ -154,10 +145,7 @@ Templates.interactive = function(props, layout, ctx)
     element.layout.events.focusGain = async:callback(function(e, layout)
         ctx.focusedInteractive = element
         if props.onClick then
-            local color = helpers.getInteractiveTextColor(element.layout)
-            helpers.forEachInLayout(element.layout, function(l)
-                helpers.setInteractiveColor(l, color)
-            end)
+            helpers.setInteractiveColor(element.layout)
             ctx.updateQueue[element] = true
 
             if props.parent then
