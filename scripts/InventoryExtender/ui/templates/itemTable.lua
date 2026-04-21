@@ -187,6 +187,7 @@ ItemTable.create = function(props, ctx)
                 local textStr = val ~= nil and tostring(val) or ""
                 if textStr == "0" then textStr = "-" end
                 cellContent = {
+                    name = col.id,
                     template = baseTemplates.textNormal,
                     props = {
                         text = textStr,
@@ -202,6 +203,12 @@ ItemTable.create = function(props, ctx)
             end
             cellContent.props.position = util.vector2(totalW, 0)
             totalW = totalW + w
+
+            if ctx and ctx.modifiers and ctx.modifiers.cellContent then
+                for _, modifier in ipairs(ctx.modifiers.cellContent) do
+                    cellContent = modifier.modifier(cellContent, row, ctx, props.parentWindow.type) or cellContent
+                end
+            end
 
             cells:add(cellContent)
         end
@@ -276,6 +283,9 @@ ItemTable.create = function(props, ctx)
                 end
                 if (not state.rowCache[cacheKey]) or forceRedraw then
                     local widgetContent
+                    if state.rowCache[cacheKey] then
+                        auxUi.deepDestroy(state.rowCache[cacheKey])
+                    end
                     if isGrid then
                         if gridItemRenderer then
                             local rendered = gridItemRenderer(row, itemSize)
@@ -298,7 +308,7 @@ ItemTable.create = function(props, ctx)
                                 {
                                     type = ui.TYPE.Image,
                                     props = {
-                                        resource = ui.texture { path = iconPath },
+                                        resource = baseTemplates.createTexture(iconPath),
                                         size = util.vector2(itemSize - 8, itemSize - 8),
                                         relativePosition = util.vector2(0.5, 0.5),
                                         anchor = util.vector2(0.5, 0.5),
@@ -553,10 +563,10 @@ ItemTable.create = function(props, ctx)
 
             if isDefaultCol and defaultSortIcon then
                 -- Show only sort arrow for default column
-                headerCell.layout.content.icon.props.resource = ui.texture { path = isSorted and currentSortIcon or defaultSortIcon }
+                headerCell.layout.content.icon.props.resource = baseTemplates.createTexture(isSorted and currentSortIcon or defaultSortIcon)
             else
                 local icon = headerCell.layout.content.sortIcon
-                icon.props.resource = ui.texture { path = currentSortIcon }
+                icon.props.resource = baseTemplates.createTexture(currentSortIcon)
                 icon.props.size = isSorted and util.vector2(16, 16) or util.vector2(0, 0)
             end
 
@@ -593,7 +603,7 @@ ItemTable.create = function(props, ctx)
                             type = ui.TYPE.Image,
                             props = {
                                 color = constants.Colors.DEFAULT,
-                                resource = ui.texture { path = defaultSortIcon },
+                                resource = baseTemplates.createTexture(defaultSortIcon),
                                 size = util.vector2(16, 16),
                             }
                         }
@@ -624,7 +634,7 @@ ItemTable.create = function(props, ctx)
                             name = 'sortIcon',
                             type = ui.TYPE.Image,
                             props = {
-                                resource = ui.texture { path = 'white' },
+                                resource = baseTemplates.createTexture('white'),
                                 color = constants.Colors.DEFAULT,
                                 size = util.vector2(0, 0),
                             }
@@ -654,6 +664,9 @@ ItemTable.create = function(props, ctx)
             table.insert(headerElements, btn)
         end
         
+        if headerRow then
+            auxUi.deepDestroy(headerRow)
+        end
         headerRow = {
             type = ui.TYPE.Flex,
             props = {

@@ -944,6 +944,18 @@ if isPlayer then
         return string
     end
 
+    Helpers.scaleColor = function(color, scale)
+        return util.color.rgb(util.clamp(color.r * scale, 0, 1), util.clamp(color.g * scale, 0, 1), util.clamp(color.b * scale, 0, 1))
+    end
+
+    Helpers.blendColors = function(color1, color2, blend)
+        return util.color.rgb(
+            util.clamp(color1.r * (1 - blend) + color2.r * blend, 0, 1),
+            util.clamp(color1.g * (1 - blend) + color2.g * blend, 0, 1),
+            util.clamp(color1.b * (1 - blend) + color2.b * blend, 0, 1)
+        )
+    end
+
     Helpers.setInteractiveColor = function(layout)
         layout = layout.layout or layout
         local userData = layout.userData or {}

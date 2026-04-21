@@ -602,8 +602,8 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         }
     }, item.id)
 
-    if ctx and ctx.tooltipModifiers then
-        for _, modifier in ipairs(ctx.tooltipModifiers) do
+    if ctx and ctx.modifiers and ctx.modifiers.tooltip then
+        for _, modifier in ipairs(ctx.modifiers.tooltip) do
             layout = modifier.modifier(item, layout) or layout
         end
     end

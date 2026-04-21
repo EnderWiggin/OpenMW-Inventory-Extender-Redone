@@ -26,12 +26,21 @@ local Templates = {}
 Templates.TEXT_SIZE = configPlayer.window.i_TextSizeOverride > 0 and configPlayer.window.i_TextSizeOverride or omwConstants.textNormalSize
 
 Templates.TEXTURES = {}
-Templates.createTexture = function(path)
-    if Templates.TEXTURES[path] then
-        return Templates.TEXTURES[path]
+Templates.createTexture = function(path, size, offset)
+    size = size or util.vector2(0, 0)
+    offset = offset or util.vector2(0, 0)
+    if Templates.TEXTURES[path] 
+        and Templates.TEXTURES[path][size.x] and Templates.TEXTURES[path][size.x][size.y] 
+        and Templates.TEXTURES[path][size.x][size.y][offset.x] and Templates.TEXTURES[path][size.x][size.y][offset.x][offset.y] then
+        return Templates.TEXTURES[path][size.x][size.y][offset.x][offset.y]
     else
-        local tex = ui.texture { path = path }
-        Templates.TEXTURES[path] = tex
+        local tex = ui.texture { path = path, size = size, offset = offset }
+        Templates.TEXTURES[path] = Templates.TEXTURES[path] or {}
+        Templates.TEXTURES[path][size.x] = Templates.TEXTURES[path][size.x] or {}
+        Templates.TEXTURES[path][size.x][size.y] = Templates.TEXTURES[path][size.x][size.y] or {}
+        Templates.TEXTURES[path][size.x][size.y][offset.x] = Templates.TEXTURES[path][size.x][size.y][offset.x] or {}
+        Templates.TEXTURES[path][size.x][size.y][offset.x][offset.y] = tex
+        print('Templates.TEXTURES[' .. path .. '][' .. tostring(size) .. '][' .. tostring(offset) .. '] created')
         return tex
     end
 end

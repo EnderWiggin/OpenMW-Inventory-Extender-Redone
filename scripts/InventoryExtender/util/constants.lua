@@ -49,6 +49,7 @@ C.Colors = {
     DARK_RED = util.color.rgb(0.5, 0, 0),
     RED_DESAT = util.color.rgb(0.7, 0.3, 0.3),
     DARK_RED_DESAT = util.color.rgb(0.3, 0.05, 0.05),
+    GREEN = util.color.rgb(0, 1, 0),
 }
 
 C.Strings = {

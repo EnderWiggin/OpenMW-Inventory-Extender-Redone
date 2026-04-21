@@ -92,6 +92,7 @@ function Inventory:create(windowType, ctx)
         local postString = (row.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or '_none'
         local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
         return {
+            name = 'Icon',
             props = {
                 size = v2(width, height),
             },
@@ -100,11 +101,7 @@ function Inventory:create(windowType, ctx)
                     name = 'itemBackground',
                     type = ui.TYPE.Image,
                     props = {
-                        resource = ui.texture { 
-                            path = bgrPath,
-                            size = v2(40, 40),
-                            offset = bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2),
-                        },
+                        resource = baseTemplates.createTexture(bgrPath, v2(40, 40), bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
                         anchor = v2(0.5, 0.5),
                         relativePosition = v2(0.5, 0.5),
                         size = v2(iconDim, iconDim),
@@ -115,7 +112,7 @@ function Inventory:create(windowType, ctx)
                     name = 'itemIcon',
                     type = ui.TYPE.Image,
                     props = {
-                        resource = ui.texture { path = row.itemRecord.icon },
+                        resource = baseTemplates.createTexture(row.itemRecord.icon),
                         anchor = v2(0.5, 0.5),
                         relativePosition = v2(0.5, 0.5),
                         size = v2(iconDim, iconDim),
@@ -196,7 +193,7 @@ function Inventory:create(windowType, ctx)
                         content:add({
                             type = ui.TYPE.Image,
                             props = {
-                                resource = ui.texture { path = 'icons/InventoryExtender/item/stolen.dds' },
+                                resource = baseTemplates.createTexture('icons/InventoryExtender/item/stolen.dds'),
                                 size = v2(iconSize, iconSize),
                                 color = constants.Colors.DAMAGED,
                             },
@@ -207,7 +204,7 @@ function Inventory:create(windowType, ctx)
                         content:add({
                             type = ui.TYPE.Image,
                             props = {
-                                resource = ui.texture { path = 'icons/InventoryExtender/item/enchanted.dds' },
+                                resource = baseTemplates.createTexture('icons/InventoryExtender/item/enchanted.dds'),
                                 size = v2(iconSize, iconSize),
                                 color = constants.Colors.BAR_MAGIC,
                             },
@@ -215,6 +212,7 @@ function Inventory:create(windowType, ctx)
                     end
 
                     return {
+                        name = 'Name',
                         type = ui.TYPE.Flex,
                         props = {
                             horizontal = true,

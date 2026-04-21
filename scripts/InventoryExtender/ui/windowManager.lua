@@ -32,7 +32,10 @@ WindowManager.ctx = {
     focusedScrollable = nil,
     modalElement = nil,
     activeTooltip = nil,
-    tooltipModifiers = {},
+    modifiers = {
+        tooltip = {},
+        cellContent = {},
+    },
     overrides = {
         equipped = {},
     },

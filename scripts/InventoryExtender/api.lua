@@ -120,13 +120,30 @@ end
 --- @param id string A unique identifier for the modifier
 --- @param modifier fun(item: GameObject, layout: Layout):Layout|nil The modifier function
 function API.registerTooltipModifier(id, modifier)
-    for _, existingModifier in ipairs(windowManager.ctx.tooltipModifiers) do
+    for _, existingModifier in ipairs(windowManager.ctx.modifiers.tooltip) do
         if existingModifier.id:lower() == id:lower() then
             existingModifier.modifier = modifier
             return
         end
     end
-    table.insert(windowManager.ctx.tooltipModifiers, { id = id, modifier = modifier })
+    table.insert(windowManager.ctx.modifiers.tooltip, { id = id, modifier = modifier })
+end
+
+--- Register a cell content modifier function for rows in the item table.
+--- Modifiers are called in order of registration when a cell's content is updated, and each modifier receives the current cell layout.
+--- The passed layout is a direct reference and can be modified in-place.
+--- Optionally, a modifier can return new layout to replace the current one entirely.
+--- Modified cells should have their userData.dirty flag set to true for the changes to be reflected visually.
+--- @param id string A unique identifier for the modifier
+--- @param modifier fun(cell: Layout, row: table, ctx: table, windowType: string):Layout|nil The modifier function
+function API.registerCellContentModifier(id, modifier)
+    for _, existingModifier in ipairs(windowManager.ctx.modifiers.cellContent) do
+        if existingModifier.id:lower() == id:lower() then
+            existingModifier.modifier = modifier
+            return
+        end
+    end
+    table.insert(windowManager.ctx.modifiers.cellContent, { id = id, modifier = modifier })
 end
 
 --- Register a function to override the equipped status of items in the inventory.
