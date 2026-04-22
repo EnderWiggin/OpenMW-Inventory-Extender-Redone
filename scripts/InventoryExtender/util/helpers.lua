@@ -388,6 +388,22 @@ Helpers.itemDataEquals = function(a, b)
     return true
 end
 
+Helpers.itemCanStack = function(a, b)
+    if Helpers.isGold(a) and Helpers.isGold(b) then
+        return true
+    end
+    if a.recordId:lower() ~= b.recordId:lower() then
+        return false
+    end
+    if not Helpers.itemDataEquals(a, b) then
+        return false
+    end
+    if a.type.record(a).mwscript or b.type.record(b).mwscript then
+        return false
+    end
+    return true
+end
+
 Helpers.getMerchantItems = function(npc)
     local unmerged = {}
     local carried = npc.type.inventory(npc):getAll()
@@ -418,7 +434,7 @@ Helpers.getMerchantItems = function(npc)
         if virtualMerged[key] then
             local existing = false
             for _, virtualStack in ipairs(virtualMerged[key]) do
-                if Helpers.itemDataEquals(item, virtualStack.stacks[1]) then
+                if Helpers.itemCanStack(item, virtualStack.stacks[1]) then
                     existing = true
                     table.insert(virtualStack.stacks, item)
                     virtualStack.totalCount = virtualStack.totalCount + item.count

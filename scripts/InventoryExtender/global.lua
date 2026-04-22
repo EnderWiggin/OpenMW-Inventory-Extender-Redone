@@ -117,7 +117,7 @@ local function moveInto(props)
     if not helpers.isGold(obj) then
         for _, item in ipairs(destinationInv:findAll(recordId)) do
             if not destination.type.hasEquipped or not destination.type.hasEquipped(destination, item) and not isEquipped then
-                if helpers.itemDataEquals(item, obj) then
+                if helpers.itemCanStack(item, obj) then
                     resultingObj = item
                     break
                 end
