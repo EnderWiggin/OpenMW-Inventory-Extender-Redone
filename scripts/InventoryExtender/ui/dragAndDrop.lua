@@ -56,11 +56,6 @@ function DragAndDrop:getHoveredGameObject(position)
 end
 
 function DragAndDrop:startDrag(item, source, count)
-    local upSound = helpers.getItemSound(item, 'up')
-    if upSound then
-        ambient.playSound(upSound)
-    end
-
     self.draggingCount = util.clamp(count or item.count, 1, item.count)
 
     core.sendGlobalEvent('MI_MoveInto', {
@@ -77,6 +72,11 @@ end
 
 function DragAndDrop:setDraggingObject(object, resetMode)
     self.draggingObject = object
+
+    local upSound = helpers.getItemSound(object, 'up')
+    if upSound then
+        ambient.playSound(upSound)
+    end
 
     if self.ctx.cursorAttachedIcon then
         auxUi.deepDestroy(self.ctx.cursorAttachedIcon)
@@ -233,6 +233,7 @@ function DragAndDrop:dropAt(object, count, position)
             rotation = util.transform.rotateZ(camera.getYaw()),
         },
         player = omwself,
+        dropping = true,
     })
 end
 

@@ -52,6 +52,14 @@ local function teleport(props)
     local cellOrName = props.cell or ''
     local position = props.position
     local options = props.options
+
+    if props.dropping then
+        local mwscript = world.mwscript.getLocalScript(obj)
+        if mwscript and mwscript.variables.onpcdrop then
+            mwscript.variables.onpcdrop = 1
+        end
+    end
+
     obj:teleport(cellOrName, position, options)
     core.sendGlobalEvent('MI_PostTeleport', {
         obj = obj,
@@ -79,6 +87,17 @@ local function getCompanionProfit(npc)
         return script.variables.minimumprofit
     end
     return nil
+end
+
+local function scriptedDragStart(props)
+    if props.obj.parentContainer == nil then return end
+
+    props.player:sendEvent('MI_SetDraggingObject', {
+        obj = props.resultingObj,
+        target = props.destination,
+        resetMode = true,
+    })
+    props.player:sendEvent('MI_Update')
 end
 
 local function moveInto(props)
@@ -134,18 +153,20 @@ local function moveInto(props)
         end
     end
 
+    if types.Player.objectIsInstance(props.destination) and props.source ~= props.destination then
+        local mwscript = world.mwscript.getLocalScript(props.destination)
+        if mwscript and mwscript.variables.onpcadd then
+            mwscript.variables.onpcadd = 1
+        end
+    end
+
     if props.dragStart and not props.source then
         local mwscript = obj.type.record(obj).mwscript
         if mwscript then
             local scriptRecord = core.mwscripts.records[mwscript]
             if scriptRecord and scriptRecord.text:lower():find('onactivate') then
                 world._runStandardActivationAction(obj, props.player)
-                props.player:sendEvent('MI_SetDraggingObject', {
-                    obj = resultingObj,
-                    target = destination,
-                    resetMode = true,
-                })
-                props.player:sendEvent('MI_Update')
+                core.sendGlobalEvent('MI_ScriptedDragStart', { player = props.player, obj = obj, resultingObj = resultingObj, target = destination })
                 return
             end
         end
@@ -579,6 +600,7 @@ return {
         MI_ConfiscateToOwner = confiscateToOwner,
         MI_Teleport = teleport,
         MI_PostTeleport = postTeleport,
+        MI_ScriptedDragStart = scriptedDragStart,
         MI_MoveInto = moveInto,
         MI_MoveAll = moveAll,
         MI_FinalizeBarter = finalizeBarter,
