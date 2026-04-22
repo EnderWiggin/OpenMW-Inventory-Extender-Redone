@@ -231,13 +231,15 @@ local function moveAll(props)
 
     local totalCrimeValue = 0
     for _, item in ipairs(items) do
-        if victimInfo then
-            if not helpers.isGold(item) then
-                props.player:sendEvent('MI_StoleItem', { recordId = item.recordId, count = item.count, victim = victimInfo })
+        if types.Item.isCarriable(item) then
+            if victimInfo then
+                if not helpers.isGold(item) then
+                    props.player:sendEvent('MI_StoleItem', { recordId = item.recordId, count = item.count, victim = victimInfo })
+                end
+                totalCrimeValue = totalCrimeValue + (helpers.getItemValue(item) * item.count)
             end
-            totalCrimeValue = totalCrimeValue + (helpers.getItemValue(item) * item.count)
+            item:moveInto(props.destination)
         end
-        item:moveInto(props.destination)
     end
 
     if victimInfo then
