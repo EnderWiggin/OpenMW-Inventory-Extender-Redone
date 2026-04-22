@@ -40,7 +40,6 @@ Templates.createTexture = function(path, size, offset)
         Templates.TEXTURES[path][size.x][size.y] = Templates.TEXTURES[path][size.x][size.y] or {}
         Templates.TEXTURES[path][size.x][size.y][offset.x] = Templates.TEXTURES[path][size.x][size.y][offset.x] or {}
         Templates.TEXTURES[path][size.x][size.y][offset.x][offset.y] = tex
-        print('Templates.TEXTURES[' .. path .. '][' .. tostring(size) .. '][' .. tostring(offset) .. '] created')
         return tex
     end
 end
