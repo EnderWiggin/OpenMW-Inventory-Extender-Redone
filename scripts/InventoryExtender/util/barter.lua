@@ -79,8 +79,11 @@ local function haggle(npc, playerOffer, merchantOffer)
 end
 
 local function getBarterOffer(merchant, basePrice, buying)
-    if (basePrice == 0 or types.Creature.objectIsInstance(merchant)) then
+    if basePrice == 0 then
         return basePrice
+    end
+    if types.Creature.objectIsInstance(merchant) then
+        return math.max(1, math.modf(basePrice))
     end
 
     local clampedDisposition = util.clamp(merchant.type.getDisposition(merchant, self), 0, 100)
