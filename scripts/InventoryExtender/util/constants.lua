@@ -159,14 +159,14 @@ C.Sort = {
 }
 
 C.Events = {
-    INVENTORY_SHOWN = 'MI_InventoryShown',
-    INVENTORY_HIDDEN = 'MI_InventoryHidden',
-    BARTER_SHOWN = 'MI_BarterShown',
-    BARTER_HIDDEN = 'MI_BarterHidden',
-    CONTAINER_SHOWN = 'MI_ContainerShown',
-    CONTAINER_HIDDEN = 'MI_ContainerHidden',
-    COMPANION_SHOWN = 'MI_CompanionShown',
-    COMPANION_HIDDEN = 'MI_CompanionHidden',
+    INVENTORY_SHOWN = 'IE_InventoryShown',
+    INVENTORY_HIDDEN = 'IE_InventoryHidden',
+    BARTER_SHOWN = 'IE_BarterShown',
+    BARTER_HIDDEN = 'IE_BarterHidden',
+    CONTAINER_SHOWN = 'IE_ContainerShown',
+    CONTAINER_HIDDEN = 'IE_ContainerHidden',
+    COMPANION_SHOWN = 'IE_CompanionShown',
+    COMPANION_HIDDEN = 'IE_CompanionHidden',
 }
 
 C.DragType = {

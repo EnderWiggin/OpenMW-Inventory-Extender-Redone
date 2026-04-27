@@ -40,7 +40,7 @@ local lastCrimeLevel
 local function checkCrimeLevel()
     local crimeLevel = types.Player.getCrimeLevel(self)
     if lastCrimeLevel and crimeLevel < lastCrimeLevel then
-        core.sendGlobalEvent('MI_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
+        core.sendGlobalEvent('IE_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
     end
     
     lastCrimeLevel = crimeLevel
@@ -189,6 +189,56 @@ function API.registerRowActivateHandler(id, handler)
     table.insert(windowManager.ctx.handlers.onRowActivate, { id = id, handler = handler })
 end
 
+local eventHandlers = {
+    UiModeChanged = function(data)
+        windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
+        core.sendGlobalEvent('IE_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
+    end,
+    IE_StoleItem = function(props)
+        --print("Player stole item:", props.recordId, "count:", props.count, "victim:", props.victim)
+        windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
+        local id = props.victim.recordId or props.victim.factionId
+        if id then
+            windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) + props.count 
+        end
+    end,
+    IE_ItemsConfiscated = function(props)
+        --print(helpers.deepPrint(props.stolenMap))
+        windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
+    end,
+    IE_Update = function()
+        windowManager:update()
+    end,
+    IE_CompanionProfit = function(props)
+        windowManager.ctx.companionProfit[props.companion.id] = props.profit
+    end,
+    IE_SetDraggingObject = function(props)
+        local obj = props.obj
+        if helpers.isGold(props.obj) then
+            local targetInv = props.target.type.inventory(props.target)
+            local foundGold = targetInv:find('gold_001')
+            if foundGold then
+                obj = foundGold
+            end
+        end
+
+        windowManager.ctx.dragAndDrop:setDraggingObject(obj, props.resetMode)
+    end,
+    IE_BarterFinalized = function(props)
+        I.SkillProgression.skillUsed('mercantile', {
+            skillGain = props.skillGain,
+            useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
+        })
+    end,
+}
+-- deprecated event names
+eventHandlers.MI_StoleItem = eventHandlers.IE_StoleItem
+eventHandlers.MI_ItemsConfiscated = eventHandlers.IE_ItemsConfiscated
+eventHandlers.MI_Update = eventHandlers.IE_Update
+eventHandlers.MI_CompanionProfit = eventHandlers.IE_CompanionProfit
+eventHandlers.MI_SetDraggingObject = eventHandlers.IE_SetDraggingObject
+eventHandlers.MI_BarterFinalized = eventHandlers.IE_BarterFinalized
+
 return {
     interfaceName = 'InventoryExtender',
     interface = API,
@@ -226,46 +276,5 @@ return {
             windowManager:onControllerButtonPress(id)
         end,
     },
-    eventHandlers = {
-        UiModeChanged = function(data)
-            windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
-            core.sendGlobalEvent('MI_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
-        end,
-        MI_StoleItem = function(props)
-            --print("Player stole item:", props.recordId, "count:", props.count, "victim:", props.victim)
-            windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
-            local id = props.victim.recordId or props.victim.factionId
-            if id then
-                windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) + props.count 
-            end
-        end,
-        MI_ItemsConfiscated = function(props)
-            --print(helpers.deepPrint(props.stolenMap))
-            windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
-        end,
-        MI_Update = function()
-            windowManager:update()
-        end,
-        MI_CompanionProfit = function(props)
-            windowManager.ctx.companionProfit[props.companion.id] = props.profit
-        end,
-        MI_SetDraggingObject = function(props)
-            local obj = props.obj
-            if helpers.isGold(props.obj) then
-                local targetInv = props.target.type.inventory(props.target)
-                local foundGold = targetInv:find('gold_001')
-                if foundGold then
-                    obj = foundGold
-                end
-            end
-
-            windowManager.ctx.dragAndDrop:setDraggingObject(obj, props.resetMode)
-        end,
-        MI_BarterFinalized = function(props)
-            I.SkillProgression.skillUsed('mercantile', {
-                skillGain = props.skillGain,
-                useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
-            })
-        end,
-    },
+    eventHandlers = eventHandlers,
 }

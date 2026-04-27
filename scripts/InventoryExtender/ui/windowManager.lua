@@ -178,7 +178,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     }
 
     if oldMode == 'Container' and self.ctx.windowArgs.Container then
-        self.ctx.windowArgs.Container:sendEvent('MI_ContainerClosed')
+        self.ctx.windowArgs.Container:sendEvent('IE_ContainerClosed')
     end
 
     if self.ctx.modalElement then

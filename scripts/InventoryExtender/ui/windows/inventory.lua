@@ -75,7 +75,7 @@ function Inventory:create(windowType, ctx)
                     if sound then
                         ambient.playSound(sound)
                     end
-                    self.target:sendEvent('MI_Update')
+                    self.target:sendEvent('IE_Update')
                     break
                 end
             end
@@ -387,7 +387,7 @@ function Inventory:create(windowType, ctx)
                             ambient.playSound(sound)
                         end
                         barterUtils.updateOffer(ctx)
-                        omwself:sendEvent('MI_Update')
+                        omwself:sendEvent('IE_Update')
                     elseif mode == 'Interface' then
                         ctx.dragAndDrop:dropAtFeet(row.item, count) 
                     end
@@ -628,7 +628,7 @@ function Inventory:create(windowType, ctx)
                         if persistentCorpses[self.target.recordId] then
                             ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
                         else
-                            core.sendGlobalEvent('MI_DisposeOfCorpse', { target = ctx.windowArgs.Container })
+                            core.sendGlobalEvent('IE_DisposeOfCorpse', { target = ctx.windowArgs.Container })
                         end
                         I.UI.removeMode('Container')
                     end
@@ -807,7 +807,7 @@ function Inventory:create(windowType, ctx)
                             if ctx.stolenItems[entry.item.recordId] and ctx.stolenItems[entry.item.recordId][self.target.recordId] then
                                 I.UI.setMode(nil)
                                 ui.showMessage(string.format(constants.Strings.THATS_MINE, entry.item.type.record(entry.item).name))
-                                core.sendGlobalEvent('MI_ConfiscateToOwner', {
+                                core.sendGlobalEvent('IE_ConfiscateToOwner', {
                                     item = entry.item,
                                     count = entry.count,
                                     player = omwself,
@@ -821,7 +821,7 @@ function Inventory:create(windowType, ctx)
                         local offerAccepted, skillGain = barterUtils.haggle(self.target, ctx.barterState.currentBalance, ctx.barterState.currentMerchantOffer)
                         if types.NPC.objectIsInstance(self.target) then
                             local dispositionDelta = offerAccepted and core.getGMST('iBarterSuccessDisposition') or core.getGMST('iBarterFailDisposition')
-                            core.sendGlobalEvent('MI_ModDisposition', {
+                            core.sendGlobalEvent('IE_ModDisposition', {
                                 target = self.target,
                                 player = omwself,
                                 amount = dispositionDelta,
@@ -833,7 +833,7 @@ function Inventory:create(windowType, ctx)
                             return
                         end
 
-                        core.sendGlobalEvent('MI_FinalizeBarter', {
+                        core.sendGlobalEvent('IE_FinalizeBarter', {
                             player = omwself,
                             merchant = self.target,
                             barterState = ctx.barterState,

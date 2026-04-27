@@ -58,7 +58,7 @@ end
 function DragAndDrop:startDrag(item, source, count)
     self.draggingCount = util.clamp(count or item.count, 1, item.count)
 
-    core.sendGlobalEvent('MI_MoveInto', {
+    core.sendGlobalEvent('IE_MoveInto', {
         obj = item,
         count = self.draggingCount,
         source = source,
@@ -147,7 +147,7 @@ function DragAndDrop:transferInto(object, destination, source, count)
     end
 
     if destination then
-        core.sendGlobalEvent('MI_MoveInto', {
+        core.sendGlobalEvent('IE_MoveInto', {
             obj = object,
             count = self.draggingCount or object.count,
             source = self.source,
@@ -167,7 +167,7 @@ function DragAndDrop:moveAll(source, destination)
             ambient.playSound(upSound)
         end
     end
-    core.sendGlobalEvent('MI_MoveAll', {
+    core.sendGlobalEvent('IE_MoveAll', {
         source = source,
         destination = destination,
         player = omwself,
@@ -223,7 +223,7 @@ function DragAndDrop:dropAt(object, count, position)
         ambient.playSound(downSound)
     end
 
-    core.sendGlobalEvent('MI_Teleport', {
+    core.sendGlobalEvent('IE_Teleport', {
         obj = object,
         count = count or object.count,
         source = self.source or omwself,
