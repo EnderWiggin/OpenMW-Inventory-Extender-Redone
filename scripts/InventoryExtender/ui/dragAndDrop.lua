@@ -91,9 +91,22 @@ function DragAndDrop:setDraggingObject(object, resetMode)
         },
         content = ui.content {
             {
+                name = 'itemShadow',
                 type = ui.TYPE.Image,
                 props = {
-                    size = v2(42, 42),
+                    position = v2(9, 9),
+                    size = v2(32, 32),
+                    resource = ui.texture { path = object.type.record(object).icon },
+                    color = util.color.rgb(0, 0, 0),
+                    alpha = 0.5,
+                }
+            },
+            {
+                name = 'item',
+                type = ui.TYPE.Image,
+                props = {
+                    position = v2(5, 5),
+                    size = v2(32, 32),
                     resource = ui.texture { path = object.type.record(object).icon },
                 }
             },
@@ -102,7 +115,7 @@ function DragAndDrop:setDraggingObject(object, resetMode)
                 props = {
                     anchor = v2(1, 1),
                     relativePosition = v2(1, 1),
-                    text = self.draggingCount > 1 and tostring(self.draggingCount) or '',
+                    text = helpers.getCountString(self.draggingCount),
                     textColor = constants.Colors.DEFAULT_LIGHT,
                     textShadow = true,
                 },

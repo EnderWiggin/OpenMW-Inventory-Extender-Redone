@@ -425,8 +425,7 @@ function Inventory:create(windowType, ctx)
                     type = ui.TYPE.Text,
                     template = baseTemplates.textNormal,
                     props = {
-                        text = tostring(count),
-                        textSize = 12,
+                        text = helpers.getCountString(count),
                         anchor = util.vector2(1, 1),
                         relativePosition = util.vector2(1, 1),
                         textColor = constants.Colors.DEFAULT_LIGHT,

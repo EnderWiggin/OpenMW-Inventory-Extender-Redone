@@ -182,6 +182,20 @@ Helpers.toLookup = function(list)
     return lookup
 end
 
+Helpers.getCountString = function(count)
+    if count == 1 then
+        return ''
+    elseif count > 999999999 then
+        return math.floor(count / 1000000000) .. 'b'
+    elseif count > 999999 then
+        return math.floor(count / 1000000) .. 'm'
+    elseif count > 9999 then
+        return math.floor(count / 1000) .. 'k'
+    else
+        return tostring(count)
+    end
+end
+
 Helpers.getEquippedName = function(actor)
     local name = C.Strings.HAND_TO_HAND
     local selected = actor.type.getEquipment(actor, types.Actor.EQUIPMENT_SLOT.CarriedRight)
