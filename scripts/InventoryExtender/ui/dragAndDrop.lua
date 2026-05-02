@@ -10,6 +10,7 @@ local v2 = util.vector2
 local auxUi = require('openmw_aux.ui')
 local I = require('openmw.interfaces')
 local ambient = require('openmw.ambient')
+local input = require('openmw.input')
 
 local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
 local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
@@ -22,6 +23,9 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
+
+local needsReset = false
+local instantPickup = false
 
 local DragAndDrop = {}
 
@@ -68,6 +72,17 @@ function DragAndDrop:startDrag(item, source, count)
     })   
     
     self.source = omwself
+    if configPlayer.misc.b_TooltipCompatibilityMode then
+        self:setWrapperEnabled(true)
+    end
+end
+
+local function resetMode()
+    local mode = I.UI.getMode()
+    local modeArgs = DragAndDrop.ctx.modeArgs[mode] and { target = DragAndDrop.ctx.modeArgs[mode] } or nil
+    DragAndDrop.ctx.resettingMode = true
+    I.UI.removeMode(mode)
+    I.UI.addMode(mode, modeArgs)
 end
 
 function DragAndDrop:setDraggingObject(object, resetMode)
@@ -82,6 +97,13 @@ function DragAndDrop:setDraggingObject(object, resetMode)
         auxUi.deepDestroy(self.ctx.cursorAttachedIcon)
         self.ctx.cursorAttachedIcon = nil
     end
+
+    if instantPickup then
+        self.draggingObject = nil
+        instantPickup = false
+        return
+    end
+
     self.ctx.cursorAttachedIcon = ui.create({
         name = object.id .. '_dragIcon',
         layer = 'Notification',
@@ -111,24 +133,24 @@ function DragAndDrop:setDraggingObject(object, resetMode)
                 }
             },
             {
-                template = baseTemplates.textNormal,
+                template = I.MWUI.templates.textHeader,
                 props = {
-                    anchor = v2(1, 1),
                     relativePosition = v2(1, 1),
+                    anchor = v2(1, 1),
+                    autoSize = false,
+                    size = v2(32, 18),
+                    position = v2(-5, -5),
                     text = helpers.getCountString(self.draggingCount),
-                    textColor = constants.Colors.DEFAULT_LIGHT,
                     textShadow = true,
+                    textAlignH = ui.ALIGNMENT.End,
+                    textAlignV = ui.ALIGNMENT.Center,
                 },
             }
         }
     })
 
     if resetMode then
-        local mode = I.UI.getMode()
-        local modeArgs = self.ctx.modeArgs[mode] and { target = self.ctx.modeArgs[mode] } or nil
-        self.ctx.resettingMode = true
-        I.UI.removeMode(mode)
-        I.UI.addMode(mode, modeArgs)
+        resetMode()
     end
 end
 
@@ -204,6 +226,9 @@ function DragAndDrop:stopDrag(target)
         auxUi.deepDestroy(self.ctx.cursorAttachedIcon)
         self.ctx.cursorAttachedIcon = nil
     end
+    if configPlayer.misc.b_TooltipCompatibilityMode then
+        self:setWrapperEnabled(false)
+    end
 end
 
 local function absToRel(absPos)
@@ -248,6 +273,10 @@ function DragAndDrop:dropAt(object, count, position)
         player = omwself,
         dropping = true,
     })
+
+    if configPlayer.misc.b_TooltipCompatibilityMode then
+        self:setWrapperEnabled(false)
+    end
 end
 
 function DragAndDrop:dropAtFeet(object, count)
@@ -256,9 +285,12 @@ function DragAndDrop:dropAtFeet(object, count)
     self:dropAt(object, count, targetPos)
 end
 
-function DragAndDrop:init(ctx)
-    if not configPlayer.window.b_EnableMod then return end
+function DragAndDrop:setWrapperEnabled(enabled)
+    self.wrapper.layout.props.relativeSize = enabled and v2(1, 1) or v2(0, 0)
+    self.wrapper:update()
+end
 
+function DragAndDrop:init(ctx)
     self.hoveredObject = nil
     self.lastHoveredObject = nil
     self.draggingObject = nil
@@ -268,7 +300,7 @@ function DragAndDrop:init(ctx)
     self.wrapper = ui.create{
         layer = 'DragBlocker',
         props = {
-            relativeSize = v2(1, 1),
+            relativeSize = v2(0, 0),
             propagateEvents = false,
         },
         content = ui.content {
@@ -292,6 +324,12 @@ function DragAndDrop:init(ctx)
                 if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
                     auxUi.deepDestroy(self.ctx.activeTooltip)
                     self.ctx.activeTooltip = nil
+                end
+                if needsReset then
+                    resetMode()
+                    needsReset = false
+                    self.ctx.cursorAttachedIcon.layout.props.visible = true
+                    self.ctx.cursorAttachedIcon:update()
                 end
             else
                 if self.hoveredObject ~= self.lastHoveredObject then
@@ -360,6 +398,9 @@ function DragAndDrop:init(ctx)
                 if not self.ctx.isConsoleOpen then
                     if types.Item.isCarriable(self.hoveredObject) then
                         self:startDrag(self.hoveredObject, nil)
+                        if input.isAltPressed() then
+                            instantPickup = true
+                        end
                     end
                 else
                     ui.setConsoleSelectedObject(self.hoveredObject)
@@ -367,6 +408,71 @@ function DragAndDrop:init(ctx)
             end
         end)
     }
+end
+
+function DragAndDrop:_onPress()
+    if not configPlayer.misc.b_TooltipCompatibilityMode then return end
+
+    self._lastInvState = {}
+    for _, item in ipairs(types.Player.inventory(omwself):getAll()) do
+        self._lastInvState[item.id] = { recordId = item.recordId, count = item.count }
+    end
+end
+
+function DragAndDrop:_onRelease()
+    if not configPlayer.misc.b_TooltipCompatibilityMode then return end
+
+    if not self._lastInvState then return end
+
+    if self.draggingObject then 
+        self._lastInvState = nil
+        return 
+    end
+
+    local instant = input.isAltPressed()
+    for _, item in ipairs(types.Player.inventory(omwself):getAll()) do
+        local lastState = self._lastInvState[item.id]
+        if not lastState or lastState.count < item.count then
+            if not instant then
+                self.draggingCount = item.count - (lastState and lastState.count or 0)
+                self:setDraggingObject(item)
+                self:setWrapperEnabled(true)
+                needsReset = true
+                self.ctx.cursorAttachedIcon.layout.props.visible = false
+            end
+            omwself:sendEvent('IE_Update')
+            core.sendGlobalEvent('IE_ItemPickedUp', {
+                recordId = item.recordId,
+                count = item.count - (lastState and lastState.count or 0),
+                player = omwself,
+            })
+            break
+        end
+    end
+    self._lastInvState = nil
+end
+
+function DragAndDrop:onMouseButtonPress(button)
+    if button == 1 then
+        self:_onPress()
+    end
+end
+function DragAndDrop:onMouseButtonRelease(button)
+    if button == 1 then
+        self:_onRelease()
+    end
+end
+
+function DragAndDrop:onControllerButtonPress(id)
+    if id == input.CONTROLLER_BUTTON.A then
+        self:_onPress()
+    end
+end
+
+function DragAndDrop:onControllerButtonRelease(id)
+    if id == input.CONTROLLER_BUTTON.A then
+        self:_onRelease()
+     end
 end
 
 return DragAndDrop

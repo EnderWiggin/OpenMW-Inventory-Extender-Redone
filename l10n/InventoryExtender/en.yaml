@@ -48,6 +48,10 @@ ConfigCategoryMisc: Miscellaneous
 ShowControllerWarning: Show controller warning
 ShowControllerWarningDesc: |-
   Show a warning message if controller menus are enabled, since the window replacer is not compatible with them.
+TooltipCompatibilityMode: World tooltip compatibility mode
+TooltipCompatibilityModeDesc: |-
+  Due to API limitations, mouse-over world tooltips require us to block the entire screen, which has the side effect of blocking tooltips for the HUD (active effects, selected spell, etc.)
+  If compatibility mode is ON, the screen will only be blocked if an item is being dragged. This preserves HUD tooltips when not dragging, but world tooltips will be vanilla.
 
 ConfigCategoryGameplay: Gameplay
 SoulGemValueRebalance: Soul gem value rebalance

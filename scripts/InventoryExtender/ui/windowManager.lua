@@ -190,8 +190,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         self.ctx.activeTooltip = nil
     end
     if self.ctx.dragAndDrop.wrapper then
-        self.ctx.dragAndDrop.wrapper.layout.props.relativeSize = validDragModes[newMode] and v2(1, 1) or v2(0, 0)
-        self.ctx.dragAndDrop.wrapper:update() 
+        self.ctx.dragAndDrop:setWrapperEnabled(not configPlayer.misc.b_TooltipCompatibilityMode and validDragModes[newMode])
         self.ctx.dragAndDrop.lastHoveredObject = nil
     end
     self.ctx.dragAndDrop:stopDrag()
@@ -220,6 +219,8 @@ function WindowManager:onMouseWheel(v, h)
 end
 
 function WindowManager:onFrame()
+    if not configPlayer.window.b_EnableMod then return end
+
     if self.ctx.resettingModeProcessed then
         self.ctx.resettingModeProcessed = false
         self.ctx.resettingMode = false
@@ -252,6 +253,7 @@ function WindowManager:onFrame()
 end
 
 function WindowManager:onControllerButtonPress(id)
+    if not configPlayer.window.b_EnableMod then return end
     if id == input.CONTROLLER_BUTTON.Y and self.ctx.modalElement then
         auxUi.deepDestroy(self.ctx.modalElement)
         self.ctx.modalElement = nil
@@ -261,8 +263,35 @@ function WindowManager:onControllerButtonPress(id)
     for _, window in pairs(self.windows) do
         if window:isFocused() then
             window:onControllerButtonPress(id)
-            return
         end
+    end
+
+    if validDragModes[I.UI.getMode() or ''] then
+        WindowManager.ctx.dragAndDrop:onControllerButtonPress(id)
+    end
+end
+
+function WindowManager:onControllerButtonRelease(id)
+    if not configPlayer.window.b_EnableMod then return end
+
+    if validDragModes[I.UI.getMode() or ''] then
+        WindowManager.ctx.dragAndDrop:onControllerButtonRelease(id)
+    end
+end
+
+function WindowManager:onMouseButtonPress(button)
+    if not configPlayer.window.b_EnableMod then return end
+
+    if validDragModes[I.UI.getMode() or ''] then
+        WindowManager.ctx.dragAndDrop:onMouseButtonPress(button)
+    end
+end
+
+function WindowManager:onMouseButtonRelease(button)
+    if not configPlayer.window.b_EnableMod then return end
+
+    if validDragModes[I.UI.getMode() or ''] then
+        WindowManager.ctx.dragAndDrop:onMouseButtonRelease(button)
     end
 end
 

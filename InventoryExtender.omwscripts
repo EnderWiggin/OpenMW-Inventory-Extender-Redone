@@ -4,3 +4,4 @@ GLOBAL: scripts/InventoryExtender/global.lua
 PLAYER: scripts/InventoryExtender/api.lua
 PLAYER: scripts/InventoryExtender/player.lua
 CONTAINER: scripts/InventoryExtender/container.lua
+ARMOR, BOOK, CLOTHING, INGREDIENT, LIGHT, MISC_ITEM, POTION, WEAPON, APPARATUS, LOCKPICK, PROBE, REPAIR: scripts/InventoryExtender/item.lua

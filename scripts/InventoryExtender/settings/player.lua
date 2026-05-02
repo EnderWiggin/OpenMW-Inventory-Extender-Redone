@@ -182,6 +182,13 @@ I.Settings.registerGroup {
             name = 'ShowControllerWarning',
             description = 'ShowControllerWarningDesc',
             default = true,
+        },
+        {
+            key = 'b_TooltipCompatibilityMode',
+            renderer = 'checkbox',
+            name = 'TooltipCompatibilityMode',
+            description = 'TooltipCompatibilityModeDesc',
+            default = false,
         }
     },
 }

@@ -10,6 +10,12 @@ local helpers = require('scripts.InventoryExtender.util.helpers')
 
 local disposedBodies = {}
 
+---@type {func: function, frameDelay: number}[]
+local delayedJobs = {}
+local function queueDelayedJob(func, frameDelay)
+    table.insert(delayedJobs, { func = func, frameDelay = frameDelay })
+end
+
 local function isStealing(actor, ownerInfo)
     if not ownerInfo then
         return false
@@ -291,7 +297,18 @@ local function onItemActivated(item, actor)
     end
 end
 
+local lastItemPickedUp = nil
+
 local function onUpdate(dt)
+    for i = #delayedJobs, 1, -1 do
+        local job = delayedJobs[i]
+        job.frameDelay = job.frameDelay - 1
+        if job.frameDelay <= 0 then
+            job.func()
+            table.remove(delayedJobs, i)
+        end
+    end
+
     if core.isWorldPaused() then
         return
     end
@@ -594,6 +611,27 @@ local eventHandlers = {
     end,
     IE_ModDisposition = function(props)
         types.NPC.modifyBaseDisposition(props.target, props.player, props.amount)
+    end,
+    IE_ItemPickedUp = function(props)
+        lastItemPickedUp = {
+            recordId = props.recordId,
+            count = props.count,
+            player = props.player,
+        }
+        queueDelayedJob(function()
+            lastItemPickedUp = nil
+        end, 2)
+    end,
+    IE_OwnedItemInactive = function(props)
+        if lastItemPickedUp then
+            if props.recordId == lastItemPickedUp.recordId and props.owner then
+                local victim = isStealing(lastItemPickedUp.player, props.owner)
+                if victim and not helpers.isGold(props.recordId) then
+                    lastItemPickedUp.player:sendEvent('IE_StoleItem', { recordId = props.recordId, count = lastItemPickedUp.count, victim = victim })
+                    lastItemPickedUp.player:sendEvent('IE_Update')
+                end
+            end
+        end
     end,
     UseItem = function(props)
         props.actor:sendEvent('IE_Update')

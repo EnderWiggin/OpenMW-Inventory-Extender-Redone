@@ -195,7 +195,6 @@ local eventHandlers = {
         core.sendGlobalEvent('IE_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
     end,
     IE_StoleItem = function(props)
-        --print("Player stole item:", props.recordId, "count:", props.count, "victim:", props.victim)
         windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
         local id = props.victim.recordId or props.victim.factionId
         if id then
@@ -274,6 +273,15 @@ return {
         end,
         onControllerButtonPress = function(id)
             windowManager:onControllerButtonPress(id)
+        end,
+        onControllerButtonRelease = function(id)
+            windowManager:onControllerButtonRelease(id)
+        end,
+        onMouseButtonPress = function(button)
+            windowManager:onMouseButtonPress(button)
+        end,
+        onMouseButtonRelease = function(button)
+            windowManager:onMouseButtonRelease(button)
         end,
     },
     eventHandlers = eventHandlers,

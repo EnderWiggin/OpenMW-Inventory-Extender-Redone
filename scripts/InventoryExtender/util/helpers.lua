@@ -473,7 +473,7 @@ Helpers.getMerchantItems = function(npc)
 end
 
 Helpers.isGold = function(item)
-    local id = item.recordId:lower()
+    local id = type(item) == 'string' and item:lower() or item.recordId:lower()
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
 end
 
