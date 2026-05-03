@@ -81,7 +81,7 @@ I.Settings.registerGroup {
             renderer = 'select',
             name = 'IconPack',
             description = 'IconPackDesc',
-            default = 'base',
+            default = 'Base',
             argument = {
                 l10n = 'InventoryExtender',
                 items = iconPack.getAvailablePacks(),

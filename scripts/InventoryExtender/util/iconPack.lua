@@ -8,8 +8,14 @@ local windowSettings = storage.playerSection('Settings/InventoryExtender/2_Windo
 local IconPack = {}
 
 local ICON_ROOT = 'icons/inventoryextender'
-local DEFAULT_PACK = 'base'
+local DEFAULT_PACK = 'Base'
 local ICON_PACK_KEY = 's_IconPack'
+
+local function capitalize(str)
+    return (str:gsub('(%a)([%w_%-]*)', function(first, rest)
+        return first:upper() .. rest:lower()
+    end))
+end
 
 local function normalizeRelativePath(path)
     return (path or ''):gsub('^[/\\]+', '')
@@ -24,7 +30,7 @@ function IconPack.getAvailablePacks()
         local packName = relativePath:match('([^/\\]+)')
         if packName and not seen[packName] then
             seen[packName] = true
-            table.insert(packs, packName)
+            table.insert(packs, capitalize(packName))
         end
     end
 
