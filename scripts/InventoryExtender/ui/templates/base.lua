@@ -815,14 +815,10 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
                 end
             end),
             focusGain = async:callback(function()
-                window.layout.userData.focused = true
+                window.layout.userData.focusDelayed = true
             end),
             focusLoss = async:callback(function()
-                if ctx.cursorAttachedIcon then
-                    ctx.cursorAttachedIcon.layout.props.visible = false
-                    ctx.updateQueue[ctx.cursorAttachedIcon] = true
-                end
-                window.layout.userData.focused = false
+                window.layout.userData.focusDelayed = false
             end),
             mouseRelease = async:callback(function(e)
                 if e.button ~= 1 then return end

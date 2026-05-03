@@ -231,12 +231,40 @@ function WindowManager:onFrame()
         self.ctx.resettingModeProcessed = true
     end
 
+    if self.ctx.focusedInteractiveDelayed ~= nil then
+        if self.ctx.focusedInteractiveDelayed == false then
+            self.ctx.focusedInteractive = nil
+        else
+            self.ctx.focusedInteractive = self.ctx.focusedInteractiveDelayed
+        end
+        self.ctx.focusedInteractiveDelayed = nil 
+    end
+
     for element in pairs(self.ctx.updateQueue) do
         element:update()
     end
     self.ctx.updateQueue = {}
 
     local dt = core.getRealFrameDuration()
+
+    for _, window in pairs(self.windows) do
+        if window and window.element and window.element.layout.userData then
+            local userData = window.element.layout.userData
+            local focusDelayed = userData.focusDelayed
+            if focusDelayed ~= nil then
+                if not focusDelayed then
+                    if self.ctx.cursorAttachedIcon then
+                        self.ctx.cursorAttachedIcon.layout.props.visible = false
+                        self.ctx.updateQueue[self.ctx.cursorAttachedIcon] = true
+                    end
+                end
+                if focusDelayed ~= userData.focused then
+                    userData.focused = focusDelayed
+                end
+                userData.focusDelayed = nil
+            end
+        end
+    end
 
     if self.ctx.focusedScrollable and self.ctx.focusedScrollable.layout then
         local rightStick = input.getAxisValue(input.CONTROLLER_AXIS.RightY)

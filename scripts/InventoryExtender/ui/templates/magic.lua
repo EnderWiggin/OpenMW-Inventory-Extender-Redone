@@ -123,7 +123,7 @@ Templates.interactive = function(props, layout, ctx)
         return false
     end)
     element.layout.events.focusLoss = async:callback(function()
-        ctx.focusedInteractive = nil
+        ctx.focusedInteractiveDelayed = false
         element.layout.userData.hovering = false
         if element.layout.userData.tooltipFn then
             if ctx.activeTooltip and ctx.activeTooltip.layout then
@@ -143,7 +143,7 @@ Templates.interactive = function(props, layout, ctx)
         return true
     end)
     element.layout.events.focusGain = async:callback(function(e, layout)
-        ctx.focusedInteractive = element
+        ctx.focusedInteractiveDelayed = element
         if props.onClick then
             helpers.setInteractiveColor(element.layout)
             ctx.updateQueue[element] = true
