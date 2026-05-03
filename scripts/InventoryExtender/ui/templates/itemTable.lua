@@ -281,9 +281,15 @@ ItemTable.create = function(props, ctx)
 
         local pendingFocusRestoreY = nil
         local restoredFocus = false
-        if not isGrid and state.lastUsedRowPos and state.parentWindow:isFocused() then
-            pendingFocusRestoreY = state.lastUsedRowPos.y
-            state.lastUsedRowPos = nil
+        local hoveredViewportRowY = nil
+        local scrollPos = scrollable.layout.userData.getScrollPos() or 0
+        if not isGrid and state.parentWindow:isFocused() then
+            hoveredViewportRowY = state.lastPointerRowY
+            if state.lastUsedRowPos then
+                pendingFocusRestoreY = state.lastUsedRowPos.y
+                hoveredViewportRowY = pendingFocusRestoreY
+                state.lastUsedRowPos = nil
+            end
         end
         
         local newRowElements = {}
@@ -372,6 +378,9 @@ ItemTable.create = function(props, ctx)
                             if onRowClick then 
                                 return onRowClick(row, state.rowCache[cacheKey]) 
                             end
+                        end,
+                        onMouseMove = function()
+                            state.lastPointerRowY = state.rowCache[cacheKey].layout.props.position.y - scrollPos
                         end,
                         name = row.item and row.item.id or 'item',
                     }, {
@@ -511,20 +520,15 @@ ItemTable.create = function(props, ctx)
                 local targetYCompare = targetY
                 --if isGrid then targetYCompare = math.floor((i-1) / itemsPerRow) * itemSize end
 
-                if pendingFocusRestoreY ~= nil then
-                    if (not restoredFocus) and targetYCompare - scrollable.layout.userData.getScrollPos() == pendingFocusRestoreY then
-                        restoredFocus = true
-                        ctx.focusedInteractive = rowWidget
-                        if not rowWidget.layout.userData.hovering then
-                            rowWidget.layout.userData.hovering = true
-                            anyChanged = true
-                        end
-                    else
-                        if rowWidget.layout.userData.hovering then
-                            rowWidget.layout.userData.hovering = false
-                            anyChanged = true
-                        end
-                    end
+                local isHoveredRow = hoveredViewportRowY ~= nil and targetYCompare - scrollPos == hoveredViewportRowY
+                if pendingFocusRestoreY ~= nil and isHoveredRow and not restoredFocus then
+                    restoredFocus = true
+                    ctx.focusedInteractive = rowWidget
+                end
+
+                if rowWidget.layout.userData.hovering ~= isHoveredRow then
+                    rowWidget.layout.userData.hovering = isHoveredRow
+                    anyChanged = true
                 end
 
                 if math.abs(rowWidget.layout.props.size.x - targetW) > 0.1

@@ -155,6 +155,9 @@ Templates.interactive = function(props, layout, ctx)
         return true
     end)
     element.layout.events.mouseMove = async:callback(function(e, layout)
+        if props.onMouseMove then
+            props.onMouseMove(e, layout, element)
+        end
         element.layout.userData.hovering = true
         if element.layout.userData.tooltipFn then
             if not ctx.activeTooltip or not ctx.activeTooltip.layout then
