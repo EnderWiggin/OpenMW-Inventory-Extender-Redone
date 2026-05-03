@@ -57,7 +57,7 @@ function Inventory:create(windowType, ctx)
 
     local w = 60 * baseTemplates.TEXT_SIZE / 16
 
-    local function onRowActivate(row, rowWidget)
+    local function onRowActivate(row, rowWidget, allowOutsideInterface)
         for i = #ctx.handlers.onRowActivate, 1, -1 do
             local handler = ctx.handlers.onRowActivate[i]
             if handler.handler(row, ctx, self.type) == false then
@@ -65,11 +65,13 @@ function Inventory:create(windowType, ctx)
             end
         end
 
-        if I.UI.getMode() ~= 'Interface' then
+        if not allowOutsideInterface and I.UI.getMode() ~= 'Interface' then
             return
         end
 
-        self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
+        if rowWidget and rowWidget.layout and rowWidget.layout.props then
+            self.itemTable.layout.userData.getState().lastUsedRowPos = rowWidget.layout.props.position - v2(0, (ctx.focusedScrollable and ctx.focusedScrollable.layout.userData.getScrollPos() or 0))
+        end
 
         if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
             local equipment = omwself.type.getEquipment(omwself)
@@ -81,13 +83,24 @@ function Inventory:create(windowType, ctx)
                     if sound then
                         ambient.playSound(sound)
                     end
-                    self.target:sendEvent('IE_Update')
+                    omwself:sendEvent('IE_Update')
                     break
                 end
             end
         else
-            core.sendGlobalEvent('UseItem', { object = row.item, actor = self.target })
+            core.sendGlobalEvent('UseItem', { object = row.item, actor = omwself })
         end
+    end
+
+    local function createDraggedActivationRow(item)
+        return {
+            id = item.id,
+            item = item,
+            itemRecord = item.type.record(item),
+            getCount = function()
+                return ctx.dragAndDrop.draggingCount or item.count
+            end,
+        }
     end
 
     local function getEnchantedIndicatorMode()
@@ -973,6 +986,31 @@ function Inventory:create(windowType, ctx)
             }
             return layout
         end)
+
+        self.infoBar.layout.userData.addInfoLayout({ external = { grow = 1, stretch = 1 } })
+
+        self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
+            onClick = function()
+                local draggedItem = ctx.dragAndDrop.draggingObject
+                if not draggedItem then
+                    return
+                end
+
+                local result = onRowActivate(createDraggedActivationRow(draggedItem), nil, true)
+                if result ~= false then
+                    ctx.dragAndDrop:stopDrag()
+                    self.infoBar.layout.userData.updateAll()
+                    self:refresh()
+                end
+            end,
+            parent = self.infoBar,
+        }, baseTemplates.button(core.getGMST('sUse')), ctx), function(layout)
+            layout.name = 'useButton'
+            layout.props.visible = ctx.dragAndDrop.draggingObject ~= nil
+            return layout
+        end)
+
+        self.infoBar.layout.userData.addInfoLayout({})
     end
 
     if self.type == 'Container' or self.type == 'Companion' then
