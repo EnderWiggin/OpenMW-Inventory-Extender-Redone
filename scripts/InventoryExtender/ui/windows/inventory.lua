@@ -173,6 +173,8 @@ function Inventory:create(windowType, ctx)
                     local enchanted = false
                     if self.type == 'Inventory' and self.ctx.stolenItems then
                         stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
+                    elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
+                        stolen = true
                     end
                     if row.itemRecord.enchant then
                         enchanted = true
