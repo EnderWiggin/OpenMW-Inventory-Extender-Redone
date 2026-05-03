@@ -287,6 +287,9 @@ return {
         onMouseButtonRelease = function(button)
             windowManager:onMouseButtonRelease(button)
         end,
+        onKeyPress = function(key)
+            windowManager:onKeyPress(key)
+        end,
     },
     eventHandlers = eventHandlers,
 }

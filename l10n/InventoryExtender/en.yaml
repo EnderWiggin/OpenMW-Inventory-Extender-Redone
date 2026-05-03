@@ -5,6 +5,20 @@ ConfigSummary: |-
 
 RequiresReload: Requires a Lua reload to take effect.
 
+ConfigCategoryKeybinds: Keybinds
+KeybindPickupItem: Pick up item
+KeybindPickupItemDesc: |-
+  The keybind used to pick up the selected row in the inventory window.
+  
+  With Shift: Pick up whole stack
+  With Ctrl: Pick up one
+  With Alt (in inventory): Drop at feet
+  With Alt (in others): Transfer to other inventory
+SwapUsePickup: Swap use/pick up
+SwapUsePickupDesc: |-
+  By default, the above keybind is used to pick up items, and left-click is used for item activation.
+  Enable this option to swap those behaviors, so that left-click will pick up items and the keybind will activate them.
+
 ConfigCategoryWindowOptions: Window Options
 EnableMod: Enable mod
 ItemViewMode: Item view mode
@@ -175,3 +189,6 @@ UI_Barter_Gain: "Gain:"
 UI_Barter_Max: Max
 
 UI_Msg_ScriptedItem: This item cannot be picked up from the inventory.
+
+UI_Tooltip_UseButton: Or click on item
+UI_Tooltip_UseButton_Swapped: Or press {key} on item

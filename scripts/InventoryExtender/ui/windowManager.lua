@@ -121,7 +121,7 @@ function WindowManager:show(windowName, arg)
         end
     end
 
-    self.ctx.windowArgs[windowName] = arg
+    self.ctx.windowArgs[windowName] = arg or self.ctx.windowArgs[windowName]
 
     if not self.windows[windowName] then
         self:create(windowName)
@@ -188,7 +188,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         currentBalance = 0,
     }
 
-    if oldMode == 'Container' and self.ctx.windowArgs.Container then
+    if newMode == nil and oldMode == 'Container' and self.ctx.windowArgs.Container then
         if self.ctx.pickpocket and self.ctx.pickpocket.active and not self.ctx.pickpocket.resolved and
            Pickpocket.isTarget(self.ctx.windowArgs.Container) then
             local success = Pickpocket.rollClose(omwself, self.ctx.windowArgs.Container)
@@ -346,6 +346,45 @@ function WindowManager:onMouseButtonRelease(button)
     end
 end
 
+function WindowManager:onKeyPress(key)
+    if not configPlayer.window.b_EnableMod then return end
+    if key.code ~= configPlayer.keybinds.k_PickupItem then return end
+
+    if not configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
+        for _, window in pairs(self.windows) do
+            if window and window:isFocused() and window.target then
+                local state = window.itemTable and window.itemTable.layout and window.itemTable.layout.userData.getState and window.itemTable.layout.userData.getState()
+                if state and state.lastPointerRowY ~= nil then
+                    state.lastUsedRowPos = v2(0, state.lastPointerRowY)
+                end
+                WindowManager.ctx.dragAndDrop:stopDrag(window.target)
+                return true
+            end
+        end
+    end
+
+    local focusedInteractive = WindowManager.ctx.focusedInteractive
+    if not focusedInteractive or not focusedInteractive.layout or not focusedInteractive.layout.userData then
+        return
+    end
+
+    if not configPlayer.keybinds.b_SwapUsePickup then
+        if focusedInteractive.layout.userData.onKBMRowClick then
+            focusedInteractive.layout.userData.onKBMRowClick()
+            return true
+        elseif focusedInteractive.layout.userData.onRowClick then
+            focusedInteractive.layout.userData.onRowClick()
+            return true
+        end
+    elseif focusedInteractive.layout.userData.onKBMRowActivate then
+        focusedInteractive.layout.userData.onKBMRowActivate()
+        return true
+    elseif focusedInteractive.layout.userData.onRowActivate then
+        focusedInteractive.layout.userData.onRowActivate()
+        return true
+    end
+end
+
 WindowManager.ctx.dragAndDrop:init(WindowManager.ctx)
 
 input.registerTriggerHandler('Activate', async:callback(function()
@@ -359,11 +398,6 @@ input.registerTriggerHandler('Activate', async:callback(function()
     if mode == 'Container' or mode == 'Barter' or mode == 'Companion' then
         I.UI.removeMode(mode)
         return false
-    end
-    if WindowManager.ctx.focusedInteractive and WindowManager.ctx.focusedInteractive.layout and
-       WindowManager.ctx.focusedInteractive.layout.userData.onRowActivate then
-        WindowManager.ctx.focusedInteractive.layout.userData.onRowActivate()
-        return true
     end
     return false
 end))

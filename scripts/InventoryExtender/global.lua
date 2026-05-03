@@ -649,8 +649,34 @@ local eventHandlers = {
             end
         end
     end,
-    UseItem = function(props)
-        props.actor:sendEvent('IE_Update')
+    IE_UseItem = function(props)
+        if props.object and props.actor and props.object.parentContainer ~= props.actor then
+            local movedObject = moveInto({
+                obj = props.object,
+                count = 1,
+                source = props.source or props.object.parentContainer,
+                destination = props.actor,
+                player = props.actor,
+                pickpocket = props.pickpocket,
+            })
+            if movedObject then
+                core.sendGlobalEvent('UseItem', {
+                    object = movedObject,
+                    actor = props.actor,
+                })
+                queueDelayedJob(function()
+                    props.actor:sendEvent('IE_Update')
+                end, 2)
+            end
+            return
+        end
+        core.sendGlobalEvent('UseItem', {
+            object = props.object,
+            actor = props.actor,
+        })
+        queueDelayedJob(function()
+            props.actor:sendEvent('IE_Update')
+        end, 2)
     end,
 }
 -- deprecated event names

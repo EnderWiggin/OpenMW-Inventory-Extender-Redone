@@ -386,6 +386,20 @@ ItemTable.create = function(props, ctx)
                                     return props.onRowActivate(row, state.rowCache[cacheKey])
                                 end
                             end,
+                            onKBMRowActivate = function()
+                                if props.onKBMRowActivate then
+                                    return props.onKBMRowActivate(row, state.rowCache[cacheKey])
+                                elseif props.onRowActivate then
+                                    return props.onRowActivate(row, state.rowCache[cacheKey])
+                                end
+                            end,
+                            onKBMRowClick = function()
+                                if props.onKBMRowClick then
+                                    return props.onKBMRowClick(row, state.rowCache[cacheKey])
+                                elseif onRowClick then
+                                    return onRowClick(row, state.rowCache[cacheKey])
+                                end
+                            end,
                             onRowClick = function()
                                 if onRowClick then 
                                     return onRowClick(row, state.rowCache[cacheKey]) 
@@ -395,7 +409,7 @@ ItemTable.create = function(props, ctx)
                                 if row.item then
                                     return specialTemplates.itemTooltip(row.item, false, ctx)
                                 elseif row.tooltip then
-                                    return baseTemplates.lineTooltip(row.tooltip)
+                                    return specialTemplates.lineTooltip(row.tooltip)
                                 end
                                 return nil
                             end,

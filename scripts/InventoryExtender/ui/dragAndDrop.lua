@@ -59,8 +59,9 @@ function DragAndDrop:getHoveredGameObject(position)
     end), pos, pos + v * dist)
 end
 
-function DragAndDrop:startDrag(item, source, count, pickpocket)
+function DragAndDrop:startDrag(item, source, count, pickpocket, activationContext)
     self.draggingCount = util.clamp(count or item.count, 1, item.count)
+    self.draggingActivationContext = activationContext
 
     core.sendGlobalEvent('IE_MoveInto', {
         obj = item,
@@ -219,6 +220,7 @@ function DragAndDrop:stopDrag(target)
     end
     self.draggingObject = nil
     self.draggingCount = nil
+    self.draggingActivationContext = nil
     self.source = nil
     if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
         self.ctx.activeTooltip.layout.props.visible = false
@@ -296,6 +298,7 @@ function DragAndDrop:init(ctx)
     self.hoveredObject = nil
     self.lastHoveredObject = nil
     self.draggingObject = nil
+    self.draggingActivationContext = nil
     self.source = nil
     self.ctx = ctx
 

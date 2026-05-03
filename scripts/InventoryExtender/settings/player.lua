@@ -1,5 +1,6 @@
 local core = require('openmw.core')
 local I = require('openmw.interfaces')
+local input = require('openmw.input')
 
 local l10n = core.l10n('InventoryExtender')
 local versionString = "1.0.0"
@@ -7,7 +8,8 @@ local versionString = "1.0.0"
 local renderers = require('scripts.InventoryExtender.ui.renderers')
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
-I.Settings.registerRenderer('windowDimensions', renderers.windowDimensions)
+I.Settings.registerRenderer('InventoryExtender/windowDimensions', renderers.windowDimensions)
+I.Settings.registerRenderer('InventoryExtender/inputKeySelection', renderers.inputKey)
 
 -- Settings page
 I.Settings.registerPage {
@@ -15,6 +17,30 @@ I.Settings.registerPage {
     l10n = 'InventoryExtender',
     name = 'ConfigTitle',
     description = l10n('ConfigSummary'):gsub('%%{version}', versionString),
+}
+
+I.Settings.registerGroup {
+    key = 'Settings/InventoryExtender/1_Keybinds',
+    page = 'InventoryExtender',
+    l10n = 'InventoryExtender',
+    name = 'ConfigCategoryKeybinds',
+    permanentStorage = true,
+    settings = {
+        {
+            key = 'k_PickupItem',
+            renderer = 'InventoryExtender/inputKeySelection',
+            name = 'KeybindPickupItem',
+			description = 'KeybindPickupItemDesc',
+            default = input.KEY.R
+        },
+        {
+            key = 'b_SwapUsePickup',
+            renderer = 'checkbox',
+            name = 'SwapUsePickup',
+            description = 'SwapUsePickupDesc',
+            default = false,
+        }
+    }
 }
 
 I.Settings.registerGroup {
@@ -95,43 +121,43 @@ I.Settings.registerGroup {
         },
         {
             key = 'd_InventoryWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'InventoryWindowDimensions',
             default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
         },
         {
             key = 'd_InventoryContainerWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'InventoryContainerWindowDimensions',
             default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_InventoryBarterWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'InventoryBarterWindowDimensions',
             default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_InventoryCompanionWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'InventoryCompanionWindowDimensions',
             default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_ContainerWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'ContainerWindowDimensions',
             default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_BarterWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'BarterWindowDimensions',
             default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_CompanionWindowDimensions',
-            renderer = 'windowDimensions',
+            renderer = 'InventoryExtender/windowDimensions',
             name = 'CompanionWindowDimensions',
             default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
         },
