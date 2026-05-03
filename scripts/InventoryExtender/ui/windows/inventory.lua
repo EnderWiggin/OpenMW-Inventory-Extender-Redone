@@ -153,112 +153,189 @@ function Inventory:create(windowType, ctx)
         return nonDraggedCount
     end
 
-    self.itemTable = ItemTable.create({
-        columns = {
-            {
-                id = 'Icon',
-                width = specialTemplates.LINE_HEIGHT * 1.5 + 8,
-                renderer = iconRenderer,
-                visible = true,
-            },
-            {
-                id = 'Name',
-                label = l10n('Column_Name'),
-                renderer = function(row, width, height)
-                    local nonDraggedCount = getNonDraggedCount(row)
+    local nameRenderer = function(row, width, height)
+        local nonDraggedCount = getNonDraggedCount(row)
 
-                    local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
 
-                    local stolen = false
-                    local enchanted = false
-                    if self.type == 'Inventory' and self.ctx.stolenItems then
-                        stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
-                    elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
-                        stolen = true
-                    end
-                    if row.itemRecord.enchant then
-                        enchanted = true
-                    end
+        local stolen = false
+        local enchanted = false
+        if self.type == 'Inventory' and self.ctx.stolenItems then
+            stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
+        elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
+            stolen = true
+        end
+        if row.itemRecord.enchant then
+            enchanted = true
+        end
 
-                    local content = ui.content {
-                        {
-                            template = baseTemplates.textNormal,
-                            props = {
-                                text = text,
-                            },
-                            userData = {
-                                colorable = true,
-                            }
-                        },
-                    }
-                    local iconSize = math.min(specialTemplates.LINE_HEIGHT, 12)
-                    if stolen then
-                        content:add(baseTemplates.intervalH(8))
-                        content:add({
-                            type = ui.TYPE.Image,
-                            props = {
-                                resource = baseTemplates.createTexture('icons/InventoryExtender/item/stolen.dds'),
-                                size = v2(iconSize, iconSize),
-                                color = constants.Colors.DAMAGED,
-                            },
-                        })
-                    end
-                    if enchanted then
-                        content:add(baseTemplates.intervalH(8))
-                        content:add({
-                            type = ui.TYPE.Image,
-                            props = {
-                                resource = baseTemplates.createTexture('icons/InventoryExtender/item/enchanted.dds'),
-                                size = v2(iconSize, iconSize),
-                                color = constants.Colors.BAR_MAGIC,
-                            },
-                        })
-                    end
+        local content = ui.content {
+            {
+                template = baseTemplates.textNormal,
+                props = {
+                    text = text,
+                },
+                userData = {
+                    colorable = true,
+                }
+            },
+        }
+        local iconSize = math.min(specialTemplates.LINE_HEIGHT, 12)
+        if stolen then
+            content:add(baseTemplates.intervalH(8))
+            content:add({
+                type = ui.TYPE.Image,
+                props = {
+                    resource = baseTemplates.createTexture('icons/InventoryExtender/item/stolen.dds'),
+                    size = v2(iconSize, iconSize),
+                    color = constants.Colors.DAMAGED,
+                },
+            })
+        end
+        if enchanted then
+            content:add(baseTemplates.intervalH(8))
+            content:add({
+                type = ui.TYPE.Image,
+                props = {
+                    resource = baseTemplates.createTexture('icons/InventoryExtender/item/enchanted.dds'),
+                    size = v2(iconSize, iconSize),
+                    color = constants.Colors.BAR_MAGIC,
+                },
+            })
+        end
 
-                    return {
-                        name = 'Name',
-                        type = ui.TYPE.Flex,
-                        props = {
-                            horizontal = true,
-                            arrange = ui.ALIGNMENT.Center,
-                            autoSize = false,
-                            size = v2(width, height),
-                        },
-                        content = content,
-                        userData = {
-                            text = text,
-                            stolen = stolen,
-                            enchanted = enchanted,
-                        }
-                    }
-                end,
-                visible = true,
+        return {
+            name = 'Name',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+                autoSize = false,
+                size = v2(width, height),
             },
-            {
-                id = 'Weight',
-                label = l10n('Column_Weight'),
-                width = w,
-                textAlignH = ui.ALIGNMENT.End,
-                defaultOrder = 'desc',
-                visible = true,
-            },
-            {
-                id = 'Value',
-                label = l10n('Column_Value'),
-                width = w,
-                textAlignH = ui.ALIGNMENT.End,
-                defaultOrder = 'desc',
-                visible = true,
-            },
-            {
-                id = 'V/W',
-                label = l10n('Column_VW'),
-                width = w,
-                textAlignH = ui.ALIGNMENT.End,
-                defaultOrder = 'desc',
-                visible = true,
+            content = content,
+            userData = {
+                text = text,
+                stolen = stolen,
+                enchanted = enchanted,
             }
+        }
+    end
+
+    local generalColumns = {
+        {
+            id = 'Icon',
+            width = specialTemplates.LINE_HEIGHT * 1.5 + 8,
+            renderer = iconRenderer,
+            visible = true,
         },
+        {
+            id = 'Name',
+            label = l10n('Column_Name'),
+            renderer = nameRenderer,
+            visible = true,
+        },
+        {
+            id = 'Type',
+            label = l10n('Column_Type'),
+            width = 80 * baseTemplates.TEXT_SIZE / 16,
+            textAlignH = ui.ALIGNMENT.End,
+            visible = true,
+        },
+        {
+            id = 'Weight',
+            label = l10n('Column_Weight'),
+            width = w,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
+        {
+            id = 'Value',
+            label = l10n('Column_Value'),
+            width = w,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
+        {
+            id = 'V/W',
+            label = l10n('Column_VW'),
+            width = w,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        }
+    }
+    local noTypeColumns = {
+        generalColumns[1],
+        generalColumns[2],
+        generalColumns[4],
+        generalColumns[5],
+        generalColumns[6],
+    }
+    local armorColumns = {
+        generalColumns[1],
+        generalColumns[2],
+        generalColumns[3],
+        {
+            id = 'Class',
+            label = l10n('Column_Class'),
+            width = 60 * baseTemplates.TEXT_SIZE / 16,
+            textAlignH = ui.ALIGNMENT.End,
+            visible = true,
+        },
+        {
+            id = 'AR',
+            label = l10n('Column_AR'),
+            width = 50 * baseTemplates.TEXT_SIZE / 16,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
+        generalColumns[4],
+        generalColumns[5],
+        generalColumns[6],
+    }
+    local weaponColumns = {
+        generalColumns[1],
+        generalColumns[2],
+        generalColumns[3],
+        {
+            id = 'Damage',
+            label = l10n('Column_Damage'),
+            width = 60 * baseTemplates.TEXT_SIZE / 16,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
+        generalColumns[4],
+        generalColumns[5],
+        generalColumns[6],
+    }
+    local redundantTypeCategories = {
+        Potion = true,
+        Ingredient = true,
+        Scroll = true,
+        Book = true,
+        Key = true,
+        Misc = true,
+    }
+
+    local function getColumnsForCategory(categoryKey)
+        if categoryKey == 'Armor' then
+            return armorColumns
+        elseif categoryKey == 'Weapon' then
+            return weaponColumns
+        elseif redundantTypeCategories[categoryKey] then
+            return noTypeColumns
+        end
+
+        return generalColumns
+    end
+
+    self.itemTable = ItemTable.create({
+        columns = generalColumns,
         data = data,
         size = v2(600, 400),
         rowHeight = specialTemplates.LINE_HEIGHT * configPlayer.window.f_TableRowHeightMult,
@@ -301,6 +378,12 @@ function Inventory:create(windowType, ctx)
                 else
                     return (indexA or math.huge) > (indexB or math.huge)
                 end
+            end
+
+            local typeA = (type(a.Type) == 'function' and a.Type() or a.Type or ''):lower()
+            local typeB = (type(b.Type) == 'function' and b.Type() or b.Type or ''):lower()
+            if typeA ~= typeB then
+                return typeA < typeB
             end
 
             local nameA = (type(a.Name) == "function" and a.Name() or a.Name):lower()
@@ -490,6 +573,8 @@ function Inventory:create(windowType, ctx)
             return disabledLookup
         end,
     }, function(selectedCategory)
+        self.itemTable.layout.userData.setColumns(getColumnsForCategory(selectedCategory), true)
+
         local categories = I.InventoryExtender.getCategories()
         local category = nil
         for _, cat in ipairs(categories) do
@@ -1126,6 +1211,18 @@ function Inventory:createData()
         local rowData = {
             id = itemStack.id,
             Name = helpers.getItemName(itemStack),
+            Type = function()
+                return helpers.getItemTypeLabel(itemStack)
+            end,
+            Damage = function()
+                return helpers.getWeaponDamage(itemStack)
+            end,
+            Class = function()
+                return helpers.getArmorClassLabel(itemStack)
+            end,
+            AR = function()
+                return helpers.getArmorRating(itemStack, omwself)
+            end,
             Value = helpers.roundToPlaces(value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
             ['V/W'] = helpers.roundToPlaces(vw, vwPrecision),

@@ -65,6 +65,10 @@ SoulGemValueRebalanceDesc: |-
 # Column
 Column_Name: Name
 Column_Type: Type
+Column_Damage: Dmg.
+Column_Slot: Slot
+Column_Class: Class
+Column_AR: AR
 Column_Value: Val.
 Column_Weight: Wgt.
 Column_VW: V/W
@@ -82,31 +86,28 @@ Category_Key: Keys
 Category_Tool: Tools
 Category_Misc: Misc.
 
-# Apparatus
-Type_Alembic: Alembic
-Type_Calcinator: Calcinator
-Type_MortarPestle: Mortar
-Type_Retort: Retort
-
 # Armor
 Type_Boots: Boots
 Type_Cuirass: Cuirass
 Type_Greaves: Greaves
 Type_Helmet: Helmet
-Type_LBracer: Bracer (L)
-Type_LGauntlet: Gauntlet (L)
-Type_LPauldron: Pauldron (L)
-Type_RBracer: Bracer (R)
-Type_RGauntlet: Gauntlet (R)
-Type_RPauldron: Pauldron (R)
+Type_LBracer: Bracer
+Type_LGauntlet: Gauntlet
+Type_LPauldron: Pauldron
+Type_RBracer: Bracer
+Type_RGauntlet: Gauntlet
+Type_RPauldron: Pauldron
 Type_Shield: Shield
+Class_Light: Lgt.
+Class_Medium: Med.
+Class_Heavy: Hvy.
 
 # Clothing
 Type_Amulet: Amulet
 Type_Belt: Belt
-Type_LGlove: Glove (L)
+Type_LGlove: Glove
 Type_Pants: Pants
-Type_RGlove: Glove (R)
+Type_RGlove: Glove
 Type_Ring: Ring
 Type_Robe: Robe
 Type_Shirt: Shirt
@@ -115,19 +116,37 @@ Type_Skirt: Skirt
 
 # Weapon
 Type_Arrow: Arrow
-Type_AxeOneHand: Axe (1H)
-Type_AxeTwoHand: Axe (2H)
-Type_BluntOneHand: Blunt (1H)
-Type_BluntTwoClose: Blunt (2H)
-Type_BluntTwoWide: Blunt (2H)
+Type_AxeOneHand: Axe
+Type_AxeTwoHand: Axe
+Type_BluntOneHand: Blunt
+Type_BluntTwoClose: Blunt
+Type_BluntTwoWide: Blunt
 Type_Bolt: Bolt
-Type_LongBladeOneHand: Long Blade (1H)
-Type_LongBladeTwoHand: Long Blade (2H)
+Type_LongBladeOneHand: L. Blade
+Type_LongBladeTwoHand: L. Blade
 Type_MarksmanBow: Bow
 Type_MarksmanCrossbow: Crossbow
 Type_MarksmanThrown: Thrown
-Type_ShortBladeOneHand: Short Blade
+Type_ShortBladeOneHand: S. Blade
 Type_SpearTwoWide: Spear
+
+# Tools
+Type_Alembic: Alembic
+Type_Calcinator: Calcinator
+Type_MortarPestle: Mortar
+Type_Retort: Retort
+Type_Lockpick: Lockpick
+Type_Probe: Probe
+Type_RepairTool: Repair
+Type_Light: Light
+
+# Other
+Type_Consumable: Consumable
+Type_Ingredient: Ingredient
+Type_Scroll: Scroll
+Type_Book: Book
+Type_Key: Key
+Type_Misc: Misc.
 
 UI_SearchBarPlaceholder: Search...
 UI_Barter_Spend: "Spend:"

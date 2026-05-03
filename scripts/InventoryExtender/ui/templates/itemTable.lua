@@ -850,6 +850,55 @@ ItemTable.create = function(props, ctx)
 
     wrapper.layout.userData.getFilteredRows = getFilteredRows
 
+    wrapper.layout.userData.setColumns = function(newColumns, deferRedraw)
+        if not newColumns or helpers.tableEquals(columns, newColumns) then
+            return
+        end
+
+        local currentSortId = state.sortColIndex and columns[state.sortColIndex] and columns[state.sortColIndex].id or nil
+
+        columns = newColumns
+        state.columns = newColumns
+        setColumnWidths(columns, state)
+
+        state.sortColIndex = nil
+        if currentSortId then
+            for i, col in ipairs(columns) do
+                if col.id == currentSortId then
+                    state.sortColIndex = i
+                    break
+                end
+            end
+        end
+        if not state.sortColIndex then
+            for i, col in ipairs(columns) do
+                if col.id == defaultSortId then
+                    state.sortColIndex = i
+                    state.sortDir = col.defaultOrder or 'asc'
+                    break
+                end
+            end
+        end
+
+        for key, rowWidget in pairs(state.rowCache) do
+            auxUi.deepDestroy(rowWidget)
+            state.rowCache[key] = nil
+        end
+
+        createHeader()
+        updateHeader()
+        wrapper.layout.content[1] = headerRow
+
+        if deferRedraw then
+            wrapper:update()
+            return
+        end
+
+        sortRows()
+        updateRows(true)
+        wrapper:update()
+    end
+
     -- Use this after editing state.columns directly
     wrapper.layout.userData.redrawColumns = function()
         setColumnWidths(state.columns, state)

@@ -10,8 +10,22 @@ local _, ui = pcall(require, 'openmw.ui')
 local C = require('scripts.InventoryExtender.util.constants')
 
 local configGlobal = require('scripts.InventoryExtender.config.global')
+local l10n = core.l10n('InventoryExtender')
 
 local Helpers = {}
+
+local function reverseLookup(enumTable)
+    local lookup = {}
+    for key, value in pairs(enumTable) do
+        lookup[value] = key
+    end
+    return lookup
+end
+
+local weaponTypeNames = reverseLookup(types.Weapon.TYPE)
+local armorTypeNames = reverseLookup(types.Armor.TYPE)
+local clothingTypeNames = reverseLookup(types.Clothing.TYPE)
+local apparatusTypeNames = reverseLookup(types.Apparatus.TYPE)
 
 Helpers.shallowCopy = function(tbl)
     if type(tbl) ~= 'table' then return tbl end
@@ -318,6 +332,117 @@ Helpers.getWeaponInfo = function(item)
         }
         
     end
+end
+
+Helpers.getWeaponDamage = function(item)
+    if not types.Weapon.objectIsInstance(item) then
+        return nil
+    end
+
+    local record = item.type.record(item)
+    return math.max(record.chopMaxDamage, record.slashMaxDamage, record.thrustMaxDamage)
+end
+
+Helpers.getWeaponTypeLabel = function(item)
+    if not types.Weapon.objectIsInstance(item) then
+        return nil
+    end
+
+    local enumName = weaponTypeNames[item.type.record(item).type]
+    return enumName and l10n('Type_' .. enumName) or nil
+end
+
+Helpers.getArmorSlotLabel = function(item)
+    if not types.Armor.objectIsInstance(item) then
+        return nil
+    end
+
+    local enumName = armorTypeNames[item.type.record(item).type]
+    return enumName and l10n('Type_' .. enumName) or nil
+end
+
+Helpers.getClothingTypeLabel = function(item)
+    if not types.Clothing.objectIsInstance(item) then
+        return nil
+    end
+
+    local enumName = clothingTypeNames[item.type.record(item).type]
+    return enumName and l10n('Type_' .. enumName) or nil
+end
+
+Helpers.getApparatusTypeLabel = function(item)
+    if not types.Apparatus.objectIsInstance(item) then
+        return nil
+    end
+
+    local enumName = apparatusTypeNames[item.type.record(item).type]
+    return enumName and l10n('Type_' .. enumName) or nil
+end
+
+Helpers.getItemTypeLabel = function(item)
+    local specificType = Helpers.getWeaponTypeLabel(item)
+        or Helpers.getArmorSlotLabel(item)
+        or Helpers.getClothingTypeLabel(item)
+        or Helpers.getApparatusTypeLabel(item)
+    if specificType then
+        return specificType
+    end
+
+    if types.Book.objectIsInstance(item) then
+        if item.type.record(item).enchant then
+            return l10n('Type_Scroll')
+        end
+        return l10n('Type_Book')
+    elseif types.Potion.objectIsInstance(item) then
+        return l10n('Type_Consumable')
+    elseif types.Ingredient.objectIsInstance(item) then
+        return l10n('Type_Ingredient')
+    elseif types.Lockpick.objectIsInstance(item) then
+        return l10n('Type_Lockpick')
+    elseif types.Probe.objectIsInstance(item) then
+        return l10n('Type_Probe')
+    elseif types.Light.objectIsInstance(item) then
+        return l10n('Type_Light')
+    elseif types.Repair.objectIsInstance(item) then
+        return l10n('Type_RepairTool')
+    elseif types.Miscellaneous.objectIsInstance(item) then
+        if item.type.record(item).isKey then
+            return l10n('Type_Key')
+        end
+        return l10n('Type_Misc')
+    end
+
+    return nil
+end
+
+Helpers.getArmorClassLabel = function(item)
+    if not types.Armor.objectIsInstance(item) then
+        return nil
+    end
+
+    local skill = I.Combat.getArmorSkill(item)
+    if skill == 'lightarmor' then
+        return l10n('Class_Light')
+    elseif skill == 'mediumarmor' then
+        return l10n('Class_Medium')
+    elseif skill == 'heavyarmor' then
+        return l10n('Class_Heavy')
+    end
+
+    return core.getGMST('sSkill' .. skill)
+end
+
+Helpers.getArmorRating = function(item, actor)
+    if not types.Armor.objectIsInstance(item) then
+        return nil
+    end
+
+    local effectiveActor = actor or (isPlayer and self) or nil
+    if effectiveActor then
+        return math.floor(I.Combat.getEffectiveArmorRating(item, effectiveActor))
+    end
+
+    return item.type.record(item).baseArmor
 end
 
 Helpers.getItemName = function(item)
