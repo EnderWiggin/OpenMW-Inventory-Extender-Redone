@@ -903,6 +903,8 @@ function Inventory:create(windowType, ctx)
     self.itemTable.layout.events.mouseRelease = async:callback(function(e)
         if e.button == 1 then
             if ctx.dragAndDrop.draggingObject then
+                local restoreY = self.itemTable.layout.userData.getViewportRowYAtOffset(e.offset.y)
+                self.itemTable.layout.userData.getState().lastUsedRowPos = restoreY and v2(0, restoreY) or nil
                 ctx.dragAndDrop:stopDrag(self.target)
             end
         end
@@ -997,6 +999,10 @@ function Inventory:onControllerButtonPress(id)
         end
     elseif id == input.CONTROLLER_BUTTON.Y then
         if self.ctx.dragAndDrop.draggingObject then
+            local state = self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState and self.itemTable.layout.userData.getState()
+            if state and state.lastPointerRowY ~= nil then
+                state.lastUsedRowPos = v2(0, state.lastPointerRowY)
+            end
             self.ctx.dragAndDrop:stopDrag(self.target)
             return
         end

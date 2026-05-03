@@ -2,6 +2,7 @@ local ui = require('openmw.ui')
 local util = require('openmw.util')
 local auxUi = require('openmw_aux.ui')
 local input = require('openmw.input')
+local async = require('openmw.async')
 
 local constants = require('scripts.InventoryExtender.util.constants')
 local configPlayer = require('scripts.InventoryExtender.config.player')
@@ -127,6 +128,21 @@ ItemTable.create = function(props, ctx)
 
     local function getContentWidth()
         return math.floor(math.max(0, state.currentSize.x - getScrollbarWidth(scrollable)))
+    end
+
+    local function getViewportRowYAtOffset(offsetY)
+        if state.viewMode == 'ItemViewMode_Grid' or not scrollable then
+            return nil
+        end
+
+        local viewHeight = state.currentSize.y - headerHeight
+        local viewY = offsetY - headerHeight
+        if viewY < 0 or viewY >= viewHeight then
+            return nil
+        end
+
+        local scrollPos = scrollable.layout.userData.getScrollPos() or 0
+        return math.floor((viewY + scrollPos) / rowHeight) * rowHeight - scrollPos
     end
     
     sortRows = function()
@@ -260,6 +276,13 @@ ItemTable.create = function(props, ctx)
         else
             indexFrom = math.max(1, startRowIndex + 1 - buffer)
             indexTo = math.min(#state.sortedRows, startRowIndex + visibleRowCount + buffer)
+        end
+
+        local pendingFocusRestoreY = nil
+        local restoredFocus = false
+        if not isGrid and state.lastUsedRowPos and state.parentWindow:isFocused() then
+            pendingFocusRestoreY = state.lastUsedRowPos.y
+            state.lastUsedRowPos = nil
         end
         
         local newRowElements = {}
@@ -473,8 +496,9 @@ ItemTable.create = function(props, ctx)
                 local targetYCompare = targetY
                 --if isGrid then targetYCompare = math.floor((i-1) / itemsPerRow) * itemSize end
 
-                if not isGrid and state.lastUsedRowPos and state.parentWindow:isFocused() then
-                    if targetYCompare - scrollable.layout.userData.getScrollPos() == state.lastUsedRowPos.y then
+                if pendingFocusRestoreY ~= nil then
+                    if (not restoredFocus) and targetYCompare - scrollable.layout.userData.getScrollPos() == pendingFocusRestoreY then
+                        restoredFocus = true
                         ctx.focusedInteractive = rowWidget
                         if not rowWidget.layout.userData.hovering then
                             rowWidget.layout.userData.hovering = true
@@ -750,6 +774,13 @@ ItemTable.create = function(props, ctx)
     end
 
     wrapper.layout.userData.resetScroll = resetScroll
+
+    wrapper.layout.userData.getViewportRowYAtOffset = getViewportRowYAtOffset
+
+    wrapper.layout.events.mouseMove = async:callback(function(e)
+        state.lastPointerRowY = getViewportRowYAtOffset(e.offset.y)
+        return true
+    end)
 
     wrapper.layout.userData.refresh = function()
         -- Re-apply filters
