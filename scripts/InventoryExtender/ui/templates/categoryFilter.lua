@@ -83,6 +83,59 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         }
     end
 
+    local topBarContent = ui.content {
+        baseTemplates.intervalH(8),
+        {
+            name = 'selectedCategoryName',
+            template = baseTemplates.textHeader,
+            props = {
+                text = '',
+                textSize = topBarHeight,
+            },
+        },
+        {
+            external = { grow = 1, stretch = 1, }
+        },
+        createSearchBar(placeholder),
+        {
+            name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
+        },
+    }
+    if props.onOpenSettings then
+        topBarContent:add(baseTemplates.intervalH(4))
+        topBarContent:add(specialTemplates.interactive({
+            onClick = function()
+                props.onOpenSettings()
+            end,
+            name = 'columnSettings',
+        }, {
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+                align = ui.ALIGNMENT.Center,
+                autoSize = false,
+                size = v2(topBarHeight - 4, topBarHeight - 4),
+            },
+            content = ui.content {
+                baseTemplates.imageButton('icons/InventoryExtender/edit_mode.dds', v2(topBarHeight - 12, topBarHeight - 12), nil, 'columnSettingsButton'),
+            },
+            userData = {
+                tooltipFn = function()
+                    return specialTemplates.tooltip(4, ui.content {
+                        {
+                            template = baseTemplates.textNormal,
+                            props = {
+                                text = l10n('UI_ColumnSettingsTitle'),
+                            }
+                        }
+                    }, 'columnSettings')
+                end,
+            },
+        }, ctx))
+    end
+    topBarContent:add(baseTemplates.intervalH(8))
+
     local topBarLayout = {
         name = 'topBar',
         type = ui.TYPE.Flex,
@@ -95,25 +148,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             align = ui.ALIGNMENT.Start,
             arrange = ui.ALIGNMENT.Start,
         },
-        content = ui.content {
-            baseTemplates.intervalH(8),
-            {
-                name = 'selectedCategoryName',
-                template = baseTemplates.textHeader,
-                props = {
-                    text = '',
-                    textSize = topBarHeight,
-                },
-            },
-            {
-                external = { grow = 1, stretch = 1, }
-            },
-            createSearchBar(placeholder),
-            {
-                name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
-            },
-            baseTemplates.intervalH(8),
-        }
+        content = topBarContent,
     }
 
     local categoryBarLayout = {
@@ -325,6 +360,10 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 updateCategories()
             end
         end
+    end
+
+    element.layout.userData.getCategory = function()
+        return state.selectedCategory
     end
 
     return element

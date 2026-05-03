@@ -478,7 +478,7 @@ Templates.buttonBoxBgr = function(bgrAlpha)
 end
 
 Templates.button = function(text, onClick, name, bgrAlpha)
-    local element = ui.create {
+    local base = {
         name = name,
         template = Templates.buttonBoxBgr(bgrAlpha),
         props = {},
@@ -506,6 +506,9 @@ Templates.button = function(text, onClick, name, bgrAlpha)
         events = {},
         userData = {},
     }
+    if not onClick then return base end
+
+    local element = ui.create(base)
     element.layout.events.focusGain = async:callback(function()
         element.layout.content[1].props.textColor = constants.Colors.DEFAULT_LIGHT
         element:update()
@@ -526,7 +529,7 @@ Templates.button = function(text, onClick, name, bgrAlpha)
 end
 
 Templates.imageButton = function(path, size, onClick, name, bgrAlpha)
-    local element = ui.create {
+    local base = {
         name = name,
         template = Templates.buttonBoxBgr(bgrAlpha),
         content = ui.content {
@@ -544,6 +547,9 @@ Templates.imageButton = function(path, size, onClick, name, bgrAlpha)
         events = {},
         userData = {},
     }
+    if not onClick then return base end
+
+    local element = ui.create(base)
     element.layout.events.focusGain = async:callback(function()
         element.layout.content[1].props.color = constants.Colors.DEFAULT_LIGHT
         element:update()

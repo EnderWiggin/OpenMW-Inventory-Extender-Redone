@@ -149,6 +149,7 @@ Type_Key: Key
 Type_Misc: Misc.
 
 UI_SearchBarPlaceholder: Search...
+UI_ColumnSettingsTitle: Visible Columns
 UI_Barter_Spend: "Spend:"
 UI_Barter_Gain: "Gain:"
 UI_Barter_Max: Max

@@ -17,6 +17,7 @@ local CategoryFilter = require('scripts.InventoryExtender.ui.templates.categoryF
 local ItemTable = require('scripts.InventoryExtender.ui.templates.itemTable')
 local InfoBar = require('scripts.InventoryExtender.ui.templates.infoBar')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal')
+local ColumnSettingsModal = require('scripts.InventoryExtender.ui.templates.columnSettingsModal')
 local Window = require('scripts.InventoryExtender.ui.windows.base')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
@@ -27,6 +28,8 @@ local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorp
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 
 local l10n = core.l10n('InventoryExtender')
+local windowOptionsSection = storage.playerSection('InventoryExtender')
+local columnVisibilityKey = 'ColumnVisibility'
 
 local Inventory = Window:new()
 
@@ -322,7 +325,74 @@ function Inventory:create(windowType, ctx)
         Misc = true,
     }
 
-    local function getColumnsForCategory(categoryKey)
+    local editableColumns = {
+        generalColumns[3],
+        weaponColumns[4],
+        armorColumns[4],
+        armorColumns[5],
+        generalColumns[4],
+        generalColumns[5],
+        generalColumns[6],
+    }
+
+    local columnProfiles = {
+        generalColumns,
+        noTypeColumns,
+        armorColumns,
+        weaponColumns,
+    }
+
+    local function getColumnVisibility()
+        return windowOptionsSection:get(columnVisibilityKey) or {}
+    end
+
+    local function isColumnVisible(columnId, visibility)
+        visibility = visibility or getColumnVisibility()
+        return visibility[columnId] ~= false
+    end
+
+    local function filterVisibleColumns(columns)
+        local visibility = getColumnVisibility()
+        local visibleColumns = {}
+
+        for _, column in ipairs(columns) do
+            if isColumnVisible(column.id, visibility) then
+                table.insert(visibleColumns, column)
+            end
+        end
+
+        if #visibleColumns == 0 and columns[1] then
+            visibleColumns[1] = columns[1]
+        end
+
+        return visibleColumns
+    end
+
+    local function canHideColumn(columnId)
+        local visibility = getColumnVisibility()
+
+        for _, profile in ipairs(columnProfiles) do
+            local containsColumn = false
+            local visibleCount = 0
+
+            for _, column in ipairs(profile) do
+                if isColumnVisible(column.id, visibility) then
+                    visibleCount = visibleCount + 1
+                end
+                if column.id == columnId then
+                    containsColumn = true
+                end
+            end
+
+            if containsColumn and visibleCount <= 1 then
+                return false
+            end
+        end
+
+        return true
+    end
+
+    local function getBaseColumnsForCategory(categoryKey)
         if categoryKey == 'Armor' then
             return armorColumns
         elseif categoryKey == 'Weapon' then
@@ -332,6 +402,77 @@ function Inventory:create(windowType, ctx)
         end
 
         return generalColumns
+    end
+
+    local function getColumnsForCategory(categoryKey)
+        return filterVisibleColumns(getBaseColumnsForCategory(categoryKey))
+    end
+
+    local function getCurrentCategoryKey()
+        if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
+            return self.categoryFilter.layout.userData.getCategory()
+        end
+
+        local categories = I.InventoryExtender.getCategories()
+        return categories[1] and categories[1].key or nil
+    end
+
+    self.applyColumnVisibility = function(window)
+        if not window.itemTable or not window.itemTable.layout or not window.itemTable.layout.userData then
+            return
+        end
+
+        window.itemTable.layout.userData.setColumns(getColumnsForCategory(getCurrentCategoryKey()), true)
+        window.itemTable.layout.userData.refresh()
+    end
+
+    local function openColumnSettings()
+        local function toggleColumn(columnId, visible)
+            local visibility = getColumnVisibility()
+            local newVisibility = {}
+
+            for key, value in pairs(visibility) do
+                newVisibility[key] = value
+            end
+
+            if visible then
+                newVisibility[columnId] = nil
+            else
+                newVisibility[columnId] = false
+            end
+
+            windowOptionsSection:set(columnVisibilityKey, newVisibility)
+
+            for _, window in pairs(I.InventoryExtender.getWindows()) do
+                if window and window.applyColumnVisibility then
+                    window:applyColumnVisibility()
+                end
+            end
+
+            local modal = ColumnSettingsModal.create({
+                title = l10n('UI_ColumnSettingsTitle'),
+                closeLabel = constants.Strings.OK,
+                columns = editableColumns,
+                isColumnVisible = function(id)
+                    return isColumnVisible(id)
+                end,
+                canHideColumn = canHideColumn,
+                onToggle = toggleColumn,
+            }, ctx)
+            ctx.modalElement = modal
+        end
+
+        local modal = ColumnSettingsModal.create({
+            title = l10n('UI_ColumnSettingsTitle'),
+            closeLabel = constants.Strings.OK,
+            columns = editableColumns,
+            isColumnVisible = function(id)
+                return isColumnVisible(id)
+            end,
+            canHideColumn = canHideColumn,
+            onToggle = toggleColumn,
+        }, ctx)
+        ctx.modalElement = modal
     end
 
     self.itemTable = ItemTable.create({
@@ -572,6 +713,7 @@ function Inventory:create(windowType, ctx)
 
             return disabledLookup
         end,
+        onOpenSettings = openColumnSettings,
     }, function(selectedCategory)
         self.itemTable.layout.userData.setColumns(getColumnsForCategory(selectedCategory), true)
 
@@ -618,6 +760,8 @@ function Inventory:create(windowType, ctx)
 
         self:refresh()
     end, ctx)
+
+    self:applyColumnVisibility()
 
     content:add(self.categoryFilter)
 
