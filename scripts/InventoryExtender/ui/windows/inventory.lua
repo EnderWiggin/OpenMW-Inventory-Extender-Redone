@@ -1,5 +1,6 @@
 local core = require('openmw.core')
 local ui = require('openmw.ui')
+local auxUi = require('openmw_aux.ui')
 local storage = require('openmw.storage')
 local omwself = require('openmw.self')
 local util = require('openmw.util')
@@ -982,14 +983,28 @@ function Inventory:create(windowType, ctx)
 end
 
 function Inventory:onControllerButtonPress(id)
+    local function clearFocused()
+        local state = self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState and self.itemTable.layout.userData.getState()
+        if state then
+            state.lastUsedRowPos = nil
+            state.lastPointerRowY = nil
+            if self.ctx.focusedInteractive then
+                self.ctx.focusedInteractive.layout.events.focusLoss()
+                self.ctx.focusedInteractive = nil 
+            end
+        end
+    end
+
     if id == input.CONTROLLER_BUTTON.LeftShoulder then
         if self.categoryFilter then
             self.categoryFilter.layout.userData.cycleCategory(-1)
+            clearFocused()
             return
         end
     elseif id == input.CONTROLLER_BUTTON.RightShoulder then
         if self.categoryFilter then
             self.categoryFilter.layout.userData.cycleCategory(1)
+            clearFocused()
             return
         end
     elseif id == input.CONTROLLER_BUTTON.A then
