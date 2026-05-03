@@ -152,31 +152,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 props.onOpenSettings()
             end,
             name = 'columnSettings',
-        }, {
-            type = ui.TYPE.Flex,
-            props = {
-                horizontal = true,
-                arrange = ui.ALIGNMENT.Center,
-                align = ui.ALIGNMENT.Center,
-                autoSize = false,
-                size = v2(topBarHeight - 4, topBarHeight - 4),
-            },
-            content = ui.content {
-                baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), v2(topBarHeight - 12, topBarHeight - 12), nil, 'columnSettingsButton'),
-            },
-            userData = {
-                tooltipFn = function()
-                    return specialTemplates.tooltip(4, ui.content {
-                        {
-                            template = baseTemplates.textNormal,
-                            props = {
-                                text = l10n('UI_ColumnSettingsTitle'),
-                            }
-                        }
-                    }, 'columnSettings')
-                end,
-            },
-        }, ctx))
+        }, baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), v2(topBarHeight - 12, topBarHeight - 12), nil, 'columnSettingsButton'), ctx))
     end
     topBarContent:add(baseTemplates.intervalH(8))
 
