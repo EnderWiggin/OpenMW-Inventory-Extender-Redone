@@ -28,6 +28,10 @@ function API.hide(windowName, arg, force)
     windowManager:hide(windowName, arg, force)
 end
 
+function API.getWindows()
+    return windowManager.windows
+end
+
 function API.getWindow(windowName)
     return windowManager.windows[windowName]
 end

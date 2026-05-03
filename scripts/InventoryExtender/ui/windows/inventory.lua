@@ -483,6 +483,16 @@ function Inventory:create(windowType, ctx)
 
         self.itemTable.layout.userData.resetScroll()
         self:refresh()
+
+        local invert = configPlayer.tweaks.b_InvertCategorySwitching
+        local shouldSync = invert and input.isShiftPressed() or not invert and not input.isShiftPressed()
+        if shouldSync then
+            for _, window in pairs(I.InventoryExtender.getWindows()) do
+                if window ~= self and window:isVisible() and window.categoryFilter then
+                    window.categoryFilter.layout.userData.setCategory(selectedCategory)
+                end
+            end
+        end
     end, 
     function(searchText)
         self.itemTable.layout.userData.setFilter('searchFilter', function(row)

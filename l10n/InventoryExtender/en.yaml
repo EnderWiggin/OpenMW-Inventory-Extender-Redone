@@ -35,6 +35,10 @@ ConfigCategoryTweaks: Tweaks
 CondensedWeightValue: Condensed weight/value
 CondensedWeightValueDesc: |-
   Condense weight and value information in item tooltips.
+InvertCategorySwitching: Invert category switching
+InvertCategorySwitchingDesc: |-
+  By default, when you switch categories, any other windows will switch to the same category unless you hold Shift.
+  Enable this option to invert that behavior, so that other windows will only switch categories if you hold Shift.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support

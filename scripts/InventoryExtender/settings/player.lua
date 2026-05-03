@@ -140,6 +140,13 @@ I.Settings.registerGroup {
             name = 'CondensedWeightValue',
             description = 'CondensedWeightValueDesc',
             default = true,
+        },
+        {
+            key = 'b_InvertCategorySwitching',
+            renderer = 'checkbox',
+            name = 'InvertCategorySwitching',
+            description = 'InvertCategorySwitchingDesc',
+            default = false,
         }
     },
 }

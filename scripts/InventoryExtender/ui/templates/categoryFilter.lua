@@ -282,6 +282,16 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     end
     element.layout.userData.cycleCategory = cycleCategory
 
+    element.layout.userData.setCategory = function(categoryKey)
+        if state.selectedCategory ~= categoryKey then
+            state.selectedCategory = categoryKey
+            updateCategories()
+            if onCategoryChange then
+                onCategoryChange(state.selectedCategory)
+            end
+        end
+    end
+
     return element
 end
 
