@@ -49,7 +49,7 @@ I.Settings.registerGroup {
             renderer = 'number',
             name = 'TableRowHeightMult',
             description = 'TableRowHeightMultDesc',
-            default = 1.5,
+            default = 1,
             argument = {
                 min = 0.1,
             }
