@@ -10,6 +10,7 @@ local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
 local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 local constants = require('scripts.InventoryExtender.util.constants')
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
+local configPlayer = require('scripts.InventoryExtender.config.player')
 
 local l10n = core.l10n('InventoryExtender')
 
@@ -23,7 +24,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local topBarHeight = specialTemplates.LINE_HEIGHT * 1.5
     local categoryBarHeight = compact and (topBarHeight - 4) or (maxHeight - topBarHeight)
     local elementHeight = compact and (topBarHeight + 8) or maxHeight
-    local compactIconPadding = compact and 8 or 16
+    local compactIconPadding = 8
     local vanillaOpacityStates = {
         default = 0.45,
         hover = 0.7,
@@ -101,23 +102,25 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
 
     local categoryBarLayout = {
         name = 'categoryBar',
-        type = ui.TYPE.Flex,
+        template = configPlayer.tweaks.b_CategoryBarBorders and I.MWUI.templates.borders or nil,
+        content = ui.content {
+            {
+                name = 'categoryBarButtons',
+                type = ui.TYPE.Widget,
+                props = {
+                    relativeSize = v2(1, 1),
+                },
+                content = ui.content {},
+            }
+        },
         props = {
-            horizontal = true,
-            autoSize = false,
-            position = compact and v2(0, 0) or v2(0, topBarHeight),
+            position = compact and v2(0, 0) or v2(0, topBarHeight + 8),
             size = v2(0, categoryBarHeight),
-            align = ui.ALIGNMENT.Start,
-            arrange = ui.ALIGNMENT.Center,
             anchor = compact and nil or v2(0.5, 0),
             relativePosition = compact and nil or v2(0.5, 0),
         },
         external = compact and { grow = 1, stretch = 1, } or nil,
-        content = ui.content {},
     }
-    if compact then
-        categoryBarLayout.props.relativeSize = v2(0, 0)
-    end
 
     local topBarContent = ui.content {
         baseTemplates.intervalH(8),
@@ -221,9 +224,9 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
 
     local function getCategoryBarContent()
         if compact then
-            return element.layout.content.topBar.content.categoryBar.content
+            return element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content
         end
-        return element.layout.content.categoryBar.content
+        return element.layout.content.categoryBar.content.categoryBarButtons.content
     end
 
     updateCategories = function()
@@ -233,11 +236,11 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         end
 
         if compact then
-            element.layout.content.topBar.content.categoryBar.content = ui.content {}
-            categoryBarContent = element.layout.content.topBar.content.categoryBar.content
+            element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content = ui.content {}
+            categoryBarContent = element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content
         else
-            element.layout.content.categoryBar.content = ui.content {}
-            categoryBarContent = element.layout.content.categoryBar.content
+            element.layout.content.categoryBar.content.categoryBarButtons.content = ui.content {}
+            categoryBarContent = element.layout.content.categoryBar.content.categoryBarButtons.content
         end
 
         local categories = I.InventoryExtender.getCategories()
@@ -261,7 +264,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         props = {
                             resource = baseTemplates.createTexture(iconPack.getPath('category_bgr.dds')),
                             relativeSize = v2(1, 0),
-                            size = v2(-4, iconSize.y + 8),
+                            size = v2(0, iconSize.y + (compact and 6 or -2)),
                             relativePosition = v2(0.5, 0.5),
                             anchor = v2(0.5, 0.5),
                             alpha = iconAlpha,
@@ -275,7 +278,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         type = ui.TYPE.Image,
                         props = {
                             resource = ui.texture { path = category.icon },
-                            size = iconSize,
+                            size = iconSize + (compact and v2(4, 4) or v2(-4, -4)),
                             relativePosition = v2(0.5, 0.5),
                             anchor = v2(0.5, 0.5),
                             color = util.color.rgb(0.01, 0.01, 0.01),
@@ -334,6 +337,11 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                             }
                         }, category.key)
                     end,
+                },
+                props = {
+                    anchor = v2(0.5, 0),
+                    relativeSize = v2(1 / #categories, 1),
+                    relativePosition = v2((i - 0.5) / #categories, 0),
                 }
             }, ctx))
         end
@@ -359,7 +367,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             availableWidth = math.max(0, totalWidth - 240)
         else
             local widthPerCategory = math.max(1, math.floor(totalWidth / #categories))
-            barWidth = widthPerCategory * #categories
+            barWidth = widthPerCategory * #categories - 8
             availableWidth = barWidth
         end
 
@@ -370,15 +378,15 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         local anyChanged = false
         if not compact and element.layout.content.categoryBar.props.size.x ~= barWidth then
             anyChanged = true
-            element.layout.content.categoryBar.props.size = v2(barWidth, categoryBarHeight)
+            element.layout.content.categoryBar.props.size = v2(barWidth, categoryBarHeight - 4)
         end
         for _, child in ipairs(getCategoryBarContent()) do
             if child.layout and child.layout.content.categoryIcon then
                 if child.layout.content.categoryIcon.props.size ~= imageSizeVec then
                     anyChanged = true
-                    child.layout.content.categoryIcon.props.size = imageSizeVec
+                    child.layout.content.categoryIcon.props.size = imageSizeVec + (compact and v2(4, 4) or v2(-4, -4))
                     if child.layout.content.categoryBackground then
-                        child.layout.content.categoryBackground.props.size = v2(-4, imageSizeVec.y + 8)
+                        child.layout.content.categoryBackground.props.size = v2(0, imageSizeVec.y + (compact and 6 or -2))
                     end
                     child:update()
                 end

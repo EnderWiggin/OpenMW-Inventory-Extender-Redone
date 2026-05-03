@@ -48,6 +48,9 @@ CompactCategoryFilterDesc: |-
 VanillaCategoryIcons: Vanilla-style category icons
 VanillaCategoryIconsDesc: |-
   Render category buttons with a vanilla-style plate and opacity-based highlighting.
+CategoryBarBorders: Category bar borders
+CategoryBarBordersDesc: |-
+  Show borders around the category bar.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support

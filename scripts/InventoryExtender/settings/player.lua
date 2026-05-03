@@ -173,6 +173,13 @@ I.Settings.registerGroup {
             name = 'VanillaCategoryIcons',
             description = 'VanillaCategoryIconsDesc',
             default = false,
+        },
+        {
+            key = 'b_CategoryBarBorders',
+            renderer = 'checkbox',
+            name = 'CategoryBarBorders',
+            description = 'CategoryBarBordersDesc',
+            default = true,
         }
     },
 }
