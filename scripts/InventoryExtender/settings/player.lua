@@ -165,14 +165,14 @@ I.Settings.registerGroup {
             renderer = 'checkbox',
             name = 'CompactCategoryFilter',
             description = 'CompactCategoryFilterDesc',
-            default = true,
+            default = false,
         },
         {
             key = 'b_VanillaCategoryIcons',
             renderer = 'checkbox',
             name = 'VanillaCategoryIcons',
             description = 'VanillaCategoryIconsDesc',
-            default = false,
+            default = true,
         },
         {
             key = 'b_CategoryBarBorders',
