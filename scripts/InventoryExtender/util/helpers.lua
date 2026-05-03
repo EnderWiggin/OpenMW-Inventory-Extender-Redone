@@ -445,6 +445,42 @@ Helpers.getArmorRating = function(item, actor)
     return item.type.record(item).baseArmor
 end
 
+Helpers.getConditionPercent = function(item)
+    if not types.Item.objectIsInstance(item) then
+        return nil
+    end
+
+    local itemData = types.Item.itemData(item)
+    local condition = itemData.condition
+    if condition == nil or condition == -1 then
+        return nil
+    end
+
+    local itemRecord = item.type.record(item)
+    local conditionMax
+    if itemRecord.health then
+        conditionMax = util.round(itemRecord.health)
+    elseif itemRecord.maxCondition then
+        conditionMax = util.round(itemRecord.maxCondition)
+    elseif itemRecord.duration then
+        conditionMax = util.round(itemRecord.duration)
+    end
+
+    if not conditionMax or conditionMax <= 0 then
+        return nil
+    end
+
+    return util.round((condition / conditionMax) * 100)
+end
+
+Helpers.getConditionPercentLabel = function(item)
+    local percent = Helpers.getConditionPercent(item)
+    if percent == nil then
+        return '-'
+    end
+    return tostring(percent) .. '%'
+end
+
 Helpers.getItemName = function(item)
     local soul = item.type.itemData(item).soul
     local baseName = item.type.record(item).name

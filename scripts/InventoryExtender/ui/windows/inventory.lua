@@ -285,6 +285,33 @@ function Inventory:create(windowType, ctx)
             visible = true,
         }
     }
+    local conditionColumn = {
+        id = 'Condition',
+        label = l10n('Column_Condition'),
+        width = 55 * baseTemplates.TEXT_SIZE / 16,
+        textAlignH = ui.ALIGNMENT.End,
+        defaultOrder = 'desc',
+        visible = true,
+        comparator = function(a, b, sortDir)
+            local aValue = helpers.getConditionPercent(a.item)
+            local bValue = helpers.getConditionPercent(b.item)
+
+            if aValue == bValue then
+                return false
+            end
+            if aValue == nil then
+                return false
+            end
+            if bValue == nil then
+                return true
+            end
+
+            if sortDir == 'asc' then
+                return aValue < bValue
+            end
+            return aValue > bValue
+        end,
+    }
     local noTypeColumns = {
         generalColumns[1],
         generalColumns[2],
@@ -296,6 +323,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[1],
         generalColumns[2],
         generalColumns[3],
+        conditionColumn,
         {
             id = 'Class',
             label = l10n('Column_Class'),
@@ -319,6 +347,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[1],
         generalColumns[2],
         generalColumns[3],
+        conditionColumn,
         {
             id = 'Damage',
             label = l10n('Column_Damage'),
@@ -327,6 +356,15 @@ function Inventory:create(windowType, ctx)
             defaultOrder = 'desc',
             visible = true,
         },
+        generalColumns[4],
+        generalColumns[5],
+        generalColumns[6],
+    }
+    local toolColumns = {
+        generalColumns[1],
+        generalColumns[2],
+        generalColumns[3],
+        conditionColumn,
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
@@ -342,9 +380,10 @@ function Inventory:create(windowType, ctx)
 
     local editableColumns = {
         generalColumns[3],
-        weaponColumns[4],
-        armorColumns[4],
+        conditionColumn,
         armorColumns[5],
+        armorColumns[6],
+        weaponColumns[5],
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
@@ -355,6 +394,7 @@ function Inventory:create(windowType, ctx)
         noTypeColumns,
         armorColumns,
         weaponColumns,
+        toolColumns,
     }
 
     local function getColumnVisibility()
@@ -363,6 +403,9 @@ function Inventory:create(windowType, ctx)
 
     local function isColumnVisible(columnId, visibility)
         visibility = visibility or getColumnVisibility()
+        if columnId == 'Condition' then
+            return visibility[columnId] == true
+        end
         return visibility[columnId] ~= false
     end
 
@@ -412,6 +455,8 @@ function Inventory:create(windowType, ctx)
             return armorColumns
         elseif categoryKey == 'Weapon' then
             return weaponColumns
+        elseif categoryKey == 'Tool' then
+            return toolColumns
         elseif redundantTypeCategories[categoryKey] then
             return noTypeColumns
         end
@@ -451,7 +496,11 @@ function Inventory:create(windowType, ctx)
             end
 
             if visible then
-                newVisibility[columnId] = nil
+                if columnId == 'Condition' then
+                    newVisibility[columnId] = true
+                else
+                    newVisibility[columnId] = nil
+                end
             else
                 newVisibility[columnId] = false
             end
@@ -1386,6 +1435,9 @@ function Inventory:createData()
             end,
             AR = function()
                 return helpers.getArmorRating(itemStack, omwself)
+            end,
+            Condition = function()
+                return helpers.getConditionPercentLabel(itemStack)
             end,
             Value = helpers.roundToPlaces(value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
