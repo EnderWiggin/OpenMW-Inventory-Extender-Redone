@@ -149,6 +149,15 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
 
     local updateCategories
 
+    local function isCategoryDisabled(category, categoryDisabledLookup)
+        if categoryDisabledLookup then
+            return categoryDisabledLookup[category.key] == true
+        elseif props.isCategoryDisabled then
+            return props.isCategoryDisabled(category)
+        end
+        return false
+    end
+
     updateCategories = function()
         for i = #element.layout.content.categoryBar.content, 1, -1 do
             auxUi.deepDestroy(element.layout.content.categoryBar.content[i])
@@ -157,19 +166,25 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         element.layout.content.categoryBar.content = ui.content {}
 
         local categories = I.InventoryExtender.getCategories()
+        local categoryDisabledLookup = props.getCategoryDisabledLookup and props.getCategoryDisabledLookup() or nil
         if not state.selectedCategory then
             state.selectedCategory = categories[1] and categories[1].key or nil
         end
 
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
+            local isDisabled = isCategoryDisabled(category, categoryDisabledLookup)
             element.layout.content.categoryBar.content:add(specialTemplates.interactive({
+                canClick = function()
+                    return not isDisabled
+                end,
                 onClick = function()
                     if state.selectedCategory ~= category.key then
                         state.selectedCategory = category.key
-                        updateCategories()
                         if onCategoryChange then
                             onCategoryChange(state.selectedCategory)
+                        else
+                            updateCategories()
                         end
                     end
                 end,
@@ -185,7 +200,8 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                             size = v2(categoryBarHeight - 16, categoryBarHeight - 16),
                             relativePosition = v2(0.5, 0.5),
                             anchor = v2(0.5, 0.5),
-                            color = isSelected and constants.Colors.ACTIVE or constants.Colors.DEFAULT,
+                            color = isSelected and constants.Colors.ACTIVE or (isDisabled and constants.Colors.DISABLED or constants.Colors.DEFAULT),
+                            alpha = isDisabled and 0.5 or 1,
                         },
                         userData = {
                             colorable = true,
@@ -194,6 +210,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 },
                 userData = {
                     active = isSelected,
+                    disabled = isDisabled and not isSelected,
                     tooltipFn = function()
                         return specialTemplates.tooltip(4, ui.content {
                             {
@@ -256,6 +273,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local function cycleCategory(i)
         local categories = I.InventoryExtender.getCategories()
         if #categories == 0 then return end
+        local buttons = element.layout.content.categoryBar.content
 
         local currentIndex = 1
         for index, category in ipairs(categories) do
@@ -265,17 +283,33 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             end
         end
 
-        local newIndex = currentIndex + i
-        if newIndex < 1 then
-            newIndex = #categories
-        elseif newIndex > #categories then
-            newIndex = 1
+        local newIndex = currentIndex
+        local foundEnabled = false
+        for _ = 1, #categories do
+            newIndex = newIndex + i
+            if newIndex < 1 then
+                newIndex = #categories
+            elseif newIndex > #categories then
+                newIndex = 1
+            end
+
+            local button = buttons[newIndex]
+            local isDisabled = button and button.layout and button.layout.userData and button.layout.userData.disabled or false
+            if not isDisabled then
+                foundEnabled = true
+                break
+            end
+        end
+
+        if not foundEnabled then
+            return
         end
 
         state.selectedCategory = categories[newIndex].key
-        updateCategories()
         if onCategoryChange then
             onCategoryChange(state.selectedCategory)
+        else
+            updateCategories()
         end
 
         replaceSearchBar(element.layout.content.topBar.content.searchBar.content.padding.content.textEdit.props.text)
@@ -285,9 +319,10 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     element.layout.userData.setCategory = function(categoryKey)
         if state.selectedCategory ~= categoryKey then
             state.selectedCategory = categoryKey
-            updateCategories()
             if onCategoryChange then
                 onCategoryChange(state.selectedCategory)
+            else
+                updateCategories()
             end
         end
     end

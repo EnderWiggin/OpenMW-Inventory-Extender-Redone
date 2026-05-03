@@ -782,21 +782,27 @@ ItemTable.create = function(props, ctx)
         return true
     end)
 
-    wrapper.layout.userData.refresh = function()
-        -- Re-apply filters
-        state.sortedRows = {}
+    local function getFilteredRows(excludedFilterId)
+        local filteredRows = {}
         for _, row in ipairs(dataRows) do
             local include = true
-            for _, filterFn in pairs(state.filters) do
-                if not filterFn(row) then
+            for filterId, filterFn in pairs(state.filters) do
+                if filterId ~= excludedFilterId and not filterFn(row) then
                     include = false
                     break
                 end
             end
             if include then
-                table.insert(state.sortedRows, row)
+                table.insert(filteredRows, row)
             end
         end
+
+        return filteredRows
+    end
+
+    wrapper.layout.userData.refresh = function()
+        -- Re-apply filters
+        state.sortedRows = getFilteredRows()
 
         sortRows()
         updateRows()
@@ -841,6 +847,8 @@ ItemTable.create = function(props, ctx)
     wrapper.layout.userData.getState = function()
         return state
     end
+
+    wrapper.layout.userData.getFilteredRows = getFilteredRows
 
     -- Use this after editing state.columns directly
     wrapper.layout.userData.redrawColumns = function()

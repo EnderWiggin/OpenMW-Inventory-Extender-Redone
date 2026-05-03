@@ -462,6 +462,31 @@ function Inventory:create(windowType, ctx)
 
     self.categoryFilter = CategoryFilter.create({
         maxHeight = 72,
+        getCategoryDisabledLookup = function()
+            if not self.itemTable or not self.itemTable.layout or not self.itemTable.layout.userData.getFilteredRows then
+                return {}
+            end
+
+            local rows = self.itemTable.layout.userData.getFilteredRows('categoryFilter')
+            local categories = I.InventoryExtender.getCategories()
+            local disabledLookup = {}
+
+            for _, category in ipairs(categories) do
+                disabledLookup[category.key] = category.filter ~= nil
+            end
+
+            for _, row in ipairs(rows) do
+                for _, category in ipairs(categories) do
+                    if category.filter == nil then
+                        disabledLookup[category.key] = false
+                    elseif disabledLookup[category.key] and category.filter(row.item) then
+                        disabledLookup[category.key] = false
+                    end
+                end
+            end
+
+            return disabledLookup
+        end,
     }, function(selectedCategory)
         local categories = I.InventoryExtender.getCategories()
         local category = nil
@@ -1071,6 +1096,9 @@ end
 function Inventory:refresh()
     if not self.itemTable then return end
     self.itemTable.layout.userData.refresh()
+    if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.updateCategories then
+        self.categoryFilter.layout.userData.updateCategories()
+    end
 end
 
 function Inventory:createData()
@@ -1166,6 +1194,12 @@ function Inventory:updateData()
         self.infoBar.layout.userData.updateAll()
     end
 
+    local function updateCategoryAvailability()
+        if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.updateCategories then
+            self.categoryFilter.layout.userData.updateCategories()
+        end
+    end
+
     local anyChanges = false
     if I.UI.getMode() == 'Barter' or self.ctx.lastUiMode == 'Barter' then
         anyChanges = true
@@ -1199,11 +1233,13 @@ function Inventory:updateData()
 
     if not anyChanges then
         self.itemTable.layout.userData.refresh()
+        updateCategoryAvailability()
         return
     end
 
     local data = self:createData()
     self.itemTable.layout.userData.updateData(data)
+    updateCategoryAvailability()
 end
 
 function Inventory:setTitle()
