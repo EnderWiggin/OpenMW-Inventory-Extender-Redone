@@ -59,7 +59,7 @@ function DragAndDrop:getHoveredGameObject(position)
     end), pos, pos + v * dist)
 end
 
-function DragAndDrop:startDrag(item, source, count)
+function DragAndDrop:startDrag(item, source, count, pickpocket)
     self.draggingCount = util.clamp(count or item.count, 1, item.count)
 
     core.sendGlobalEvent('IE_MoveInto', {
@@ -69,6 +69,7 @@ function DragAndDrop:startDrag(item, source, count)
         destination = omwself,
         player = omwself,
         dragStart = true,
+        pickpocket = pickpocket,
     })   
     
     self.source = omwself
@@ -154,7 +155,7 @@ function DragAndDrop:setDraggingObject(object, resetMode)
     end
 end
 
-function DragAndDrop:transferInto(object, destination, source, count)
+function DragAndDrop:transferInto(object, destination, source, count, pickpocket)
     if types.Container.objectIsInstance(destination) then
         local destRecord = destination.type.record(destination)
         if destRecord.isOrganic then
@@ -188,6 +189,7 @@ function DragAndDrop:transferInto(object, destination, source, count)
             source = self.source,
             destination = destination,
             player = omwself,
+            pickpocket = pickpocket,
         })
     end
 

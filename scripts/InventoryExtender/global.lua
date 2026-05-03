@@ -95,6 +95,16 @@ local function getCompanionProfit(npc)
     return nil
 end
 
+local function commitPickpocket(props)
+    if not props.player or not props.target then return end
+
+    I.Crimes.commitCrime(props.player, {
+        type = types.Player.OFFENSE_TYPE.Pickpocket,
+        victim = props.target,
+        victimAware = props.victimAware,
+    })
+end
+
 local function scriptedDragStart(props)
     if props.obj.parentContainer == nil then return end
 
@@ -111,6 +121,7 @@ local function moveInto(props)
     local obj = props.obj
     local destination = props.destination
     local recordId = obj.recordId
+    local moveCount = props.count or obj.count
 
     local resultingObj = obj
     local destinationInv = destination.type.inventory(destination)
@@ -138,7 +149,11 @@ local function moveInto(props)
     end
 
     local ownerInfo
-    if props.source and types.Container.objectIsInstance(props.source) then
+    if props.pickpocket and props.pickpocket.target then
+        ownerInfo = {
+            recordId = props.pickpocket.target.recordId,
+        }
+    elseif props.source and types.Container.objectIsInstance(props.source) then
         ownerInfo = props.source.owner
     else
         ownerInfo = obj.owner
@@ -155,7 +170,7 @@ local function moveInto(props)
             end
         end
         if not helpers.isGold(obj) then
-            props.player:sendEvent('IE_StoleItem', { recordId = obj.recordId, count = props.count, victim = victimInfo })
+            props.player:sendEvent('IE_StoleItem', { recordId = obj.recordId, count = moveCount, victim = victimInfo })
         end
     end
 
@@ -178,10 +193,10 @@ local function moveInto(props)
         end
     end
 
-    if victimInfo then
+    if victimInfo and not props.pickpocket then
         I.Crimes.commitCrime(props.player, {
             type = types.Player.OFFENSE_TYPE.Theft,
-            arg = helpers.getItemValue(obj) * props.count,
+            arg = helpers.getItemValue(obj) * moveCount,
             faction = victimInfo.factionId,
             victim = victimActor,
         })
@@ -190,7 +205,7 @@ local function moveInto(props)
     if props.source then
         local profit = getCompanionProfit(props.source)
         if profit then
-            profit = profit - (helpers.getItemValue(obj) * props.count)
+            profit = profit - (helpers.getItemValue(obj) * moveCount)
             world.mwscript.getLocalScript(props.source).variables.minimumprofit = profit
             props.player:sendEvent('IE_CompanionProfit', {
                 companion = props.source,
@@ -201,7 +216,7 @@ local function moveInto(props)
     if props.destination ~= props.source then
         local profit = getCompanionProfit(props.destination)
         if profit then
-            profit = profit + (helpers.getItemValue(obj) * props.count)
+            profit = profit + (helpers.getItemValue(obj) * moveCount)
             world.mwscript.getLocalScript(props.destination).variables.minimumprofit = profit
             props.player:sendEvent('IE_CompanionProfit', {
                 companion = props.destination,
@@ -210,8 +225,8 @@ local function moveInto(props)
         end
     end
 
-    if props.count ~= obj.count or helpers.isGold(obj) then
-        obj = obj:split(props.count or obj.count)
+    if moveCount ~= obj.count or helpers.isGold(obj) then
+        obj = obj:split(moveCount)
         if props.source ~= props.destination then
             resultingObj = obj
         end
@@ -597,6 +612,7 @@ end
 local eventHandlers = {
     IE_TryConfiscate = confiscateStolenItems,
     IE_ConfiscateToOwner = confiscateToOwner,
+    IE_CommitPickpocket = commitPickpocket,
     IE_Teleport = teleport,
     IE_PostTeleport = postTeleport,
     IE_ScriptedDragStart = scriptedDragStart,
@@ -640,6 +656,7 @@ local eventHandlers = {
 -- deprecated event names
 eventHandlers.MI_TryConfiscate = eventHandlers.IE_TryConfiscate
 eventHandlers.MI_ConfiscateToOwner = eventHandlers.IE_ConfiscateToOwner
+eventHandlers.MI_CommitPickpocket = eventHandlers.IE_CommitPickpocket
 eventHandlers.MI_Teleport = eventHandlers.IE_Teleport
 eventHandlers.MI_PostTeleport = eventHandlers.IE_PostTeleport
 eventHandlers.MI_ScriptedDragStart = eventHandlers.IE_ScriptedDragStart

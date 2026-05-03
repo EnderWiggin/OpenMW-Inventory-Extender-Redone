@@ -5,10 +5,12 @@ local I = require('openmw.interfaces')
 local util = require('openmw.util')
 local async = require('openmw.async')
 local input = require('openmw.input')
+local omwself = require('openmw.self')
 local v2 = util.vector2
 
 local constants = require('scripts.InventoryExtender.util.constants')
 local configPlayer = require('scripts.InventoryExtender.config.player')
+local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 
 local DragAndDrop = require('scripts.InventoryExtender.ui.dragAndDrop')
 local InventoryWindow = require('scripts.InventoryExtender.ui.windows.inventory')
@@ -57,6 +59,7 @@ WindowManager.ctx = {
         totalBalance = 0,
     },
     companionProfit = {},
+    pickpocket = nil,
     updateQueue = {},
 }
 
@@ -108,6 +111,14 @@ end
 function WindowManager:show(windowName, arg)
     if self.ctx.resettingMode then
         return
+    end
+
+    if windowName == 'Container' then
+        if Pickpocket.isTarget(arg) then
+            self.ctx.pickpocket = Pickpocket.createSession(omwself, arg)
+        else
+            self.ctx.pickpocket = nil
+        end
     end
 
     self.ctx.windowArgs[windowName] = arg
@@ -178,6 +189,18 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     }
 
     if oldMode == 'Container' and self.ctx.windowArgs.Container then
+        if self.ctx.pickpocket and self.ctx.pickpocket.active and not self.ctx.pickpocket.resolved and
+           Pickpocket.isTarget(self.ctx.windowArgs.Container) then
+            local success = Pickpocket.rollClose(omwself, self.ctx.windowArgs.Container)
+            if not success then
+                core.sendGlobalEvent('IE_CommitPickpocket', {
+                    player = omwself,
+                    target = self.ctx.windowArgs.Container,
+                    victimAware = true,
+                })
+            end
+        end
+        self.ctx.pickpocket = nil
         self.ctx.windowArgs.Container:sendEvent('IE_ContainerClosed')
     end
 

@@ -24,6 +24,7 @@ local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
 local barterUtils = require('scripts.InventoryExtender.util.barter')
 local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorpses')
+local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 
 local l10n = core.l10n('InventoryExtender')
 
@@ -359,15 +360,32 @@ function Inventory:create(windowType, ctx)
             end
 
             local function doAction(count)
+                local mode = I.UI.getMode()
+                local pickpocket = ctx.pickpocket
+                local isPickpocketTake = mode == 'Container' and self.type == 'Container' and pickpocket and pickpocket.active
+
+                if isPickpocketTake then
+                    local success = Pickpocket.rollTake(omwself, self.target, row.item, row.getCount())
+                    if not success then
+                        pickpocket.resolved = true
+                        core.sendGlobalEvent('IE_CommitPickpocket', {
+                            player = omwself,
+                            target = self.target,
+                            victimAware = true,
+                        })
+                        I.UI.removeMode('Container')
+                        return false
+                    end
+                end
+
                 if transfer then
-                    local mode = I.UI.getMode()
                     if mode == 'Container' or mode == 'Companion' then
                         if self.type == 'Inventory' then
                             if ctx.windowArgs[mode] then
                                 ctx.dragAndDrop:transferInto(row.item, ctx.windowArgs[mode], omwself, count)
                             end
                         else
-                            ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count)
+                            ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count, isPickpocketTake and { target = self.target } or nil)
                         end
                     elseif mode == 'Barter' then
                         if row.isBartered then
@@ -393,9 +411,10 @@ function Inventory:create(windowType, ctx)
                         ctx.dragAndDrop:dropAtFeet(row.item, count) 
                     end
                 else
-                    ctx.dragAndDrop:startDrag(row.item, self.target, count)
+                    ctx.dragAndDrop:startDrag(row.item, self.target, count, isPickpocketTake and { target = self.target } or nil)
                 end
                 self:refresh()
+                return true
             end
 
             if itemCount > 1 and not takeAll and not takeOne then
@@ -651,7 +670,10 @@ function Inventory:create(windowType, ctx)
                     end
                 end,
                 parent = self.infoBar,
-            }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx))
+            }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx), function(layout)
+                layout.props.visible = not (ctx.pickpocket and ctx.pickpocket.active)
+                return layout
+            end)
         end
 
         if self.type == 'Companion' then
@@ -970,6 +992,14 @@ function Inventory:create(windowType, ctx)
         else
             return not row.isBartered
         end
+    end)
+
+    self.itemTable.layout.userData.setFilter('pickpocketVisibilityFilter', function(row)
+        if self.type ~= 'Container' or I.UI.getMode() ~= 'Container' then
+            return true
+        end
+
+        return Pickpocket.isVisible(ctx.pickpocket, row.item)
     end)
 
     self:setPinnable()
