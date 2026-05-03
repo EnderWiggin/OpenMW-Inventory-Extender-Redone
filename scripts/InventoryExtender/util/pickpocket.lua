@@ -40,7 +40,7 @@ function Pickpocket.createSession(player, target)
     local pcSneak = getSneak(player)
 
     for _, item in ipairs(target.type.inventory(target):getAll()) do
-        if types.Item.isCarriable(item) and math.random(100) <= pcSneak then
+        if types.Item.isCarriable(item) and not target.type.hasEquipped(target, item) and math.random(100) <= pcSneak then
             visibleItems[item.id] = true
         end
     end
