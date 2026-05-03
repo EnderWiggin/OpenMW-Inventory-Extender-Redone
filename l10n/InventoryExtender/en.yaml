@@ -39,6 +39,12 @@ InvertCategorySwitching: Invert category switching
 InvertCategorySwitchingDesc: |-
   By default, when you switch categories, any other windows will switch to the same category unless you hold Shift.
   Enable this option to invert that behavior, so that other windows will only switch categories if you hold Shift.
+CompactCategoryFilter: Compact category filter
+CompactCategoryFilterDesc: |-
+  Move category buttons into the top bar and show the active category in the window title instead of a separate header.
+VanillaCategoryIcons: Vanilla-style category icons
+VanillaCategoryIconsDesc: |-
+  Render category buttons with a vanilla-style plate and opacity-based highlighting.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support

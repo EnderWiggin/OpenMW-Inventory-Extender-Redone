@@ -688,7 +688,8 @@ function Inventory:create(windowType, ctx)
 
     self.categoryFilter = CategoryFilter.create({
         maxHeight = 72,
-        compact = true,
+        compact = configPlayer.tweaks.b_CompactCategoryFilter,
+        vanillaStyle = configPlayer.tweaks.b_VanillaCategoryIcons,
         getCategoryDisabledLookup = function()
             if not self.itemTable or not self.itemTable.layout or not self.itemTable.layout.userData.getFilteredRows then
                 return {}
@@ -1495,17 +1496,17 @@ end
 function Inventory:setTitle()
     local title
     if self.type == 'Inventory' then
-        if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
-            local categoryKey = self.categoryFilter.layout.userData.getCategory()
-            local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
-            if category and category.name then
-                title = category.name
-            end
-        else
-            title = helpers.getEquippedName(omwself)
-        end
+        title = helpers.getEquippedName(omwself)
     elseif self.target then
         title = self.target.type.record(self.target).name
+    end
+
+    if configPlayer.tweaks.b_CompactCategoryFilter and self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
+        local categoryKey = self.categoryFilter.layout.userData.getCategory()
+        local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
+        if category and category.name then
+            title = title and (title .. ' - ' .. category.name) or category.name
+        end
     end
 
     if title then

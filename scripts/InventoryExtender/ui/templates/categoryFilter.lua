@@ -17,11 +17,23 @@ local CategoryFilter = {}
 function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local maxHeight = props.maxHeight or 48
     local compact = props.compact == true
+    local vanillaStyle = props.vanillaStyle == true
 
     local topBarHeight = specialTemplates.LINE_HEIGHT * 1.5
     local categoryBarHeight = compact and (topBarHeight - 4) or (maxHeight - topBarHeight)
     local elementHeight = compact and (topBarHeight + 8) or maxHeight
     local compactIconPadding = compact and 8 or 16
+    local vanillaOpacityStates = {
+        default = 0.45,
+        hover = 0.7,
+        pressed = 0.85,
+        active = 1,
+        activeHover = 1,
+        activePressed = 0.9,
+        disabled = 0.2,
+        disabledHover = 0.2,
+        disabledPressed = 0.2,
+    }
 
     local element, createSearchBar
     local placeholder = l10n('UI_SearchBarPlaceholder')
@@ -94,13 +106,17 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             autoSize = false,
             position = compact and v2(0, 0) or v2(0, topBarHeight),
             size = v2(0, categoryBarHeight),
-            relativeSize = compact and v2(0, 0) or v2(1, 0),
             align = ui.ALIGNMENT.Start,
             arrange = ui.ALIGNMENT.Center,
+            anchor = compact and nil or v2(0.5, 0),
+            relativePosition = compact and nil or v2(0.5, 0),
         },
         external = compact and { grow = 1, stretch = 1, } or nil,
         content = ui.content {},
     }
+    if compact then
+        categoryBarLayout.props.relativeSize = v2(0, 0)
+    end
 
     local topBarContent = ui.content {
         baseTemplates.intervalH(8),
@@ -170,7 +186,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             relativeSize = v2(1, 0),
             position = v2(0, 4),
             align = ui.ALIGNMENT.Start,
-            arrange = ui.ALIGNMENT.Start,
+            arrange = ui.ALIGNMENT.Center,
         },
         content = topBarContent,
     }
@@ -232,6 +248,60 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
             local isDisabled = isCategoryDisabled(category, categoryDisabledLookup)
+            local iconSize = v2(categoryBarHeight - compactIconPadding, categoryBarHeight - compactIconPadding)
+            local iconAlpha = isSelected and vanillaOpacityStates.active or ((isDisabled and not isSelected) and vanillaOpacityStates.disabled or vanillaOpacityStates.default)
+            local buttonContent
+
+            if vanillaStyle then
+                buttonContent = ui.content {
+                    {
+                        name = 'categoryBackground',
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = baseTemplates.createTexture('icons/InventoryExtender/category_bgr.dds'),
+                            relativeSize = v2(1, 0),
+                            size = v2(-4, iconSize.y + 8),
+                            relativePosition = v2(0.5, 0.5),
+                            anchor = v2(0.5, 0.5),
+                            alpha = iconAlpha,
+                        },
+                        userData = {
+                            opacityStates = vanillaOpacityStates,
+                        },
+                    },
+                    {
+                        name = 'categoryIcon',
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = category.icon },
+                            size = iconSize,
+                            relativePosition = v2(0.5, 0.5),
+                            anchor = v2(0.5, 0.5),
+                            color = util.color.rgb(0.01, 0.01, 0.01),
+                            alpha = 1,
+                        },
+                    }
+                }
+            else
+                buttonContent = ui.content {
+                    {
+                        name = 'categoryIcon',
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = category.icon },
+                            size = iconSize,
+                            relativePosition = v2(0.5, 0.5),
+                            anchor = v2(0.5, 0.5),
+                            color = isSelected and constants.Colors.ACTIVE or (isDisabled and constants.Colors.DISABLED or constants.Colors.DEFAULT),
+                            alpha = isDisabled and 0.5 or 1,
+                        },
+                        userData = {
+                            colorable = true,
+                        }
+                    }
+                }
+            end
+
             categoryBarContent:add(specialTemplates.interactive({
                 canClick = function()
                     return not isDisabled
@@ -249,23 +319,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 name = category.key,
             }, {
                 external = { grow = 1, stretch = 1, },
-                content = ui.content {
-                    {
-                        name = 'categoryIcon',
-                        type = ui.TYPE.Image,
-                        props = {
-                            resource = ui.texture { path = category.icon },
-                            size = v2(categoryBarHeight - compactIconPadding, categoryBarHeight - compactIconPadding),
-                            relativePosition = v2(0.5, 0.5),
-                            anchor = v2(0.5, 0.5),
-                            color = isSelected and constants.Colors.ACTIVE or (isDisabled and constants.Colors.DISABLED or constants.Colors.DEFAULT),
-                            alpha = isDisabled and 0.5 or 1,
-                        },
-                        userData = {
-                            colorable = true,
-                        }
-                    }
-                },
+                content = buttonContent,
                 userData = {
                     active = isSelected,
                     disabled = isDisabled and not isSelected,
@@ -299,20 +353,32 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         if #categories == 0 then return end
 
         local availableWidth = totalWidth
+        local barWidth = nil
         if compact then
             availableWidth = math.max(0, totalWidth - 240)
+        else
+            local widthPerCategory = math.max(1, math.floor(totalWidth / #categories))
+            barWidth = widthPerCategory * #categories
+            availableWidth = barWidth
         end
 
         local maxSizePerCategory = availableWidth / #categories
-    local imageSize = math.min(categoryBarHeight - compactIconPadding, maxSizePerCategory)
+        local imageSize = math.min(categoryBarHeight - compactIconPadding, maxSizePerCategory)
         local imageSizeVec = v2(imageSize, imageSize)
 
         local anyChanged = false
+        if not compact and element.layout.content.categoryBar.props.size.x ~= barWidth then
+            anyChanged = true
+            element.layout.content.categoryBar.props.size = v2(barWidth, categoryBarHeight)
+        end
         for _, child in ipairs(getCategoryBarContent()) do
             if child.layout and child.layout.content.categoryIcon then
                 if child.layout.content.categoryIcon.props.size ~= imageSizeVec then
                     anyChanged = true
                     child.layout.content.categoryIcon.props.size = imageSizeVec
+                    if child.layout.content.categoryBackground then
+                        child.layout.content.categoryBackground.props.size = v2(-4, imageSizeVec.y + 8)
+                    end
                     child:update()
                 end
             end

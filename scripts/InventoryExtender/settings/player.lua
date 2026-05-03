@@ -147,6 +147,20 @@ I.Settings.registerGroup {
             name = 'InvertCategorySwitching',
             description = 'InvertCategorySwitchingDesc',
             default = false,
+        },
+        {
+            key = 'b_CompactCategoryFilter',
+            renderer = 'checkbox',
+            name = 'CompactCategoryFilter',
+            description = 'CompactCategoryFilterDesc',
+            default = true,
+        },
+        {
+            key = 'b_VanillaCategoryIcons',
+            renderer = 'checkbox',
+            name = 'VanillaCategoryIcons',
+            description = 'VanillaCategoryIconsDesc',
+            default = false,
         }
     },
 }

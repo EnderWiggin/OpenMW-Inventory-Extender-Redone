@@ -1150,6 +1150,39 @@ if isPlayer then
                     l.props.color = color
                 end
             end
+
+            if l.userData and l.userData.opacityStates then
+                local states = l.userData.opacityStates
+                local alpha
+                if userData.active then
+                    if userData.pressed then
+                        alpha = states.activePressed or states.activeHover or states.active or states.default
+                    elseif userData.hovering then
+                        alpha = states.activeHover or states.active or states.hover or states.default
+                    else
+                        alpha = states.active or states.default
+                    end
+                elseif userData.disabled then
+                    if userData.pressed then
+                        alpha = states.disabledPressed or states.disabledHover or states.disabled or states.default
+                    elseif userData.hovering then
+                        alpha = states.disabledHover or states.disabled or states.hover or states.default
+                    else
+                        alpha = states.disabled or states.default
+                    end
+                else
+                    if userData.pressed then
+                        alpha = states.pressed or states.hover or states.default
+                    elseif userData.hovering then
+                        alpha = states.hover or states.default
+                    else
+                        alpha = states.default
+                    end
+                end
+
+                l.props = l.props or {}
+                l.props.alpha = alpha
+            end
         end)
     end
 end
