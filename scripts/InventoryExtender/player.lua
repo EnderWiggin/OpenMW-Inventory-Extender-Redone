@@ -12,6 +12,7 @@ local API = I.InventoryExtender
 local configPlayer = require('scripts.InventoryExtender.config.player')
 local constants = require("scripts.InventoryExtender.util.constants")
 local helpers = require("scripts.InventoryExtender.util.helpers")
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
 local l10n = core.l10n('InventoryExtender')
 
@@ -113,7 +114,7 @@ for _, category in ipairs(defaultCategories) do
     API.registerCategory{
         key = category.key,
         name = l10n('Category_' .. category.key),
-        icon = 'icons/InventoryExtender/categories/' .. category.key .. '.dds',
+        icon = iconPack.getPath('categories/' .. category.key:lower() .. '.dds'),
         filter = category.filter,
     }
 end

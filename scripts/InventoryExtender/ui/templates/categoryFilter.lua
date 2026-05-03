@@ -9,6 +9,7 @@ local core = require('openmw.core')
 local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
 local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 local constants = require('scripts.InventoryExtender.util.constants')
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
 local l10n = core.l10n('InventoryExtender')
 
@@ -158,7 +159,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 size = v2(topBarHeight - 4, topBarHeight - 4),
             },
             content = ui.content {
-                baseTemplates.imageButton('icons/InventoryExtender/edit_mode.dds', v2(topBarHeight - 12, topBarHeight - 12), nil, 'columnSettingsButton'),
+                baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), v2(topBarHeight - 12, topBarHeight - 12), nil, 'columnSettingsButton'),
             },
             userData = {
                 tooltipFn = function()
@@ -258,7 +259,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         name = 'categoryBackground',
                         type = ui.TYPE.Image,
                         props = {
-                            resource = baseTemplates.createTexture('icons/InventoryExtender/category_bgr.dds'),
+                            resource = baseTemplates.createTexture(iconPack.getPath('category_bgr.dds')),
                             relativeSize = v2(1, 0),
                             size = v2(-4, iconSize.y + 8),
                             relativePosition = v2(0.5, 0.5),

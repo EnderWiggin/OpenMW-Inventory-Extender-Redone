@@ -22,6 +22,7 @@ local Window = require('scripts.InventoryExtender.ui.windows.base')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 local helpers = require('scripts.InventoryExtender.util.helpers')
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
 local constants = require('scripts.InventoryExtender.util.constants')
 local barterUtils = require('scripts.InventoryExtender.util.barter')
 local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorpses')
@@ -189,7 +190,7 @@ function Inventory:create(windowType, ctx)
             content:add({
                 type = ui.TYPE.Image,
                 props = {
-                    resource = baseTemplates.createTexture('icons/InventoryExtender/item/stolen.dds'),
+                    resource = baseTemplates.createTexture(iconPack.getPath('item/stolen.dds')),
                     size = v2(iconSize, iconSize),
                     color = constants.Colors.DAMAGED,
                 },
@@ -200,7 +201,7 @@ function Inventory:create(windowType, ctx)
             content:add({
                 type = ui.TYPE.Image,
                 props = {
-                    resource = baseTemplates.createTexture('icons/InventoryExtender/item/enchanted.dds'),
+                    resource = baseTemplates.createTexture(iconPack.getPath('item/enchanted.dds')),
                     size = v2(iconSize, iconSize),
                     color = constants.Colors.BAR_MAGIC,
                 },
@@ -481,7 +482,7 @@ function Inventory:create(windowType, ctx)
         size = v2(600, 400),
         rowHeight = specialTemplates.LINE_HEIGHT * configPlayer.window.f_TableRowHeightMult,
         defaultSortId = 'Icon',
-        defaultSortIcon = 'icons/InventoryExtender/default_sort.dds',
+        defaultSortIcon = iconPack.getPath('default_sort.dds'),
         fallbackSort = function(a, b, sortDir)
             if not self.target then
                 return false

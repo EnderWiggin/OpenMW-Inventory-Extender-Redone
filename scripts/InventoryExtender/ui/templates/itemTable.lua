@@ -9,6 +9,7 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
 local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 local helpers = require("scripts.InventoryExtender.util.helpers")
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
 local ItemTable = {}
 
@@ -583,7 +584,7 @@ ItemTable.create = function(props, ctx)
             local col = columns[i]
             local isDefaultCol = (col.id == defaultSortId)
             local isSorted = (state.sortColIndex == i)
-            local currentSortIcon = state.sortDir == 'asc' and 'icons/InventoryExtender/sort_asc.dds' or 'icons/InventoryExtender/sort_desc.dds'
+            local currentSortIcon = state.sortDir == 'asc' and iconPack.getPath('sort_asc.dds') or iconPack.getPath('sort_desc.dds')
 
             if isDefaultCol and defaultSortIcon then
                 -- Show only sort arrow for default column

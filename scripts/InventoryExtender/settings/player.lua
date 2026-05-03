@@ -5,6 +5,7 @@ local l10n = core.l10n('InventoryExtender')
 local versionString = "1.0.0"
 
 local renderers = require('scripts.InventoryExtender.ui.renderers')
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
 I.Settings.registerRenderer('windowDimensions', renderers.windowDimensions)
 
@@ -73,6 +74,17 @@ I.Settings.registerGroup {
             argument = {
                 integer = true,
                 min = 0,
+            }
+        },
+        {
+            key = 's_IconPack',
+            renderer = 'select',
+            name = 'IconPack',
+            description = 'IconPackDesc',
+            default = 'base',
+            argument = {
+                l10n = 'InventoryExtender',
+                items = iconPack.getAvailablePacks(),
             }
         },
         {

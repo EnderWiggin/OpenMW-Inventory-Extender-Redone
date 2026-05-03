@@ -22,6 +22,9 @@ TextSizeOverride: Text size override
 TextSizeOverrideDesc: |-
   Override the default text size used in the inventory window. 
   Set to 0 to use the game's default size.
+IconPack: Icon pack
+IconPackDesc: |-
+  Choose which Inventory Extender icon pack to use.
 InventoryWindowPinned: Inventory pinned
 InventoryWindowDimensions: Inventory window
 InventoryContainerWindowDimensions: Inventory (container)
