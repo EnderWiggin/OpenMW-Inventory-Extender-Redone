@@ -822,9 +822,9 @@ function Inventory:create(windowType, ctx)
             if not searchText or searchText == '' then
                 return true
             end
-            local name = helpers.getItemName(row.item):lower()
             local searchLower = searchText:lower()
-            return name:find(searchLower, 1, true) ~= nil
+            local haystack = row.SearchText or helpers.getItemSearchText(row.item):lower()
+            return haystack:find(searchLower, 1, true) ~= nil
         end)
 
         self:refresh()
@@ -1424,6 +1424,7 @@ function Inventory:createData()
         local rowData = {
             id = itemStack.id,
             Name = helpers.getItemName(itemStack),
+            SearchText = helpers.getItemSearchText(itemStack):lower(),
             Type = function()
                 return helpers.getItemTypeLabel(itemStack)
             end,
@@ -1525,6 +1526,12 @@ function Inventory:updateData()
         anyChanges = true
     end
 
+    local currentAlchemy = omwself.type.stats.skills.alchemy(omwself).base
+    if self.trackedAlchemy ~= currentAlchemy then
+        anyChanges = true
+        self.trackedAlchemy = currentAlchemy
+    end
+
     if not self.trackedCounts then
         self.trackedCounts = {}
         anyChanges = true
@@ -1617,6 +1624,7 @@ function Inventory:updateTarget()
 
     if oldTarget ~= self.target then
         self.trackedCounts = nil
+        self.trackedAlchemy = nil
     end
 
     if self.itemTable then

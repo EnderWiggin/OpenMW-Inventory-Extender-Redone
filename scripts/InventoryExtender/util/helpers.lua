@@ -1025,6 +1025,74 @@ if isPlayer then
         return string
     end
 
+    local function getKnownAlchemyEffectCount(item)
+        if not self or not self.type or not self.type.stats or not self.type.stats.skills or not self.type.stats.skills.alchemy then
+            return 0
+        end
+
+        local alchemy = self.type.stats.skills.alchemy(self).base
+        local threshold = core.getGMST('fWortChanceValue')
+        local visibleEffectCount = math.floor(alchemy / threshold)
+        if types.Potion.objectIsInstance(item) then
+            visibleEffectCount = visibleEffectCount * 2
+        end
+        return visibleEffectCount
+    end
+
+    Helpers.getTooltipMagicEffectEntries = function(item)
+        local itemRecord = item.type.record(item)
+        local effectsToShow = {}
+        local enchantment
+
+        if itemRecord.enchant then
+            enchantment = core.magic.enchantments.records[itemRecord.enchant]
+        end
+
+        if enchantment then
+            local override = I.MagicWindow and I.MagicWindow.Spells.getCustomSpell(itemRecord.enchant)
+            for _, effect in ipairs(override and override.effects or enchantment.effects) do
+                table.insert(effectsToShow, {
+                    effect = effect,
+                    visible = true,
+                    text = Helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect),
+                })
+            end
+        elseif types.Potion.objectIsInstance(item) or types.Ingredient.objectIsInstance(item) then
+            local visibleEffectCount = getKnownAlchemyEffectCount(item)
+            for i, effect in ipairs(itemRecord.effects) do
+                local isVisible = i <= visibleEffectCount
+                local effectText = nil
+                if isVisible then
+                    if types.Potion.objectIsInstance(item) then
+                        effectText = Helpers.createSpellEffectString(effect, false, true)
+                    else
+                        effectText = Helpers.getMagicEffectString(effect)
+                    end
+                end
+
+                table.insert(effectsToShow, {
+                    effect = effect,
+                    visible = isVisible,
+                    text = effectText,
+                })
+            end
+        end
+
+        return effectsToShow
+    end
+
+    Helpers.getItemSearchText = function(item)
+        local searchParts = { Helpers.getItemName(item) }
+
+        for _, effectData in ipairs(Helpers.getTooltipMagicEffectEntries(item)) do
+            if effectData.visible and effectData.text and effectData.text ~= '' then
+                table.insert(searchParts, effectData.text)
+            end
+        end
+
+        return table.concat(searchParts, '\n')
+    end
+
     Helpers.effectListContainsString = function(effectsWithParams, searchString)
         for _, effectParams in ipairs(effectsWithParams) do
             local string = Helpers.getMagicEffectString(effectParams)

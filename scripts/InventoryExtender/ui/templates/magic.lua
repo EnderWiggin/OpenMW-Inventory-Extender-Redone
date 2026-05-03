@@ -439,31 +439,8 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         innerContent:add(textNormal('castType', castTypeString))
     end
 
-    -- Handle effects for enchantments, potions, and ingredients
-    local effectsToShow = {}
-    
-    if enchantment then
-        -- Enchantment effects
-        local override = I.MagicWindow and I.MagicWindow.Spells.getCustomSpell(itemRecord.enchant)
-        --effectsToShow = override and override.effects or enchantment.effects
-        for i, effect in ipairs(override and override.effects or enchantment.effects) do
-            table.insert(effectsToShow, { effect = effect })
-        end
-    elseif types.Potion.objectIsInstance(item) or types.Ingredient.objectIsInstance(item) then
-        -- Potion effects with visibility based on alchemy skill
-        local alchemy = omwself.type.stats.skills.alchemy(omwself).base
-        local threshold = core.getGMST('fWortChanceValue')
-        local visibleEffectCount = math.floor(alchemy / threshold)
-        if types.Potion.objectIsInstance(item) then
-            visibleEffectCount = visibleEffectCount * 2
-        end
-        for i, effect in ipairs(itemRecord.effects) do
-            table.insert(effectsToShow, {
-                effect = effect,
-                visible = i <= visibleEffectCount
-            })
-        end
-    end
+    -- Handle effects for enchantments, potions, and ingredients.
+    local effectsToShow = helpers.getTooltipMagicEffectEntries(item)
     
     -- Build effect layouts if we have any effects
     if #effectsToShow > 0 then
@@ -476,15 +453,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
             if isVisible then
                 content:add(Templates.effectIcon(effect.id))
                 content:add(BASE.intervalH(4))
-                local effectText
-                if types.Potion.objectIsInstance(item) then
-                    effectText = helpers.createSpellEffectString(effect, false, true)
-                elseif types.Ingredient.objectIsInstance(item) then
-                    effectText = helpers.getMagicEffectString(effect)
-                else
-                    -- Enchantment
-                    effectText = helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect)
-                end
+                local effectText = effectData.text or '?'
                 content:add(textNormal('effect_' .. i, effectText))
             else
                 content:add(textNormal('effect_' .. i, '?'))
