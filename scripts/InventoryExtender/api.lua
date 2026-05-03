@@ -137,7 +137,7 @@ end
 --- Modifiers are called in order of registration when a cell's content is updated, and each modifier receives the current cell layout.
 --- The passed layout is a direct reference and can be modified in-place.
 --- Optionally, a modifier can return new layout to replace the current one entirely.
---- Modified cells should have their userData.dirty flag set to true for the changes to be reflected visually.
+--- WIP KINDA BROKEN :)
 --- @param id string A unique identifier for the modifier
 --- @param modifier fun(cell: Layout, row: table, ctx: table, windowType: string):Layout|nil The modifier function
 function API.registerCellContentModifier(id, modifier)
