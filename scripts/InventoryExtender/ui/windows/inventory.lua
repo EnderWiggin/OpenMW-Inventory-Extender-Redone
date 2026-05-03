@@ -90,11 +90,25 @@ function Inventory:create(windowType, ctx)
         end
     end
 
-    local iconRenderer = function(row, width, height)
+    local function getEnchantedIndicatorMode()
+        return configPlayer.tweaks.s_EnchantedIndicatorMode or 'EnchantedIndicatorMode_Both'
+    end
+
+    local function shouldShowEnchantedSwirl(forceEnchantSwirl)
+        return forceEnchantSwirl or getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Icon'
+    end
+
+    local function shouldShowEnchantedNameIcon()
+        return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Swirl'
+    end
+
+    local iconRenderer = function(row, width, height, options)
+        options = options or {}
         local iconDim = math.min(width, height)
         local equipped = helpers.isItemEquipped(row.item, self.target, ctx.overrides.equipped)
-        local bgrVisible = row.isBartered or equipped or (row.itemRecord.enchant ~= nil)
-        local magicString = row.itemRecord.enchant and '_magic' or ''
+        local showEnchantSwirl = row.itemRecord.enchant and shouldShowEnchantedSwirl(options.forceEnchantSwirl) or false
+        local bgrVisible = row.isBartered or equipped or showEnchantSwirl
+        local magicString = showEnchantSwirl and '_magic' or ''
         local postString = (row.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or '_none'
         local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
         return {
@@ -169,7 +183,7 @@ function Inventory:create(windowType, ctx)
         elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
             stolen = true
         end
-        if row.itemRecord.enchant then
+        if row.itemRecord.enchant and shouldShowEnchantedNameIcon() then
             enchanted = true
         end
 
@@ -661,7 +675,9 @@ function Inventory:create(windowType, ctx)
         onRowActivate = onRowActivate,
         viewMode = configPlayer.window.s_ItemViewMode,
         gridItemRenderer = function(row, itemSize)
-            local base = iconRenderer(row, itemSize, itemSize)
+            local base = iconRenderer(row, itemSize, itemSize, {
+                forceEnchantSwirl = row.itemRecord.enchant ~= nil,
+            })
 
             base.content.itemIcon.props.size = v2(itemSize - 8, itemSize - 8)
             base.content.itemBackground.props.visible = true

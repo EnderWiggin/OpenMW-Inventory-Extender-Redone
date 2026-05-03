@@ -180,7 +180,22 @@ I.Settings.registerGroup {
             name = 'CategoryBarBorders',
             description = 'CategoryBarBordersDesc',
             default = true,
-        }
+        },
+        {
+            key = 's_EnchantedIndicatorMode',
+            renderer = 'select',
+            name = 'EnchantedIndicatorMode',
+            description = 'EnchantedIndicatorModeDesc',
+            default = 'EnchantedIndicatorMode_Swirl',
+            argument = {
+                l10n = 'InventoryExtender',
+                items = {
+                    'EnchantedIndicatorMode_Swirl',
+                    'EnchantedIndicatorMode_Icon',
+                    'EnchantedIndicatorMode_Both',
+                },
+            }
+        },
     },
 }
 
