@@ -62,6 +62,7 @@ function Window:getDimensions()
     local layerSize = ui.layers[ui.layers.indexOf('Windows')].size
 
     local props = self.element.layout.props
+    if not props or not props.position or not props.size then return nil end
     return {
         x = helpers.roundToPlaces(props.position.x / layerSize.x, 6),
         y = helpers.roundToPlaces(props.position.y / layerSize.y, 6),

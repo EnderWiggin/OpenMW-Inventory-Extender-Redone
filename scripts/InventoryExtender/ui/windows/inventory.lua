@@ -1828,7 +1828,10 @@ function Inventory:loadState()
     local dims = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get(self.stateKey)
     if not dims then return end
 
-    self:setDimensions(dims)
+    local currentDims = self:getDimensions()
+    if not currentDims or dims.x ~= currentDims.x or dims.y ~= currentDims.y or dims.w ~= currentDims.w or dims.h ~= currentDims.h then
+        self:setDimensions(dims)
+    end
 end
 
 return Inventory
