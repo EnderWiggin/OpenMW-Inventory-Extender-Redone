@@ -283,7 +283,7 @@ ItemTable.create = function(props, ctx)
         local restoredFocus = false
         local hoveredViewportRowY = nil
         local scrollPos = scrollable.layout.userData.getScrollPos() or 0
-        if not isGrid and state.parentWindow:isFocused() then
+        if not isGrid and state.parentWindow:isFocused() and not scrollable.layout.userData.isDraggingScrollBar then
             hoveredViewportRowY = state.lastPointerRowY
             if state.lastUsedRowPos then
                 pendingFocusRestoreY = state.lastUsedRowPos.y
@@ -380,7 +380,9 @@ ItemTable.create = function(props, ctx)
                             end
                         end,
                         onMouseMove = function()
-                            state.lastPointerRowY = state.rowCache[cacheKey].layout.props.position.y - scrollPos
+                            if not scrollable.layout.userData.isDraggingScrollBar then
+                                state.lastPointerRowY = state.rowCache[cacheKey].layout.props.position.y - scrollPos
+                            end
                         end,
                         name = row.item and row.item.id or 'item',
                     }, {
@@ -797,7 +799,9 @@ ItemTable.create = function(props, ctx)
     wrapper.layout.userData.getViewportRowYAtOffset = getViewportRowYAtOffset
 
     wrapper.layout.events.mouseMove = async:callback(function(e)
-        state.lastPointerRowY = getViewportRowYAtOffset(e.offset.y)
+        if not scrollable.layout.userData.isDraggingScrollBar then
+            state.lastPointerRowY = getViewportRowYAtOffset(e.offset.y)
+        end
         return true
     end)
 

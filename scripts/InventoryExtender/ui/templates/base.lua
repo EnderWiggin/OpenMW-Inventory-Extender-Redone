@@ -947,10 +947,12 @@ Templates.scrollBar = function(scrollable)
                 events = {
                     mousePress = async:callback(function(e, layout)
                         ambient.playSound('menu click')
+                        scrollable.layout.userData.isDraggingScrollBar = true
                         layout.userData.dragOffset = e.offset.y
                         return false
                     end),
                     mouseRelease = async:callback(function(e, layout)
+                        scrollable.layout.userData.isDraggingScrollBar = false
                         layout.userData.dragOffset = nil
                         return false
                     end),
@@ -973,10 +975,17 @@ Templates.scrollBar = function(scrollable)
             mousePress = async:callback(function(e)
                 if e.button == 1 then
                     ambient.playSound('menu click')
+                    scrollable.layout.userData.isDraggingScrollBar = true
                     scrollable.layout.content[1].props.position = util.vector2(0, handlePosToScrollPos(e.offset.y))
                     scrollable.layout.content[1].props.position = util.vector2(0, util.clamp(scrollable.layout.content[1].props.position.y, -scrollable.layout.userData.scrollLimit, 0))
                     scrollable.layout.userData.onScroll()
                 end
+            end),
+            mouseRelease = async:callback(function(e)
+                if e.button == 1 then
+                    scrollable.layout.userData.isDraggingScrollBar = false
+                end
+                return true
             end),
         }
     }
@@ -1023,6 +1032,7 @@ Templates.scrollable = function(size, content, flexSize, padding, borderThicknes
             scrollLimit = math.max(flexSize.y - size.y, 0),
             canScroll = flexSize.y > size.y,
             scrollStep = scrollStep,
+            isDraggingScrollBar = false,
         },
     }
     scrollWidget.layout.events = {
@@ -1031,6 +1041,7 @@ Templates.scrollable = function(size, content, flexSize, padding, borderThicknes
             return true
         end),
         focusLoss = async:callback(function() 
+            scrollWidget.layout.userData.isDraggingScrollBar = false
             onFocusLoss(scrollWidget)
             return true
         end),
