@@ -688,6 +688,7 @@ function Inventory:create(windowType, ctx)
 
     self.categoryFilter = CategoryFilter.create({
         maxHeight = 72,
+        compact = true,
         getCategoryDisabledLookup = function()
             if not self.itemTable or not self.itemTable.layout or not self.itemTable.layout.userData.getFilteredRows then
                 return {}
@@ -716,6 +717,7 @@ function Inventory:create(windowType, ctx)
         onOpenSettings = openColumnSettings,
     }, function(selectedCategory)
         self.itemTable.layout.userData.setColumns(getColumnsForCategory(selectedCategory), true)
+        self:setTitle()
 
         local categories = I.InventoryExtender.getCategories()
         local category = nil
@@ -1491,10 +1493,23 @@ function Inventory:updateData()
 end
 
 function Inventory:setTitle()
+    local title
     if self.type == 'Inventory' then
-        self.element.layout.userData.setTitle(helpers.getEquippedName(omwself))
+        if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
+            local categoryKey = self.categoryFilter.layout.userData.getCategory()
+            local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
+            if category and category.name then
+                title = category.name
+            end
+        else
+            title = helpers.getEquippedName(omwself)
+        end
     elseif self.target then
-        self.element.layout.userData.setTitle(self.target.type.record(self.target).name)
+        title = self.target.type.record(self.target).name
+    end
+
+    if title then
+        self.element.layout.userData.setTitle(title)
     end
 end
 

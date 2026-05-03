@@ -16,9 +16,12 @@ local CategoryFilter = {}
 
 function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local maxHeight = props.maxHeight or 48
+    local compact = props.compact == true
 
     local topBarHeight = specialTemplates.LINE_HEIGHT * 1.5
-    local categoryBarHeight = maxHeight - topBarHeight
+    local categoryBarHeight = compact and (topBarHeight - 4) or (maxHeight - topBarHeight)
+    local elementHeight = compact and (topBarHeight + 8) or maxHeight
+    local compactIconPadding = compact and 8 or 16
 
     local element, createSearchBar
     local placeholder = l10n('UI_SearchBarPlaceholder')
@@ -83,24 +86,45 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         }
     end
 
+    local categoryBarLayout = {
+        name = 'categoryBar',
+        type = ui.TYPE.Flex,
+        props = {
+            horizontal = true,
+            autoSize = false,
+            position = compact and v2(0, 0) or v2(0, topBarHeight),
+            size = v2(0, categoryBarHeight),
+            relativeSize = compact and v2(0, 0) or v2(1, 0),
+            align = ui.ALIGNMENT.Start,
+            arrange = ui.ALIGNMENT.Center,
+        },
+        external = compact and { grow = 1, stretch = 1, } or nil,
+        content = ui.content {},
+    }
+
     local topBarContent = ui.content {
         baseTemplates.intervalH(8),
-        {
+    }
+    if compact then
+        topBarContent:add(categoryBarLayout)
+        topBarContent:add(baseTemplates.intervalH(8))
+    else
+        topBarContent:add({
             name = 'selectedCategoryName',
             template = baseTemplates.textHeader,
             props = {
                 text = '',
                 textSize = topBarHeight,
             },
-        },
-        {
+        })
+        topBarContent:add({
             external = { grow = 1, stretch = 1, }
-        },
-        createSearchBar(placeholder),
-        {
-            name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
-        },
-    }
+        })
+    end
+    topBarContent:add(createSearchBar(placeholder))
+    topBarContent:add({
+        name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
+    })
     if props.onOpenSettings then
         topBarContent:add(baseTemplates.intervalH(4))
         topBarContent:add(specialTemplates.interactive({
@@ -151,31 +175,16 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         content = topBarContent,
     }
 
-    local categoryBarLayout = {
-        name = 'categoryBar',
-        type = ui.TYPE.Flex,
-        props = {
-            horizontal = true,
-            autoSize = false,
-            position = v2(0, topBarHeight),
-            size = v2(0, categoryBarHeight),
-            relativeSize = v2(1, 0),
-            align = ui.ALIGNMENT.Start,
-            arrange = ui.ALIGNMENT.Center,
-        },
-        content = ui.content {},
-    }
-
     local state = {
         selectedCategory = nil,
     }
 
     element = ui.create({
         props = {
-            size = v2(0, maxHeight),
+            size = v2(0, elementHeight),
             relativeSize = v2(1, 0),
         },
-        content = ui.content {
+        content = compact and ui.content { topBarLayout } or ui.content {
             topBarLayout,
             categoryBarLayout,
         },
@@ -193,12 +202,26 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         return false
     end
 
+    local function getCategoryBarContent()
+        if compact then
+            return element.layout.content.topBar.content.categoryBar.content
+        end
+        return element.layout.content.categoryBar.content
+    end
+
     updateCategories = function()
-        for i = #element.layout.content.categoryBar.content, 1, -1 do
-            auxUi.deepDestroy(element.layout.content.categoryBar.content[i])
+        local categoryBarContent = getCategoryBarContent()
+        for i = #categoryBarContent, 1, -1 do
+            auxUi.deepDestroy(categoryBarContent[i])
         end
 
-        element.layout.content.categoryBar.content = ui.content {}
+        if compact then
+            element.layout.content.topBar.content.categoryBar.content = ui.content {}
+            categoryBarContent = element.layout.content.topBar.content.categoryBar.content
+        else
+            element.layout.content.categoryBar.content = ui.content {}
+            categoryBarContent = element.layout.content.categoryBar.content
+        end
 
         local categories = I.InventoryExtender.getCategories()
         local categoryDisabledLookup = props.getCategoryDisabledLookup and props.getCategoryDisabledLookup() or nil
@@ -209,7 +232,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
             local isDisabled = isCategoryDisabled(category, categoryDisabledLookup)
-            element.layout.content.categoryBar.content:add(specialTemplates.interactive({
+            categoryBarContent:add(specialTemplates.interactive({
                 canClick = function()
                     return not isDisabled
                 end,
@@ -232,7 +255,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         type = ui.TYPE.Image,
                         props = {
                             resource = ui.texture { path = category.icon },
-                            size = v2(categoryBarHeight - 16, categoryBarHeight - 16),
+                            size = v2(categoryBarHeight - compactIconPadding, categoryBarHeight - compactIconPadding),
                             relativePosition = v2(0.5, 0.5),
                             anchor = v2(0.5, 0.5),
                             color = isSelected and constants.Colors.ACTIVE or (isDisabled and constants.Colors.DISABLED or constants.Colors.DEFAULT),
@@ -260,7 +283,9 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             }, ctx))
         end
 
-        element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
+        if not compact then
+            element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
+        end
 
         element:update()
     end
@@ -272,13 +297,18 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local function resizeImages(totalWidth)
         local categories = I.InventoryExtender.getCategories()
         if #categories == 0 then return end
-        
-        local maxSizePerCategory = totalWidth / #categories
-        local imageSize = math.min(categoryBarHeight - 16, maxSizePerCategory)
+
+        local availableWidth = totalWidth
+        if compact then
+            availableWidth = math.max(0, totalWidth - 240)
+        end
+
+        local maxSizePerCategory = availableWidth / #categories
+    local imageSize = math.min(categoryBarHeight - compactIconPadding, maxSizePerCategory)
         local imageSizeVec = v2(imageSize, imageSize)
-        
+
         local anyChanged = false
-        for _, child in ipairs(element.layout.content.categoryBar.content) do
+        for _, child in ipairs(getCategoryBarContent()) do
             if child.layout and child.layout.content.categoryIcon then
                 if child.layout.content.categoryIcon.props.size ~= imageSizeVec then
                     anyChanged = true
@@ -287,9 +317,11 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 end
             end
         end
-        
-        if anyChanged then
+
+        if anyChanged and not compact then
             element.layout.props.size = v2(0, topBarHeight + imageSize + 16)
+            element:update()
+        elseif anyChanged then
             element:update()
         end
     end
@@ -308,7 +340,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     local function cycleCategory(i)
         local categories = I.InventoryExtender.getCategories()
         if #categories == 0 then return end
-        local buttons = element.layout.content.categoryBar.content
+        local buttons = getCategoryBarContent()
 
         local currentIndex = 1
         for index, category in ipairs(categories) do
