@@ -209,11 +209,12 @@ Templates.progressBar = function(props)
             {
                 template = BASE.textNormal,
                 props = {
-                    anchor = v2(0.5, 0.5),
-                    relativePosition = v2(0.5, 0.5),
+                    anchor = v2(0.5, 1),
+                    relativePosition = v2(0.5, 1),
                     text = props.text or tostring(props.value .. '/' .. props.maxValue),
                     textColor = props.textColor,
                     textSize = Templates.TEXT_SIZE,
+                    textAlignV = ui.ALIGNMENT.Center,
                 }
             },
         }
@@ -296,11 +297,44 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     innerContent:add(BASE.intervalV(4))
 
-    local conditionString
-    local condition = types.Item.itemData(item).condition
-    local maxCondition = itemRecord.health
-    if condition and maxCondition then
-        conditionString = constants.Strings.CONDITION .. ': ' .. util.round(condition) .. '/' .. util.round(maxCondition)
+    local conditionLabel, condition, conditionMax, conditionText
+    if types.Item.itemData(item).condition then
+        condition = types.Item.itemData(item).condition
+        if itemRecord.health then
+            conditionLabel = constants.Strings.CONDITION
+            conditionMax = util.round(itemRecord.health)
+        elseif itemRecord.maxCondition then
+            conditionLabel = constants.Strings.USES
+            conditionMax = util.round(itemRecord.maxCondition)
+        elseif itemRecord.duration and condition ~= -1 then
+            conditionLabel = constants.Strings.DURATION
+            conditionMax = util.round(itemRecord.duration)
+            conditionText = helpers.createDurationString(condition)
+        end
+    end
+
+    local conditionBar
+    if condition and conditionLabel and conditionMax then
+        conditionBar = {
+            name = 'condition',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                textNormal(nil, conditionLabel .. ':'),
+                BASE.intervalH(5),
+                Templates.progressBar {
+                    value = condition,
+                    maxValue = conditionMax,
+                    size = v2(204, Templates.LINE_HEIGHT),
+                    color = constants.Colors.BAR_HEALTH,
+                    text = conditionText,
+                    textColor = constants.Colors.DEFAULT,
+                }
+            }
+        }
     end
 
     if types.Armor.objectIsInstance(item) then
@@ -309,10 +343,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
             innerContent:add(textNormal('type', constants.Strings.TYPE .. ' ' .. skillString))
         end
         innerContent:add(textNormal('armorRating', constants.Strings.ARMOR_RATING .. ': ' .. math.modf(I.Combat.getEffectiveArmorRating(item, omwself))))
-        innerContent:add(textNormal('condition', conditionString))
-    end
-
-    if types.Weapon.objectIsInstance(item) then
+    elseif types.Weapon.objectIsInstance(item) then
         local weaponInfo = helpers.getWeaponInfo(item)
         if weaponInfo then
             innerContent:add(textNormal('type', constants.Strings.TYPE .. ' ' .. core.getGMST('sSkill' .. weaponInfo.skill)))
@@ -332,10 +363,6 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                 innerContent:add(textNormal('attack', constants.Strings.ATTACK .. ': ' .. attackMin .. ' - ' .. attackMax)) 
             end
 
-            if weaponInfo.class == constants.WeaponClass.Melee or weaponInfo.class == constants.WeaponClass.Ranged then
-                innerContent:add(textNormal('condition', conditionString))
-            end
-
             if weaponInfo.class == constants.WeaponClass.Melee then
                 innerContent:add(textNormal('range', constants.Strings.RANGE .. ': ' .. helpers.roundToPlaces(helpers.getWeaponRangeInFeet(item), 1) .. ' ' .. constants.Strings.FEET)) 
             end
@@ -344,10 +371,6 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                 innerContent:add(textNormal('speed', constants.Strings.SPEED .. ': ' .. util.round(itemRecord.speed * 100) .. '%')) 
             end
         end
-    end
-
-    if itemRecord.maxCondition then
-        innerContent:add(textNormal('condition', constants.Strings.USES .. ': ' .. itemData.condition))
     end
 
     if itemRecord.quality then
@@ -375,6 +398,11 @@ Templates.itemTooltip = function(item, showIcon, ctx)
     local value = helpers.getItemValue(item)
     if value > 0 and itemRecord.id ~= 'gold_001' then
         innerContent:add(textNormal('value', constants.Strings.VALUE .. ': ' .. (value)))
+    end
+
+    if conditionBar then
+        innerContent:add(BASE.intervalV(4))
+        innerContent:add(conditionBar) 
     end
 
     local enchantment
@@ -405,6 +433,9 @@ Templates.itemTooltip = function(item, showIcon, ctx)
     end
 
     if castTypeString then
+        if conditionBar then
+            innerContent:add(BASE.intervalV(4))
+        end
         innerContent:add(textNormal('castType', castTypeString))
     end
 
@@ -503,7 +534,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                     value = itemData.enchantmentCharge or 0,
                     maxValue = maxCharge,
                     size = v2(204, Templates.LINE_HEIGHT),
-                    color = constants.Colors.BAR_HEALTH,
+                    color = constants.Colors.BAR_MAGIC,
                     textColor = constants.Colors.DEFAULT,
                 }
             }
