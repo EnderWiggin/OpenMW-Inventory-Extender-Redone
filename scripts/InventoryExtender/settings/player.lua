@@ -91,37 +91,37 @@ I.Settings.registerGroup {
             key = 'd_InventoryContainerWindowDimensions',
             renderer = 'windowDimensions',
             name = 'InventoryContainerWindowDimensions',
-            default = { x = 0.1, y = 0.05, w = 0.4, h = 0.85, }
+            default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_InventoryBarterWindowDimensions',
             renderer = 'windowDimensions',
             name = 'InventoryBarterWindowDimensions',
-            default = { x = 0.1, y = 0.05, w = 0.4, h = 0.85, }
+            default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_InventoryCompanionWindowDimensions',
             renderer = 'windowDimensions',
             name = 'InventoryCompanionWindowDimensions',
-            default = { x = 0.1, y = 0.05, w = 0.4, h = 0.85, }
+            default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_ContainerWindowDimensions',
             renderer = 'windowDimensions',
             name = 'ContainerWindowDimensions',
-            default = { x = 0.5, y = 0.05, w = 0.4, h = 0.85, }
+            default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_BarterWindowDimensions',
             renderer = 'windowDimensions',
             name = 'BarterWindowDimensions',
-            default = { x = 0.5, y = 0.05, w = 0.4, h = 0.85, }
+            default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
         },
         {
             key = 'd_CompanionWindowDimensions',
             renderer = 'windowDimensions',
             name = 'CompanionWindowDimensions',
-            default = { x = 0.5, y = 0.05, w = 0.4, h = 0.85, }
+            default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
         },
     },
 }
