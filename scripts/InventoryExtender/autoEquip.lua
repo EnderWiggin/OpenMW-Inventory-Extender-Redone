@@ -270,7 +270,6 @@ local function autoEquipArmor(slots)
 end
 
 local function autoEquip(player)
-    print('Auto equip:', self.recordId, player and player.recordId)
     local slots = types.Actor.getEquipment(self)
     autoEquipWeapon(slots)
     autoEquipArmor(slots)
