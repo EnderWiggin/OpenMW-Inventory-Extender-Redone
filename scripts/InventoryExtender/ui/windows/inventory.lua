@@ -177,6 +177,78 @@ function Inventory:create(windowType, ctx)
         return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Swirl'
     end
 
+    local function isFavorited(item)
+        return item ~= nil and ctx.favoriteItems[item.id] == true
+    end
+
+    local function setFavorited(item, favorited)
+        if not item or not item.id then
+            return false
+        end
+
+        local currentValue = ctx.favoriteItems[item.id] == true
+        if currentValue == favorited then
+            return currentValue
+        end
+
+        if favorited then
+            ctx.favoriteItems[item.id] = true
+        else
+            ctx.favoriteItems[item.id] = nil
+        end
+
+        ctx.favoriteRevision = (ctx.favoriteRevision or 0) + 1
+        return ctx.favoriteItems[item.id] == true
+    end
+
+    local function toggleFavorite(item)
+        return setFavorited(item, not isFavorited(item))
+    end
+
+    local function hasFavorites()
+        for _, isFavorite in pairs(ctx.favoriteItems or {}) do
+            if isFavorite then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function canToggleFavoriteRow(row)
+        return self.target == omwself and row and row.item ~= nil and not row.isBartered and not ctx.dragAndDrop.draggingObject
+    end
+
+    local function isFavoriteTransferBlocked(row)
+        return self.target == omwself and row and row.item ~= nil and not row.isBartered and isFavorited(row.item) and I.UI.getMode() ~= 'Interface'
+    end
+
+    local function toggleFavoriteRow(row, rowWidget)
+        if not canToggleFavoriteRow(row) then
+            return false
+        end
+
+        local state = self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState and self.itemTable.layout.userData.getState()
+        local scrollPos = ctx.focusedScrollable and ctx.focusedScrollable.layout and ctx.focusedScrollable.layout.userData.getScrollPos and ctx.focusedScrollable.layout.userData.getScrollPos() or 0
+        if state then
+            if state.lastPointerRowY ~= nil then
+                state.lastUsedRowPos = v2(0, state.lastPointerRowY)
+            elseif rowWidget and rowWidget.layout and rowWidget.layout.props then
+                state.lastUsedRowPos = rowWidget.layout.props.position - v2(0, scrollPos)
+            end
+        end
+
+        local wasFavorited = isFavorited(row.item)
+        local nowFavorited = toggleFavorite(row.item)
+        if wasFavorited and not nowFavorited and not hasFavorites() then
+            if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory and self.categoryFilter.layout.userData.getCategory() == 'Favorites' then
+                self.categoryFilter.layout.userData.setCategory('All')
+            end
+        end
+        ambient.playSound('menu click')
+        I.InventoryExtender.update()
+        return true
+    end
+
     local iconRenderer = function(row, width, height, options)
         options = options or {}
         local iconDim = math.min(width, height)
@@ -251,6 +323,7 @@ function Inventory:create(windowType, ctx)
 
         local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
 
+        local favorite = isFavorited(row.item)
         local stolen = false
         local enchanted = false
         if self.type == 'Inventory' and self.ctx.stolenItems then
@@ -274,6 +347,17 @@ function Inventory:create(windowType, ctx)
             },
         }
         local iconSize = math.min(specialTemplates.LINE_HEIGHT, 12)
+        if favorite then
+            content:add(baseTemplates.intervalH(8))
+            content:add({
+                type = ui.TYPE.Image,
+                props = {
+                    resource = baseTemplates.createTexture(iconPack.getPath('item/favorited.dds')),
+                    size = v2(iconSize, iconSize),
+                    color = constants.Colors.GOLD,
+                },
+            })
+        end
         if stolen then
             content:add(baseTemplates.intervalH(8))
             content:add({
@@ -309,6 +393,7 @@ function Inventory:create(windowType, ctx)
             content = content,
             userData = {
                 text = text,
+                favorite = favorite,
                 stolen = stolen,
                 enchanted = enchanted,
             }
@@ -543,12 +628,30 @@ function Inventory:create(windowType, ctx)
         return filterVisibleColumns(getBaseColumnsForCategory(categoryKey))
     end
 
+    local function getAvailableCategories()
+        local categories = I.InventoryExtender.getCategories()
+        local filteredCategories = {}
+        for _, category in ipairs(categories) do
+            if category.key ~= 'Favorites' or (self.target == omwself and hasFavorites()) then
+                table.insert(filteredCategories, category)
+            end
+        end
+        return filteredCategories
+    end
+
+    local function getSyncedCategoryKey(categoryKey, targetWindow)
+        if categoryKey == 'Favorites' and targetWindow and targetWindow.target ~= omwself then
+            return 'All'
+        end
+        return categoryKey
+    end
+
     local function getCurrentCategoryKey()
         if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
             return self.categoryFilter.layout.userData.getCategory()
         end
 
-        local categories = I.InventoryExtender.getCategories()
+        local categories = getAvailableCategories()
         return categories[1] and categories[1].key or nil
     end
 
@@ -640,6 +743,11 @@ function Inventory:create(windowType, ctx)
             return
         end
 
+        if isFavoriteTransferBlocked(row) then
+            ui.showMessage(l10n('UI_Msg_FavoriteItem'))
+            return false
+        end
+
         if not rowWidget then
             return
         end
@@ -721,7 +829,11 @@ function Inventory:create(windowType, ctx)
                     barterUtils.updateOffer(ctx)
                     omwself:sendEvent('IE_Update')
                 elseif mode == 'Interface' then
-                    ctx.dragAndDrop:dropAtFeet(row.item, count)
+                    if not isFavorited(row.item) then
+                        ctx.dragAndDrop:dropAtFeet(row.item, count)
+                    else
+                        ui.showMessage(l10n('UI_Msg_FavoriteItem'))
+                    end
                 end
             else
                 ctx.dragAndDrop:startDrag(
@@ -774,20 +886,28 @@ function Inventory:create(windowType, ctx)
             if aEquipped ~= bEquipped then
                 return aEquipped -- equipped items come first (true > false)
             end
+
+            local aFavorited = isFavorited(a.item)
+            local bFavorited = isFavorited(b.item)
+            if aFavorited ~= bFavorited then
+                return aFavorited -- favorited items come first (true > false)
+            end
             
             -- Second, sort by Category
             local categories = I.InventoryExtender.getCategories()
             local indexA, indexB = nil, nil
             for i, category in ipairs(categories) do
-                if category.filter then
-                    if category.filter(a.item) then
-                        indexA = i
-                    end
-                    if category.filter(b.item) then
-                        indexB = i
-                    end
-                    if indexA and indexB then
-                        break
+                if category.key ~= 'Favorites' then
+                    if category.filter then
+                        if category.filter(a.item) then
+                            indexA = i
+                        end
+                        if category.filter(b.item) then
+                            indexB = i
+                        end
+                        if indexA and indexB then
+                            break
+                        end
                     end
                 end
             end
@@ -817,6 +937,9 @@ function Inventory:create(windowType, ctx)
         end,
         onRowClick = onRowClick,
         onRowActivate = onRowActivate,
+        onFavoriteToggle = function(row, rowWidget)
+            return toggleFavoriteRow(row, rowWidget)
+        end,
         onKBMRowActivate = function(row, rowWidget)
             return onRowActivate(row, rowWidget, nil, true)
         end,
@@ -857,13 +980,14 @@ function Inventory:create(windowType, ctx)
         maxHeight = 72,
         compact = configPlayer.tweaks.b_CompactCategoryFilter,
         vanillaStyle = configPlayer.tweaks.b_VanillaCategoryIcons,
+        getCategories = getAvailableCategories,
         getCategoryDisabledLookup = function()
             if not self.itemTable or not self.itemTable.layout or not self.itemTable.layout.userData.getFilteredRows then
                 return {}
             end
 
             local rows = self.itemTable.layout.userData.getFilteredRows('categoryFilter')
-            local categories = I.InventoryExtender.getCategories()
+            local categories = getAvailableCategories()
             local disabledLookup = {}
 
             for _, category in ipairs(categories) do
@@ -887,7 +1011,7 @@ function Inventory:create(windowType, ctx)
         self.itemTable.layout.userData.setColumns(getColumnsForCategory(selectedCategory), true)
         self:setTitle()
 
-        local categories = I.InventoryExtender.getCategories()
+        local categories = getAvailableCategories()
         local category = nil
         for _, cat in ipairs(categories) do
             if cat.key == selectedCategory then
@@ -910,12 +1034,14 @@ function Inventory:create(windowType, ctx)
 
         local invert = configPlayer.tweaks.b_InvertCategorySwitching
         local shouldSync = invert and input.isShiftPressed() or not invert and not input.isShiftPressed()
-        if shouldSync then
+        if shouldSync and not ctx.syncingCategoryFilter then
+            ctx.syncingCategoryFilter = true
             for _, window in pairs(I.InventoryExtender.getWindows()) do
                 if window ~= self and window:isVisible() and window.categoryFilter then
-                    window.categoryFilter.layout.userData.setCategory(selectedCategory)
+                    window.categoryFilter.layout.userData.setCategory(getSyncedCategoryKey(selectedCategory, window))
                 end
             end
+            ctx.syncingCategoryFilter = false
         end
     end, 
     function(searchText)
@@ -1681,6 +1807,12 @@ function Inventory:updateData()
     if self.trackedAlchemy ~= currentAlchemy then
         anyChanges = true
         self.trackedAlchemy = currentAlchemy
+    end
+
+    local currentFavoritesRevision = self.ctx.favoriteRevision or 0
+    if self.trackedFavoritesRevision ~= currentFavoritesRevision then
+        anyChanges = true
+        self.trackedFavoritesRevision = currentFavoritesRevision
     end
 
     if not self.trackedCounts then

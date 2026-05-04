@@ -175,6 +175,13 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         selectedCategory = nil,
     }
 
+    local function getCategories()
+        if props.getCategories then
+            return props.getCategories() or {}
+        end
+        return I.InventoryExtender.getCategories()
+    end
+
     element = ui.create({
         props = {
             size = v2(0, elementHeight),
@@ -198,6 +205,27 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         return false
     end
 
+    local function getDefaultCategoryKey(categories, categoryDisabledLookup)
+        for _, category in ipairs(categories) do
+            if category.defaultSelected ~= false and not isCategoryDisabled(category, categoryDisabledLookup) then
+                return category.key
+            end
+        end
+
+        return categories[1] and categories[1].key or nil
+    end
+
+    local function resolveCategoryKey(categoryKey, categories, categoryDisabledLookup)
+        categories = categories or getCategories()
+        for _, category in ipairs(categories) do
+            if category.key == categoryKey then
+                return categoryKey
+            end
+        end
+
+        return getDefaultCategoryKey(categories, categoryDisabledLookup)
+    end
+
     local function getCategoryBarContent()
         if compact then
             return element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content
@@ -219,11 +247,9 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             categoryBarContent = element.layout.content.categoryBar.content.categoryBarButtons.content
         end
 
-        local categories = I.InventoryExtender.getCategories()
+        local categories = getCategories()
         local categoryDisabledLookup = props.getCategoryDisabledLookup and props.getCategoryDisabledLookup() or nil
-        if not state.selectedCategory then
-            state.selectedCategory = categories[1] and categories[1].key or nil
-        end
+        state.selectedCategory = resolveCategoryKey(state.selectedCategory, categories, categoryDisabledLookup)
 
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
@@ -334,7 +360,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     element.layout.userData.updateCategories = updateCategories
 
     local function resizeImages(totalWidth)
-        local categories = I.InventoryExtender.getCategories()
+        local categories = getCategories()
         if #categories == 0 then return end
 
         local availableWidth = totalWidth
@@ -389,7 +415,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     element.layout.userData.clearSearch = clearSearch
 
     local function cycleCategory(i)
-        local categories = I.InventoryExtender.getCategories()
+        local categories = getCategories()
         if #categories == 0 then return end
         local buttons = getCategoryBarContent()
 
@@ -435,8 +461,11 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
     element.layout.userData.cycleCategory = cycleCategory
 
     element.layout.userData.setCategory = function(categoryKey)
-        if state.selectedCategory ~= categoryKey then
-            state.selectedCategory = categoryKey
+        local categories = getCategories()
+        local categoryDisabledLookup = props.getCategoryDisabledLookup and props.getCategoryDisabledLookup() or nil
+        local resolvedCategoryKey = resolveCategoryKey(categoryKey, categories, categoryDisabledLookup)
+        if state.selectedCategory ~= resolvedCategoryKey then
+            state.selectedCategory = resolvedCategoryKey
             if onCategoryChange then
                 onCategoryChange(state.selectedCategory)
             else

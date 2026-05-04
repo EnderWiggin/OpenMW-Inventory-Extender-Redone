@@ -14,9 +14,15 @@ KeybindPickupItemDesc: |-
   With Ctrl: Pick up one
   With Alt (in inventory): Drop at feet
   With Alt (in others): Transfer to other inventory
+KeybindToggleFavorite: Toggle favorite
+KeybindToggleFavoriteDesc: |-
+  Toggle favorite status for the hovered item in your inventory.
+  
+  Favorited items cannot be sold, dropped, or transfered to other inventories, and are marked with a star icon in the inventory list.
 SwapUsePickup: Swap use/pick up
 SwapUsePickupDesc: |-
   By default, the above keybind is used to pick up items, and left-click is used for item activation.
+  
   Enable this option to swap those behaviors, so that left-click will pick up items and the keybind will activate them.
 
 ConfigCategoryWindowOptions: Window Options
@@ -108,6 +114,7 @@ Column_Weight: Wgt.
 Column_VW: V/W
 
 # Category
+Category_Favorites: Favorites
 Category_All: All
 Category_Weapon: Weapons
 Category_Armor: Armor
@@ -189,6 +196,7 @@ UI_Barter_Gain: "Gain:"
 UI_Barter_Max: Max
 
 UI_Msg_ScriptedItem: This item cannot be picked up from the inventory.
+UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inventory.
 
 UI_Tooltip_UseButton: Or click on item
 UI_Tooltip_UseButton_Swapped: Or press {key} on item

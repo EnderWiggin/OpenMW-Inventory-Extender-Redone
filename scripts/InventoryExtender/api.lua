@@ -98,13 +98,17 @@ end
 function API.registerCategory(category)
     for i, existingCategory in ipairs(categories) do
         if existingCategory.key:lower() == category.key:lower() then
-            categories[i] = category
-            return
+            table.remove(categories, i)
+            break
         end
     end
     categoriesChanged = true
 
-    table.insert(categories, category)
+    if category.prepend then
+        table.insert(categories, 1, category)
+    else
+        table.insert(categories, category)
+    end
 end
 
 function API.unregisterCategory(key)
@@ -249,12 +253,16 @@ return {
         onSave = function()
             return {
                 stolenItems = windowManager.ctx.stolenItems,
+                favoriteItems = windowManager.ctx.favoriteItems,
+                favoriteRevision = windowManager.ctx.favoriteRevision,
                 companionProfit = windowManager.ctx.companionProfit,
             }
         end,
         onLoad = function(data)
             if data then
                 windowManager.ctx.stolenItems = data.stolenItems or {}
+                windowManager.ctx.favoriteItems = data.favoriteItems or {}
+                windowManager.ctx.favoriteRevision = data.favoriteRevision or 0
                 windowManager.ctx.companionProfit = data.companionProfit or {}
             end
             windowManager:init()

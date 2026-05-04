@@ -394,6 +394,7 @@ ItemTable.create = function(props, ctx)
                         },
                         content = widgetContent,
                         userData = { 
+                            row = row,
                             onRowActivate = function()
                                 if props.onRowActivate then
                                     return props.onRowActivate(row, state.rowCache[cacheKey])
@@ -416,6 +417,11 @@ ItemTable.create = function(props, ctx)
                             onRowClick = function()
                                 if onRowClick then 
                                     return onRowClick(row, state.rowCache[cacheKey]) 
+                                end
+                            end,
+                            onFavoriteToggle = function()
+                                if props.onFavoriteToggle and state.rowCache[cacheKey] and state.rowCache[cacheKey].layout and state.rowCache[cacheKey].layout.userData then
+                                    return props.onFavoriteToggle(state.rowCache[cacheKey].layout.userData.row, state.rowCache[cacheKey])
                                 end
                             end,
                             tooltipFn = function()
@@ -504,6 +510,7 @@ ItemTable.create = function(props, ctx)
                 end
 
                 local rowWidget = state.rowCache[cacheKey]
+                rowWidget.layout.userData.row = row
                 
                 local targetX = 0
                 local targetY = 0

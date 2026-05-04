@@ -51,6 +51,8 @@ WindowManager.ctx = {
     modeArgs = {},
     lastUiMode = nil,
     stolenItems = {},
+    favoriteItems = {},
+    favoriteRevision = 0,
     barterState = {
         selling = {},
         buying = {},
@@ -348,6 +350,19 @@ end
 
 function WindowManager:onKeyPress(key)
     if not configPlayer.window.b_EnableMod then return end
+
+    local focusedInteractive = WindowManager.ctx.focusedInteractive
+    if key.code == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
+        if not focusedInteractive or not focusedInteractive.layout or not focusedInteractive.layout.userData then
+            return
+        end
+
+        if focusedInteractive.layout.userData.onFavoriteToggle then
+            return focusedInteractive.layout.userData.onFavoriteToggle()
+        end
+        return
+    end
+
     if key.code ~= configPlayer.keybinds.k_PickupItem then return end
 
     if not configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
@@ -363,7 +378,6 @@ function WindowManager:onKeyPress(key)
         end
     end
 
-    local focusedInteractive = WindowManager.ctx.focusedInteractive
     if not focusedInteractive or not focusedInteractive.layout or not focusedInteractive.layout.userData then
         return
     end

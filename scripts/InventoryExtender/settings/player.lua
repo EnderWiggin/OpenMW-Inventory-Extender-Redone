@@ -34,6 +34,13 @@ I.Settings.registerGroup {
             default = input.KEY.R
         },
         {
+            key = 'k_ToggleFavorite',
+            renderer = 'InventoryExtender/inputKeySelection',
+            name = 'KeybindToggleFavorite',
+            description = 'KeybindToggleFavoriteDesc',
+            default = input.KEY.F,
+        },
+        {
             key = 'b_SwapUsePickup',
             renderer = 'checkbox',
             name = 'SwapUsePickup',

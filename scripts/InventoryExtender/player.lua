@@ -16,6 +16,14 @@ local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
 local l10n = core.l10n('InventoryExtender')
 
+local function isFavorited(item)
+    local ctx = API.getContext and API.getContext()
+    if not ctx or not ctx.favoriteItems or not item then
+        return false
+    end
+    return ctx.favoriteItems[item.id] == true
+end
+
 local function init()
     if not configPlayer.window.b_EnableMod then
         return
@@ -42,6 +50,12 @@ local function init()
 end
 
 local defaultCategories = {
+    {
+        key = 'Favorites',
+        filter = isFavorited,
+        prepend = true,
+        defaultSelected = false,
+    },
     {
         key = 'All',
     },
@@ -111,11 +125,15 @@ local defaultCategories = {
 }
 
 for _, category in ipairs(defaultCategories) do
+    local categoryIcon = iconPack.getPath('categories/' .. category.key:lower() .. '.dds')
+
     API.registerCategory{
         key = category.key,
         name = l10n('Category_' .. category.key),
-        icon = iconPack.getPath('categories/' .. category.key:lower() .. '.dds'),
+        icon = categoryIcon,
         filter = category.filter,
+        prepend = category.prepend,
+        defaultSelected = category.defaultSelected,
     }
 end
 

@@ -20,6 +20,8 @@ local constants = require('scripts.InventoryExtender.util.constants')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 
+local l10n = core.l10n('InventoryExtender')
+
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
@@ -391,6 +393,11 @@ function DragAndDrop:init(ctx)
         mousePress = async:callback(function(e)
             if e.button ~= 1 then return end 
             if self.draggingObject then
+                if self.ctx.favoriteItems[self.draggingObject.id] == true then
+                    ui.showMessage(l10n('UI_Msg_FavoriteItem'))
+                    return
+                end
+
                 if not self.hitPos then
                     self:dropAtFeet(self.draggingObject, self.draggingCount)
                 else
