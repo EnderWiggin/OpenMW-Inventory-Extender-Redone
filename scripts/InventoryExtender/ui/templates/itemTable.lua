@@ -381,7 +381,9 @@ ItemTable.create = function(props, ctx)
                         end,
                         onMouseMove = function()
                             if not scrollable.layout.userData.isDraggingScrollBar then
-                                state.lastPointerRowY = state.rowCache[cacheKey].layout.props.position.y - scrollPos
+                                if state.rowCache[cacheKey] then
+                                    state.lastPointerRowY = state.rowCache[cacheKey].layout.props.position.y - scrollPos
+                                end
                             end
                         end,
                         name = row.item and row.item.id or 'item',
