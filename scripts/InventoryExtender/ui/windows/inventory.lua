@@ -1219,8 +1219,7 @@ function Inventory:create(windowType, ctx)
                 end
             end,
             parent = self.infoBar,
-        }, baseTemplates.button(core.getGMST('sUse')), ctx), function(layout)
-            layout.name = 'useButton'
+        }, baseTemplates.button(core.getGMST('sUse'), nil, 'useButton'), ctx), function(layout)
             layout.props.visible = ctx.dragAndDrop.draggingObject ~= nil
             layout.userData.tooltipFn = function()
                 local text
