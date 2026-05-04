@@ -365,6 +365,14 @@ ItemTable.create = function(props, ctx)
                         widgetContent = createContent(row)
                     end
 
+                    local function getCurrentRow()
+                        local rowWidget = state.rowCache[cacheKey]
+                        if rowWidget and rowWidget.layout and rowWidget.layout.userData then
+                            return rowWidget.layout.userData.row
+                        end
+                        return row
+                    end
+
                     state.rowCache[cacheKey] = specialTemplates.interactive({
                         canClick = function()
                             for _, button in pairs(input.CONTROLLER_BUTTON) do
@@ -375,8 +383,9 @@ ItemTable.create = function(props, ctx)
                             return true
                         end,
                         onClick = function()
+                            local currentRow = getCurrentRow()
                             if onRowClick then 
-                                return onRowClick(row, state.rowCache[cacheKey]) 
+                                return onRowClick(currentRow, state.rowCache[cacheKey]) 
                             end
                         end,
                         onMouseMove = function()
@@ -396,27 +405,31 @@ ItemTable.create = function(props, ctx)
                         userData = { 
                             row = row,
                             onRowActivate = function()
+                                local currentRow = getCurrentRow()
                                 if props.onRowActivate then
-                                    return props.onRowActivate(row, state.rowCache[cacheKey])
+                                    return props.onRowActivate(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onKBMRowActivate = function()
+                                local currentRow = getCurrentRow()
                                 if props.onKBMRowActivate then
-                                    return props.onKBMRowActivate(row, state.rowCache[cacheKey])
+                                    return props.onKBMRowActivate(currentRow, state.rowCache[cacheKey])
                                 elseif props.onRowActivate then
-                                    return props.onRowActivate(row, state.rowCache[cacheKey])
+                                    return props.onRowActivate(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onKBMRowClick = function()
+                                local currentRow = getCurrentRow()
                                 if props.onKBMRowClick then
-                                    return props.onKBMRowClick(row, state.rowCache[cacheKey])
+                                    return props.onKBMRowClick(currentRow, state.rowCache[cacheKey])
                                 elseif onRowClick then
-                                    return onRowClick(row, state.rowCache[cacheKey])
+                                    return onRowClick(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onRowClick = function()
+                                local currentRow = getCurrentRow()
                                 if onRowClick then 
-                                    return onRowClick(row, state.rowCache[cacheKey]) 
+                                    return onRowClick(currentRow, state.rowCache[cacheKey]) 
                                 end
                             end,
                             onFavoriteToggle = function()
@@ -425,10 +438,11 @@ ItemTable.create = function(props, ctx)
                                 end
                             end,
                             tooltipFn = function()
-                                if row.item then
-                                    return specialTemplates.itemTooltip(row.item, false, ctx)
-                                elseif row.tooltip then
-                                    return specialTemplates.lineTooltip(row.tooltip)
+                                local currentRow = getCurrentRow()
+                                if currentRow and currentRow.item then
+                                    return specialTemplates.itemTooltip(currentRow.item, false, ctx)
+                                elseif currentRow and currentRow.tooltip then
+                                    return specialTemplates.lineTooltip(currentRow.tooltip)
                                 end
                                 return nil
                             end,
