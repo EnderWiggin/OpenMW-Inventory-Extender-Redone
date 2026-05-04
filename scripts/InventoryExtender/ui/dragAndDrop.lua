@@ -186,6 +186,11 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
     end
 
     if destination then
+        local autoEquip
+        if I.UI.getMode() == 'Companion' and (types.Armor.objectIsInstance(object) or types.Clothing.objectIsInstance(object) or types.Weapon.objectIsInstance(object)) then
+            autoEquip = self.ctx.windowArgs['Companion']
+        end
+
         core.sendGlobalEvent('IE_MoveInto', {
             obj = object,
             count = self.draggingCount or object.count,
@@ -193,6 +198,7 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
             destination = destination,
             player = omwself,
             pickpocket = pickpocket,
+            autoEquip = autoEquip,
         })
     end
 

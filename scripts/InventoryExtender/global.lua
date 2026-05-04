@@ -255,7 +255,15 @@ local function moveInto(props)
             target = destination,
         })
     end
-    props.player:sendEvent('IE_Update')
+
+    if props.autoEquip then
+        queueDelayedJob(function()
+            props.autoEquip:addScript('scripts/InventoryExtender/autoEquip.lua', { player = props.player })
+            props.autoEquip:removeScript('scripts/InventoryExtender/autoEquip.lua')
+        end, 2)
+    else
+        props.player:sendEvent('IE_Update')
+    end
     
     return obj
 end
