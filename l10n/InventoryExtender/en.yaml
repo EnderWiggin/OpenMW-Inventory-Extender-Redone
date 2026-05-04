@@ -200,3 +200,4 @@ UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inve
 
 UI_Tooltip_UseButton: Or click on item
 UI_Tooltip_UseButton_Swapped: Or press {key} on item
+UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.

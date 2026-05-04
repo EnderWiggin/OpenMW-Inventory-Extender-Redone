@@ -199,8 +199,8 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
     return true
 end
 
-function DragAndDrop:moveAll(source, destination)
-    local first = source.type.inventory(source):getAll()[1]
+function DragAndDrop:moveAll(source, destination, items)
+    local first = items and items[1] or source.type.inventory(source):getAll()[1]
     if first then
         local upSound = helpers.getItemSound(first, 'up')
         if upSound then
@@ -211,6 +211,7 @@ function DragAndDrop:moveAll(source, destination)
         source = source,
         destination = destination,
         player = omwself,
+        items = items,
     })
 end
 

@@ -256,7 +256,7 @@ local function moveAll(props)
     if not props.source or not props.destination then return end
 
     local sourceInv = props.source.type.inventory(props.source)
-    local items = sourceInv:getAll()
+    local items = props.items or sourceInv:getAll()
 
     local victimInfo = isStealing(props.player, props.source.owner)
     local victimActor
@@ -292,6 +292,8 @@ local function moveAll(props)
             victim = victimActor,
         })
     end
+
+    props.player:sendEvent('IE_Update')
 end
 
 local checkStolenNextUpdate = {}

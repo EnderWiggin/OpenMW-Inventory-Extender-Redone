@@ -1267,13 +1267,35 @@ function Inventory:create(windowType, ctx)
             self.infoBar.layout.userData.addInfoLayout(specialTemplates.interactive({
                 onClick = function()
                     if I.UI.getMode() == 'Container' and ctx.windowArgs.Container then
-                        ctx.dragAndDrop:moveAll(self.target, omwself)
-                        I.UI.removeMode('Container')
+                        local visibleOnly = input.isShiftPressed()
+                        local items = nil
+
+                        if visibleOnly and self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getFilteredRows then
+                            items = {}
+                            for _, row in ipairs(self.itemTable.layout.userData.getFilteredRows()) do
+                                if row and row.item then
+                                    table.insert(items, row.item)
+                                end
+                            end
+                        end
+
+                        if not items or #items > 0 then
+                            ctx.dragAndDrop:moveAll(self.target, omwself, items)
+                        end
+
+                        if visibleOnly then
+                            self:refresh()
+                        else
+                            I.UI.removeMode('Container')
+                        end
                     end
                 end,
                 parent = self.infoBar,
             }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx), function(layout)
                 layout.props.visible = not (ctx.pickpocket and ctx.pickpocket.active)
+                layout.userData.tooltipFn = function()
+                    return specialTemplates.lineTooltip(l10n('UI_Tooltip_TakeAllButton_Shift'))
+                end
                 return layout
             end)
         end
