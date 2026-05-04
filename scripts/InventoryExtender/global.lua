@@ -175,7 +175,7 @@ local function moveInto(props)
     end
 
     if types.Player.objectIsInstance(props.destination) and props.source ~= props.destination then
-        local mwscript = world.mwscript.getLocalScript(props.destination)
+        local mwscript = world.mwscript.getLocalScript(obj)
         if mwscript and mwscript.variables.onpcadd then
             mwscript.variables.onpcadd = 1
         end
