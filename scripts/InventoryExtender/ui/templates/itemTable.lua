@@ -823,7 +823,8 @@ ItemTable.create = function(props, ctx)
 
     wrapper.layout.events.mouseMove = async:callback(function(e)
         if not scrollable.layout.userData.isDraggingScrollBar then
-            state.lastPointerRowY = getViewportRowYAtOffset(e.offset.y)
+            local isOverContent = e.offset.x >= 0 and e.offset.x < getContentWidth()
+            state.lastPointerRowY = isOverContent and getViewportRowYAtOffset(e.offset.y) or nil
         end
         return true
     end)
