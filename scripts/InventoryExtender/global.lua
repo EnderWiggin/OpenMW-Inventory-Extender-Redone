@@ -87,6 +87,11 @@ local function postTeleport(props)
     props.player:sendEvent('IE_Update')
 end
 
+local function isCompanion(npc)
+    local script = world.mwscript.getLocalScript(npc)
+    return script and script.variables and script.variables.companion ~= 0
+end
+
 local function getCompanionProfit(npc)
     local script = world.mwscript.getLocalScript(npc)
     if script then
@@ -148,11 +153,14 @@ local function moveInto(props)
         resultingObj = destinationInv:find('gold_001') or resultingObj
     end
 
+    local sourceIsCompanion = props.source and isCompanion(props.source)
     local ownerInfo
     if props.pickpocket and props.pickpocket.target then
         ownerInfo = {
             recordId = props.pickpocket.target.recordId,
         }
+    elseif sourceIsCompanion then
+        ownerInfo = nil
     elseif props.source and types.Container.objectIsInstance(props.source) then
         ownerInfo = props.source.owner
     else
