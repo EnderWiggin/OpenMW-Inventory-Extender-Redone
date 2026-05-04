@@ -104,17 +104,17 @@ function Inventory:create(windowType, ctx)
         return nil
     end
 
-    local onRowClick = function(row, rowWidget, fromKBMKeybind, forceBarterAction)
+    local onRowUse = function(row, rowWidget, fromKBMKeybind, forceBarterAction)
         return false
     end
 
-    local function onRowActivate(row, rowWidget, windowType, allowOutsideInterface)
+    local function onRowPickup(row, rowWidget, windowType, allowOutsideInterface)
         if I.UI.getMode() == 'Barter' then
-            return onRowClick(row, rowWidget, true, true)
+            return onRowUse(row, rowWidget, true, true)
         end
 
-        for i = #ctx.handlers.onRowActivate, 1, -1 do
-            local handler = ctx.handlers.onRowActivate[i]
+        for i = #ctx.handlers.onRowPickup, 1, -1 do
+            local handler = ctx.handlers.onRowPickup[i]
             if handler.handler(row, ctx, self.type) == false then
                 return false
             end
@@ -717,7 +717,7 @@ function Inventory:create(windowType, ctx)
         ctx.modalElement = modal
     end
 
-    onRowClick = function(row, rowWidget, fromKBMKeybind, forceBarterAction)
+    onRowUse = function(row, rowWidget, fromKBMKeybind, forceBarterAction)
         if ctx.dragAndDrop.draggingObject then
             if fromKBMKeybind then
                 if rowWidget and rowWidget.layout and rowWidget.layout.props then
@@ -729,11 +729,11 @@ function Inventory:create(windowType, ctx)
         end
 
         if not configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
-            return onRowActivate(row, rowWidget, nil, true)
+            return onRowPickup(row, rowWidget, nil, true)
         end
 
-        for i = #ctx.handlers.onRowClick, 1, -1 do
-            local handler = ctx.handlers.onRowClick[i]
+        for i = #ctx.handlers.onRowUse, 1, -1 do
+            local handler = ctx.handlers.onRowUse[i]
             if handler.handler(row, ctx, self.type) == false then
                 return false
             end
@@ -759,7 +759,7 @@ function Inventory:create(windowType, ctx)
         local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
 
         if takeAll and takeOne and not forceBarterAction then
-            onRowActivate(row, rowWidget)
+            onRowPickup(row, rowWidget)
             return
         end
 
@@ -935,16 +935,16 @@ function Inventory:create(windowType, ctx)
             end
             return nameA < nameB
         end,
-        onRowClick = onRowClick,
-        onRowActivate = onRowActivate,
+        onRowUse = onRowUse,
+        onRowPickup = onRowPickup,
         onFavoriteToggle = function(row, rowWidget)
             return toggleFavoriteRow(row, rowWidget)
         end,
-        onKBMRowActivate = function(row, rowWidget)
-            return onRowActivate(row, rowWidget, nil, true)
+        onKBMRowPickup = function(row, rowWidget)
+            return onRowPickup(row, rowWidget, nil, true)
         end,
-        onKBMRowClick = function(row, rowWidget)
-            return onRowClick(row, rowWidget, true)
+        onKBMRowUse = function(row, rowWidget)
+            return onRowUse(row, rowWidget, true)
         end,
         viewMode = configPlayer.window.s_ItemViewMode,
         gridItemRenderer = function(row, itemSize)
@@ -1211,7 +1211,7 @@ function Inventory:create(windowType, ctx)
                 end
 
                 local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
-                local result = onRowActivate(createDraggedActivationRow(draggedItem), nil, activationContext.windowType, true)
+                local result = onRowPickup(createDraggedActivationRow(draggedItem), nil, activationContext.windowType, true)
                 if result ~= false then
                     ctx.dragAndDrop:stopDrag()
                     self.infoBar.layout.userData.updateAll()
@@ -1664,12 +1664,12 @@ function Inventory:onControllerButtonPress(id)
     elseif id == input.CONTROLLER_BUTTON.A then
         if self.ctx.focusedInteractive and self.ctx.focusedInteractive.layout then
             local userData = self.ctx.focusedInteractive.layout.userData
-            if userData.onKBMRowActivate then
-                userData.onKBMRowActivate()
+            if userData.onKBMRowPickup then
+                userData.onKBMRowPickup()
                 return
             end
-            if userData.onRowActivate then
-                userData.onRowActivate()
+            if userData.onRowPickup then
+                userData.onRowPickup()
                 return
             end
             return
@@ -1685,12 +1685,12 @@ function Inventory:onControllerButtonPress(id)
         end
         if self.ctx.focusedInteractive and self.ctx.focusedInteractive.layout then
             local userData = self.ctx.focusedInteractive.layout.userData
-            if userData.onKBMRowClick then
-                userData.onKBMRowClick()
+            if userData.onKBMRowUse then
+                userData.onKBMRowUse()
                 return
             end
-            if userData.onRowClick then
-                userData.onRowClick()
+            if userData.onRowUse then
+                userData.onRowUse()
                 return
             end
         end

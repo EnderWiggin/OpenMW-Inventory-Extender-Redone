@@ -169,33 +169,39 @@ function API.registerEquippedOverride(id, handler)
     table.insert(windowManager.ctx.overrides.equipped, { id = id, handler = handler })
 end
 
---- Register a function to handle clicks on item rows in the inventory.
+--- Register a function to handle use actions (left-click, unless swapped) on item rows in the inventory.
+--- By default, this equips or uses the item. In barter, it adds/removes the item from the current barter offer.
 --- Handlers are called in reverse order of registration until one returns false, at which point the click is not processed further. If all handlers return true, the default click behavior is executed.
 --- @param id string A unique identifier for the handler
 --- @param handler fun(row: table, ctx: table, windowType: string):boolean? The handler function
-function API.registerRowClickHandler(id, handler)
-    for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowClick) do
+function API.registerRowUseHandler(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowUse) do
         if existingHandler.id:lower() == id:lower() then
             existingHandler.handler = handler
             return
         end
     end
-    table.insert(windowManager.ctx.handlers.onRowClick, { id = id, handler = handler })
+    table.insert(windowManager.ctx.handlers.onRowUse, { id = id, handler = handler })
 end
+--- @deprecated Use registerRowUseHandler instead
+API.registerRowClickHandler = API.registerRowUseHandler
 
---- Register a function to handle activations on item rows in the inventory.
+--- Register a function to handle pick-up actions (default: R, or left-click if swapped) on item rows in the inventory.
+--- By default, this picks up the item or drops/transfers it if Alt is held. In barter, it is routed to the "use" handler.
 --- Handlers are called in reverse order of registration until one returns false, at which point the activation is not processed further. If all handlers return true, the default activation behavior is executed.
 --- @param id string A unique identifier for the handler
 --- @param handler fun(row: table, ctx: table, windowType: string):boolean? The handler function
-function API.registerRowActivateHandler(id, handler)
-    for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowActivate) do
+function API.registerRowPickupHandler(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowPickup) do
         if existingHandler.id:lower() == id:lower() then
             existingHandler.handler = handler
             return
         end
     end
-    table.insert(windowManager.ctx.handlers.onRowActivate, { id = id, handler = handler })
+    table.insert(windowManager.ctx.handlers.onRowPickup, { id = id, handler = handler })
 end
+--- @deprecated Use registerRowPickupHandler instead
+API.registerRowActivateHandler = API.registerRowPickupHandler
 
 local eventHandlers = {
     UiModeChanged = function(data)

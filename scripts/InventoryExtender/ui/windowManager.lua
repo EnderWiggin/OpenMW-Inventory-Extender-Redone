@@ -42,8 +42,8 @@ WindowManager.ctx = {
         equipped = {},
     },
     handlers = {
-        onRowClick = {},
-        onRowActivate = {},
+        onRowUse = {},
+        onRowPickup = {},
     },
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
@@ -383,18 +383,18 @@ function WindowManager:onKeyPress(key)
     end
 
     if not configPlayer.keybinds.b_SwapUsePickup then
-        if focusedInteractive.layout.userData.onKBMRowClick then
-            focusedInteractive.layout.userData.onKBMRowClick()
+        if focusedInteractive.layout.userData.onKBMRowUse then
+            focusedInteractive.layout.userData.onKBMRowUse()
             return true
-        elseif focusedInteractive.layout.userData.onRowClick then
-            focusedInteractive.layout.userData.onRowClick()
+        elseif focusedInteractive.layout.userData.onRowUse then
+            focusedInteractive.layout.userData.onRowUse()
             return true
         end
-    elseif focusedInteractive.layout.userData.onKBMRowActivate then
-        focusedInteractive.layout.userData.onKBMRowActivate()
+    elseif focusedInteractive.layout.userData.onKBMRowPickup then
+        focusedInteractive.layout.userData.onKBMRowPickup()
         return true
-    elseif focusedInteractive.layout.userData.onRowActivate then
-        focusedInteractive.layout.userData.onRowActivate()
+    elseif focusedInteractive.layout.userData.onRowPickup then
+        focusedInteractive.layout.userData.onRowPickup()
         return true
     end
 end

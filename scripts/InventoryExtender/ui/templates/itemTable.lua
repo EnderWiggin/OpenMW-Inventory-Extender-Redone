@@ -80,7 +80,10 @@ ItemTable.create = function(props, ctx)
     local dataRows = props.data or {}
     local size = props.size or util.vector2(400, 300)
     local rowHeight = props.rowHeight or 30
-    local onRowClick = props.onRowClick
+    local onRowUse = props.onRowUse or props.onRowClick
+    local onRowPickup = props.onRowPickup or props.onRowActivate
+    local onKBMRowUse = props.onKBMRowUse or props.onKBMRowClick
+    local onKBMRowPickup = props.onKBMRowPickup or props.onKBMRowActivate
 
     -- New props for default sort logic
     local defaultSortId = props.defaultSortId
@@ -384,8 +387,8 @@ ItemTable.create = function(props, ctx)
                         end,
                         onClick = function()
                             local currentRow = getCurrentRow()
-                            if onRowClick then 
-                                return onRowClick(currentRow, state.rowCache[cacheKey]) 
+                            if onRowUse then 
+                                return onRowUse(currentRow, state.rowCache[cacheKey]) 
                             end
                         end,
                         onMouseMove = function()
@@ -404,32 +407,60 @@ ItemTable.create = function(props, ctx)
                         content = widgetContent,
                         userData = { 
                             row = row,
+                            onRowPickup = function()
+                                local currentRow = getCurrentRow()
+                                if onRowPickup then
+                                    return onRowPickup(currentRow, state.rowCache[cacheKey])
+                                end
+                            end,
+                            onKBMRowPickup = function()
+                                local currentRow = getCurrentRow()
+                                if onKBMRowPickup then
+                                    return onKBMRowPickup(currentRow, state.rowCache[cacheKey])
+                                elseif onRowPickup then
+                                    return onRowPickup(currentRow, state.rowCache[cacheKey])
+                                end
+                            end,
+                            onKBMRowUse = function()
+                                local currentRow = getCurrentRow()
+                                if onKBMRowUse then
+                                    return onKBMRowUse(currentRow, state.rowCache[cacheKey])
+                                elseif onRowUse then
+                                    return onRowUse(currentRow, state.rowCache[cacheKey])
+                                end
+                            end,
+                            onRowUse = function()
+                                local currentRow = getCurrentRow()
+                                if onRowUse then 
+                                    return onRowUse(currentRow, state.rowCache[cacheKey]) 
+                                end
+                            end,
                             onRowActivate = function()
                                 local currentRow = getCurrentRow()
-                                if props.onRowActivate then
-                                    return props.onRowActivate(currentRow, state.rowCache[cacheKey])
+                                if onRowPickup then
+                                    return onRowPickup(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onKBMRowActivate = function()
                                 local currentRow = getCurrentRow()
-                                if props.onKBMRowActivate then
-                                    return props.onKBMRowActivate(currentRow, state.rowCache[cacheKey])
-                                elseif props.onRowActivate then
-                                    return props.onRowActivate(currentRow, state.rowCache[cacheKey])
+                                if onKBMRowPickup then
+                                    return onKBMRowPickup(currentRow, state.rowCache[cacheKey])
+                                elseif onRowPickup then
+                                    return onRowPickup(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onKBMRowClick = function()
                                 local currentRow = getCurrentRow()
-                                if props.onKBMRowClick then
-                                    return props.onKBMRowClick(currentRow, state.rowCache[cacheKey])
-                                elseif onRowClick then
-                                    return onRowClick(currentRow, state.rowCache[cacheKey])
+                                if onKBMRowUse then
+                                    return onKBMRowUse(currentRow, state.rowCache[cacheKey])
+                                elseif onRowUse then
+                                    return onRowUse(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onRowClick = function()
                                 local currentRow = getCurrentRow()
-                                if onRowClick then 
-                                    return onRowClick(currentRow, state.rowCache[cacheKey]) 
+                                if onRowUse then
+                                    return onRowUse(currentRow, state.rowCache[cacheKey])
                                 end
                             end,
                             onFavoriteToggle = function()
