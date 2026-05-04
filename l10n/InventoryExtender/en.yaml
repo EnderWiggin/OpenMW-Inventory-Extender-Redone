@@ -21,9 +21,9 @@ KeybindToggleFavoriteDesc: |-
   Favorited items cannot be sold, dropped, or transfered to other inventories, and are marked with a star icon in the inventory list.
 SwapUsePickup: Swap use/pick up
 SwapUsePickupDesc: |-
-  By default, the above keybind is used to pick up items, and left-click is used for item activation.
+  By default, the above keybind picks up items, and left-click uses items.
   
-  Enable this option to swap those behaviors, so that left-click will pick up items and the keybind will activate them.
+  Enable this option to swap those behaviors, so that left-click will pick up items and the keybind will use them.
 
 ConfigCategoryWindowOptions: Window Options
 EnableMod: Enable mod
