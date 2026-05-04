@@ -718,13 +718,6 @@ function Inventory:create(windowType, ctx)
     end
 
     onRowClick = function(row, rowWidget, fromKBMKeybind, forceBarterAction)
-        for i = #ctx.handlers.onRowClick, 1, -1 do
-            local handler = ctx.handlers.onRowClick[i]
-            if handler.handler(row, ctx, self.type) == false then
-                return false
-            end
-        end
-
         if ctx.dragAndDrop.draggingObject then
             if fromKBMKeybind then
                 if rowWidget and rowWidget.layout and rowWidget.layout.props then
@@ -737,6 +730,13 @@ function Inventory:create(windowType, ctx)
 
         if not configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
             return onRowActivate(row, rowWidget, nil, true)
+        end
+
+        for i = #ctx.handlers.onRowClick, 1, -1 do
+            local handler = ctx.handlers.onRowClick[i]
+            if handler.handler(row, ctx, self.type) == false then
+                return false
+            end
         end
 
         if helpers.isBoundItem(row.item) then
