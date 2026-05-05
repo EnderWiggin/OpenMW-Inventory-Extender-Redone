@@ -326,10 +326,12 @@ function Inventory:create(windowType, ctx)
         local favorite = isFavorited(row.item)
         local stolen = false
         local enchanted = false
-        if self.type == 'Inventory' and self.ctx.stolenItems then
-            stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
-        elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
-            stolen = true
+        if configPlayer.tweaks.b_StolenIndicator then
+            if self.type == 'Inventory' and self.ctx.stolenItems then
+                stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
+            elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
+                stolen = true
+            end
         end
         if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
             enchanted = true

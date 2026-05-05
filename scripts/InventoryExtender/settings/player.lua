@@ -215,6 +215,13 @@ I.Settings.registerGroup {
             default = true,
         },
         {
+            key = 'b_StolenIndicator',
+            renderer = 'checkbox',
+            name = 'StolenIndicator',
+            description = 'StolenIndicatorDesc',
+            default = true,
+        },
+        {
             key = 's_EnchantedIndicatorMode',
             renderer = 'select',
             name = 'EnchantedIndicatorMode',

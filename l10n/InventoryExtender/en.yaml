@@ -71,6 +71,9 @@ VanillaCategoryIconsDesc: |-
 CategoryBarBorders: Category bar borders
 CategoryBarBordersDesc: |-
   Show borders around the category bar.
+StolenIndicator: Show stolen indicator
+StolenIndicatorDesc: |-
+  Show an icon next to stolen items in the inventory.
 EnchantedIndicatorMode: Enchanted indicator mode
 EnchantedIndicatorModeDesc: |-
   In table view, show enchanted items with the icon swirl, the name-row icon, or both.
