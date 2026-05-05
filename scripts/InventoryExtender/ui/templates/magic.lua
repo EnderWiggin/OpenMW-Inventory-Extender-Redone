@@ -392,7 +392,8 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         end
     end
     if showEnchantCapacity then
-        innerContent:add(textNormal('enchantCapacity', l10n('UI_EnchantCapacity') .. ': ' .. tostring(math.floor(itemRecord.enchantCapacity))))
+        local actualCapacity = math.floor(itemRecord.enchantCapacity / 0.1 * core.getGMST('fEnchantmentMult'))
+        innerContent:add(textNormal('enchantCapacity', l10n('UI_EnchantCapacity') .. ': ' .. tostring(actualCapacity)))
     end
 
     if configPlayer.tweaks.b_SoulGemValueInTooltips and itemData.soul and itemData.soul ~= '' then
