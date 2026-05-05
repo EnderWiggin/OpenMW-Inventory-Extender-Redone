@@ -352,6 +352,22 @@ function WindowManager:onKeyPress(key)
     if not configPlayer.window.b_EnableMod then return end
 
     local focusedInteractive = WindowManager.ctx.focusedInteractive
+    local focusedWindow = nil
+    for _, window in pairs(self.windows) do
+        if window and window:isFocused() then
+            focusedWindow = window
+            break
+        end
+    end
+
+    if key.code == input.KEY.A or key.code == input.KEY.D then
+        if focusedWindow and focusedWindow.categoryFilter then
+            local direction = key.code == input.KEY.A and input.CONTROLLER_BUTTON.LeftShoulder or input.CONTROLLER_BUTTON.RightShoulder
+            focusedWindow:onControllerButtonPress(direction)
+            return true
+        end
+    end
+
     if key.code == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
         if not focusedInteractive or not focusedInteractive.layout or not focusedInteractive.layout.userData then
             return
@@ -366,15 +382,13 @@ function WindowManager:onKeyPress(key)
     if key.code ~= configPlayer.keybinds.k_PickupItem then return end
 
     if not configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
-        for _, window in pairs(self.windows) do
-            if window and window:isFocused() and window.target then
-                local state = window.itemTable and window.itemTable.layout and window.itemTable.layout.userData.getState and window.itemTable.layout.userData.getState()
-                if state and state.lastPointerRowY ~= nil then
-                    state.lastUsedRowPos = v2(0, state.lastPointerRowY)
-                end
-                WindowManager.ctx.dragAndDrop:stopDrag(window.target)
-                return true
+        if focusedWindow and focusedWindow.target then
+            local state = focusedWindow.itemTable and focusedWindow.itemTable.layout and focusedWindow.itemTable.layout.userData.getState and focusedWindow.itemTable.layout.userData.getState()
+            if state and state.lastPointerRowY ~= nil then
+                state.lastUsedRowPos = v2(0, state.lastPointerRowY)
             end
+            WindowManager.ctx.dragAndDrop:stopDrag(focusedWindow.target)
+            return true
         end
     end
 
