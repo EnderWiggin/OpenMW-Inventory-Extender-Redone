@@ -222,6 +222,9 @@ UI_Barter_Max: Max
 UI_Msg_ScriptedItem: This item cannot be picked up from the inventory.
 UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inventory.
 
+UI_Tooltip_ColumnSettings: Column settings
+UI_Tooltip_TableView: Switch to table view
+UI_Tooltip_GridView: Switch to grid view
 UI_Tooltip_UseButton: Or click on item
 UI_Tooltip_UseButton_Swapped: Or press {key} on item
 UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.

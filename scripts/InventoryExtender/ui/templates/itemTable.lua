@@ -398,6 +398,15 @@ ItemTable.create = function(props, ctx)
                                 end
                             end
                         end,
+                        tooltipFn = function()
+                            local currentRow = getCurrentRow()
+                            if currentRow and currentRow.item then
+                                return specialTemplates.itemTooltip(currentRow.item, false, ctx)
+                            elseif currentRow and currentRow.tooltip then
+                                return specialTemplates.lineTooltip(currentRow.tooltip)
+                            end
+                            return nil
+                        end,
                         name = row.item and row.item.id or 'item',
                     }, {
                         props = {
@@ -467,15 +476,6 @@ ItemTable.create = function(props, ctx)
                                 if props.onFavoriteToggle and state.rowCache[cacheKey] and state.rowCache[cacheKey].layout and state.rowCache[cacheKey].layout.userData then
                                     return props.onFavoriteToggle(state.rowCache[cacheKey].layout.userData.row, state.rowCache[cacheKey])
                                 end
-                            end,
-                            tooltipFn = function()
-                                local currentRow = getCurrentRow()
-                                if currentRow and currentRow.item then
-                                    return specialTemplates.itemTooltip(currentRow.item, false, ctx)
-                                elseif currentRow and currentRow.tooltip then
-                                    return specialTemplates.lineTooltip(currentRow.tooltip)
-                                end
-                                return nil
                             end,
                             active = active,
                             disabled = disabled,

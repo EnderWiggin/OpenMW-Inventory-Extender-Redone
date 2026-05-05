@@ -31,6 +31,7 @@ local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 local l10n = core.l10n('InventoryExtender')
 local windowOptionsSection = storage.playerSection('InventoryExtender')
 local columnVisibilityKey = 'ColumnVisibility'
+local playerWindowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
 
 local Inventory = Window:new()
 
@@ -978,6 +979,28 @@ function Inventory:create(windowType, ctx)
         parentWindow = self,
     }, ctx)
 
+    local function getItemViewMode()
+        if self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState then
+            return self.itemTable.layout.userData.getState().viewMode
+        end
+
+        return configPlayer.window.s_ItemViewMode or 'ItemViewMode_Table'
+    end
+
+    local function toggleItemViewMode()
+        local newMode = getItemViewMode() == 'ItemViewMode_Grid' and 'ItemViewMode_Table' or 'ItemViewMode_Grid'
+
+        playerWindowSettings:set('s_ItemViewMode', newMode)
+
+        if self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.setViewMode then
+            self.itemTable.layout.userData.setViewMode(newMode)
+        end
+
+        if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.updateViewModeButton then
+            self.categoryFilter.layout.userData.updateViewModeButton()
+        end
+    end
+
     self.categoryFilter = CategoryFilter.create({
         maxHeight = 72,
         compact = configPlayer.tweaks.b_CompactCategoryFilter,
@@ -1009,6 +1032,8 @@ function Inventory:create(windowType, ctx)
             return disabledLookup
         end,
         onOpenSettings = openColumnSettings,
+        onToggleView = toggleItemViewMode,
+        getViewMode = getItemViewMode,
     }, function(selectedCategory)
         self.itemTable.layout.userData.setColumns(getColumnsForCategory(selectedCategory), true)
         self:setTitle()
@@ -1220,10 +1245,7 @@ function Inventory:create(windowType, ctx)
                     self:refresh()
                 end
             end,
-            parent = self.infoBar,
-        }, baseTemplates.button(core.getGMST('sUse'), nil, 'useButton'), ctx), function(layout)
-            layout.props.visible = ctx.dragAndDrop.draggingObject ~= nil
-            layout.userData.tooltipFn = function()
+            tooltipFn = function()
                 local text
                 if not configPlayer.keybinds.b_SwapUsePickup then
                     text = l10n('UI_Tooltip_UseButton')
@@ -1231,7 +1253,11 @@ function Inventory:create(windowType, ctx)
                     text = l10n('UI_Tooltip_UseButton_Swapped', { key = input.getKeyName(configPlayer.keybinds.k_PickupItem) })
                 end
                 return specialTemplates.lineTooltip(text)
-            end
+            end,
+            parent = self.infoBar,
+            name = 'use',
+        }, baseTemplates.button(core.getGMST('sUse'), nil, 'useButton'), ctx), function(layout)
+            layout.props.visible = ctx.dragAndDrop.draggingObject ~= nil
             return layout
         end)
 
@@ -1256,7 +1282,8 @@ function Inventory:create(windowType, ctx)
                     end
                 end,
                 parent = self.infoBar,
-            }, baseTemplates.button(constants.Strings.DISPOSE_OF_CORPSE), ctx), function(layout)
+                name = 'dispose',
+            }, baseTemplates.button(constants.Strings.DISPOSE_OF_CORPSE, nil, 'disposeButton'), ctx), function(layout)
                 local visible = false
                 if ctx.windowArgs.Container then
                     visible = types.Actor.objectIsInstance(ctx.windowArgs.Container) and types.Actor.isDead(ctx.windowArgs.Container)
@@ -1291,12 +1318,13 @@ function Inventory:create(windowType, ctx)
                         end
                     end
                 end,
-                parent = self.infoBar,
-            }, baseTemplates.button(constants.Strings.TAKE_ALL), ctx), function(layout)
-                layout.props.visible = not (ctx.pickpocket and ctx.pickpocket.active)
-                layout.userData.tooltipFn = function()
+                tooltipFn = function()
                     return specialTemplates.lineTooltip(l10n('UI_Tooltip_TakeAllButton_Shift'))
-                end
+                end,
+                parent = self.infoBar,
+                name = 'takeAll',
+            }, baseTemplates.button(constants.Strings.TAKE_ALL, nil, 'takeAllButton'), ctx), function(layout)
+                layout.props.visible = not (ctx.pickpocket and ctx.pickpocket.active)
                 return layout
             end)
         end
@@ -1318,7 +1346,8 @@ function Inventory:create(windowType, ctx)
                 I.UI.removeMode(self.type)
             end,
             parent = self.infoBar,
-        }, baseTemplates.button(constants.Strings.CLOSE), ctx))
+            name = 'close',
+        }, baseTemplates.button(constants.Strings.CLOSE, nil, 'closeButton'), ctx))
 
         self.infoBar.layout.userData.addInfoLayout({})
     end
@@ -1986,6 +2015,9 @@ function Inventory:loadState()
 
     if self.itemTable then
         self.itemTable.layout.userData.setViewMode(configPlayer.window.s_ItemViewMode)
+    end
+    if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.updateViewModeButton then
+        self.categoryFilter.layout.userData.updateViewModeButton()
     end
 
     self.stateKey = self:getDimensionsKey()

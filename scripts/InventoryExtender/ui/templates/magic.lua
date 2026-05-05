@@ -62,12 +62,14 @@ Templates.interactive = function(props, layout, ctx)
         )
     end
 
-    local function createTooltip(layout)
+    local function createTooltip()
+        if not props.tooltipFn then return nil end
+
         if ctx.modalElement then
             return nil
         end
 
-        ctx.activeTooltip = ui.create(layout.userData.tooltipFn())
+        ctx.activeTooltip = ui.create(props.tooltipFn())
         ctx.activeTooltip.layout.name = props.name
         if lastMousePos then
             ctx.activeTooltip.layout.props.anchor = v2(absToRel(lastMousePos).x, 0)
@@ -78,6 +80,9 @@ Templates.interactive = function(props, layout, ctx)
     end
 
     local element = layout.layout and layout or ui.create(layout)
+    if props.name then
+        element.layout.name = props.name
+    end
 
     element.layout.userData = element.layout.userData or {}
     element.layout.userData.interactive = true
@@ -116,6 +121,11 @@ Templates.interactive = function(props, layout, ctx)
             local result = props.onClick()
             element:update()
 
+            if ctx.activeTooltip and ctx.activeTooltip.layout and ctx.activeTooltip.layout.name == props.name then
+                auxUi.deepDestroy(ctx.activeTooltip)
+                ctx.activeTooltip = createTooltip()
+            end
+
             if props.parent then
                 ctx.updateQueue[props.parent] = true
             end
@@ -126,7 +136,7 @@ Templates.interactive = function(props, layout, ctx)
     element.layout.events.focusLoss = async:callback(function()
         ctx.focusedInteractiveDelayed = false
         element.layout.userData.hovering = false
-        if element.layout.userData.tooltipFn then
+        if props.tooltipFn then
             if ctx.activeTooltip and ctx.activeTooltip.layout then
                 ctx.activeTooltip.layout.props.visible = false
                 ctx.updateQueue[ctx.activeTooltip] = true
@@ -160,12 +170,12 @@ Templates.interactive = function(props, layout, ctx)
             props.onMouseMove(e, layout, element)
         end
         element.layout.userData.hovering = true
-        if element.layout.userData.tooltipFn then
+        if props.tooltipFn then
             if not ctx.activeTooltip or not ctx.activeTooltip.layout then
-                ctx.activeTooltip = createTooltip(layout)
+                ctx.activeTooltip = createTooltip()
             elseif ctx.activeTooltip.layout.name ~= props.name then
                 auxUi.deepDestroy(ctx.activeTooltip)
-                ctx.activeTooltip = createTooltip(layout)
+                ctx.activeTooltip = createTooltip()
             end
             if ctx.activeTooltip then
                 ctx.activeTooltip.layout.props.visible = true

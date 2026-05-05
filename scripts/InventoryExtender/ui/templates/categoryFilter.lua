@@ -39,6 +39,38 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
 
     local element, createSearchBar
     local placeholder = l10n('UI_SearchBarPlaceholder')
+    local toolbarButtonSize = v2(topBarHeight - 12, topBarHeight - 12)
+
+    local function getViewMode()
+        if props.getViewMode then
+            return props.getViewMode()
+        end
+        return 'ItemViewMode_Table'
+    end
+
+    local function getViewModeToggleIconPath()
+        if getViewMode() == 'ItemViewMode_Grid' then
+            return iconPack.getPath('view_table.dds')
+        end
+        return iconPack.getPath('view_grid.dds')
+    end
+
+    local function updateViewModeButton(shouldUpdate)
+        if not props.onToggleView or not element or not element.layout then
+            return
+        end
+
+        for _, e in pairs(element.layout.content.topBar.content) do
+            if e.layout and e.layout.name == 'viewModeToggle' then
+                e.layout.content[1].props.resource = baseTemplates.createTexture(getViewModeToggleIconPath())
+                if shouldUpdate then
+                    e:update()
+                    element:update()
+                end
+                break
+            end
+        end
+    end
 
     local function replaceSearchBar(text)
         local indexOfBar = element.layout.content.topBar.content:indexOf('searchBar')
@@ -151,8 +183,25 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             onClick = function()
                 props.onOpenSettings()
             end,
+            tooltipFn = function()
+                return specialTemplates.lineTooltip(l10n('UI_Tooltip_ColumnSettings'))
+            end,
             name = 'columnSettings',
-        }, baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), v2(topBarHeight - 12, topBarHeight - 12), nil, 'columnSettingsButton'), ctx))
+        }, baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), toolbarButtonSize, nil, 'columnSettingsButton'), ctx))
+    end
+    if props.onToggleView then
+        topBarContent:add(baseTemplates.intervalH(4))
+        topBarContent:add(specialTemplates.interactive({
+            onClick = function()
+                props.onToggleView()
+                updateViewModeButton(true)
+            end,
+            tooltipFn = function()
+                local text = getViewMode() == 'ItemViewMode_Grid' and l10n('UI_Tooltip_TableView') or l10n('UI_Tooltip_GridView')
+                return specialTemplates.lineTooltip(text)
+            end,
+            name = 'viewModeToggle',
+        }, baseTemplates.imageButton(getViewModeToggleIconPath(), toolbarButtonSize, nil, 'viewModeToggleButton'), ctx))
     end
     topBarContent:add(baseTemplates.intervalH(8))
 
@@ -322,6 +371,16 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         end
                     end
                 end,
+                tooltipFn = function()
+                    return specialTemplates.tooltip(4, ui.content {
+                        {
+                            template = baseTemplates.textNormal,
+                            props = {
+                                text = category.name,
+                            }
+                        }
+                    }, category.key)
+                end,
                 name = category.key,
             }, {
                 external = { grow = 1, stretch = 1, },
@@ -329,16 +388,6 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                 userData = {
                     active = isSelected,
                     disabled = isDisabled and not isSelected,
-                    tooltipFn = function()
-                        return specialTemplates.tooltip(4, ui.content {
-                            {
-                                template = baseTemplates.textNormal,
-                                props = {
-                                    text = category.name,
-                                }
-                            }
-                        }, category.key)
-                    end,
                 },
                 props = {
                     anchor = v2(0.5, 0),
@@ -352,12 +401,16 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
         end
 
+        updateViewModeButton()
+
         element:update()
     end
 
     updateCategories()
 
     element.layout.userData.updateCategories = updateCategories
+
+    element.layout.userData.updateViewModeButton = updateViewModeButton
 
     local function resizeImages(totalWidth)
         local categories = getCategories()
