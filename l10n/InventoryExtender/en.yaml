@@ -78,6 +78,15 @@ VanillaCategoryIconsDesc: |-
 CategoryBarBorders: Category bar borders
 CategoryBarBordersDesc: |-
   Show borders around the category bar.
+EnchantCapacityInTooltips: Enchant capacity in tooltips
+EnchantCapacityInTooltipsDesc: |-
+  Show the enchant capacity of items in their tooltips.
+EnchantCapacityInTooltips_Never: Never
+EnchantCapacityInTooltips_Always: Always
+EnchantCapacityInTooltips_UnenchantedOnly: Unenchanted only
+SoulGemValueInTooltips: Soul gem value in tooltips
+SoulGemValueInTooltipsDesc: |-
+  Show the soul value of filled soul gems in their tooltips.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support
@@ -201,3 +210,6 @@ UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inve
 UI_Tooltip_UseButton: Or click on item
 UI_Tooltip_UseButton_Swapped: Or press {key} on item
 UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.
+
+UI_EnchantCapacity: Enchant Capacity
+UI_SoulValue: Soul Value

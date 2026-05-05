@@ -229,6 +229,28 @@ I.Settings.registerGroup {
                 },
             }
         },
+        {
+            key = 's_EnchantCapacityInTooltips',
+            renderer = 'select',
+            name = 'EnchantCapacityInTooltips',
+            description = 'EnchantCapacityInTooltipsDesc',
+            default = 'EnchantCapacityInTooltips_UnenchantedOnly',
+            argument = {
+                l10n = 'InventoryExtender',
+                items = {
+                    'EnchantCapacityInTooltips_Never',
+                    'EnchantCapacityInTooltips_Always',
+                    'EnchantCapacityInTooltips_UnenchantedOnly',
+                },
+            }
+        },
+        {
+            key = 'b_SoulGemValueInTooltips',
+            renderer = 'checkbox',
+            name = 'SoulGemValueInTooltips',
+            description = 'SoulGemValueInTooltipsDesc',
+            default = true,
+        },
     },
 }
 

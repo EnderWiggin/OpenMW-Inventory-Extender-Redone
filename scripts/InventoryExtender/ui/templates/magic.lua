@@ -17,6 +17,7 @@ local constants = require('scripts.InventoryExtender.util.constants')
 local configPlayer = require('scripts.InventoryExtender.config.player')
 
 local v2 = util.vector2
+local l10n = core.l10n('InventoryExtender')
 
 local intRe = configPlayer.modIntegration.b_InterfaceReimagined
 
@@ -378,6 +379,25 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     if itemRecord.quality then
         innerContent:add(textNormal('quality', constants.Strings.QUALITY .. ': ' .. helpers.roundToPlaces(itemRecord.quality, 3)))
+    end
+
+    local showEnchantCapacity = false
+    if itemRecord.enchantCapacity and itemRecord.enchantCapacity > 0 then
+        if configPlayer.tweaks.s_EnchantCapacityInTooltips == 'EnchantCapacityInTooltips_Always' then
+            showEnchantCapacity = true
+        elseif configPlayer.tweaks.s_EnchantCapacityInTooltips == 'EnchantCapacityInTooltips_UnenchantedOnly' and not itemRecord.enchant then
+            showEnchantCapacity = true
+        end
+    end
+    if showEnchantCapacity then
+        innerContent:add(textNormal('enchantCapacity', l10n('UI_EnchantCapacity') .. ': ' .. tostring(math.floor(itemRecord.enchantCapacity))))
+    end
+
+    if configPlayer.tweaks.b_SoulGemValueInTooltips and itemData.soul and itemData.soul ~= '' then
+        local creatureRecord = types.Creature.records[itemData.soul]
+        if creatureRecord and creatureRecord.soulValue then
+            innerContent:add(textNormal('soul', l10n('UI_SoulValue') .. ': ' .. creatureRecord.soulValue))
+        end
     end
 
     if itemRecord.weight > 0 then
