@@ -245,6 +245,21 @@ I.Settings.registerGroup {
             }
         },
         {
+            key = 's_SoulGemCapacityInTooltips',
+            renderer = 'select',
+            name = 'SoulGemCapacityInTooltips',
+            description = 'SoulGemCapacityInTooltipsDesc',
+            default = 'SoulGemCapacityInTooltips_EmptyOnly',
+            argument = {
+                l10n = 'InventoryExtender',
+                items = {
+                    'SoulGemCapacityInTooltips_Never',
+                    'SoulGemCapacityInTooltips_Always',
+                    'SoulGemCapacityInTooltips_EmptyOnly',
+                },
+            }
+        },
+        {
             key = 'b_SoulGemValueInTooltips',
             renderer = 'checkbox',
             name = 'SoulGemValueInTooltips',

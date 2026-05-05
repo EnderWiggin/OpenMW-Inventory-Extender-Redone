@@ -403,6 +403,19 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         end
     end
 
+    local showSoulCapacity = false
+    if configPlayer.tweaks.s_SoulGemCapacityInTooltips == 'SoulGemCapacityInTooltips_Always' then
+        showSoulCapacity = true
+    elseif configPlayer.tweaks.s_SoulGemCapacityInTooltips == 'SoulGemCapacityInTooltips_EmptyOnly' and not itemData.soul then
+        showSoulCapacity = true
+    end
+    if showSoulCapacity then
+        local capacity = helpers.getSoulGemCapacity(item)
+        if capacity then
+            innerContent:add(textNormal('soulCapacity', l10n('UI_SoulCapacity') .. ': ' .. capacity))
+        end
+    end
+
     if itemRecord.weight > 0 then
         innerContent:add(textNormal('weight', constants.Strings.WEIGHT .. ': ' .. helpers.roundToPlaces(itemRecord.weight, 3)))
         if types.Armor.objectIsInstance(item) then

@@ -84,6 +84,12 @@ EnchantCapacityInTooltipsDesc: |-
 EnchantCapacityInTooltips_Never: Never
 EnchantCapacityInTooltips_Always: Always
 EnchantCapacityInTooltips_UnenchantedOnly: Unenchanted only
+SoulGemCapacityInTooltips: Soul gem capacity in tooltips
+SoulGemCapacityInTooltipsDesc: |-
+  Show the capacity of empty soul gems in their tooltips.
+SoulGemCapacityInTooltips_Never: Never
+SoulGemCapacityInTooltips_Always: Always
+SoulGemCapacityInTooltips_EmptyOnly: Empty only
 SoulGemValueInTooltips: Soul gem value in tooltips
 SoulGemValueInTooltipsDesc: |-
   Show the soul value of filled soul gems in their tooltips.
@@ -215,4 +221,5 @@ UI_Tooltip_UseButton_Swapped: Or press {key} on item
 UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.
 
 UI_EnchantCapacity: Enchant Capacity
+UI_SoulCapacity: Soul Capacity
 UI_SoulValue: Soul Value

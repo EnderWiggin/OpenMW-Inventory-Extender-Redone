@@ -521,6 +521,19 @@ Helpers.getItemValue = function(item)
     end
 end
 
+Helpers.isSoulGem = function(item)
+    return types.Miscellaneous.objectIsInstance(item) and item.recordId:lower():find('^misc_soulgem')
+end
+
+Helpers.getSoulGemCapacity = function(item)
+    if not Helpers.isSoulGem(item) then
+        return nil
+    end
+
+    local record = item.type.record(item)
+    return record.value * core.getGMST('fSoulGemMult')
+end
+
 Helpers.getWeaponRangeInFeet = function(item)
     if not types.Weapon.objectIsInstance(item) then
         return 0
