@@ -87,6 +87,9 @@ EnchantCapacityInTooltips_UnenchantedOnly: Unenchanted only
 SoulGemValueInTooltips: Soul gem value in tooltips
 SoulGemValueInTooltipsDesc: |-
   Show the soul value of filled soul gems in their tooltips.
+HideConditionChargeLabels: Hide condition/charge labels
+HideConditionChargeLabelsDesc: |-
+  Hide the labels next to the "Condition" and "Charge" bars in item tooltips for a more centered look.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support

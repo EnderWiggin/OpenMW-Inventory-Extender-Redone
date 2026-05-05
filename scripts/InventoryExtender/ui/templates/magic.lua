@@ -319,6 +319,19 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     local conditionBar
     if condition and conditionLabel and conditionMax then
+        local inner = ui.content {}
+        if not configPlayer.tweaks.b_HideConditionChargeLabels then
+            inner:add(textNormal(nil, conditionLabel .. ':'))
+            inner:add(BASE.intervalH(5))
+        end
+        inner:add(Templates.progressBar {
+            value = condition,
+            maxValue = conditionMax,
+            size = v2(204, Templates.LINE_HEIGHT),
+            color = constants.Colors.BAR_HEALTH,
+            text = conditionText,
+            textColor = constants.Colors.DEFAULT,
+        })
         conditionBar = {
             name = 'condition',
             type = ui.TYPE.Flex,
@@ -326,18 +339,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                 horizontal = true,
                 arrange = ui.ALIGNMENT.Center,
             },
-            content = ui.content {
-                textNormal(nil, conditionLabel .. ':'),
-                BASE.intervalH(5),
-                Templates.progressBar {
-                    value = condition,
-                    maxValue = conditionMax,
-                    size = v2(204, Templates.LINE_HEIGHT),
-                    color = constants.Colors.BAR_HEALTH,
-                    text = conditionText,
-                    textColor = constants.Colors.DEFAULT,
-                }
-            }
+            content = inner,
         }
     end
 
@@ -512,6 +514,20 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     if doCharge then
         innerContent:add(BASE.intervalV(8))
+
+        local inner = ui.content {}
+        if not configPlayer.tweaks.b_HideConditionChargeLabels then
+            inner:add(textNormal(nil, constants.Strings.CHARGE))
+            inner:add(BASE.intervalH(5))
+        end
+        inner:add(Templates.progressBar {
+            value = itemData.enchantmentCharge or 0,
+            maxValue = maxCharge,
+            size = v2(204, Templates.LINE_HEIGHT),
+            color = constants.Colors.BAR_MAGIC,
+            textColor = constants.Colors.DEFAULT,
+        })
+
         innerContent:add({
             name = 'charge',
             type = ui.TYPE.Flex,
@@ -519,17 +535,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                 horizontal = true,
                 arrange = ui.ALIGNMENT.Center,
             },
-            content = ui.content {
-                textNormal(nil, constants.Strings.CHARGE),
-                BASE.intervalH(5),
-                Templates.progressBar {
-                    value = itemData.enchantmentCharge or 0,
-                    maxValue = maxCharge,
-                    size = v2(204, Templates.LINE_HEIGHT),
-                    color = constants.Colors.BAR_MAGIC,
-                    textColor = constants.Colors.DEFAULT,
-                }
-            }
+            content = inner,
         })
     end
 

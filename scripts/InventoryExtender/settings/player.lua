@@ -251,6 +251,13 @@ I.Settings.registerGroup {
             description = 'SoulGemValueInTooltipsDesc',
             default = true,
         },
+        {
+            key = 'b_HideConditionChargeLabels',
+            renderer = 'checkbox',
+            name = 'HideConditionChargeLabels',
+            description = 'HideConditionChargeLabelsDesc',
+            default = true,
+        }
     },
 }
 
