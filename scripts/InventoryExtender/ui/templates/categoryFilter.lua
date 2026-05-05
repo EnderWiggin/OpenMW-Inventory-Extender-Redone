@@ -383,11 +383,11 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             element.layout.content.categoryBar.props.size = v2(barWidth, categoryBarHeight - 4)
         end
         for _, child in ipairs(getCategoryBarContent()) do
-            if child.layout and child.layout.content.categoryIcon then
+            if child.layout and child.layout.content:indexOf('categoryIcon') then
                 if child.layout.content.categoryIcon.props.size ~= imageSizeVec then
                     anyChanged = true
                     child.layout.content.categoryIcon.props.size = imageSizeVec + (compact and v2(4, 4) or v2(-4, -4))
-                    if child.layout.content.categoryBackground then
+                    if child.layout.content:indexOf('categoryBackground') then
                         child.layout.content.categoryBackground.props.size = v2(0, imageSizeVec.y + (compact and 6 or -2))
                     end
                     child:update()
