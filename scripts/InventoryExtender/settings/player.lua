@@ -230,6 +230,13 @@ I.Settings.registerGroup {
             }
         },
         {
+            key = 'b_FilledGemsAppearEnchanted',
+            renderer = 'checkbox',
+            name = 'FilledGemsAppearEnchanted',
+            description = 'FilledGemsAppearEnchantedDesc',
+            default = true,
+        },
+        {
             key = 's_EnchantCapacityInTooltips',
             renderer = 'select',
             name = 'EnchantCapacityInTooltips',

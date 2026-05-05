@@ -253,7 +253,7 @@ function Inventory:create(windowType, ctx)
         options = options or {}
         local iconDim = math.min(width, height)
         local equipped = helpers.isItemEquipped(row.item, self.target, ctx.overrides.equipped)
-        local showEnchantSwirl = row.itemRecord.enchant and shouldShowEnchantedSwirl(options.forceEnchantSwirl) or false
+        local showEnchantSwirl = row.showAsEnchanted() and shouldShowEnchantedSwirl(options.forceEnchantSwirl) or false
         local bgrVisible = row.isBartered or equipped or showEnchantSwirl
         local magicString = showEnchantSwirl and '_magic' or ''
         local postString = (row.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or '_none'
@@ -331,7 +331,7 @@ function Inventory:create(windowType, ctx)
         elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
             stolen = true
         end
-        if row.itemRecord.enchant and shouldShowEnchantedNameIcon() then
+        if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
             enchanted = true
         end
 
@@ -949,7 +949,7 @@ function Inventory:create(windowType, ctx)
         viewMode = configPlayer.window.s_ItemViewMode,
         gridItemRenderer = function(row, itemSize)
             local base = iconRenderer(row, itemSize, itemSize, {
-                forceEnchantSwirl = row.itemRecord.enchant ~= nil,
+                forceEnchantSwirl = true,
             })
 
             base.content.itemIcon.props.size = v2(itemSize - 8, itemSize - 8)
@@ -1751,6 +1751,15 @@ function Inventory:createData()
                 else
                     return itemStack.count
                 end
+            end,
+            showAsEnchanted = function()
+                if record.enchant then
+                    return true
+                end
+                if configPlayer.tweaks.b_FilledGemsAppearEnchanted and types.Item.itemData(itemStack).soul then
+                    return true
+                end
+                return false
             end,
             disabledFn = function()
                 if not isBartered and I.UI.getMode() == 'Container' and self.type == 'Inventory' then
