@@ -227,7 +227,7 @@ ItemTable.create = function(props, ctx)
                     val = val()
                 end
                 local textStr = val ~= nil and tostring(val) or ""
-                if textStr == "0" then textStr = "-" end
+                if textStr == "0" or textStr == "" then textStr = "-" end
                 cellContent = {
                     name = col.id,
                     template = baseTemplates.textNormal,
@@ -570,7 +570,7 @@ ItemTable.create = function(props, ctx)
                                         val = val()
                                     end
                                     local textStr = val ~= nil and tostring(val) or ""
-                                    if textStr == "0" then textStr = "-" end
+                                    if textStr == "0" or textStr == "" then textStr = "-" end
                                     if textStr ~= cellContent.props.text then
                                         cellContent.props.text = textStr
                                         anyChanged = true

@@ -132,6 +132,7 @@ SoulGemValueRebalanceDesc: |-
 Column_Name: Name
 Column_Type: Type
 Column_Damage: Dmg.
+Column_Quality: Qual.
 Column_Condition: Cond.
 Column_Slot: Slot
 Column_Class: Class

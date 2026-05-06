@@ -496,7 +496,6 @@ function Inventory:create(windowType, ctx)
         generalColumns[1],
         generalColumns[2],
         generalColumns[3],
-        conditionColumn,
         {
             id = 'Class',
             label = l10n('Column_Class'),
@@ -512,6 +511,7 @@ function Inventory:create(windowType, ctx)
             defaultOrder = 'desc',
             visible = true,
         },
+        conditionColumn,
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
@@ -520,7 +520,6 @@ function Inventory:create(windowType, ctx)
         generalColumns[1],
         generalColumns[2],
         generalColumns[3],
-        conditionColumn,
         {
             id = 'Damage',
             label = l10n('Column_Damage'),
@@ -529,6 +528,7 @@ function Inventory:create(windowType, ctx)
             defaultOrder = 'desc',
             visible = true,
         },
+        conditionColumn,
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
@@ -537,6 +537,14 @@ function Inventory:create(windowType, ctx)
         generalColumns[1],
         generalColumns[2],
         generalColumns[3],
+        {
+            id = 'Quality',
+            label = l10n('Column_Quality'),
+            width = 60 * baseTemplates.TEXT_SIZE / 16,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
         conditionColumn,
         generalColumns[4],
         generalColumns[5],
@@ -553,10 +561,11 @@ function Inventory:create(windowType, ctx)
 
     local editableColumns = {
         generalColumns[3],
-        conditionColumn,
+        weaponColumns[4],
+        armorColumns[4],
         armorColumns[5],
-        armorColumns[6],
-        weaponColumns[5],
+        toolColumns[4],
+        conditionColumn,
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
@@ -1824,6 +1833,7 @@ function Inventory:createData()
             Condition = function()
                 return helpers.getConditionPercentLabel(itemStack)
             end,
+            Quality = record.quality and helpers.roundToPlaces(record.quality, 3),
             Value = helpers.roundToPlaces(value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
             ['V/W'] = helpers.roundToPlaces(vw, vwPrecision),
