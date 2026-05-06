@@ -231,8 +231,8 @@ function Inventory:create(windowType, ctx)
         local state = self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState and self.itemTable.layout.userData.getState()
         local scrollPos = ctx.focusedScrollable and ctx.focusedScrollable.layout and ctx.focusedScrollable.layout.userData.getScrollPos and ctx.focusedScrollable.layout.userData.getScrollPos() or 0
         if state then
-            if state.lastPointerRowY ~= nil then
-                state.lastUsedRowPos = v2(0, state.lastPointerRowY)
+            if state.lastPointerRowPos ~= nil then
+                state.lastUsedRowPos = state.lastPointerRowPos
             elseif rowWidget and rowWidget.layout and rowWidget.layout.props then
                 state.lastUsedRowPos = rowWidget.layout.props.position - v2(0, scrollPos)
             end
@@ -1634,8 +1634,8 @@ function Inventory:create(windowType, ctx)
     self.itemTable.layout.events.mouseRelease = async:callback(function(e)
         if e.button == 1 then
             if ctx.dragAndDrop.draggingObject then
-                local restoreY = self.itemTable.layout.userData.getViewportRowYAtOffset(e.offset.y)
-                self.itemTable.layout.userData.getState().lastUsedRowPos = restoreY and v2(0, restoreY) or nil
+                local restorePos = self.itemTable.layout.userData.getViewportSlotPosAtOffset(e.offset.x, e.offset.y)
+                self.itemTable.layout.userData.getState().lastUsedRowPos = restorePos
                 ctx.dragAndDrop:stopDrag(self.target)
             end
         end
@@ -1725,7 +1725,7 @@ function Inventory:onControllerButtonPress(id)
         local state = self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState and self.itemTable.layout.userData.getState()
         if state then
             state.lastUsedRowPos = nil
-            state.lastPointerRowY = nil
+                state.lastPointerRowPos = nil
             if self.ctx.focusedInteractive then
                 self.ctx.focusedInteractive.layout.events.focusLoss()
                 self.ctx.focusedInteractive = nil 
@@ -1761,8 +1761,8 @@ function Inventory:onControllerButtonPress(id)
     elseif id == input.CONTROLLER_BUTTON.Y then
         if self.ctx.dragAndDrop.draggingObject then
             local state = self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.getState and self.itemTable.layout.userData.getState()
-            if state and state.lastPointerRowY ~= nil then
-                state.lastUsedRowPos = v2(0, state.lastPointerRowY)
+            if state and state.lastPointerRowPos ~= nil then
+                state.lastUsedRowPos = state.lastPointerRowPos
             end
             self.ctx.dragAndDrop:stopDrag(self.target)
             return

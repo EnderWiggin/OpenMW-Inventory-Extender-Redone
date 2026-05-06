@@ -384,8 +384,8 @@ function WindowManager:onKeyPress(key)
     if not configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
         if focusedWindow and focusedWindow.target then
             local state = focusedWindow.itemTable and focusedWindow.itemTable.layout and focusedWindow.itemTable.layout.userData.getState and focusedWindow.itemTable.layout.userData.getState()
-            if state and state.lastPointerRowY ~= nil then
-                state.lastUsedRowPos = v2(0, state.lastPointerRowY)
+            if state and state.lastPointerRowPos ~= nil then
+                state.lastUsedRowPos = state.lastPointerRowPos
             end
             WindowManager.ctx.dragAndDrop:stopDrag(focusedWindow.target)
             return true

@@ -134,8 +134,8 @@ ItemTable.create = function(props, ctx)
         return math.floor(math.max(0, state.currentSize.x - getScrollbarWidth(scrollable)))
     end
 
-    local function getViewportRowYAtOffset(offsetY)
-        if state.viewMode == 'ItemViewMode_Grid' or not scrollable then
+    local function getViewportSlotPosAtOffset(offsetX, offsetY)
+        if not scrollable then
             return nil
         end
 
@@ -145,8 +145,29 @@ ItemTable.create = function(props, ctx)
             return nil
         end
 
+        local contentWidth = getContentWidth()
+        if offsetX < 0 or offsetX >= contentWidth then
+            return nil
+        end
+
         local scrollPos = scrollable.layout.userData.getScrollPos() or 0
-        return math.floor((viewY + scrollPos) / rowHeight) * rowHeight - scrollPos
+        if state.viewMode == 'ItemViewMode_Grid' then
+            local itemsPerRow = math.floor(contentWidth / gridIconSize)
+            if itemsPerRow < 1 then itemsPerRow = 1 end
+
+            local itemSize = contentWidth / itemsPerRow
+            local slotX = math.floor(offsetX / itemSize) * itemSize
+            local slotY = math.floor((viewY + scrollPos) / itemSize) * itemSize - scrollPos
+            return util.vector2(slotX, slotY)
+        end
+
+        return util.vector2(0, math.floor((viewY + scrollPos) / rowHeight) * rowHeight - scrollPos)
+    end
+
+    local function viewportSlotEquals(a, b)
+        return a ~= nil and b ~= nil
+            and math.abs(a.x - b.x) <= 0.1
+            and math.abs(a.y - b.y) <= 0.1
     end
     
     sortRows = function()
@@ -282,15 +303,15 @@ ItemTable.create = function(props, ctx)
             indexTo = math.min(#state.sortedRows, startRowIndex + visibleRowCount + buffer)
         end
 
-        local pendingFocusRestoreY = nil
+        local pendingFocusRestorePos = nil
         local restoredFocus = false
-        local hoveredViewportRowY = nil
+        local hoveredViewportPos = nil
         local scrollPos = scrollable.layout.userData.getScrollPos() or 0
-        if not isGrid and state.parentWindow:isFocused() and not scrollable.layout.userData.isDraggingScrollBar then
-            hoveredViewportRowY = state.lastPointerRowY
+        if state.parentWindow:isFocused() and not scrollable.layout.userData.isDraggingScrollBar then
+            hoveredViewportPos = state.lastPointerRowPos
             if state.lastUsedRowPos then
-                pendingFocusRestoreY = state.lastUsedRowPos.y
-                hoveredViewportRowY = pendingFocusRestoreY
+                pendingFocusRestorePos = state.lastUsedRowPos
+                hoveredViewportPos = pendingFocusRestorePos
                 state.lastUsedRowPos = nil
             end
         end
@@ -394,7 +415,11 @@ ItemTable.create = function(props, ctx)
                         onMouseMove = function()
                             if not scrollable.layout.userData.isDraggingScrollBar then
                                 if state.rowCache[cacheKey] then
-                                    state.lastPointerRowY = state.rowCache[cacheKey].layout.props.position.y - scrollPos
+                                    local currentScrollPos = scrollable.layout.userData.getScrollPos() or 0
+                                    state.lastPointerRowPos = util.vector2(
+                                        state.rowCache[cacheKey].layout.props.position.x,
+                                        state.rowCache[cacheKey].layout.props.position.y - currentScrollPos
+                                    )
                                 end
                             end
                         end,
@@ -573,11 +598,10 @@ ItemTable.create = function(props, ctx)
                 local targetW = isGrid and itemSize or contentWidth
                 local targetH = isGrid and itemSize or rowHeight
                
-                local targetYCompare = targetY
-                --if isGrid then targetYCompare = math.floor((i-1) / itemsPerRow) * itemSize end
+                local targetViewportPos = util.vector2(targetX, targetY - scrollPos)
 
-                local isHoveredRow = hoveredViewportRowY ~= nil and targetYCompare - scrollPos == hoveredViewportRowY
-                if pendingFocusRestoreY ~= nil and isHoveredRow and not restoredFocus then
+                local isHoveredRow = viewportSlotEquals(hoveredViewportPos, targetViewportPos)
+                if pendingFocusRestorePos ~= nil and isHoveredRow and not restoredFocus then
                     restoredFocus = true
                     ctx.focusedInteractive = rowWidget
                 end
@@ -850,12 +874,11 @@ ItemTable.create = function(props, ctx)
 
     wrapper.layout.userData.resetScroll = resetScroll
 
-    wrapper.layout.userData.getViewportRowYAtOffset = getViewportRowYAtOffset
+    wrapper.layout.userData.getViewportSlotPosAtOffset = getViewportSlotPosAtOffset
 
     wrapper.layout.events.mouseMove = async:callback(function(e)
         if not scrollable.layout.userData.isDraggingScrollBar then
-            local isOverContent = e.offset.x >= 0 and e.offset.x < getContentWidth()
-            state.lastPointerRowY = isOverContent and getViewportRowYAtOffset(e.offset.y) or nil
+            state.lastPointerRowPos = getViewportSlotPosAtOffset(e.offset.x, e.offset.y)
         end
         return true
     end)
