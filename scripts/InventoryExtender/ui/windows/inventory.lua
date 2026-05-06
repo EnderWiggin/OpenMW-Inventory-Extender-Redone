@@ -319,14 +319,10 @@ function Inventory:create(windowType, ctx)
         return nonDraggedCount
     end
 
-    local nameRenderer = function(row, width, height)
-        local nonDraggedCount = getNonDraggedCount(row)
-
-        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
-
+    local function getItemBadgeState(row)
         local favorite = isFavorited(row.item)
         local stolen = false
-        local enchanted = false
+
         if configPlayer.tweaks.b_StolenIndicator then
             if self.type == 'Inventory' and self.ctx.stolenItems then
                 stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
@@ -334,6 +330,20 @@ function Inventory:create(windowType, ctx)
                 stolen = true
             end
         end
+
+        return {
+            favorite = favorite,
+            stolen = stolen,
+        }
+    end
+
+    local nameRenderer = function(row, width, height)
+        local nonDraggedCount = getNonDraggedCount(row)
+
+        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+
+        local badgeState = getItemBadgeState(row)
+        local enchanted = false
         if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
             enchanted = true
         end
@@ -350,7 +360,7 @@ function Inventory:create(windowType, ctx)
             },
         }
         local iconSize = math.min(specialTemplates.LINE_HEIGHT, 12)
-        if favorite then
+        if badgeState.favorite then
             content:add(baseTemplates.intervalH(8))
             content:add({
                 type = ui.TYPE.Image,
@@ -361,7 +371,7 @@ function Inventory:create(windowType, ctx)
                 },
             })
         end
-        if stolen then
+        if badgeState.stolen then
             content:add(baseTemplates.intervalH(8))
             content:add({
                 type = ui.TYPE.Image,
@@ -396,8 +406,8 @@ function Inventory:create(windowType, ctx)
             content = content,
             userData = {
                 text = text,
-                favorite = favorite,
-                stolen = stolen,
+                favorite = badgeState.favorite,
+                stolen = badgeState.stolen,
                 enchanted = enchanted,
             }
         }
@@ -954,9 +964,51 @@ function Inventory:create(windowType, ctx)
             local base = iconRenderer(row, itemSize, itemSize, {
                 forceEnchantSwirl = true,
             })
+            local badgeState = getItemBadgeState(row)
 
             base.content.itemIcon.props.size = v2(itemSize - 8, itemSize - 8)
             base.content.itemBackground.props.visible = true
+
+            local badgeSize = math.max(10, math.floor(itemSize * 0.18))
+            local badgeContent = ui.content {}
+
+            if badgeState.favorite then
+                badgeContent:add({
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = baseTemplates.createTexture(iconPack.getPath('item/favorited.dds')),
+                        size = v2(badgeSize, badgeSize),
+                        color = constants.Colors.GOLD,
+                    },
+                })
+            end
+
+            if badgeState.stolen then
+                if #badgeContent > 0 then
+                    badgeContent:add(baseTemplates.intervalH(2))
+                end
+                badgeContent:add({
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = baseTemplates.createTexture(iconPack.getPath('item/stolen.dds')),
+                        size = v2(badgeSize, badgeSize),
+                        color = constants.Colors.DAMAGED,
+                    },
+                })
+            end
+
+            if #badgeContent > 0 then
+                base.content:add({
+                    name = 'itemBadges',
+                    type = ui.TYPE.Flex,
+                    props = {
+                        horizontal = true,
+                        position = v2(4, 4),
+                        autoSize = true,
+                    },
+                    content = badgeContent,
+                })
+            end
 
             local count = getNonDraggedCount(row)
             if count and count > 1 then
@@ -973,6 +1025,8 @@ function Inventory:create(windowType, ctx)
                 })
             end
             base.userData.count = count
+            base.userData.favorite = badgeState.favorite
+            base.userData.stolen = badgeState.stolen
             base.userData.bgrVisible = true
             return base
         end,
