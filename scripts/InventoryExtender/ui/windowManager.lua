@@ -272,7 +272,29 @@ function WindowManager:onFrame()
 
     local dt = core.getRealFrameDuration()
 
+    -- I.Cursor when??? (:
+    local mouseMoved
+    if I.UI.getMode() ~= nil then
+        if input.getMouseMoveX() ~= 0 or input.getMouseMoveY() ~= 0 then
+            mouseMoved = true
+        end
+    end
+
     for _, window in pairs(self.windows) do
+        -- Clear stale hovered row pos if mouse moved NOT over the element's item table
+        if mouseMoved then
+            if window and window.itemTable and window.itemTable.layout and window.itemTable.layout.userData.getState then
+                local state = window.itemTable.layout.userData.getState()
+                local hadMouseMoveThisFrame = state.hadMouseMoveThisFrame
+                state.hadMouseMoveThisFrame = false
+
+                if not hadMouseMoveThisFrame and state.lastPointerRowPos then
+                    state.lastPointerRowPos = nil
+                    state.isPointerOverContent = false
+                end
+            end
+        end
+
         if window and window.element and window.element.layout.userData then
             local userData = window.element.layout.userData
             local focusDelayed = userData.focusDelayed

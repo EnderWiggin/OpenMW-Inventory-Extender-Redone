@@ -103,6 +103,7 @@ ItemTable.create = function(props, ctx)
         filters = {},
         viewMode = props.viewMode or 'ItemViewMode_Table',
         parentWindow = props.parentWindow,
+        hadMouseMoveThisFrame = false,
     }
 
     setColumnWidths(columns, state)
@@ -308,7 +309,7 @@ ItemTable.create = function(props, ctx)
         local hoveredViewportPos = nil
         local scrollPos = scrollable.layout.userData.getScrollPos() or 0
         if state.parentWindow:isFocused() and not scrollable.layout.userData.isDraggingScrollBar then
-            hoveredViewportPos = state.lastPointerRowPos
+            hoveredViewportPos = state.isPointerOverContent and state.lastPointerRowPos or nil
             if state.lastUsedRowPos then
                 pendingFocusRestorePos = state.lastUsedRowPos
                 hoveredViewportPos = pendingFocusRestorePos
@@ -413,9 +414,11 @@ ItemTable.create = function(props, ctx)
                             end
                         end,
                         onMouseMove = function()
+                            state.hadMouseMoveThisFrame = true
                             if not scrollable.layout.userData.isDraggingScrollBar then
                                 if state.rowCache[cacheKey] then
                                     local currentScrollPos = scrollable.layout.userData.getScrollPos() or 0
+                                    state.isPointerOverContent = true
                                     state.lastPointerRowPos = util.vector2(
                                         state.rowCache[cacheKey].layout.props.position.x,
                                         state.rowCache[cacheKey].layout.props.position.y - currentScrollPos
@@ -877,8 +880,10 @@ ItemTable.create = function(props, ctx)
     wrapper.layout.userData.getViewportSlotPosAtOffset = getViewportSlotPosAtOffset
 
     wrapper.layout.events.mouseMove = async:callback(function(e)
+        state.hadMouseMoveThisFrame = true
         if not scrollable.layout.userData.isDraggingScrollBar then
             state.lastPointerRowPos = getViewportSlotPosAtOffset(e.offset.x, e.offset.y)
+            state.isPointerOverContent = state.lastPointerRowPos ~= nil
         end
         return true
     end)
