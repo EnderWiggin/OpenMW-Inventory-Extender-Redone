@@ -186,7 +186,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             name = 'columnSettings',
         }, baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), toolbarButtonSize, nil, 'columnSettingsButton'), ctx))
     end
-    if props.onToggleView then
+    if props.onToggleView and configPlayer.window.b_ShowViewModeButton then
         topBarContent:add(baseTemplates.intervalH(4))
         topBarContent:add(specialTemplates.interactive({
             onClick = function()

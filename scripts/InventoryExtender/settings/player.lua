@@ -79,6 +79,13 @@ I.Settings.registerGroup {
             }
         },
         {
+            key = 'b_ShowViewModeButton',
+            renderer = 'checkbox',
+            name = 'ShowViewModeButton',
+            description = 'ShowViewModeButtonDesc',
+            default = true,
+        },
+        {
             key = 'f_TableRowHeightMult',
             renderer = 'number',
             name = 'TableRowHeightMult',

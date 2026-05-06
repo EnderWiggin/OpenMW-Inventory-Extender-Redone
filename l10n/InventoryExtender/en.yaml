@@ -3,7 +3,7 @@ ConfigSummary: |-
   A Lua replacement for the inventory window with a modernized list-based interface.
   --- v%{version} ---
 
-RequiresReload: Requires a Lua reload to take effect.
+RequiresReload: Some changes require a Lua reload to take effect.
 
 ConfigCategoryKeybinds: Keybinds
 KeybindPickupItem: Pick up item
@@ -32,6 +32,9 @@ ItemViewModeDesc: |-
   Choose between a detailed table view or a vanilla-style grid view.
 ItemViewMode_Table: Table
 ItemViewMode_Grid: Grid
+ShowViewModeButton: Show view mode button
+ShowViewModeButtonDesc: |-
+  Show a button in the top bar to toggle between table and grid view.
 TableRowHeightMult: Table row height multiplier
 TableRowHeightMultDesc: |-
   Adjust the height of rows in the table view, as a multiplier of text size.
