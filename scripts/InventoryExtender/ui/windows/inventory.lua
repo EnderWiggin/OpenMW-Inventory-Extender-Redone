@@ -1046,12 +1046,13 @@ function Inventory:create(windowType, ctx)
 
         playerWindowSettings:set('s_ItemViewMode', newMode)
 
-        if self.itemTable and self.itemTable.layout and self.itemTable.layout.userData.setViewMode then
-            self.itemTable.layout.userData.setViewMode(newMode)
-        end
-
-        if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.updateViewModeButton then
-            self.categoryFilter.layout.userData.updateViewModeButton()
+        for _, window in pairs(I.InventoryExtender.getWindows()) do
+            if window and window.itemTable and window.itemTable.layout and window.itemTable.layout.userData and window.itemTable.layout.userData.setViewMode then
+                window.itemTable.layout.userData.setViewMode(newMode)
+            end
+            if window and window.categoryFilter and window.categoryFilter.layout and window.categoryFilter.layout.userData and window.categoryFilter.layout.userData.updateViewModeButton then
+                window.categoryFilter.layout.userData.updateViewModeButton()
+            end
         end
     end
 

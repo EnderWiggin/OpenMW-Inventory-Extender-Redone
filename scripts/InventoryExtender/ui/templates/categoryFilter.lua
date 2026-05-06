@@ -55,7 +55,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         return iconPack.getPath('view_grid.dds')
     end
 
-    local function updateViewModeButton(shouldUpdate)
+    local function updateViewModeButton()
         if not props.onToggleView or not element or not element.layout then
             return
         end
@@ -63,10 +63,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         for _, e in pairs(element.layout.content.topBar.content) do
             if e.layout and e.layout.name == 'viewModeToggle' then
                 e.layout.content[1].props.resource = baseTemplates.createTexture(getViewModeToggleIconPath())
-                if shouldUpdate then
-                    e:update()
-                    element:update()
-                end
+                e:update()
                 break
             end
         end
@@ -194,7 +191,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         topBarContent:add(specialTemplates.interactive({
             onClick = function()
                 props.onToggleView()
-                updateViewModeButton(true)
+                updateViewModeButton()
             end,
             tooltipFn = function()
                 local text = getViewMode() == 'ItemViewMode_Grid' and l10n('UI_Tooltip_TableView') or l10n('UI_Tooltip_GridView')
