@@ -58,7 +58,7 @@ function DragAndDrop:getHoveredGameObject(position)
         else
             self.hitPos = nil
         end
-    end), pos, pos + v * dist)
+    end), pos, pos + v * dist, { ignore = omwself })
 end
 
 function DragAndDrop:startDrag(item, source, count, pickpocket, activationContext)
@@ -292,10 +292,20 @@ function DragAndDrop:dropAt(object, count, position)
     end
 end
 
-function DragAndDrop:dropAtFeet(object, count)
-    local res = nearby.castRay(omwself.position, omwself.position + util.vector3(0, 0, -100000000000))
-    local targetPos = res.hitPos or omwself.position
-    self:dropAt(object, count, targetPos)
+function DragAndDrop:dropAtFeet(object, count, callback)
+    return nearby.asyncCastRenderingRay(
+        async:callback(function(result)
+            local targetPos = result.hitPos or omwself.position
+            print(targetPos, result.hitPos, omwself.position)
+            self:dropAt(object, count, targetPos)
+            if callback then
+                callback()
+            end
+        end),
+        omwself.position + util.vector3(0, 0, omwself:getBoundingBox().halfSize.z), 
+        omwself.position + util.vector3(0, 0, -100000000000), 
+        { ignore = omwself }
+    )
 end
 
 function DragAndDrop:setWrapperEnabled(enabled)
@@ -406,7 +416,14 @@ function DragAndDrop:init(ctx)
                 end
 
                 if not self.hitPos then
-                    self:dropAtFeet(self.draggingObject, self.draggingCount)
+                    local object = self.draggingObject
+                    local count = self.draggingCount
+                    self:dropAtFeet(object, count, function()
+                        self:stopDrag()
+                        self.wrapper.layout.content.dropPointer.props.relativeSize = v2(0, 0)
+                        self.wrapper:update()
+                    end)
+                    return
                 else
                     self:dropAt(self.draggingObject, self.draggingCount, self.hitPos)
                 end
