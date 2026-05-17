@@ -429,7 +429,7 @@ function Inventory:create(windowType, ctx)
         {
             id = 'Type',
             label = l10n('Column_Type'),
-            width = 80 * baseTemplates.TEXT_SIZE / 16,
+            width = 90 * baseTemplates.TEXT_SIZE / 16,
             textAlignH = ui.ALIGNMENT.End,
             visible = true,
         },
