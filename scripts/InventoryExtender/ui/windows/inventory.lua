@@ -852,7 +852,7 @@ function Inventory:create(windowType, ctx)
                     omwself:sendEvent('IE_Update')
                 elseif mode == 'Interface' then
                     if not isFavorited(row.item) then
-                        ctx.dragAndDrop:dropAtFeet(row.item, count)
+                        ctx.dragAndDrop:dropAtViewportPosition(row.item, count, v2(0.5, 0.5), true)
                     else
                         ui.showMessage(l10n('UI_Msg_FavoriteItem'))
                     end

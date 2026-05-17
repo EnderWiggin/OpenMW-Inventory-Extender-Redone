@@ -31,34 +31,52 @@ local instantPickup = false
 
 local DragAndDrop = {}
 
-function DragAndDrop:getHoveredGameObject(position)
-    local pos = camera.getPosition()
-    local v = camera.viewportToWorldVector(position)
+local function getViewportRaycastDistance(ctx)
 	local dist = core.getGMST("iMaxActivateDist") + camera.getThirdPersonDistance()
     local telekinesis = types.Actor.activeEffects(omwself):getEffect(core.magic.EFFECT_TYPE.Telekinesis)
     if telekinesis then
         dist = dist + (telekinesis.magnitude * 22)
     end
-    if self.ctx.isConsoleOpen then
+    if ctx.isConsoleOpen then
         dist = dist * 10000
     end
-	return nearby.asyncCastRenderingRay(async:callback(function(result)
-        self.hoveredObject = result.hitObject
-        if result.hitNormal then
-            local up = util.vector3(0, 0, 1)
-            local normalLength = result.hitNormal:length()
-            local normalizedNormal = result.hitNormal / normalLength
-            local dotProduct = normalizedNormal:dot(up)
-            
-            if math.acos(dotProduct) < math.rad(30) then
-                self.hitPos = result.hitPos
-            else
-                self.hitPos = nil
-            end
-        else
-            self.hitPos = nil
-        end
+    return dist
+end
+
+local function getEligibleDropPosition(result)
+    if not result.hitNormal then
+        return nil
+    end
+
+    local normalLength = result.hitNormal:length()
+    if normalLength == 0 then
+        return nil
+    end
+
+    local up = util.vector3(0, 0, 1)
+    local normalizedNormal = result.hitNormal / normalLength
+    local dotProduct = math.max(-1, math.min(1, normalizedNormal:dot(up)))
+    if math.acos(dotProduct) < math.rad(30) then
+        return result.hitPos
+    end
+
+    return nil
+end
+
+function DragAndDrop:resolveViewportDropTarget(position, callback)
+    local pos = camera.getPosition()
+    local v = camera.viewportToWorldVector(position)
+    local dist = getViewportRaycastDistance(self.ctx)
+    return nearby.asyncCastRenderingRay(async:callback(function(result)
+        callback(result, getEligibleDropPosition(result))
     end), pos, pos + v * dist, { ignore = omwself })
+end
+
+function DragAndDrop:getHoveredGameObject(position)
+    return self:resolveViewportDropTarget(position, function(result, hitPos)
+        self.hoveredObject = result.hitObject
+        self.hitPos = hitPos
+    end)
 end
 
 function DragAndDrop:startDrag(item, source, count, pickpocket, activationContext)
@@ -292,11 +310,31 @@ function DragAndDrop:dropAt(object, count, position)
     end
 end
 
+function DragAndDrop:dropAtViewportPosition(object, count, position, fallbackToFeet, callback)
+    return self:resolveViewportDropTarget(position, function(_, hitPos)
+        if hitPos then
+            self:dropAt(object, count, hitPos)
+            if callback then
+                callback()
+            end
+            return
+        end
+
+        if fallbackToFeet then
+            self:dropAtFeet(object, count, callback)
+            return
+        end
+
+        if callback then
+            callback()
+        end
+    end)
+end
+
 function DragAndDrop:dropAtFeet(object, count, callback)
     return nearby.asyncCastRenderingRay(
         async:callback(function(result)
             local targetPos = result.hitPos or omwself.position
-            print(targetPos, result.hitPos, omwself.position)
             self:dropAt(object, count, targetPos)
             if callback then
                 callback()
