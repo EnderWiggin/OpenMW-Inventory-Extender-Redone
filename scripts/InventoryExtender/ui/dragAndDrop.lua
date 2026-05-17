@@ -308,6 +308,8 @@ function DragAndDrop:dropAt(object, count, position)
     if configPlayer.misc.b_TooltipCompatibilityMode then
         self:setWrapperEnabled(false)
     end
+    
+    omwself:sendEvent('BreakInvisibility')
 end
 
 function DragAndDrop:dropAtViewportPosition(object, count, position, fallbackToFeet, callback)
@@ -475,6 +477,7 @@ function DragAndDrop:init(ctx)
                         if input.isAltPressed() then
                             instantPickup = true
                         end
+                        omwself:sendEvent('BreakInvisibility')
                     end
                 else
                     ui.setConsoleSelectedObject(self.hoveredObject)
