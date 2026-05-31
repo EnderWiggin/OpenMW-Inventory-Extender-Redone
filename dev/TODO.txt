@@ -1,9 +1,0 @@
-- Companions should equip best-in-slot items automatically after an item transfer
-- Pickpocketing
-- Prevent disposing of persistent corpses without needing hardcoded list (pending OpenMW API support)
-- Dropping items at feet should use a rendering raycast instead of a normal one
-- Item tooltips should match actual displayed stack size
-- Enter should make offer if text input is focused in barter window
-- Search should match known effects on items
-- Don't show magic background in table view
-- Prison search should probably use last exterior cell instead of BFS
