@@ -3,6 +3,7 @@ local util = require('openmw.util')
 local auxUi = require('openmw_aux.ui')
 local input = require('openmw.input')
 local async = require('openmw.async')
+local omwself = require('openmw.self')
 
 local constants = require('scripts.InventoryExtender.util.constants')
 local configPlayer = require('scripts.InventoryExtender.config.player')
@@ -52,6 +53,34 @@ local function setColumnWidths(columns, state, scrollable)
     end
     
     state.columnWidths = widths
+end
+
+local function getEquippedItemsForComparison(item, ctx)
+    local mode = helpers.getWindowSettings():get(constants.OPT_KEYS.CompareItemsMode)
+    if mode == constants.COMPARISON_OPTS.ALT then
+        if not input.isAltPressed() then return nil end
+    elseif mode == constants.COMPARISON_OPTS.Always then
+        --do nothing - this always should pass
+    else
+        -- either Never or unknown - skip
+        return nil
+    end
+
+    local actor = omwself
+    local overrides = ctx.overrides.equipped
+
+    if helpers.isItemEquipped(item, actor, overrides) then
+        return nil
+    end
+
+    local slots = helpers.getEquipmentSlots(item)
+    local equipped = helpers.getEquippedItems(slots, actor, overrides)
+
+    if #equipped > 0 then
+        return equipped
+    else
+        return nil
+    end
 end
 
 -- Default sort comparator
@@ -226,6 +255,7 @@ ItemTable.create = function(props, ctx)
                 if type(val) == 'function' then
                     val = val()
                 end
+                if type(val) == 'number' then val = helpers.addSeparators(val) end
                 local textStr = val ~= nil and tostring(val) or ""
                 if textStr == "0" or textStr == "" then textStr = "-" end
                 cellContent = {
@@ -429,7 +459,13 @@ ItemTable.create = function(props, ctx)
                         tooltipFn = function()
                             local currentRow = getCurrentRow()
                             if currentRow and currentRow.item then
-                                return specialTemplates.itemTooltip(currentRow.item, false, ctx)
+                                local item = currentRow.item
+                                local comparison = getEquippedItemsForComparison(item, ctx)
+                                if comparison then
+                                    return specialTemplates.compareItemsTooltip(item, comparison, false, ctx)
+                                else
+                                    return specialTemplates.itemTooltip(item, false, ctx)
+                                end
                             elseif currentRow and currentRow.tooltip then
                                 return specialTemplates.lineTooltip(currentRow.tooltip)
                             end
@@ -569,6 +605,7 @@ ItemTable.create = function(props, ctx)
                                     if type(val) == 'function' then
                                         val = val()
                                     end
+                                    if type(val) == 'number' then val = helpers.addSeparators(val) end
                                     local textStr = val ~= nil and tostring(val) or ""
                                     if textStr == "0" or textStr == "" then textStr = "-" end
                                     if textStr ~= cellContent.props.text then

@@ -341,7 +341,7 @@ function Inventory:create(windowType, ctx)
     local nameRenderer = function(row, width, height)
         local nonDraggedCount = getNonDraggedCount(row)
 
-        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
 
         local badgeState = getItemBadgeState(row)
         local enchanted = false
@@ -1265,7 +1265,7 @@ function Inventory:create(windowType, ctx)
                     {
                         template = baseTemplates.textNormal,
                         props = {
-                            text = tostring(goldAmount),
+                            text = helpers.addSeparators(goldAmount),
                         }
                     }
                 }
@@ -1411,7 +1411,7 @@ function Inventory:create(windowType, ctx)
             }, function(layout)
                 if self.target == nil then return layout end
                 local profit = ctx.companionProfit[self.target.id]
-                layout.props.text = profit and (constants.Strings.PROFIT_VALUE .. ': ' .. tostring(profit)) or ''
+                layout.props.text = profit and (constants.Strings.PROFIT_VALUE .. ': ' .. helpers.addSeparators(profit)) or ''
                 return layout
             end)
         end

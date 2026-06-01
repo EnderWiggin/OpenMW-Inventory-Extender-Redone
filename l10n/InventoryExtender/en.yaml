@@ -222,6 +222,7 @@ UI_ColumnSettingsTitle: Visible Columns
 UI_Barter_Spend: "Spend:"
 UI_Barter_Gain: "Gain:"
 UI_Barter_Max: Max
+UI_Tooltip_Equipped: <<<  Equipped  >>>
 
 UI_Msg_ScriptedItem: This item cannot be picked up from the inventory.
 UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inventory.
@@ -236,3 +237,14 @@ UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.
 UI_EnchantCapacity: Enchant Capacity
 UI_SoulCapacity: Soul Capacity
 UI_SoulValue: Soul Value
+
+ConfigNumberSeparators: Show thousand separators
+ConfigNumberSeparators_None: None
+ConfigNumberSeparators_Comma: Comma
+ConfigNumberSeparators_Space: Space
+
+ConfigCompareItemsMode: Compare equipped item
+ConfigCompareItemsModeDesc: Will show tooltips of equipped items near current item tooltip.
+ConfigCompareItemsMode_Never: Never
+ConfigCompareItemsMode_ALT: Hold ALT
+ConfigCompareItemsMode_Always: Always
