@@ -957,6 +957,7 @@ function Inventory:create(windowType, ctx)
                     -- favorited items come first (true > false)
                     return aFavorited
                 end
+            end
             
             -- Second, sort by Category
             local categories = I.InventoryExtender.getCategories()
