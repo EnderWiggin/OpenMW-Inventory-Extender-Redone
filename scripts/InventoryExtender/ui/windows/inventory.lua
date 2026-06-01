@@ -1491,10 +1491,14 @@ function Inventory:create(windowType, ctx)
                         if ctx.barterState.totalBalance == 0 then
                             ctx.barterState.currentBalance = 0
                         end
+                        local delta = 1
+                        if input.isShiftPressed() then
+                            delta = 5
+                        end
                         if ctx.barterState.currentBalance < 0 then
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + delta
                         else
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - delta
                         end
                         self.infoBar.layout.userData.updateAll()
                     end,
@@ -1546,10 +1550,14 @@ function Inventory:create(windowType, ctx)
                         if ctx.barterState.totalBalance == 0 then
                             ctx.barterState.currentBalance = 0
                         end
+                        local delta = 1
+                        if input.isShiftPressed() then
+                            delta = 5
+                        end
                         if ctx.barterState.currentBalance < 0 then
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - delta
                         else
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + delta
                         end
                         self.infoBar.layout.userData.updateAll()
                     end,
