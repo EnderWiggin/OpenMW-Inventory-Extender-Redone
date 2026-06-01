@@ -223,6 +223,7 @@ UI_Barter_Spend: "Spend:"
 UI_Barter_Gain: "Gain:"
 UI_Barter_Max: Max
 UI_Tooltip_Equipped: <<<  Equipped  >>>
+UI_Tooltip_Magic_Item_Use_Cost: "Charge Cost: %{cost}"
 
 UI_Msg_ScriptedItem: This item cannot be picked up from the inventory.
 UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inventory.
@@ -251,3 +252,6 @@ ConfigCompareItemsMode_Always: Always
 
 ConfigSortingBarterReverseEquipped: When bartering, sort equipped items last
 ConfigSortingBarterReverseFavorite: When bartering, sort favorite items last
+
+ConfigTooltipShowItemUseCost: Show item use cost
+ConfigTooltipShowItemUseCostDesc: Show the charges cost per cast for magic items.

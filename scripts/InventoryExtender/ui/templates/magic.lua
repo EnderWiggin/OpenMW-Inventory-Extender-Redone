@@ -456,6 +456,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     local enchantment
     local castTypeString
+    local cost = 0
     local doCharge
     local maxCharge
     if itemRecord.enchant then
@@ -463,9 +464,11 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         if enchantment then
             if enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnStrike then
                 castTypeString = constants.Strings.ITEM_CAST_WHEN_STRIKES
+                cost = helpers.getModifiedSpellCost(itemRecord.enchant, true)
                 doCharge = true
             elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnUse then
                 castTypeString = constants.Strings.ITEM_CAST_WHEN_USED
+                cost = helpers.getModifiedSpellCost(itemRecord.enchant, true)
                 doCharge = true
             elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnce then
                 castTypeString = constants.Strings.ITEM_CAST_ONCE
@@ -486,6 +489,10 @@ Templates.itemTooltip = function(item, showIcon, ctx)
             innerContent:add(BASE.intervalV(4))
         end
         innerContent:add(textNormal('castType', castTypeString))
+    end
+
+    if cost > 0 and configPlayer.tweaks[constants.OPT_KEYS.TooltipShowItemUseCost] then
+        innerContent:add(textNormal('castCost', l10n('UI_Tooltip_Magic_Item_Use_Cost'):gsub('%%{cost}', helpers.addSeparators(cost))))
     end
 
     -- Handle effects for enchantments, potions, and ingredients.

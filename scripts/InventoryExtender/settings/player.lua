@@ -322,6 +322,13 @@ I.Settings.registerGroup {
             default = true,
         },
         {
+            key = C.OPT_KEYS.TooltipShowItemUseCost,
+            renderer = 'checkbox',
+            name = 'ConfigTooltipShowItemUseCost',
+            description = 'ConfigTooltipShowItemUseCostDesc',
+            default = true,
+        },
+        {
             key = 'b_HideConditionChargeLabels',
             renderer = 'checkbox',
             name = 'HideConditionChargeLabels',

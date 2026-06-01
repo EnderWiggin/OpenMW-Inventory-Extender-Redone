@@ -205,6 +205,7 @@ C.OPT_KEYS = {
     SeparatorsMode = 's_NumberSeparators',
     SortingBarterReverseEquipped = 'b_SortingBarterReverseEquipped',
     SortingBarterReverseFavorite = 'b_SortingBarterReverseFavorite',
+    TooltipShowItemUseCost = 'b_TooltipShowItemUseCost',
 }
 
 C.COMPARISON_OPTS = {
