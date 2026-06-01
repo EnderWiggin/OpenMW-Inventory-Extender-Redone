@@ -107,7 +107,7 @@ local function resetMode()
     I.UI.addMode(mode, modeArgs)
 end
 
-function DragAndDrop:setDraggingObject(object, resetMode)
+function DragAndDrop:setDraggingObject(object, doModeReset)
     self.draggingObject = object
 
     local upSound = helpers.getItemSound(object, 'up')
@@ -171,7 +171,7 @@ function DragAndDrop:setDraggingObject(object, resetMode)
         }
     })
 
-    if resetMode then
+    if doModeReset then
         resetMode()
     end
 end
