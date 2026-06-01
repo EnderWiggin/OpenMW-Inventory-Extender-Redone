@@ -1252,7 +1252,7 @@ if isPlayer then
                     end
                 else
                     if userData.pressed then
-                        color = l.userData.pressColor or C.Colors.DEFAULT_DARK
+                        color = l.userData.pressColor or C.Colors.DEFAULT_PRESSED
                     elseif userData.hovering then
                         color = l.userData.hoverColor or C.Colors.DEFAULT_LIGHT
                     else
