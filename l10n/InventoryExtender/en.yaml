@@ -139,6 +139,7 @@ Column_Class: Class
 Column_AR: AR
 Column_Value: Val.
 Column_Weight: Wgt.
+Column_Weight_Total: T. Wgt.
 Column_VW: V/W
 
 # Category

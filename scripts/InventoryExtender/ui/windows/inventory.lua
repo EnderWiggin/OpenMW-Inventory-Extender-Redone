@@ -36,6 +36,11 @@ local inventoryCategoryKey = 'All'
 
 local Inventory = Window:new()
 
+local OptionalColumns = {
+    Condition = true,
+    Weight_Total = true,
+}
+
 function Inventory:update(deep)
     if self.updateSize then
         self:updateSize()
@@ -443,6 +448,14 @@ function Inventory:create(windowType, ctx)
             visible = true,
         },
         {
+            id = 'Weight_Total',
+            label = l10n('Column_Weight_Total'),
+            width = 70 * baseTemplates.TEXT_SIZE / 16,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
+        {
             id = 'Value',
             label = l10n('Column_Value'),
             width = w,
@@ -586,7 +599,7 @@ function Inventory:create(windowType, ctx)
 
     local function isColumnVisible(columnId, visibility)
         visibility = visibility or getColumnVisibility()
-        if columnId == 'Condition' then
+        if OptionalColumns[columnId] then
             return visibility[columnId] == true
         end
         return visibility[columnId] ~= false
@@ -704,7 +717,7 @@ function Inventory:create(windowType, ctx)
             end
 
             if visible then
-                if columnId == 'Condition' then
+                if OptionalColumns[columnId] then
                     newVisibility[columnId] = true
                 else
                     newVisibility[columnId] = nil
@@ -1868,6 +1881,13 @@ function Inventory:createData()
         local value = helpers.getItemValue(itemStack)
         local vw = record.weight > 0 and (value / record.weight) or 0
         local vwPrecision = vw > 10 and 0 or 1
+        local getItemCount = function()
+            if isVirtual then
+                return item.totalCount
+            else
+                return itemStack.count
+            end
+        end
         
         local rowData = {
             id = itemStack.id,
@@ -1891,18 +1911,13 @@ function Inventory:createData()
             Quality = record.quality and helpers.roundToPlaces(record.quality, 3),
             Value = helpers.roundToPlaces(value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
+            Weight_Total = helpers.roundToPlaces(record.weight * getItemCount(), 2),
             ['V/W'] = helpers.roundToPlaces(vw, vwPrecision),
             item = itemStack,
             itemRecord = record,
             isBartered = isBartered,
             virtualStacks = isVirtual and item.stacks or nil,
-            getCount = function()
-                if isVirtual then
-                    return item.totalCount
-                else
-                    return itemStack.count
-                end
-            end,
+            getCount = getItemCount,
             showAsEnchanted = function()
                 if record.enchant then
                     return true
