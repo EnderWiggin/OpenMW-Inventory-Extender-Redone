@@ -150,6 +150,18 @@ I.Settings.registerGroup {
             }
         },
         {
+            key = C.OPT_KEYS.SortingBarterReverseEquipped,
+            renderer = 'checkbox',
+            name = 'ConfigSortingBarterReverseEquipped',
+            default = false,
+        },
+        {
+            key = C.OPT_KEYS.SortingBarterReverseFavorite,
+            renderer = 'checkbox',
+            name = 'ConfigSortingBarterReverseFavorite',
+            default = false,
+        },
+        {
             key = 'b_InventoryWindowPinned',
             renderer = 'checkbox',
             name = 'InventoryWindowPinned',

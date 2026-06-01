@@ -911,17 +911,52 @@ function Inventory:create(windowType, ctx)
                 return a.isBartered
             end
 
+            local mode = I.UI.getMode()
+            local inBarterMode = mode == 'Barter'
+
             local aEquipped = helpers.isItemEquipped(a.item, self.target, ctx.overrides.equipped)
             local bEquipped = helpers.isItemEquipped(b.item, self.target, ctx.overrides.equipped)
-            if aEquipped ~= bEquipped then
-                return aEquipped -- equipped items come first (true > false)
-            end
 
             local aFavorited = isFavorited(a.item)
             local bFavorited = isFavorited(b.item)
-            if aFavorited ~= bFavorited then
-                return aFavorited -- favorited items come first (true > false)
-            end
+
+            if inBarterMode then
+                local config = helpers.getWindowSettings()
+                local reverseEquipped = config:get(constants.OPT_KEYS.SortingBarterReverseEquipped)
+                local reverseFavorite = config:get(constants.OPT_KEYS.SortingBarterReverseFavorite)
+
+                if reverseFavorite and not reverseEquipped then
+                    -- if only favorites are reversed, prioritize sorting by favorite status
+                    if aFavorited ~= bFavorited then
+                        -- favorited items come last (true > false)
+                        return bFavorited
+                    end
+
+                    if aEquipped ~= bEquipped then
+                        -- equipped items come first (true > false)
+                        return aEquipped
+                    end
+                else
+                    if aEquipped ~= bEquipped then
+                        -- equipped items come first (true > false), unless we reverse it
+                        if reverseEquipped then return bEquipped else return aEquipped end
+                    end
+
+                    if aFavorited ~= bFavorited then
+                        -- favorited items come first (true > false), unless we reverse it
+                        if reverseFavorite then return bFavorited else return aFavorited end
+                    end
+                end
+            else
+                if aEquipped ~= bEquipped then
+                    -- equipped items come first (true > false)
+                    return aEquipped
+                end
+
+                if aFavorited ~= bFavorited then
+                    -- favorited items come first (true > false)
+                    return aFavorited
+                end
             
             -- Second, sort by Category
             local categories = I.InventoryExtender.getCategories()

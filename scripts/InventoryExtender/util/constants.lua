@@ -203,6 +203,8 @@ C.WeaponClass = {
 C.OPT_KEYS = {
     CompareItemsMode = 's_CompareItemsMode',
     SeparatorsMode = 's_NumberSeparators',
+    SortingBarterReverseEquipped = 'b_SortingBarterReverseEquipped',
+    SortingBarterReverseFavorite = 'b_SortingBarterReverseFavorite',
 }
 
 C.COMPARISON_OPTS = {

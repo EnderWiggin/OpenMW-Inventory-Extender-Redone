@@ -248,3 +248,6 @@ ConfigCompareItemsModeDesc: Will show tooltips of equipped items near current it
 ConfigCompareItemsMode_Never: Never
 ConfigCompareItemsMode_ALT: Hold ALT
 ConfigCompareItemsMode_Always: Always
+
+ConfigSortingBarterReverseEquipped: When bartering, sort equipped items last
+ConfigSortingBarterReverseFavorite: When bartering, sort favorite items last
