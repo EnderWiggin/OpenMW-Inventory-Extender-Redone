@@ -32,6 +32,7 @@ local l10n = core.l10n('InventoryExtender')
 local windowOptionsSection = storage.playerSection('InventoryExtender')
 local columnVisibilityKey = 'ColumnVisibility'
 local playerWindowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
+local inventoryCategoryKey = 'All'
 
 local Inventory = Window:new()
 
@@ -677,6 +678,13 @@ function Inventory:create(windowType, ctx)
         return categories[1] and categories[1].key or nil
     end
 
+    self.getModeDefaultCategoryKey = function()
+        if I.UI.getMode() == 'Interface' then
+            return inventoryCategoryKey
+        end
+        return 'All'
+    end
+
     self.applyColumnVisibility = function(window)
         if not window.itemTable or not window.itemTable.layout or not window.itemTable.layout.userData then
             return
@@ -1099,6 +1107,9 @@ function Inventory:create(windowType, ctx)
         onToggleView = toggleItemViewMode,
         getViewMode = getItemViewMode,
     }, function(selectedCategory)
+        if I.UI.getMode() == 'Interface' then
+            inventoryCategoryKey = selectedCategory
+        end
         self.itemTable.layout.userData.setColumns(getColumnsForCategory(selectedCategory), true)
         self:setTitle()
 
@@ -2081,8 +2092,9 @@ function Inventory:loadState()
     if self.itemTable then
         self.itemTable.layout.userData.setViewMode(configPlayer.window.s_ItemViewMode)
     end
-    if self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.updateViewModeButton then
+    if self.categoryFilter and self.categoryFilter.layout then
         self.categoryFilter.layout.userData.updateViewModeButton()
+        self.categoryFilter.layout.userData.setCategory(self:getModeDefaultCategoryKey())
     end
 
     self.stateKey = self:getDimensionsKey()
