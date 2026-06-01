@@ -244,6 +244,27 @@ ItemTable.create = function(props, ctx)
 
     state.rowCache = {} -- Stores generated row layouts by item ID or index
 
+    local function applyCellContentModifiers(cellContent, row)
+        if ctx and ctx.modifiers and ctx.modifiers.cellContent then
+            for _, modifier in ipairs(ctx.modifiers.cellContent) do
+                cellContent = modifier.modifier(cellContent, row, ctx, props.parentWindow.type) or cellContent
+            end
+        end
+        return cellContent
+    end
+
+    local function normalizeWidgetContent(rendered, row)
+        if not rendered then return ui.content {} end
+        if rendered[1] then
+            local content = ui.content {}
+            for _, entry in ipairs(rendered) do
+                content:add(applyCellContentModifiers(entry, row))
+            end
+            return content
+        end
+        return ui.content { applyCellContentModifiers(rendered, row) }
+    end
+    
     local function createContent(row)
         local cells = ui.content {}
 
@@ -280,11 +301,7 @@ ItemTable.create = function(props, ctx)
             cellContent.props.position = util.vector2(totalW, 0)
             totalW = totalW + w
 
-            if ctx and ctx.modifiers and ctx.modifiers.cellContent then
-                for _, modifier in ipairs(ctx.modifiers.cellContent) do
-                    cellContent = modifier.modifier(cellContent, row, ctx, props.parentWindow.type) or cellContent
-                end
-            end
+            cellContent = applyCellContentModifiers(cellContent, row)
 
             cells:add(cellContent)
         end
@@ -377,12 +394,7 @@ ItemTable.create = function(props, ctx)
                     end
                     if isGrid then
                         if gridItemRenderer then
-                            local rendered = gridItemRenderer(row, itemSize)
-                            if rendered[1] then
-                                widgetContent = rendered
-                            else
-                                widgetContent = ui.content { rendered }
-                            end
+                            widgetContent = normalizeWidgetContent(gridItemRenderer(row, itemSize), row)
                         else
                             local iconPath = row.icon
                             if not iconPath and row.item then
@@ -556,9 +568,8 @@ ItemTable.create = function(props, ctx)
                         local rowWidget = state.rowCache[cacheKey]
                         if gridItemRenderer then
                             local lastSize = rowWidget.layout.userData.lastGridSize or 0
-                            
-                            local rendered = gridItemRenderer(row, itemSize)
-                            local newContent = rendered[1] and rendered or ui.content { rendered }
+
+                            local newContent = normalizeWidgetContent(gridItemRenderer(row, itemSize), row)
 
                             local userDataChanged = false
                             local currentContent = rowWidget.layout.content
@@ -594,7 +605,7 @@ ItemTable.create = function(props, ctx)
 
                             if cellContent then
                                 if col.renderer then
-                                    local newCellContent = col.renderer(row, w, rowHeight)
+                                    local newCellContent = applyCellContentModifiers(col.renderer(row, w, rowHeight), row)
                                     if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
                                         rowWidget.layout.content[cIdx] = newCellContent
                                         cellContent = newCellContent
