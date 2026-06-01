@@ -764,6 +764,7 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
                 end
             end),
             mouseMove = async:callback(function(e, layout)
+                userData.hadMouseMoveThisFrame = true
                 ctx.lastCursorPos = e.position
                 if ctx.cursorAttachedIcon then
                     ctx.cursorAttachedIcon.layout.props.visible = true

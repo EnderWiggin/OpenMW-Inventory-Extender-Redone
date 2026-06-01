@@ -21,6 +21,13 @@ local validDragModes = {
     Companion = true,
 }
 
+local validInventoryModes = {
+    Interface = true,
+    Barter = true,
+    Container = true,
+    Companion = true,
+}
+
 local WindowManager = {}
 
 WindowManager.windows = {
@@ -229,6 +236,10 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
             window:updateData()
         end
     end
+
+    if newMode and validInventoryModes[newMode] and self.windows.Inventory then
+        self.windows.Inventory:setFocused(true)
+    end
 end
 
 function WindowManager:onMouseWheel(v, h)
@@ -293,6 +304,11 @@ function WindowManager:onFrame()
                     state.isPointerOverContent = false
                 end
             end
+
+            if window.element and not window.element.layout.userData.hadMouseMoveThisFrame then
+                window:setFocused(false)
+            end
+            window.element.layout.userData.hadMouseMoveThisFrame = false
         end
 
         if window and window.element and window.element.layout.userData then

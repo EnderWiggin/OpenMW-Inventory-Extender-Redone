@@ -56,6 +56,12 @@ function Window:isFocused()
     return self.element.layout.userData.focused
 end
 
+function Window:setFocused(focused)
+    if not self.element then return end
+
+    self.element.layout.userData.focused = focused
+end
+
 function Window:getDimensions()
     if not self.element then return nil end
 
