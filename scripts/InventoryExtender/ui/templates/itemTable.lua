@@ -222,6 +222,10 @@ ItemTable.create = function(props, ctx)
             else
                 local valA = a[field]
                 local valB = b[field]
+                
+                if type(valA) == 'function' then valA = valA() end
+                if type(valB) == 'function' then valB = valB() end
+                
                 if valA == valB then 
                     areEqual = true 
                 else
