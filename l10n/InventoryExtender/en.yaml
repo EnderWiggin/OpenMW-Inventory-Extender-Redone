@@ -6,24 +6,19 @@ ConfigSummary: |-
 RequiresReload: Some changes require a Lua reload to take effect.
 
 ConfigCategoryKeybinds: Keybinds
-KeybindPickupItem: Pick up item
-KeybindPickupItemDesc: |-
-  The keybind used to pick up the selected row in the inventory window.
-  
-  With Shift: Pick up whole stack
-  With Ctrl: Pick up one
-  With Alt (in inventory): Drop at feet
-  With Alt (in others): Transfer to other inventory
+KeybindUseItem: Use item
+KeybindUseItemDesc: |-
+  Instantly use the hovered inventory item.
 KeybindToggleFavorite: Toggle favorite
 KeybindToggleFavoriteDesc: |-
-  Toggle favorite status for the hovered item in your inventory.
+  Toggle favorite status for the hovered inventory item.
   
   Favorited items cannot be sold, dropped, or transfered to other inventories, and are marked with a star icon in the inventory list.
 SwapUsePickup: Swap use/pick up
 SwapUsePickupDesc: |-
-  By default, the above keybind picks up items, and left-click uses items.
+  By default, the above keybind uses items, and left-click picks them up.
   
-  Enable this option to swap those behaviors, so that left-click will pick up items and the keybind will use them.
+  Enable this option to swap those behaviors, so that left-click will use items and the keybind will pick them up.
 
 ConfigCategoryWindowOptions: Window Options
 EnableMod: Enable mod
@@ -232,8 +227,8 @@ UI_Msg_FavoriteItem: Favorite items cannot be sold or transferred from your inve
 UI_Tooltip_ColumnSettings: Column settings
 UI_Tooltip_TableView: Switch to table view
 UI_Tooltip_GridView: Switch to grid view
-UI_Tooltip_UseButton: Or click on item
-UI_Tooltip_UseButton_Swapped: Or press {key} on item
+UI_Tooltip_UseButton: Or press {key} on item
+UI_Tooltip_UseButton_Swapped: Or click on item
 UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.
 
 UI_EnchantCapacity: Enchant Capacity

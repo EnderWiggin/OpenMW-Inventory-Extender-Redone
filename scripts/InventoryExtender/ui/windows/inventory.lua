@@ -776,7 +776,7 @@ function Inventory:create(windowType, ctx)
             return true
         end
 
-        if not configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
+        if configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
             return onRowPickup(row, rowWidget, nil, true)
         end
 
@@ -1377,9 +1377,9 @@ function Inventory:create(windowType, ctx)
             tooltipFn = function()
                 local text
                 if not configPlayer.keybinds.b_SwapUsePickup then
-                    text = l10n('UI_Tooltip_UseButton')
+                    text = l10n('UI_Tooltip_UseButton', { key = input.getKeyName(configPlayer.keybinds.k_UseItem) })
                 else
-                    text = l10n('UI_Tooltip_UseButton_Swapped', { key = input.getKeyName(configPlayer.keybinds.k_PickupItem) })
+                    text = l10n('UI_Tooltip_UseButton_Swapped')
                 end
                 return specialTemplates.lineTooltip(text)
             end,

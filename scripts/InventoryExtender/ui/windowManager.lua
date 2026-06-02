@@ -426,9 +426,9 @@ function WindowManager:onKeyPress(key)
         return
     end
 
-    if key.code ~= configPlayer.keybinds.k_PickupItem then return end
+    if key.code ~= configPlayer.keybinds.k_UseItem then return end
 
-    if not configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
+    if configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
         if focusedWindow and focusedWindow.target then
             local state = focusedWindow.itemTable and focusedWindow.itemTable.layout and focusedWindow.itemTable.layout.userData.getState and focusedWindow.itemTable.layout.userData.getState()
             if state and state.lastPointerRowPos ~= nil then
@@ -443,7 +443,7 @@ function WindowManager:onKeyPress(key)
         return
     end
 
-    if not configPlayer.keybinds.b_SwapUsePickup then
+    if configPlayer.keybinds.b_SwapUsePickup then
         if focusedInteractive.layout.userData.onKBMRowUse then
             focusedInteractive.layout.userData.onKBMRowUse()
             return true

@@ -28,10 +28,10 @@ I.Settings.registerGroup {
     permanentStorage = true,
     settings = {
         {
-            key = 'k_PickupItem',
+            key = 'k_UseItem',
             renderer = 'InventoryExtender/inputKeySelection',
-            name = 'KeybindPickupItem',
-			description = 'KeybindPickupItemDesc',
+            name = 'KeybindUseItem',
+			description = 'KeybindUseItemDesc',
             default = input.KEY.R
         },
         {
