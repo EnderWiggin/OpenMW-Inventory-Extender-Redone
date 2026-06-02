@@ -505,6 +505,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
+        generalColumns[7],
     }
     local armorColumns = {
         generalColumns[1],
@@ -529,6 +530,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
+        generalColumns[7],
     }
     local weaponColumns = {
         generalColumns[1],
@@ -546,6 +548,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
+        generalColumns[7],
     }
     local toolColumns = {
         generalColumns[1],
@@ -563,6 +566,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
+        generalColumns[7],
     }
     local redundantTypeCategories = {
         Potion = true,
@@ -583,6 +587,7 @@ function Inventory:create(windowType, ctx)
         generalColumns[4],
         generalColumns[5],
         generalColumns[6],
+        generalColumns[7],
     }
 
     local columnProfiles = {
