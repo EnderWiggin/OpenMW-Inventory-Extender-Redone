@@ -256,7 +256,7 @@ local function moveInto(props)
         })
     end
 
-    if props.autoEquip then
+    if props.autoEquip and types.NPC.objectIsInstance(props.autoEquip) then
         queueDelayedJob(function()
             props.autoEquip:addScript('scripts/InventoryExtender/autoEquip.lua', { player = props.player })
             props.autoEquip:removeScript('scripts/InventoryExtender/autoEquip.lua')
