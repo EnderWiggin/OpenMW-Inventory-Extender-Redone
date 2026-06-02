@@ -19,31 +19,36 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 local v2 = util.vector2
 local l10n = core.l10n('InventoryExtender')
 
-local intRe = configPlayer.modIntegration.b_InterfaceReimagined
+local intRe
 
 local Templates = {}
 
-Templates.HEADER_HEIGHT = 20
-Templates.BORDER_WIDTH_TOTAL = 4 * (intRe and 2 or 4)
-Templates.TEXT_SIZE = BASE.TEXT_SIZE
-Templates.LINE_HEIGHT = Templates.TEXT_SIZE + 2
-Templates.SECTION_DIVIDER_HEIGHT = Templates.LINE_HEIGHT
-Templates.SECTION_INDENT_L = 12
-Templates.SECTION_INDENT_R = 4
-Templates.BOX_OUTER_PADDING = 8
-Templates.BOX_INNER_PADDING = omwConstants.padding
-Templates.BORDER_THICKNESS = omwConstants.border
-Templates.MIN_HEIGHT = 4 + 
-    Templates.HEADER_HEIGHT + 
-    Templates.BORDER_WIDTH_TOTAL + 
-    Templates.BOX_OUTER_PADDING * 2 + 
-    Templates.BOX_INNER_PADDING * 2 + 
-    Templates.LINE_HEIGHT * 3
-Templates.MIN_INNER_WIDTH = 60
-Templates.MIN_WIDTH = 
-    Templates.MIN_INNER_WIDTH + 
-    Templates.BORDER_WIDTH_TOTAL + 
-    Templates.BOX_OUTER_PADDING * 2
+local function initValues()
+    intRe = configPlayer.modIntegration.b_InterfaceReimagined
+
+    Templates.HEADER_HEIGHT = 20
+    Templates.BORDER_WIDTH_TOTAL = 4 * (intRe and 2 or 4)
+    Templates.TEXT_SIZE = BASE.TEXT_SIZE
+    Templates.LINE_HEIGHT = Templates.TEXT_SIZE + 2
+    Templates.SECTION_DIVIDER_HEIGHT = Templates.LINE_HEIGHT
+    Templates.SECTION_INDENT_L = 12
+    Templates.SECTION_INDENT_R = 4
+    Templates.BOX_OUTER_PADDING = 8
+    Templates.BOX_INNER_PADDING = omwConstants.padding
+    Templates.BORDER_THICKNESS = omwConstants.border
+    Templates.MIN_HEIGHT = 4 + 
+        Templates.HEADER_HEIGHT + 
+        Templates.BORDER_WIDTH_TOTAL + 
+        Templates.BOX_OUTER_PADDING * 2 + 
+        Templates.BOX_INNER_PADDING * 2 + 
+        Templates.LINE_HEIGHT * 3
+    Templates.MIN_INNER_WIDTH = 60
+    Templates.MIN_WIDTH = 
+        Templates.MIN_INNER_WIDTH + 
+        Templates.BORDER_WIDTH_TOTAL + 
+        Templates.BOX_OUTER_PADDING * 2
+end
+initValues()
 
 Templates.active = false
 Templates.focusedLabel = nil
@@ -52,6 +57,9 @@ local lastMousePos = nil
 
 Templates.createTexture = BASE.createTexture
 
+configPlayer.onUpdate(function()
+    initValues()
+end)
 
 Templates.interactive = function(props, layout, ctx)
     local function absToRel(absPos)

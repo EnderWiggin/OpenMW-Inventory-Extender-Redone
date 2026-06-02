@@ -93,6 +93,15 @@ function WindowManager:init()
     end
 end
 
+function WindowManager:reset()
+    for id, window in pairs(self.windows) do
+        if window.element then
+            auxUi.deepDestroy(window.element)
+        end
+        self.windows[id] = nil
+    end
+end
+
 function WindowManager:refresh()
     for _, window in pairs(self.windows) do
         if window and window:isVisible() then

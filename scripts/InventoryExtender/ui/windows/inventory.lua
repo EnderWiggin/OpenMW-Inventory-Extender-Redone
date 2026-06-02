@@ -1693,7 +1693,7 @@ function Inventory:create(windowType, ctx)
 
     local pinned
     if self.type == 'Inventory' then
-        pinned = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get('b_InventoryWindowPinned')
+        pinned = playerWindowSettings:get('b_InventoryWindowPinned')
     end
 
     local element = baseTemplates.window(
@@ -2140,9 +2140,12 @@ function Inventory:saveState()
     local dims = self:getDimensions()
     if not dims then return end
 
-    storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set(self.stateKey, dims)
-    if self.type == 'Inventory' and self:isPinnable() then
-        storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):set('b_InventoryWindowPinned', self.element.layout.userData.pinned)
+    local storedDims = playerWindowSettings:get(self.stateKey)
+    if not storedDims or dims.x ~= storedDims.x or dims.y ~= storedDims.y or dims.w ~= storedDims.w or dims.h ~= storedDims.h then
+        playerWindowSettings:set(self.stateKey, dims)
+    end
+    if self.type == 'Inventory' and self:isPinnable() and playerWindowSettings:get('b_InventoryWindowPinned') ~= self.element.layout.userData.pinned then
+        playerWindowSettings:set('b_InventoryWindowPinned', self.element.layout.userData.pinned)
     end
 end
 
@@ -2158,7 +2161,7 @@ function Inventory:loadState()
     end
 
     self.stateKey = self:getDimensionsKey()
-    local dims = storage.playerSection('Settings/InventoryExtender/2_WindowOptions'):get(self.stateKey)
+    local dims = playerWindowSettings:get(self.stateKey)
     if not dims then return end
 
     local currentDims = self:getDimensions()

@@ -1291,4 +1291,13 @@ Templates.wrapper = {
     content = ui.content {}
 }
 
+configPlayer.onUpdate(function()
+    intRe = configPlayer.modIntegration.b_InterfaceReimagined
+    Templates.TEXT_SIZE = configPlayer.window.i_TextSizeOverride > 0 and configPlayer.window.i_TextSizeOverride or omwConstants.textNormalSize
+    Templates.textNormal.props.textSize = Templates.TEXT_SIZE
+    Templates.textHeader.props.textSize = Templates.TEXT_SIZE
+    Templates.textParagraph.props.textSize = Templates.TEXT_SIZE
+    Templates.textEditLine.props.textSize = Templates.TEXT_SIZE
+end)
+
 return Templates

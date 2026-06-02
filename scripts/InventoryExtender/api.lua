@@ -60,6 +60,10 @@ function API.onMouseWheel(v, h)
     windowManager:onMouseWheel(v, h)
 end
 
+function API.reset()
+    windowManager:reset()
+end
+
 function API.refresh()
     windowManager:refresh()
 end

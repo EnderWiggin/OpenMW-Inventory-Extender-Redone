@@ -125,12 +125,13 @@ local defaultCategories = {
 }
 
 for _, category in ipairs(defaultCategories) do
-    local categoryIcon = iconPack.getPath('categories/' .. category.key:lower() .. '.dds')
+    local categoryIconRelativePath = 'categories/' .. category.key:lower() .. '.dds'
 
     API.registerCategory{
         key = category.key,
         name = l10n('Category_' .. category.key),
-        icon = categoryIcon,
+        icon = iconPack.getPath(categoryIconRelativePath),
+        iconPackRelativePath = categoryIconRelativePath,
         filter = category.filter,
         prepend = category.prepend,
         defaultSelected = category.defaultSelected,

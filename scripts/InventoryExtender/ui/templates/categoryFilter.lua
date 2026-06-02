@@ -228,6 +228,16 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
         return I.InventoryExtender.getCategories()
     end
 
+    local function getCategoryIconPath(category)
+        if not category then
+            return nil
+        end
+        if category.iconPackRelativePath then
+            return iconPack.getPath(category.iconPackRelativePath)
+        end
+        return category.icon
+    end
+
     element = ui.create({
         props = {
             size = v2(0, elementHeight),
@@ -303,6 +313,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
             local iconSize = v2(categoryBarHeight - compactIconPadding, categoryBarHeight - compactIconPadding)
             local iconAlpha = isSelected and vanillaOpacityStates.active or ((isDisabled and not isSelected) and vanillaOpacityStates.disabled or vanillaOpacityStates.default)
             local buttonContent
+            local categoryIconPath = getCategoryIconPath(category)
 
             if vanillaStyle then
                 buttonContent = ui.content {
@@ -325,7 +336,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         name = 'categoryIcon',
                         type = ui.TYPE.Image,
                         props = {
-                            resource = ui.texture { path = category.icon },
+                            resource = ui.texture { path = categoryIconPath },
                             size = iconSize + (compact and v2(4, 4) or v2(-4, -4)),
                             relativePosition = v2(0.5, 0.5),
                             anchor = v2(0.5, 0.5),
@@ -340,7 +351,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange, ctx)
                         name = 'categoryIcon',
                         type = ui.TYPE.Image,
                         props = {
-                            resource = ui.texture { path = category.icon },
+                            resource = ui.texture { path = categoryIconPath },
                             size = iconSize,
                             relativePosition = v2(0.5, 0.5),
                             anchor = v2(0.5, 0.5),

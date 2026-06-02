@@ -56,7 +56,6 @@ I.Settings.registerGroup {
     page = 'InventoryExtender',
     l10n = 'InventoryExtender',
     name = 'ConfigCategoryWindowOptions',
-    description = 'RequiresReload',
     permanentStorage = true,
     settings = {
         {
@@ -217,7 +216,6 @@ I.Settings.registerGroup {
     page = 'InventoryExtender',
     l10n = 'InventoryExtender',
     name = 'ConfigCategoryTweaks',
-    description = 'RequiresReload',
     permanentStorage = true,
     settings = {
         {
@@ -343,7 +341,6 @@ I.Settings.registerGroup {
     page = 'InventoryExtender',
     l10n = 'InventoryExtender',
     name = 'ConfigCategoryModIntegration',
-    description = 'RequiresReload',
     permanentStorage = true,
     settings = {
         {
