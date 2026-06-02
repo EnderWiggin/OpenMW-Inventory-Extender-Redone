@@ -200,6 +200,26 @@ C.WeaponClass = {
     Ammo = 4,
 }
 
+C.OPT_KEYS = {
+    CompareItemsMode = 's_CompareItemsMode',
+    SeparatorsMode = 's_NumberSeparators',
+    SortingBarterReverseEquipped = 'b_SortingBarterReverseEquipped',
+    SortingBarterReverseFavorite = 'b_SortingBarterReverseFavorite',
+    TooltipShowItemUseCost = 'b_TooltipShowItemUseCost',
+}
+
+C.COMPARISON_OPTS = {
+    Never = 'ConfigCompareItemsMode_Never',
+    ALT = 'ConfigCompareItemsMode_ALT',
+    Always = 'ConfigCompareItemsMode_Always',
+}
+
+C.SEPARATOR_OPTS = {
+    None = 'ConfigNumberSeparators_None',
+    Comma = 'ConfigNumberSeparators_Comma',
+    Space = 'ConfigNumberSeparators_Space',
+}
+
 local boundItemGMSTs = {
     "sMagicBoundDaggerID",
     "sMagicBoundLongswordID",

@@ -7,6 +7,7 @@ local versionString = "1.0.0"
 
 local renderers = require('scripts.InventoryExtender.ui.renderers')
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
+local C = require('scripts.InventoryExtender.util.constants')
 
 I.Settings.registerRenderer('InventoryExtender/windowDimensions', renderers.windowDimensions)
 I.Settings.registerRenderer('InventoryExtender/inputKeySelection', renderers.inputKey)
@@ -126,6 +127,39 @@ I.Settings.registerGroup {
                 l10n = 'InventoryExtender',
                 items = iconPack.getAvailablePacks(),
             }
+        },
+        {
+            key = C.OPT_KEYS.SeparatorsMode,
+            renderer = 'select',
+            name = 'ConfigNumberSeparators',
+            default = C.SEPARATOR_OPTS.None,
+            argument = {
+                l10n = 'InventoryExtender',
+                items = { C.SEPARATOR_OPTS.None, C.SEPARATOR_OPTS.Comma, C.SEPARATOR_OPTS.Space },
+            }
+        },
+        {
+            key = C.OPT_KEYS.CompareItemsMode,
+            renderer = 'select',
+            name = 'ConfigCompareItemsMode',
+            description = 'ConfigCompareItemsModeDesc',
+            default = C.COMPARISON_OPTS.Never,
+            argument = {
+                l10n = 'InventoryExtender',
+                items = { C.COMPARISON_OPTS.Never, C.COMPARISON_OPTS.ALT, C.COMPARISON_OPTS.Always },
+            }
+        },
+        {
+            key = C.OPT_KEYS.SortingBarterReverseEquipped,
+            renderer = 'checkbox',
+            name = 'ConfigSortingBarterReverseEquipped',
+            default = false,
+        },
+        {
+            key = C.OPT_KEYS.SortingBarterReverseFavorite,
+            renderer = 'checkbox',
+            name = 'ConfigSortingBarterReverseFavorite',
+            default = false,
         },
         {
             key = 'b_InventoryWindowPinned',
@@ -285,6 +319,13 @@ I.Settings.registerGroup {
             renderer = 'checkbox',
             name = 'SoulGemValueInTooltips',
             description = 'SoulGemValueInTooltipsDesc',
+            default = true,
+        },
+        {
+            key = C.OPT_KEYS.TooltipShowItemUseCost,
+            renderer = 'checkbox',
+            name = 'ConfigTooltipShowItemUseCost',
+            description = 'ConfigTooltipShowItemUseCostDesc',
             default = true,
         },
         {

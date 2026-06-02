@@ -225,7 +225,7 @@ Templates.progressBar = function(props)
                 props = {
                     anchor = v2(0.5, 1),
                     relativePosition = v2(0.5, 1),
-                    text = props.text or tostring(props.value .. '/' .. props.maxValue),
+                    text = props.text or tostring(helpers.addSeparators(props.value) .. '/' .. helpers.addSeparators(props.maxValue)),
                     textColor = props.textColor,
                     textSize = Templates.TEXT_SIZE,
                     textAlignV = ui.ALIGNMENT.Center,
@@ -279,7 +279,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     local nameString = helpers.getItemName(item)
     if item.count > 1 then
-        nameString = nameString .. ' (' .. item.count .. ')'
+        nameString = nameString .. ' (' .. helpers.addSeparators(item.count) .. ')'
     end
 
     local innerContent = ui.content {}
@@ -456,6 +456,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
 
     local enchantment
     local castTypeString
+    local cost = 0
     local doCharge
     local maxCharge
     if itemRecord.enchant then
@@ -463,9 +464,11 @@ Templates.itemTooltip = function(item, showIcon, ctx)
         if enchantment then
             if enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnStrike then
                 castTypeString = constants.Strings.ITEM_CAST_WHEN_STRIKES
+                cost = helpers.getModifiedSpellCost(itemRecord.enchant, true)
                 doCharge = true
             elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnUse then
                 castTypeString = constants.Strings.ITEM_CAST_WHEN_USED
+                cost = helpers.getModifiedSpellCost(itemRecord.enchant, true)
                 doCharge = true
             elseif enchantment.type == core.magic.ENCHANTMENT_TYPE.CastOnce then
                 castTypeString = constants.Strings.ITEM_CAST_ONCE
@@ -486,6 +489,10 @@ Templates.itemTooltip = function(item, showIcon, ctx)
             innerContent:add(BASE.intervalV(4))
         end
         innerContent:add(textNormal('castType', castTypeString))
+    end
+
+    if cost > 0 and configPlayer.tweaks[constants.OPT_KEYS.TooltipShowItemUseCost] then
+        innerContent:add(textNormal('castCost', l10n('UI_Tooltip_Magic_Item_Use_Cost'):gsub('%%{cost}', helpers.addSeparators(cost))))
     end
 
     -- Handle effects for enchantments, potions, and ingredients.
@@ -603,7 +610,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                     resource = BASE.createTexture('icons/gold.dds'),
                 }
             })
-            flexContent:add(textNormal(nil, ' ' .. util.round(value)))
+            flexContent:add(textNormal(nil, ' ' .. helpers.addSeparators(util.round(value))))
         end
 
         if itemRecord.weight > 0 then
@@ -662,6 +669,63 @@ Templates.itemTooltip = function(item, showIcon, ctx)
     end
 
     return layout
+end
+
+Templates.compareItemsTooltip = function(item, other, showIcon, ctx)
+    local tip = Templates.itemTooltip(item, showIcon, ctx)
+    
+    if not other or #other <= 0 then return tip end
+    
+    local tips = {}
+    
+    for _, itm in ipairs(other) do
+        if itm ~= item then
+            local t = Templates.itemTooltip(itm, showIcon, ctx)
+            local ok, inner = pcall(function() return t.content.padding.content.tooltip.content end)
+            if ok and inner then
+                inner:add(BASE.intervalV(4))
+                inner:add(ui.create {
+                    template = BASE.textNormal,
+                    props = {
+                        text = l10n('UI_Tooltip_Equipped'),
+                        autoSize = true,
+                    }
+                })
+            
+            end
+            
+            table.insert(tips, t)
+        end
+    end
+    
+    if #tips <= 0 then return tip end
+    
+    table.insert(tips, tip)
+    
+    return {
+        layer = 'Notification',
+        name = item.id,
+        template = {
+            type = ui.TYPE.Container,
+            content = ui.content {}
+        },
+        props = {
+        },
+        content = ui.content {
+            {
+                name = 'tooltip',
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    autoSize = true,
+                    align = ui.ALIGNMENT.Start,
+                    arrange = ui.ALIGNMENT.Start,
+                },
+                content = ui.content(tips)
+            }
+        }
+    }
+
 end
 
 Templates.sectionDivider = {

@@ -3,6 +3,7 @@ local util = require('openmw.util')
 local auxUi = require('openmw_aux.ui')
 local input = require('openmw.input')
 local async = require('openmw.async')
+local omwself = require('openmw.self')
 
 local constants = require('scripts.InventoryExtender.util.constants')
 local configPlayer = require('scripts.InventoryExtender.config.player')
@@ -52,6 +53,34 @@ local function setColumnWidths(columns, state, scrollable)
     end
     
     state.columnWidths = widths
+end
+
+local function getEquippedItemsForComparison(item, ctx)
+    local mode = helpers.getWindowSettings():get(constants.OPT_KEYS.CompareItemsMode)
+    if mode == constants.COMPARISON_OPTS.ALT then
+        if not input.isAltPressed() then return nil end
+    elseif mode == constants.COMPARISON_OPTS.Always then
+        --do nothing - this always should pass
+    else
+        -- either Never or unknown - skip
+        return nil
+    end
+
+    local actor = omwself
+    local overrides = ctx.overrides.equipped
+
+    if helpers.isItemEquipped(item, actor, overrides) then
+        return nil
+    end
+
+    local slots = helpers.getEquipmentSlots(item)
+    local equipped = helpers.getEquippedItems(slots, actor, overrides)
+
+    if #equipped > 0 then
+        return equipped
+    else
+        return nil
+    end
 end
 
 -- Default sort comparator
@@ -193,6 +222,10 @@ ItemTable.create = function(props, ctx)
             else
                 local valA = a[field]
                 local valB = b[field]
+                
+                if type(valA) == 'function' then valA = valA() end
+                if type(valB) == 'function' then valB = valB() end
+                
                 if valA == valB then 
                     areEqual = true 
                 else
@@ -211,6 +244,27 @@ ItemTable.create = function(props, ctx)
 
     state.rowCache = {} -- Stores generated row layouts by item ID or index
 
+    local function applyCellContentModifiers(cellContent, row)
+        if ctx and ctx.modifiers and ctx.modifiers.cellContent then
+            for _, modifier in ipairs(ctx.modifiers.cellContent) do
+                cellContent = modifier.modifier(cellContent, row, ctx, props.parentWindow.type) or cellContent
+            end
+        end
+        return cellContent
+    end
+
+    local function normalizeWidgetContent(rendered, row)
+        if not rendered then return ui.content {} end
+        if rendered[1] then
+            local content = ui.content {}
+            for _, entry in ipairs(rendered) do
+                content:add(applyCellContentModifiers(entry, row))
+            end
+            return content
+        end
+        return ui.content { applyCellContentModifiers(rendered, row) }
+    end
+    
     local function createContent(row)
         local cells = ui.content {}
 
@@ -226,6 +280,7 @@ ItemTable.create = function(props, ctx)
                 if type(val) == 'function' then
                     val = val()
                 end
+                if type(val) == 'number' then val = helpers.addSeparators(val) end
                 local textStr = val ~= nil and tostring(val) or ""
                 if textStr == "0" or textStr == "" then textStr = "-" end
                 cellContent = {
@@ -246,11 +301,7 @@ ItemTable.create = function(props, ctx)
             cellContent.props.position = util.vector2(totalW, 0)
             totalW = totalW + w
 
-            if ctx and ctx.modifiers and ctx.modifiers.cellContent then
-                for _, modifier in ipairs(ctx.modifiers.cellContent) do
-                    cellContent = modifier.modifier(cellContent, row, ctx, props.parentWindow.type) or cellContent
-                end
-            end
+            cellContent = applyCellContentModifiers(cellContent, row)
 
             cells:add(cellContent)
         end
@@ -343,12 +394,7 @@ ItemTable.create = function(props, ctx)
                     end
                     if isGrid then
                         if gridItemRenderer then
-                            local rendered = gridItemRenderer(row, itemSize)
-                            if rendered[1] then
-                                widgetContent = rendered
-                            else
-                                widgetContent = ui.content { rendered }
-                            end
+                            widgetContent = normalizeWidgetContent(gridItemRenderer(row, itemSize), row)
                         else
                             local iconPath = row.icon
                             if not iconPath and row.item then
@@ -429,7 +475,13 @@ ItemTable.create = function(props, ctx)
                         tooltipFn = function()
                             local currentRow = getCurrentRow()
                             if currentRow and currentRow.item then
-                                return specialTemplates.itemTooltip(currentRow.item, false, ctx)
+                                local item = currentRow.item
+                                local comparison = getEquippedItemsForComparison(item, ctx)
+                                if comparison then
+                                    return specialTemplates.compareItemsTooltip(item, comparison, false, ctx)
+                                else
+                                    return specialTemplates.itemTooltip(item, false, ctx)
+                                end
                             elseif currentRow and currentRow.tooltip then
                                 return specialTemplates.lineTooltip(currentRow.tooltip)
                             end
@@ -516,9 +568,8 @@ ItemTable.create = function(props, ctx)
                         local rowWidget = state.rowCache[cacheKey]
                         if gridItemRenderer then
                             local lastSize = rowWidget.layout.userData.lastGridSize or 0
-                            
-                            local rendered = gridItemRenderer(row, itemSize)
-                            local newContent = rendered[1] and rendered or ui.content { rendered }
+
+                            local newContent = normalizeWidgetContent(gridItemRenderer(row, itemSize), row)
 
                             local userDataChanged = false
                             local currentContent = rowWidget.layout.content
@@ -554,7 +605,7 @@ ItemTable.create = function(props, ctx)
 
                             if cellContent then
                                 if col.renderer then
-                                    local newCellContent = col.renderer(row, w, rowHeight)
+                                    local newCellContent = applyCellContentModifiers(col.renderer(row, w, rowHeight), row)
                                     if cellContent.userData and newCellContent.userData and not helpers.mapEquals(cellContent.userData, newCellContent.userData) then
                                         rowWidget.layout.content[cIdx] = newCellContent
                                         cellContent = newCellContent
@@ -569,6 +620,7 @@ ItemTable.create = function(props, ctx)
                                     if type(val) == 'function' then
                                         val = val()
                                     end
+                                    if type(val) == 'number' then val = helpers.addSeparators(val) end
                                     local textStr = val ~= nil and tostring(val) or ""
                                     if textStr == "0" or textStr == "" then textStr = "-" end
                                     if textStr ~= cellContent.props.text then

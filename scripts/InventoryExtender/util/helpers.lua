@@ -10,6 +10,7 @@ local _, ui = pcall(require, 'openmw.ui')
 local C = require('scripts.InventoryExtender.util.constants')
 
 local configGlobal = require('scripts.InventoryExtender.config.global')
+local storage = require('openmw.storage')
 local l10n = core.l10n('InventoryExtender')
 
 local Helpers = {}
@@ -26,6 +27,45 @@ local weaponTypeNames = reverseLookup(types.Weapon.TYPE)
 local armorTypeNames = reverseLookup(types.Armor.TYPE)
 local clothingTypeNames = reverseLookup(types.Clothing.TYPE)
 local apparatusTypeNames = reverseLookup(types.Apparatus.TYPE)
+
+local armorSlotMap = {
+    [types.Armor.TYPE.Helmet] = { types.Actor.EQUIPMENT_SLOT.Helmet },
+    [types.Armor.TYPE.Cuirass] = { types.Actor.EQUIPMENT_SLOT.Cuirass },
+    [types.Armor.TYPE.Greaves] = { types.Actor.EQUIPMENT_SLOT.Greaves },
+    [types.Armor.TYPE.Boots] = { types.Actor.EQUIPMENT_SLOT.Boots },
+    [types.Armor.TYPE.LPauldron] = { types.Actor.EQUIPMENT_SLOT.LeftPauldron },
+    [types.Armor.TYPE.RPauldron] = { types.Actor.EQUIPMENT_SLOT.RightPauldron },
+    [types.Armor.TYPE.LGauntlet] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
+    [types.Armor.TYPE.RGauntlet] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
+    [types.Armor.TYPE.LBracer] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
+    [types.Armor.TYPE.RBracer] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
+    [types.Armor.TYPE.Shield] = { types.Actor.EQUIPMENT_SLOT.CarriedLeft },
+}
+
+local clothingSlotMap = {
+    [types.Clothing.TYPE.Shirt] = { types.Actor.EQUIPMENT_SLOT.Shirt },
+    [types.Clothing.TYPE.Pants] = { types.Actor.EQUIPMENT_SLOT.Pants },
+    [types.Clothing.TYPE.Skirt] = { types.Actor.EQUIPMENT_SLOT.Skirt },
+    [types.Clothing.TYPE.Robe] = { types.Actor.EQUIPMENT_SLOT.Robe },
+    [types.Clothing.TYPE.Shoes] = { types.Actor.EQUIPMENT_SLOT.Boots },
+    [types.Clothing.TYPE.Belt] = { types.Actor.EQUIPMENT_SLOT.Belt },
+    [types.Clothing.TYPE.Amulet] = { types.Actor.EQUIPMENT_SLOT.Amulet },
+    [types.Clothing.TYPE.LGlove] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
+    [types.Clothing.TYPE.RGlove] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
+    [types.Clothing.TYPE.Ring] = {
+        types.Actor.EQUIPMENT_SLOT.LeftRing,
+        types.Actor.EQUIPMENT_SLOT.RightRing,
+    },
+}
+
+local windowSettings = nil
+Helpers.getWindowSettings = function()
+    if windowSettings == nil then
+        windowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
+    end
+    return windowSettings
+end
+
 
 Helpers.shallowCopy = function(tbl)
     if type(tbl) ~= 'table' then return tbl end
@@ -210,6 +250,28 @@ Helpers.getCountString = function(count)
     end
 end
 
+Helpers.addSeparators = function(number)
+    local mode = Helpers.getWindowSettings():get(C.OPT_KEYS.SeparatorsMode)
+    local separator
+    
+    if mode == C.SEPARATOR_OPTS.Comma then
+        separator = ','
+    elseif mode == C.SEPARATOR_OPTS.Space then
+        separator = ' '
+    end
+    if separator == nil then return tostring(number) end
+    
+    local _, _, minus, int, fraction = tostring(number):find('([-]?)(%d+)([.]?%d*)')
+    
+    -- reverse the int-string and append a comma to all blocks of 3 digits
+    int = int:reverse():gsub("(%d%d%d)", "%1" .. separator)
+    
+    -- reverse the int-string back remove an optional comma and put the 
+    -- optional minus and fractional part back
+    return minus .. int:reverse():gsub("^" .. separator, "") .. fraction
+end
+
+
 Helpers.getEquippedName = function(actor)
     local name = C.Strings.HAND_TO_HAND
     local selected = actor.type.getEquipment(actor, types.Actor.EQUIPMENT_SLOT.CarriedRight)
@@ -231,6 +293,43 @@ Helpers.isItemEquipped = function(item, actor, overrides)
 
     if not actor.type.hasEquipped then return false end
     return actor.type.hasEquipped(actor, item)
+end
+
+Helpers.getEquipmentSlots = function (item)
+    --TODO: add support for Bardcraft instruments?
+    if types.Armor.objectIsInstance(item) then
+        return armorSlotMap[item.type.record(item).type]
+    end
+    
+    if types.Clothing.objectIsInstance(item) then
+        return clothingSlotMap[item.type.record(item).type]
+    end
+    
+    if types.Weapon.objectIsInstance(item) then
+        local weaponType = item.type.record(item).type
+        if weaponType == types.Weapon.TYPE.Arrow or weaponType == types.Weapon.TYPE.Bolt then
+            return { types.Actor.EQUIPMENT_SLOT.Ammunition }
+        end
+        return { types.Actor.EQUIPMENT_SLOT.CarriedRight }
+    end
+    
+    return nil
+end
+
+Helpers.getEquippedItem = function(slot, actor, overrides)
+    --TODO: add support for custom slots for Bardcraft instruments and maybe backpacks?
+    if not slot then return nil end
+    return types.Actor.getEquipment(actor, slot)
+end
+
+Helpers.getEquippedItems = function(slots, actor, overrides)
+    local equipped = {}
+    if not slots or #slots <= 0 then return equipped end
+    for _, slot in ipairs(slots) do
+        local item = Helpers.getEquippedItem(slot, actor, overrides)
+        if item then table.insert(equipped, item) end
+    end
+    return equipped
 end
 
 Helpers.getWeaponInfo = function(item)

@@ -14,6 +14,7 @@ local API = {}
 API.VERSION = 1
 
 API.Constants = constants
+API.Helpers = helpers
 
 API.Templates = {
     BASE = require('scripts.InventoryExtender.ui.templates.base'),

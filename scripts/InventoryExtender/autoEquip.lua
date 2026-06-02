@@ -29,54 +29,6 @@ local function getItemCondition(item)
     return itemRecord.health or itemRecord.maxCondition or itemRecord.duration or 0
 end
 
-local function getEquipmentSlots(item)
-    if types.Armor.objectIsInstance(item) then
-        local slotMap = {
-            [types.Armor.TYPE.Helmet] = { types.Actor.EQUIPMENT_SLOT.Helmet },
-            [types.Armor.TYPE.Cuirass] = { types.Actor.EQUIPMENT_SLOT.Cuirass },
-            [types.Armor.TYPE.Greaves] = { types.Actor.EQUIPMENT_SLOT.Greaves },
-            [types.Armor.TYPE.Boots] = { types.Actor.EQUIPMENT_SLOT.Boots },
-            [types.Armor.TYPE.LPauldron] = { types.Actor.EQUIPMENT_SLOT.LeftPauldron },
-            [types.Armor.TYPE.RPauldron] = { types.Actor.EQUIPMENT_SLOT.RightPauldron },
-            [types.Armor.TYPE.LGauntlet] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
-            [types.Armor.TYPE.RGauntlet] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
-            [types.Armor.TYPE.LBracer] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
-            [types.Armor.TYPE.RBracer] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
-            [types.Armor.TYPE.Shield] = { types.Actor.EQUIPMENT_SLOT.CarriedLeft },
-        }
-        return slotMap[item.type.record(item).type]
-    end
-
-    if types.Clothing.objectIsInstance(item) then
-        local slotMap = {
-            [types.Clothing.TYPE.Shirt] = { types.Actor.EQUIPMENT_SLOT.Shirt },
-            [types.Clothing.TYPE.Pants] = { types.Actor.EQUIPMENT_SLOT.Pants },
-            [types.Clothing.TYPE.Skirt] = { types.Actor.EQUIPMENT_SLOT.Skirt },
-            [types.Clothing.TYPE.Robe] = { types.Actor.EQUIPMENT_SLOT.Robe },
-            [types.Clothing.TYPE.Shoes] = { types.Actor.EQUIPMENT_SLOT.Boots },
-            [types.Clothing.TYPE.Belt] = { types.Actor.EQUIPMENT_SLOT.Belt },
-            [types.Clothing.TYPE.Amulet] = { types.Actor.EQUIPMENT_SLOT.Amulet },
-            [types.Clothing.TYPE.LGlove] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
-            [types.Clothing.TYPE.RGlove] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
-            [types.Clothing.TYPE.Ring] = {
-                types.Actor.EQUIPMENT_SLOT.LeftRing,
-                types.Actor.EQUIPMENT_SLOT.RightRing,
-            },
-        }
-        return slotMap[item.type.record(item).type]
-    end
-
-    if types.Weapon.objectIsInstance(item) then
-        local weaponType = item.type.record(item).type
-        if weaponType == types.Weapon.TYPE.Arrow or weaponType == types.Weapon.TYPE.Bolt then
-            return { types.Actor.EQUIPMENT_SLOT.Ammunition }
-        end
-        return { types.Actor.EQUIPMENT_SLOT.CarriedRight }
-    end
-
-    return nil
-end
-
 local function autoEquipWeapon(slots)
     if not types.NPC.objectIsInstance(self) then
         local services = self.type.record(self).servicesOffered or {}
@@ -245,7 +197,7 @@ local function autoEquipArmor(slots)
                 end
             end
 
-            local itemSlots = getEquipmentSlots(item) or {}
+            local itemSlots = helpers.getEquipmentSlots(item) or {}
             for _, slot in ipairs(itemSlots) do
                 local oldItem = slots[slot]
                 local canEquip = true

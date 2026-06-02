@@ -36,6 +36,11 @@ local inventoryCategoryKey = 'All'
 
 local Inventory = Window:new()
 
+local OptionalColumns = {
+    Condition = true,
+    Weight_Total = true,
+}
+
 function Inventory:update(deep)
     if self.updateSize then
         self:updateSize()
@@ -341,7 +346,7 @@ function Inventory:create(windowType, ctx)
     local nameRenderer = function(row, width, height)
         local nonDraggedCount = getNonDraggedCount(row)
 
-        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%d)'):format(nonDraggedCount) or '')
+        local text = helpers.getItemName(row.item) .. (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
 
         local badgeState = getItemBadgeState(row)
         local enchanted = false
@@ -438,6 +443,14 @@ function Inventory:create(windowType, ctx)
             id = 'Weight',
             label = l10n('Column_Weight'),
             width = w,
+            textAlignH = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            visible = true,
+        },
+        {
+            id = 'Weight_Total',
+            label = l10n('Column_Weight_Total'),
+            width = 70 * baseTemplates.TEXT_SIZE / 16,
             textAlignH = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
             visible = true,
@@ -586,7 +599,7 @@ function Inventory:create(windowType, ctx)
 
     local function isColumnVisible(columnId, visibility)
         visibility = visibility or getColumnVisibility()
-        if columnId == 'Condition' then
+        if OptionalColumns[columnId] then
             return visibility[columnId] == true
         end
         return visibility[columnId] ~= false
@@ -704,7 +717,7 @@ function Inventory:create(windowType, ctx)
             end
 
             if visible then
-                if columnId == 'Condition' then
+                if OptionalColumns[columnId] then
                     newVisibility[columnId] = true
                 else
                     newVisibility[columnId] = nil
@@ -911,16 +924,52 @@ function Inventory:create(windowType, ctx)
                 return a.isBartered
             end
 
+            local mode = I.UI.getMode()
+            local inBarterMode = mode == 'Barter'
+
             local aEquipped = helpers.isItemEquipped(a.item, self.target, ctx.overrides.equipped)
             local bEquipped = helpers.isItemEquipped(b.item, self.target, ctx.overrides.equipped)
-            if aEquipped ~= bEquipped then
-                return aEquipped -- equipped items come first (true > false)
-            end
 
             local aFavorited = isFavorited(a.item)
             local bFavorited = isFavorited(b.item)
-            if aFavorited ~= bFavorited then
-                return aFavorited -- favorited items come first (true > false)
+
+            if inBarterMode then
+                local config = helpers.getWindowSettings()
+                local reverseEquipped = config:get(constants.OPT_KEYS.SortingBarterReverseEquipped)
+                local reverseFavorite = config:get(constants.OPT_KEYS.SortingBarterReverseFavorite)
+
+                if reverseFavorite and not reverseEquipped then
+                    -- if only favorites are reversed, prioritize sorting by favorite status
+                    if aFavorited ~= bFavorited then
+                        -- favorited items come last (true > false)
+                        return bFavorited
+                    end
+
+                    if aEquipped ~= bEquipped then
+                        -- equipped items come first (true > false)
+                        return aEquipped
+                    end
+                else
+                    if aEquipped ~= bEquipped then
+                        -- equipped items come first (true > false), unless we reverse it
+                        if reverseEquipped then return bEquipped else return aEquipped end
+                    end
+
+                    if aFavorited ~= bFavorited then
+                        -- favorited items come first (true > false), unless we reverse it
+                        if reverseFavorite then return bFavorited else return aFavorited end
+                    end
+                end
+            else
+                if aEquipped ~= bEquipped then
+                    -- equipped items come first (true > false)
+                    return aEquipped
+                end
+
+                if aFavorited ~= bFavorited then
+                    -- favorited items come first (true > false)
+                    return aFavorited
+                end
             end
             
             -- Second, sort by Category
@@ -1265,7 +1314,7 @@ function Inventory:create(windowType, ctx)
                     {
                         template = baseTemplates.textNormal,
                         props = {
-                            text = tostring(goldAmount),
+                            text = helpers.addSeparators(goldAmount),
                         }
                     }
                 }
@@ -1411,7 +1460,7 @@ function Inventory:create(windowType, ctx)
             }, function(layout)
                 if self.target == nil then return layout end
                 local profit = ctx.companionProfit[self.target.id]
-                layout.props.text = profit and (constants.Strings.PROFIT_VALUE .. ': ' .. tostring(profit)) or ''
+                layout.props.text = profit and (constants.Strings.PROFIT_VALUE .. ': ' .. helpers.addSeparators(profit)) or ''
                 return layout
             end)
         end
@@ -1456,10 +1505,14 @@ function Inventory:create(windowType, ctx)
                         if ctx.barterState.totalBalance == 0 then
                             ctx.barterState.currentBalance = 0
                         end
+                        local delta = 1
+                        if input.isShiftPressed() then
+                            delta = 5
+                        end
                         if ctx.barterState.currentBalance < 0 then
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + delta
                         else
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - delta
                         end
                         self.infoBar.layout.userData.updateAll()
                     end,
@@ -1511,10 +1564,14 @@ function Inventory:create(windowType, ctx)
                         if ctx.barterState.totalBalance == 0 then
                             ctx.barterState.currentBalance = 0
                         end
+                        local delta = 1
+                        if input.isShiftPressed() then
+                            delta = 5
+                        end
                         if ctx.barterState.currentBalance < 0 then
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance - delta
                         else
-                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + 1
+                            ctx.barterState.currentBalance = ctx.barterState.currentBalance + delta
                         end
                         self.infoBar.layout.userData.updateAll()
                     end,
@@ -1824,6 +1881,13 @@ function Inventory:createData()
         local value = helpers.getItemValue(itemStack)
         local vw = record.weight > 0 and (value / record.weight) or 0
         local vwPrecision = vw > 10 and 0 or 1
+        local getItemCount = function()
+            if isVirtual then
+                return item.totalCount
+            else
+                return itemStack.count
+            end
+        end
         
         local rowData = {
             id = itemStack.id,
@@ -1847,18 +1911,13 @@ function Inventory:createData()
             Quality = record.quality and helpers.roundToPlaces(record.quality, 3),
             Value = helpers.roundToPlaces(value, 1),
             Weight = helpers.roundToPlaces(record.weight, 2),
+            Weight_Total = helpers.roundToPlaces(record.weight * getItemCount(), 2),
             ['V/W'] = helpers.roundToPlaces(vw, vwPrecision),
             item = itemStack,
             itemRecord = record,
             isBartered = isBartered,
             virtualStacks = isVirtual and item.stacks or nil,
-            getCount = function()
-                if isVirtual then
-                    return item.totalCount
-                else
-                    return itemStack.count
-                end
-            end,
+            getCount = getItemCount,
             showAsEnchanted = function()
                 if record.enchant then
                     return true
