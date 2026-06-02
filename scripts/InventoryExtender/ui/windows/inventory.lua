@@ -2050,10 +2050,11 @@ end
 
 function Inventory:setTitle()
     local title
-    if self.type == 'Inventory' then
+    if I.UI.getMode() == 'Interface' then
         title = helpers.getEquippedName(omwself)
-    elseif self.target then
-        title = self.target.type.record(self.target).name
+    else
+        local target = self.target or omwself
+        title = target.type.record(target).name
     end
 
     if configPlayer.tweaks.b_CompactCategoryFilter and self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
