@@ -1,0 +1,5 @@
+1.0.1 (6/3/26)
+- Fixed error spam when pressing category cycle buttons without a focused item
+
+1.0.0 (6/2/26)
+- Initial release
