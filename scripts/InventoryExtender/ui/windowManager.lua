@@ -401,7 +401,7 @@ function WindowManager:onKeyPress(key)
     local focusedInteractive = WindowManager.ctx.focusedInteractive
     local focusedWindow = nil
     for _, window in pairs(self.windows) do
-        if window and window:isFocused() then
+        if window and window:isVisible() and window:isFocused() then
             focusedWindow = window
             break
         end
