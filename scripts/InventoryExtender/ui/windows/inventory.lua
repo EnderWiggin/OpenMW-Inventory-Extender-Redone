@@ -1810,7 +1810,9 @@ function Inventory:onControllerButtonPress(id)
             state.lastUsedRowPos = nil
                 state.lastPointerRowPos = nil
             if self.ctx.focusedInteractive then
-                self.ctx.focusedInteractive.layout.events.focusLoss()
+                if self.ctx.focusedInteractive.layout then
+                    self.ctx.focusedInteractive.layout.events.focusLoss()
+                end
                 self.ctx.focusedInteractive = nil 
             end
         end
