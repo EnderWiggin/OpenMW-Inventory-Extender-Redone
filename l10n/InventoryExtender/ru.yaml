@@ -1,0 +1,249 @@
+ConfigTitle: "Новый инвентарь - InventoryExtender"
+ConfigSummary: "Lua-замена окна инвентаря на модернизированный интерфейс на основе списков.\n\n--- v%{version} --- \n\nАвтор: Ralts\n\nПеревод: Sergey Rudyi"
+RequiresReload: "Некоторые изменения требуют перезапуска Lua для активации."
+ConfigCategoryKeybinds: "Горячие клавиши"
+KeybindUseItem: "Использовать предмет"
+KeybindUseItemDesc: |-
+  Мгновенно использовать предмет инвентаря под курсором.
+KeybindToggleFavorite: "Изменить избранное"
+KeybindToggleFavoriteDesc: |-
+  Переключить статус избранного для предмета инвентаря под курсором.
+  
+  Избранные предметы нельзя продать, выбросить или переместить в другие инвентари. Они отмечены значком звезды в списке.
+SwapUsePickup: "Поменять местами исп./взять"
+SwapUsePickupDesc: |-
+  По умолчанию вышеуказанная клавиша использует предметы, а левый клик — берет их.
+  
+  Включите эту опцию, чтобы поменять поведение: левый клик будет использовать предметы, а клавиша — брать.
+
+ConfigCategoryWindowOptions: "Настройки окна"
+EnableMod: "Включить мод"
+ItemViewMode: "Режим просмотра предметов"
+ItemViewModeDesc: |-
+  Выбор между подробным видом таблицы или классической сеткой в стиле оригинала.
+ItemViewMode_Table: "Таблица"
+ItemViewMode_Grid: "Сетка"
+ShowViewModeButton: "Показывать кнопку режима"
+ShowViewModeButtonDesc: |-
+  Показывать кнопку в верхней панели для переключения между таблицей и сеткой.
+TableRowHeightMult: "Множитель высоты строк таблицы"
+TableRowHeightMultDesc: |-
+  Регулировка высоты строк в режиме таблицы как множителя размера текста.
+TableScrollStep: "Шаг прокрутки таблицы"
+TableScrollStepDesc: |-
+  Регулировка шага прокрутки в режиме таблицы (в количестве строк).
+TextSizeOverride: "Переопределение размера текста"
+TextSizeOverrideDesc: |-
+  Переопределить стандартный размер текста в окне инвентаря.
+  Установите 0, чтобы использовать размер по умолчанию из игры.
+IconPack: "Пакет иконок"
+IconPackDesc: |-
+  Выберите, какой пакет иконок Inventory Extender использовать.
+InventoryWindowPinned: "Инвентарь закреплен"
+InventoryWindowDimensions: "Окно инвентаря"
+InventoryContainerWindowDimensions: "Инвентарь (контейнер)"
+InventoryBarterWindowDimensions: "Инвентарь (торговля)"
+InventoryCompanionWindowDimensions: "Инвентарь (компаньон)"
+ContainerWindowDimensions: "Окно контейнера"
+BarterWindowDimensions: "Окно торговли"
+CompanionWindowDimensions: "Окно компаньона"
+
+ConfigCategoryTweaks: "Исправления"
+CondensedWeightValue: "Компактные вес/цена"
+CondensedWeightValueDesc: |-
+  Сжимать информацию о весе и цене во всплывающих подсказках предметов.
+InvertCategorySwitching: "Инвертировать переключение категорий"
+InvertCategorySwitchingDesc: |-
+  По умолчанию при смене категории другие окна переключаются на ту же категорию, если не удерживать Shift.
+  Включите эту опцию, чтобы инвертировать поведение: другие окна будут менять категорию только при удержании Shift.
+CompactCategoryFilter: "Компактный фильтр категорий"
+CompactCategoryFilterDesc: |-
+  Переместить кнопки категорий в верхнюю панель и показывать активную категорию в заголовке окна вместо отдельной плашки.
+VanillaCategoryIcons: "Иконки категорий в ванильном стиле"
+VanillaCategoryIconsDesc: |-
+  Отображать кнопки категорий с классической подложкой и подсветкой на основе прозрачности.
+CategoryBarBorders: "Границы панели категорий"
+CategoryBarBordersDesc: |-
+  Показывать границы вокруг панели категорий.
+StolenIndicator: "Индикатор краденого"
+StolenIndicatorDesc: |-
+  Показывать иконку рядом с крадеными предметами в инвентаре.
+EnchantedIndicatorMode: "Режим индикатора зачарования"
+EnchantedIndicatorModeDesc: |-
+  В режиме таблицы показывать зачарованные предметы с сиянием на иконке, значком в строке имени или и тем, и другим.
+  В режиме сетки всегда отображается только сияние.
+EnchantedIndicatorMode_Swirl: "Сияние"
+EnchantedIndicatorMode_Icon: "Иконка имени"
+EnchantedIndicatorMode_Both: "И то, и другое"
+FilledGemsAppearEnchanted: "Заполненные камни как зачарованные"
+FilledGemsAppearEnchantedDesc: |-
+  Отображать заполненные камни душ как зачарованные предметы, чтобы их было проще отличить.
+EnchantCapacityInTooltips: "Вместимость зачарования в подсказках"
+EnchantCapacityInTooltipsDesc: |-
+  Показывать вместимость зачарования предметов в их всплывающих подсказках.
+EnchantCapacityInTooltips_Never: "Никогда"
+EnchantCapacityInTooltips_Always: "Всегда"
+EnchantCapacityInTooltips_UnenchantedOnly: "Только незачарованные"
+SoulGemCapacityInTooltips: "Емкость камней душ в подсказках"
+SoulGemCapacityInTooltipsDesc: |-
+  Показывать емкость пустых камней душ в их всплывающих подсказках.
+SoulGemCapacityInTooltips_Never: "Никогда"
+SoulGemCapacityInTooltips_Always: "Всегда"
+SoulGemCapacityInTooltips_EmptyOnly: "Только пустые"
+SoulGemValueInTooltips: "Заряд камня душ в подсказках"
+SoulGemValueInTooltipsDesc: |-
+  Показывать объем души в заполненных камнях душ в их всплывающих подсказках.
+HideConditionChargeLabels: "Скрыть подписи прочности/заряда"
+HideConditionChargeLabelsDesc: |-
+  Скрыть текстовые подписи рядом с полосками “Прочность“ и “Заряд“ в подсказках для более центрированного вида.
+
+ConfigCategoryModIntegration: "Интеграция модов"
+InterfaceReimagined: "Поддержка Interface Reimagined"
+InterfaceReimaginedDesc: |-
+  Настроить внешний вид для лучшего соответствия стилю Interface Reimagined.
+TooltipsComplete: "Поддержка Tooltips Complete"
+TooltipsCompleteDesc: |-
+  Если установлен Tooltips Complete, добавлять его описания к подсказкам предметов.
+
+ConfigCategoryMisc: "Разное"
+ShowControllerWarning: "Предупреждение о контроллере"
+ShowControllerWarningDesc: |-
+  Показывать предупреждение, если включено меню контроллера, так как этот инвентарь с ними несовместим.
+TooltipCompatibilityMode: "Режим совместимости подсказок HUD"
+TooltipCompatibilityModeDesc: |-
+  Из-за ограничений API подсказки мира при наведении требуют блокировки всего экрана, что блокирует подсказки HUD (эффекты, заклинания и т.д.)
+  Если режим совместимости ВКЛ, экран блокируется только при перетаскивании предмета. Это сохраняет подсказки HUD, но подсказки мира станут ванильными.
+
+ConfigCategoryGameplay: "Игровой процесс"
+SoulGemValueRebalance: "Ребаланс стоимости камней душ"
+SoulGemValueRebalanceDesc: |-
+  Сделать стоимость заполненных камней душ зависимой только от объема души.
+
+# Колонки
+Column_Name: "Имя"
+Column_Type: "Тип"
+Column_Damage: "Урон"
+Column_Quality: "Кач-во"
+Column_Condition: "Сост."
+Column_Slot: "Слот"
+Column_Class: "Класс"
+Column_AR: "ЗЩТ"
+Column_Value: "Цена"
+Column_Weight: "Вес"
+Column_Weight_Total: "Общ. вес"
+Column_VW: "Ц/В"
+
+# Категории
+Category_Favorites: "Избранное"
+Category_All: "Все"
+Category_Weapon: "Оружие"
+Category_Armor: "Доспехи"
+Category_Clothing: "Одежда"
+Category_Potion: "Расходники"
+Category_Ingredient: "Ингредиенты"
+Category_Scroll: "Свитки"
+Category_Book: "Книги"
+Category_Key: "Ключи"
+Category_Tool: "Инструменты"
+Category_Misc: "Разное"
+
+# Доспехи
+Type_Boots: "Сапоги"
+Type_Cuirass: "Кираса"
+Type_Greaves: "Поножи"
+Type_Helmet: "Шлем"
+Type_LBracer: "Наруч"
+Type_LGauntlet: "Перчатка"
+Type_LPauldron: "Наплечник"
+Type_RBracer: "Наруч"
+Type_RGauntlet: "Перчатка"
+Type_RPauldron: "Наплечник"
+Type_Shield: "Щит"
+Class_Light: "Лег."
+Class_Medium: "Сред."
+Class_Heavy: "Тяж."
+
+# Одежда
+Type_Amulet: "Амулет"
+Type_Belt: "Пояс"
+Type_LGlove: "Перчатка"
+Type_Pants: "Штаны"
+Type_RGlove: "Перчатка"
+Type_Ring: "Кольцо"
+Type_Robe: "Мантия"
+Type_Shirt: "Рубашка"
+Type_Shoes: "Обувь"
+Type_Skirt: "Юбка"
+
+# Оружие
+Type_Arrow: "Стрела"
+Type_AxeOneHand: "Топор"
+Type_AxeTwoHand: "Секира"
+Type_BluntOneHand: "Дробящее"
+Type_BluntTwoClose: "Дробящее"
+Type_BluntTwoWide: "Дробящее"
+Type_Bolt: "Болт"
+Type_LongBladeOneHand: "Дл. клинки"
+Type_LongBladeTwoHand: "Дл. клинки"
+Type_MarksmanBow: "Лук"
+Type_MarksmanCrossbow: "Арбалет"
+Type_MarksmanThrown: "Метательное"
+Type_ShortBladeOneHand: "Кр. клинки"
+Type_SpearTwoWide: "Копье"
+
+# Инструменты
+Type_Alembic: "Алембик"
+Type_Calcinator: "Кальцинатор"
+Type_MortarPestle: "Ступка"
+Type_Retort: "Реторта"
+Type_Lockpick: "Отмычка"
+Type_Probe: "Щуп"
+Type_RepairTool: "Ремонт"
+Type_Light: "Ист. света"
+
+# Другое
+Type_Consumable: "Расходник"
+Type_Ingredient: "Ингредиент"
+Type_Scroll: "Свиток"
+Type_Book: "Книга"
+Type_Key: "Ключ"
+Type_Misc: "Разное"
+
+UI_SearchBarPlaceholder: "Поиск..."
+UI_ColumnSettingsTitle: "Видимые колонки"
+UI_Barter_Spend: "Траты:"
+UI_Barter_Gain: "Доход:"
+UI_Barter_Max: "Макс"
+UI_Tooltip_Equipped: "<<<  Экипировано  >>>"
+UI_Tooltip_Magic_Item_Use_Cost: "Расход заряда: %{cost}"
+
+UI_Msg_ScriptedItem: "Этот предмет невозможно забрать из инвентаря."
+UI_Msg_FavoriteItem: "Избранные предметы нельзя продать или переместить из вашего инвентаря."
+
+UI_Tooltip_ColumnSettings: "Настройки колонок"
+UI_Tooltip_TableView: "Переключить на таблицу"
+UI_Tooltip_GridView: "Переключить на сетку"
+UI_Tooltip_UseButton: "Или нажмите {key} на предмете"
+UI_Tooltip_UseButton_Swapped: "Или кликните на предмет"
+UI_Tooltip_TakeAllButton_Shift: "Зажмите Shift, чтобы взять только видимые сейчас предметы."
+
+UI_EnchantCapacity: "Емкость зачарования"
+UI_SoulCapacity: "Емкость души"
+UI_SoulValue: "Объем души"
+
+ConfigNumberSeparators: "Показывать разделители тысяч"
+ConfigNumberSeparators_None: "Нет"
+ConfigNumberSeparators_Comma: "Запятая"
+ConfigNumberSeparators_Space: "Пробел"
+
+ConfigCompareItemsMode: "Сравнивать с экипированным"
+ConfigCompareItemsModeDesc: "Покажет подсказку надетого предмета рядом с текущим предметом."
+ConfigCompareItemsMode_Never: "Никогда"
+ConfigCompareItemsMode_ALT: "Зажать ALT"
+ConfigCompareItemsMode_Always: "Всегда"
+
+ConfigSortingBarterReverseEquipped: "При торговле сортировать экипированное в конец"
+ConfigSortingBarterReverseFavorite: "При торговле сортировать избранное в конец"
+
+ConfigTooltipShowItemUseCost: "Показывать стоимость использования предмета"
+ConfigTooltipShowItemUseCostDesc: "Показывать стоимость заряда за одно применение для магических предметов."
