@@ -1,3 +1,7 @@
+CONTRIBUTORS
+    TPABOBAP - Many tweaks and code fixes
+    Sergey Rudyi - Russian localization
+
 ICONS
 
 BASE:
