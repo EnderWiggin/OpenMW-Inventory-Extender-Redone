@@ -361,7 +361,7 @@ function WindowManager:onControllerButtonPress(id)
     end
 
     for _, window in pairs(self.windows) do
-        if window:isFocused() then
+        if window:isVisible() and window:isFocused() then
             window:onControllerButtonPress(id)
         end
     end
