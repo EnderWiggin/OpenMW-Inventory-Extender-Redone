@@ -31,7 +31,7 @@ I.Settings.registerGroup {
             key = 'k_UseItem',
             renderer = 'InventoryExtender/inputKeySelection',
             name = 'KeybindUseItem',
-			description = 'KeybindUseItemDesc',
+            description = 'KeybindUseItemDesc',
             default = input.KEY.R
         },
         {
@@ -76,6 +76,17 @@ I.Settings.registerGroup {
                     'ItemViewMode_Table',
                     'ItemViewMode_Grid',
                 },
+            }
+        },
+        {
+            key = 'n_GridIconScale',
+            renderer = 'number',
+            name = 'GridIconScale',
+            description = 'GridIconScaleDesc',
+            default = 1,
+            argument = {
+                min = 0.2,
+                max = 5,
             }
         },
         {

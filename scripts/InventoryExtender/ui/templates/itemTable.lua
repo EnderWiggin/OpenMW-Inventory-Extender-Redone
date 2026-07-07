@@ -327,7 +327,7 @@ ItemTable.create = function(props, ctx)
         local effectiveRowHeight = rowHeight
 
         if isGrid then
-            itemsPerRow = math.floor(contentWidth / baseItemSize)
+            itemsPerRow = math.floor(contentWidth / (baseItemSize * configPlayer.window.n_GridIconScale))
             if itemsPerRow < 1 then itemsPerRow = 1 end
             -- Distribute remaining space
             itemSize = contentWidth / itemsPerRow
