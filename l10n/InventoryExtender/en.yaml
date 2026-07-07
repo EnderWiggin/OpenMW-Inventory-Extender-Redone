@@ -156,12 +156,12 @@ Type_Boots: Boots
 Type_Cuirass: Cuirass
 Type_Greaves: Greaves
 Type_Helmet: Helmet
-Type_LBracer: Bracer
-Type_LGauntlet: Gauntlet
-Type_LPauldron: Pauldron
-Type_RBracer: Bracer
-Type_RGauntlet: Gauntlet
-Type_RPauldron: Pauldron
+Type_LBracer: Bracer L.
+Type_LGauntlet: Gauntlet L.
+Type_LPauldron: Pauldron L.
+Type_RBracer: Bracer R.
+Type_RGauntlet: Gauntlet R.
+Type_RPauldron: Pauldron R.
 Type_Shield: Shield
 Class_Light: Lgt.
 Class_Medium: Med.
