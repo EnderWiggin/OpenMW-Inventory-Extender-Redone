@@ -21,7 +21,17 @@ API.Templates = {
     MAGIC = require('scripts.InventoryExtender.ui.templates.magic'),
 }
 
+API.allWindowsDisabled = false
+
+---Set to true to temporarily disable IE windows
+---NOTE: it won't bring back default windows - no windows will be shown instead
+--- Added on request of Quick Loot mod to temporarily disable UI when scripted containers/corpses are automatically activated
+function API.disableAllWindows(value)
+    API.allWindowsDisabled = value
+end
+
 function API.show(windowName, arg)
+    if API.allWindowsDisabled then return end
     windowManager:show(windowName, arg)
 end
 
