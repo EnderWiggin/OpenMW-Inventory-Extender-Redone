@@ -1142,7 +1142,7 @@ if isPlayer then
             return 0
         end
 
-        local alchemy = self.type.stats.skills.alchemy(self).base
+        local alchemy = self.type.stats.skills.alchemy(self).modified
         local threshold = core.getGMST('fWortChanceValue')
         local visibleEffectCount = math.floor(alchemy / threshold)
         if types.Potion.objectIsInstance(item) then
