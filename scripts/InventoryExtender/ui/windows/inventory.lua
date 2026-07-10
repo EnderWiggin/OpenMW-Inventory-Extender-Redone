@@ -2006,7 +2006,7 @@ function Inventory:updateData()
         anyChanges = true
     end
 
-    local currentAlchemy = omwself.type.stats.skills.alchemy(omwself).base
+    local currentAlchemy = omwself.type.stats.skills.alchemy(omwself).modified
     if self.trackedAlchemy ~= currentAlchemy then
         anyChanges = true
         self.trackedAlchemy = currentAlchemy
