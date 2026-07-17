@@ -1171,22 +1171,25 @@ if isPlayer then
             end
         elseif types.Potion.objectIsInstance(item) or types.Ingredient.objectIsInstance(item) then
             local visibleEffectCount = getKnownAlchemyEffectCount(item)
-            for i, effect in ipairs(itemRecord.effects) do
-                local isVisible = i <= visibleEffectCount
-                local effectText = nil
-                if isVisible then
-                    if types.Potion.objectIsInstance(item) then
-                        effectText = Helpers.createSpellEffectString(effect, false, true)
-                    else
-                        effectText = Helpers.getMagicEffectString(effect)
+            for i = 1, #itemRecord.effects do
+                local effect = itemRecord.effects[i]
+                if effect then --some TR Data ingredients have gaps in effects
+                    local isVisible = i <= visibleEffectCount
+                    local effectText = nil
+                    if isVisible then
+                        if types.Potion.objectIsInstance(item) then
+                            effectText = Helpers.createSpellEffectString(effect, false, true)
+                        else
+                            effectText = Helpers.getMagicEffectString(effect)
+                        end
                     end
-                end
 
-                table.insert(effectsToShow, {
-                    effect = effect,
-                    visible = isVisible,
-                    text = effectText,
-                })
+                    table.insert(effectsToShow, {
+                        effect = effect,
+                        visible = isVisible,
+                        text = effectText,
+                    })
+                end
             end
         end
 
