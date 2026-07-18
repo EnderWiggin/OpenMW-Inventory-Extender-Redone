@@ -614,7 +614,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
             flexContent:add({
                 type = ui.TYPE.Image,
                 props = {
-                    size = v2(16, 16),
+                    size = v2(1, 1) * BASE.TEXT_SIZE,
                     resource = BASE.createTexture('icons/gold.dds'),
                 }
             })
@@ -628,7 +628,7 @@ Templates.itemTooltip = function(item, showIcon, ctx)
             flexContent:add({
                 type = ui.TYPE.Image,
                 props = {
-                    size = v2(16, 16),
+                    size = v2(1, 1) * BASE.TEXT_SIZE,
                     resource = BASE.createTexture('icons/weight.dds'),
                 }
             })
@@ -826,7 +826,7 @@ Templates.effectIcon = function(effectId)
     local layout = {
         type = ui.TYPE.Image,
         props = {
-            size = v2(16, 16),
+            size = v2(1, 1) * BASE.TEXT_SIZE,
             resource = BASE.createTexture(effectRecord.icon),
         },
     }
