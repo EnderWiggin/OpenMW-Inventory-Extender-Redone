@@ -1276,7 +1276,7 @@ function Inventory:create(windowType, ctx)
                         type = ui.TYPE.Image,
                         props = {
                             resource = ui.texture { path = 'icons/weight.dds'},
-                            size = v2(16, 16),
+                            size = v2(1, 1) * baseTemplates.TEXT_SIZE,
                         }
                     },
                     baseTemplates.intervalH(4),
@@ -1312,7 +1312,7 @@ function Inventory:create(windowType, ctx)
                         type = ui.TYPE.Image,
                         props = {
                             resource = ui.texture { path = 'icons/gold.dds'},
-                            size = v2(16, 16),
+                            size = v2(1, 1) * baseTemplates.TEXT_SIZE,
                         }
                     },
                     baseTemplates.intervalH(4),
@@ -1342,7 +1342,7 @@ function Inventory:create(windowType, ctx)
                         type = ui.TYPE.Image,
                         props = {
                             resource = ui.texture { path = 'icons/a/a_cuirass_ebon.dds'},
-                            size = v2(16, 16),
+                            size = v2(1, 1) * baseTemplates.TEXT_SIZE,
                         }
                     },
                     baseTemplates.intervalH(4),
