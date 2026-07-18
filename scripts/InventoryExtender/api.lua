@@ -243,6 +243,7 @@ local eventHandlers = {
         windowManager.ctx.dragAndDrop:setDraggingObject(obj, props.resetMode)
     end,
     IE_BarterFinalized = function(props)
+        if not props.skillGain or props.skillGain <= 0 then return end
         I.SkillProgression.skillUsed('mercantile', {
             skillGain = props.skillGain,
             useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
