@@ -255,7 +255,7 @@ local eventHandlers = {
     IE_BarterFinalized = function(props)
         if not props.skillGain or props.skillGain <= 0 then return end
         I.SkillProgression.skillUsed('mercantile', {
-            skillGain = props.skillGain,
+            scale = props.skillGain,
             useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
         })
     end,
