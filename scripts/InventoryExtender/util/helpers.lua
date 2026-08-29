@@ -715,13 +715,20 @@ Helpers.getMerchantItems = function(npc)
         end
     end
 
+    local function canStack(a, b)
+        if not Helpers.itemCanStack(a, b) then return false end
+        if Helpers.isItemEquipped(a, npc) then return false end
+        if Helpers.isItemEquipped(b, npc) then return false end
+        return true
+    end
+
     local virtualMerged = {}
     for _, item in ipairs(unmerged) do
         local key = item.recordId:lower()
         if virtualMerged[key] then
             local existing = false
             for _, virtualStack in ipairs(virtualMerged[key]) do
-                if Helpers.itemCanStack(item, virtualStack.stacks[1]) then
+                if canStack(item, virtualStack.stacks[1]) then
                     existing = true
                     table.insert(virtualStack.stacks, item)
                     virtualStack.totalCount = virtualStack.totalCount + item.count
