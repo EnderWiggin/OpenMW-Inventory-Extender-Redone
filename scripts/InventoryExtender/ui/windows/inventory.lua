@@ -788,6 +788,17 @@ function Inventory:create(windowType, ctx)
         end
 
         if helpers.isBoundItem(row.item) then
+            local gmst
+            if I.UI.getMode() == 'Barter' then
+                if self.type == 'Trade' then
+                    gmst = 'sBarterDialog10' --can't buy summoned items
+                else
+                    gmst = 'sBarterDialog9'  --can't sell summoned items
+                end
+            else
+                gmst = 'sContentsMessage1' --can't remove summoned item
+            end
+            if gmst then ui.showMessage(core.getGMST(gmst)) end
             return
         end
 
