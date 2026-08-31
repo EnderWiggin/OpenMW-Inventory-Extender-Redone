@@ -274,9 +274,24 @@ end
 
 local tooltipData = require('scripts.InventoryExtender.interop.tooltips')
 
+local function stolenInfoCompare(a, b)
+    local ra = a.record
+    local rb = b.record
+
+    if ra.ranks and not rb.ranks then return false end
+    if rb.ranks and not ra.ranks then return true end
+
+    if ra.name ~= rb.name then return ra.name < rb.name end
+
+    return ra.id < rb.id
+end
+
 Templates.itemTooltip = function(item, showIcon, ctx)
     local function textNormal(name, text)
         return { name = name, template = BASE.textNormal, props = { text = text } }
+    end
+    local function textDisabled(name, text)
+        return { name = name, template = BASE.textNormal, props = { text = text, textColor = constants.Colors.DISABLED } }
     end
     local function textHeader(name, text)
         return { name = name, template = BASE.textHeader, props = { text = text } }
@@ -598,6 +613,63 @@ Templates.itemTooltip = function(item, showIcon, ctx)
                 size = v2(320, 0),
             }
         })
+    end
+
+    if configPlayer.tweaks.b_ShowStolenInfo then
+        local stolen = ctx.stolenItems[item.recordId]
+        if stolen then
+            local stolenRecords = {}
+            for victim, count in pairs(stolen) do
+                local record = types.NPC.records[victim]
+                if not record then
+                    record = core.factions.records[victim]
+                end
+                if record then
+                    stolenRecords[#stolenRecords + 1] = { record = record, count = count }
+                end
+            end
+            if #stolenRecords > 0 then
+                table.sort(stolenRecords, stolenInfoCompare)
+                innerContent:add(BASE.intervalV(8))
+                innerContent:add {
+                    name = 'stolen',
+                    template = BASE.textNormal,
+                    props = {
+                        text = l10n('StolenTooltipText'),
+                        textColor = constants.Colors.RED_DESAT,
+                    },
+                }
+                innerContent:add(BASE.intervalV(4))
+                local stolenContent = ui.content {}
+                for i = 1, #stolenRecords do
+                    local r = stolenRecords[i].record
+                    local c = stolenRecords[i].count
+                    stolenContent:add {
+                        name = r.id,
+                        template = BASE.textNormal,
+                        props = {
+                            text = r.name .. ': ' .. c,
+                            textColor = r.ranks
+                                and constants.Colors.ACTIVE
+                                or constants.Colors.DISABLED,
+                        },
+                    }
+                end
+                innerContent:add {
+                    name = 'stolen',
+                    type = ui.TYPE.Flex,
+                    props = {
+                        horizontal = false,
+                        align = ui.ALIGNMENT.Center,
+                        arrange = ui.ALIGNMENT.End,
+                    },
+                    external = {
+                        stretch = 1,
+                    },
+                    content = stolenContent
+                }
+            end
+        end
     end
 
     if configPlayer.tweaks.b_CondensedWeightValue then

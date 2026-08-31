@@ -68,6 +68,10 @@ CategoryBarBordersDesc: |-
 StolenIndicator: "Индикатор краденого"
 StolenIndicatorDesc: |-
   Показывать иконку рядом с крадеными предметами в инвентаре.
+ShowStolenInfo: "Показывать сведения о краденых предметах"
+ShowStolenInfoDesc: |-
+  В подсказках показывать список людей и фракций, у которых был украден предмет.
+StolenTooltipText: "Украдено у:"
 EnchantedIndicatorMode: "Режим индикатора зачарования"
 EnchantedIndicatorModeDesc: |-
   В режиме таблицы показывать зачарованные предметы с сиянием на иконке, значком в строке имени или и тем, и другим.
