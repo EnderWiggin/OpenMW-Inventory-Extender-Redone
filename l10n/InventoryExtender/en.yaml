@@ -76,6 +76,10 @@ CategoryBarBordersDesc: |-
 StolenIndicator: Show stolen indicator
 StolenIndicatorDesc: |-
   Show an icon next to stolen items in the inventory.
+ShowStolenInfo: Show stolen item details
+ShowStolenInfoDesc: |-
+    Tooltips will show list of people and factions you stole the item from.
+StolenTooltipText: 'Stolen from:'
 EnchantedIndicatorMode: Enchanted indicator mode
 EnchantedIndicatorModeDesc: |-
   In table view, show enchanted items with the icon swirl, the name-row icon, or both.
