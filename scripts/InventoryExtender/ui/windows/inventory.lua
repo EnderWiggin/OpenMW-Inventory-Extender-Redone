@@ -325,6 +325,22 @@ function Inventory:create(windowType, ctx)
         return nonDraggedCount
     end
 
+    local function isStealing(actor, ownerInfo)
+        if not ownerInfo then return false end
+
+        if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
+            return true
+        end
+
+        if ownerInfo.factionId then
+            local reqRank = ownerInfo.factionRank or 1
+            if types.NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
+                return true
+            end
+        end
+        return false
+    end
+
     local function getItemBadgeState(row)
         local favorite = isFavorited(row.item)
         local stolen = false
@@ -332,8 +348,12 @@ function Inventory:create(windowType, ctx)
         if configPlayer.tweaks.b_StolenIndicator then
             if self.type == 'Inventory' and self.ctx.stolenItems then
                 stolen = self.ctx.stolenItems[row.item.recordId] ~= nil
-            elseif self.type == 'Container' and self.ctx.pickpocket and self.ctx.pickpocket.active then
-                stolen = true
+            elseif self.type == 'Container' then
+                if self.ctx.pickpocket and self.ctx.pickpocket.active then
+                    stolen = true
+                elseif types.Container.objectIsInstance(self.target) then
+                    stolen = isStealing(omwself, self.target.owner)
+                end
             end
         end
 
