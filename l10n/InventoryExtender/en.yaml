@@ -130,6 +130,9 @@ ConfigCategoryGameplay: Gameplay
 SoulGemValueRebalance: Soul gem value rebalance
 SoulGemValueRebalanceDesc: |-
   Make the value of filled soul gems dependent only on soul magnitude.
+IgnoreChestCapacity: Ignore container capacity
+IgnoreChestCapacityDesc: |-
+  Allows placing items into containers ignoring weight limits.
 
 # Column
 Column_Name: Name

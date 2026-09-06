@@ -126,6 +126,9 @@ ConfigCategoryGameplay: "Игровой процесс"
 SoulGemValueRebalance: "Ребаланс стоимости камней душ"
 SoulGemValueRebalanceDesc: |-
   Сделать стоимость заполненных камней душ зависимой только от объема души.
+IgnoreChestCapacity: "Игнорировать вместимость контейнера"
+IgnoreChestCapacityDesc: |-
+  Позволяет помещать предметы в контейнеры, игнорируя ограничения по весу.
 
 # Колонки
 Column_Name: "Имя"

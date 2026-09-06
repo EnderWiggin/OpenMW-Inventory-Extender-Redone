@@ -14,5 +14,12 @@ I.Settings.registerGroup {
             description = 'SoulGemValueRebalanceDesc',
             default = true,
         },
+        {
+            key = 'b_IgnoreChestCapacity',
+            renderer = 'checkbox',
+            name = 'IgnoreChestCapacity',
+            description = 'IgnoreChestCapacityDesc',
+            default = false,
+        },
     },
 }

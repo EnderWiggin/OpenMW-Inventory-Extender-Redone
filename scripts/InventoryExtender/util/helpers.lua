@@ -644,6 +644,7 @@ Helpers.getWeaponRangeInFeet = function(item)
 end
 
 Helpers.doesItemFit = function(item, container, count)
+    if configGlobal.gameplay.b_IgnoreChestCapacity then return true end
     if not container or not types.Container.objectIsInstance(container) then
         return true
     end
