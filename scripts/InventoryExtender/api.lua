@@ -1,3 +1,5 @@
+---@omw-context player
+
 local core = require('openmw.core')
 local self = require('openmw.self')
 local types = require('openmw.types')

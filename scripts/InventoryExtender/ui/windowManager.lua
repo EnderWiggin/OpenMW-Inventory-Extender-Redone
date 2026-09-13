@@ -156,6 +156,8 @@ function WindowManager:show(windowName, arg)
             window:refresh()
         end
     end
+
+    I.UIToolkit.WindowManager.open('InventoryExtender:' .. windowName, arg)
 end
 
 function WindowManager:hide(windowName, arg, force)
@@ -176,6 +178,8 @@ function WindowManager:hide(windowName, arg, force)
         auxUi.deepDestroy(self.ctx.activeTooltip)
         self.ctx.activeTooltip = nil
     end
+
+    I.UIToolkit.WindowManager.close('InventoryExtender:' .. windowName)
 end
 
 function WindowManager:onUiModeChanged(oldMode, newMode, arg)

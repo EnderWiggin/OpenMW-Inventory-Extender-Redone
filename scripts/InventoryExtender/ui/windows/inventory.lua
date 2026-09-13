@@ -1,3 +1,5 @@
+---@omw-context player
+
 local core = require('openmw.core')
 local ui = require('openmw.ui')
 local auxUi = require('openmw_aux.ui')
