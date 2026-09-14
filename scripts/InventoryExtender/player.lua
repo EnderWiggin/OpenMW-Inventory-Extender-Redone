@@ -49,11 +49,13 @@ local function init()
                 resizing = true,
                 pinnable = false, --TODO: set this
             })
-            I.UI.registerWindow(windowName, function(arg) API.show(windowName, arg) end, function(arg) API.hide(windowName, arg) end)
+            I.UI.registerWindow(windowName, function(arg) API.show(windowName, arg) end,
+                function(arg) API.hide(windowName, arg) end)
         end
     elseif configPlayer.misc.b_ShowControllerWarning then
         storage.playerSection('Settings/InventoryExtender/5_Misc'):set('b_ShowControllerWarning', false)
-        local msg = 'NOTICE:\nInventory Extender is not compatible with controller menus.\nThis message will only appear once.'
+        local msg =
+        'NOTICE:\nInventory Extender is not compatible with controller menus.\nThis message will only appear once.'
         if I.UI.showInteractiveMessage then -- OpenMW 0.50+
             I.UI.showInteractiveMessage(msg, {})
         else
@@ -62,35 +64,66 @@ local function init()
     end
 end
 
+local generalHiddenColumns = {
+    Class = true,
+    AR = true,
+    Damage = true,
+    Quality = true,
+    Condition = true,
+}
+
+local noTypeHiddenColumns = {
+    Type = true,
+    Class = true,
+    AR = true,
+    Damage = true,
+    Quality = true,
+    Condition = true,
+}
+
 local defaultCategories = {
     {
         key = 'Favorites',
         filter = isFavorited,
         prepend = true,
         defaultSelected = false,
+        hiddenColumns = generalHiddenColumns,
     },
     {
         key = 'All',
+        hiddenColumns = generalHiddenColumns,
     },
     {
         key = 'Weapon',
         filter = types.Weapon.objectIsInstance,
+        hiddenColumns = {
+            Class = true,
+            AR = true,
+            Quality = true,
+        },
     },
     {
         key = 'Armor',
         filter = types.Armor.objectIsInstance,
+        hiddenColumns = {
+            Damage = true,
+            Quality = true,
+        }
     },
     {
         key = 'Clothing',
         filter = types.Clothing.objectIsInstance,
+        hiddenColumns = generalHiddenColumns,
     },
     {
         key = 'Potion',
         filter = types.Potion.objectIsInstance,
+        hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Ingredient',
         filter = types.Ingredient.objectIsInstance,
+        hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Scroll',
@@ -100,6 +133,7 @@ local defaultCategories = {
                 return record and record.enchant
             end
         end,
+        hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Book',
@@ -109,6 +143,7 @@ local defaultCategories = {
                 return record and not record.enchant
             end
         end,
+        hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Key',
@@ -118,29 +153,37 @@ local defaultCategories = {
                 return record and record.isKey
             end
         end,
+        hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Tool',
         filter = function(item)
             return types.Lockpick.objectIsInstance(item) or
-                   types.Probe.objectIsInstance(item) or
-                   types.Light.objectIsInstance(item) or
-                   types.Apparatus.objectIsInstance(item) or
-                   types.Repair.objectIsInstance(item)
+                types.Probe.objectIsInstance(item) or
+                types.Light.objectIsInstance(item) or
+                types.Apparatus.objectIsInstance(item) or
+                types.Repair.objectIsInstance(item)
         end,
+        hiddenColumns = {
+            Class = true,
+            AR = true,
+            Damage = true,
+            Condition = true,
+        },
     },
     {
         key = 'Misc',
         filter = function(item)
             return types.Miscellaneous.objectIsInstance(item) and not types.Miscellaneous.records[item.recordId].isKey
         end,
+        hiddenColumns = noTypeHiddenColumns,
     }
 }
 
 for _, category in ipairs(defaultCategories) do
     local categoryIconRelativePath = 'categories/' .. category.key:lower() .. '.dds'
 
-    API.registerCategory{
+    API.registerCategory {
         key = category.key,
         name = l10n('Category_' .. category.key),
         icon = iconPack.getPath(categoryIconRelativePath),
@@ -148,6 +191,7 @@ for _, category in ipairs(defaultCategories) do
         filter = category.filter,
         prepend = category.prepend,
         defaultSelected = category.defaultSelected,
+        hiddenColumns = category.hiddenColumns,
     }
 end
 

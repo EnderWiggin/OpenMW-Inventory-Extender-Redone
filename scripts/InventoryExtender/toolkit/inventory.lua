@@ -22,6 +22,7 @@ local l10n = core.l10n('InventoryExtender')
 local Class          = require 'scripts.UIToolkit.class'
 local WindowHandler  = require 'scripts.UIToolkit.window_handler'
 local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_item'
+local CompoundFilter = require 'scripts.UIToolkit.compound_filter'
 
 local CategoryFilter = require('scripts.InventoryExtender.toolkit.categoryFilter')
 
@@ -112,6 +113,70 @@ local function ALL_COLUMNS()
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
+            id = 'Class',
+            name = l10n('Column_Class'),
+             sort = { numeric = false },
+            width = 60 * fontRatio,
+            align = ui.ALIGNMENT.End,
+            render = ColumnItem.renderText,
+            arg = { textAlignH = ui.ALIGNMENT.End },
+        },
+        {
+            id = 'AR',
+            name = l10n('Column_AR'),
+            sort = { numeric = true },
+            width = 50 * fontRatio,
+            align = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            render = ColumnItem.renderText,
+            arg = { textAlignH = ui.ALIGNMENT.End },
+        },
+        {
+            id = 'Damage',
+            name = l10n('Column_Damage'),
+            sort = { numeric = true },
+            width = 60 * fontRatio,
+            align = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            render = ColumnItem.renderText,
+            arg = { textAlignH = ui.ALIGNMENT.End },
+        },
+        {
+            id = 'Quality',
+            name = l10n('Column_Quality'),
+            sort = { numeric = true },
+            width = 60 * fontRatio,
+            align = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            render = ColumnItem.renderText,
+            arg = { textAlignH = ui.ALIGNMENT.End },
+        },
+        {
+            id = 'Condition',
+            name = l10n('Column_Condition'),
+            width = 55 * fontRatio,
+            align = ui.ALIGNMENT.End,
+            defaultOrder = 'desc',
+            render = ColumnItem.renderText,
+            arg = { textAlignH = ui.ALIGNMENT.End },
+            sort = function(a, b)
+                local aValue = helpers.getConditionPercent(a.item)
+                local bValue = helpers.getConditionPercent(b.item)
+
+                if aValue == bValue then
+                    return 0
+                end
+                if aValue == nil then
+                    return 1
+                end
+                if bValue == nil then
+                    return -1
+                end
+
+                return aValue < bValue and -1 or 1
+            end,
+        },
+        {
             id = 'Weight',
             name = l10n('Column_Weight'),
             sort = { numeric = true },
@@ -184,6 +249,7 @@ function Inventory:onOpened(wnd, data, saved)
     else
         self.target = data
     end
+    self.filter = CompoundFilter:new()
 
     local inner = wnd:getInnerSize()
     local theme = I.UIToolkit.getTheme()
@@ -191,22 +257,36 @@ function Inventory:onOpened(wnd, data, saved)
     local rowHeight = util.round(1.5 * (textSize + 2))
 
     self.categoryFilter = CategoryFilter.create({
-        maxHeight = 72,
-        compact = configPlayer.tweaks.b_CompactCategoryFilter,
-        vanillaStyle = configPlayer.tweaks.b_VanillaCategoryIcons,
-        getCategories = getAvailableCategories,
-        getCategoryDisabledLookup = function()
-            return {}
-        end,
-        onOpenSettings = openColumnSettings,
-        onToggleView = toggleItemViewMode,
-        getViewMode = getItemViewMode,
-    }, function(category)
-        print('----', 'CATEGORY', category)
-        self:updateTitle()
-    end, function(text)
-        print('----', 'SEARCH', text)
-    end)
+            maxHeight = 72,
+            compact = configPlayer.tweaks.b_CompactCategoryFilter,
+            vanillaStyle = configPlayer.tweaks.b_VanillaCategoryIcons,
+            getCategories = getAvailableCategories,
+            getCategoryDisabledLookup = function()
+                return {}
+            end,
+            onOpenSettings = openColumnSettings,
+            onToggleView = toggleItemViewMode,
+            getViewMode = getItemViewMode,
+        },
+        ---@param category InventoryExtenderRedone.Category
+        function(category)
+            print('----', 'CATEGORY', helpers.deepPrint(category))
+
+            if category.filter then
+                self.filter:add('category', function(row)
+                    return category.filter(row.item)
+                end)
+            else
+                self.filter:remove('category')
+            end
+
+            self.list:filter(false)
+            self.list:setHiddenColumns(category.hiddenColumns)
+
+            self:updateTitle()
+        end, function(text)
+            print('----', 'SEARCH', text)
+        end)
 
     self.list = I.UIToolkit.Components.sortedList {
         columns = ALL_COLUMNS(),
@@ -214,6 +294,10 @@ function Inventory:onOpened(wnd, data, saved)
         noBorder = true,
     }
     self.list:updateProps { position = v2(0, rowHeight + 10) }
+    self.list:setFilter(self.filter)
+    local categoryKey = self.categoryFilter.layout.userData.getCategory()
+    local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
+    if category then self.list:setHiddenColumns(category.hiddenColumns) end
     self.list:setItems(self:createData())
 
     wnd:setContent(ui.content {

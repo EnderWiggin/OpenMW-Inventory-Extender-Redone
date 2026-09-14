@@ -378,7 +378,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
                     if state.selectedCategory ~= category.key then
                         state.selectedCategory = category.key
                         if onCategoryChange then
-                            onCategoryChange(state.selectedCategory)
+                            onCategoryChange(category)
                         end
                         updateCategories()
                     end
