@@ -258,6 +258,15 @@ local function ALL_COLUMNS(defaultSort)
     }
 end
 
+local function getStorageSuffix(type)
+    if type ~= 'Inventory' then return nil end
+    local mode = I.UI.getMode()
+    if mode == 'Barter' or mode == 'Container' or mode == 'Companion' then
+        return ':' .. mode
+    end
+    return nil
+end
+
 ---@class IER.Inventory: UIToolkit.WindowHandler
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
@@ -271,6 +280,7 @@ end
 function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
+    self.suffix = getStorageSuffix(self.type)
     local ctx = I.InventoryExtender.getContext()
 
     if self.type == 'Inventory' then
@@ -546,12 +556,8 @@ function Inventory:onResized(inner)
 end
 
 function Inventory:getStorageSuffix()
-    if self.type ~= 'Inventory' then return nil end
-    local mode = I.UI.getMode()
-    if mode == 'Barter' or mode == 'Container' or mode == 'Companion' then
-        return ':' .. mode
-    end
-    return nil
+    if self.wnd then return self.suffix end
+    return getStorageSuffix(self.type)
 end
 
 ---@private
