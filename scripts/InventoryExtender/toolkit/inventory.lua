@@ -16,9 +16,11 @@ local Container = types.Container
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 local helpers = require('scripts.InventoryExtender.util.helpers')
+local constants = require('scripts.InventoryExtender.util.constants')
 local l10n = core.l10n('InventoryExtender')
 
 
+local H              = require 'scripts.UIToolkit.helpers'
 local Class          = require 'scripts.UIToolkit.class'
 local WindowHandler  = require 'scripts.UIToolkit.window_handler'
 local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_item'
@@ -83,7 +85,39 @@ local function iconRenderer(data, cfg, height)
     }
 end
 
-local function ALL_COLUMNS()
+---@type UIToolkit.ListItem.Column.Renderer
+local function renderNumber(data, cfg, height)
+    local value = data[cfg.id] or ''
+    if type(value) == 'function' then
+        value = value()
+    end
+
+    if value == 0 or value == nil then
+        value = '-'
+    elseif type(value) == 'number' then
+        value = H.addSeparators(H.roundToPlaces(value, 2))
+    end
+    local textSize = cfg.arg and cfg.arg.textSize or nil
+    local textAlignH = cfg.arg and cfg.arg.textAlignH or nil
+    ---@type openmw.ui.Layout
+    local layout = {
+        name = cfg.id,
+        template = I.UIToolkit.Templates.text(),
+        props = {
+            textAlignV = ui.ALIGNMENT.Center,
+            textAlignH = textAlignH,
+            autoSize = false,
+            textSize = textSize,
+            text = tostring(value),
+        },
+        userData = { colorable = true },
+    }
+
+    ColumnItem.applySize(layout, cfg, height)
+    return ui.create(layout)
+end
+
+local function ALL_COLUMNS(defaultSort)
     local theme = I.UIToolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local lineHeight = textSize + 2
@@ -95,6 +129,7 @@ local function ALL_COLUMNS()
         {
             id = 'Icon',
             width = lineHeight * 1.5 + 8,
+            sort = defaultSort,
             render = iconRenderer,
         },
         {
@@ -115,7 +150,7 @@ local function ALL_COLUMNS()
         {
             id = 'Class',
             name = l10n('Column_Class'),
-             sort = { numeric = false },
+            sort = { numeric = false },
             width = 60 * fontRatio,
             align = ui.ALIGNMENT.End,
             render = ColumnItem.renderText,
@@ -128,7 +163,7 @@ local function ALL_COLUMNS()
             width = 50 * fontRatio,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -138,7 +173,7 @@ local function ALL_COLUMNS()
             width = 60 * fontRatio,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -148,7 +183,7 @@ local function ALL_COLUMNS()
             width = 60 * fontRatio,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -157,8 +192,10 @@ local function ALL_COLUMNS()
             width = 55 * fontRatio,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
+            ---@param a InventoryExtenderRedone.RowData
+            ---@param b InventoryExtenderRedone.RowData
             sort = function(a, b)
                 local aValue = helpers.getConditionPercent(a.item)
                 local bValue = helpers.getConditionPercent(b.item)
@@ -183,7 +220,7 @@ local function ALL_COLUMNS()
             width = w,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -193,7 +230,7 @@ local function ALL_COLUMNS()
             width = 70 * fontRatio,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -203,7 +240,7 @@ local function ALL_COLUMNS()
             width = w,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -213,21 +250,10 @@ local function ALL_COLUMNS()
             width = w,
             align = ui.ALIGNMENT.End,
             defaultOrder = 'desc',
-            render = ColumnItem.renderText,
+            render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         }
     }
-end
-
-local function getAvailableCategories()
-    local categories = I.InventoryExtender.getCategories()
-    local filteredCategories = {}
-    for _, category in ipairs(categories) do
-        if category.key ~= 'Favorites' --[[ or (self.target == omwself and hasFavorites()) ]] then
-            table.insert(filteredCategories, category)
-        end
-    end
-    return filteredCategories
 end
 
 ---@class IER.Inventory: UIToolkit.WindowHandler
@@ -243,6 +269,7 @@ end
 function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
+    local ctx = I.InventoryExtender.getContext()
 
     if self.type == 'Inventory' then
         self.target = omwself
@@ -255,6 +282,138 @@ function Inventory:onOpened(wnd, data, saved)
     local theme = I.UIToolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local rowHeight = util.round(1.5 * (textSize + 2))
+
+    local function isFavorited(item)
+        return item ~= nil and ctx.favoriteItems[item.id] == true
+    end
+
+    ---@param a InventoryExtenderRedone.RowData
+    ---@param b InventoryExtenderRedone.RowData
+    ---@type UIToolkit.ColumnComparator
+    local function fallBackSort(a, b)
+        if not self.target then
+            return 0
+        end
+
+        if a.isBartered ~= b.isBartered then
+            return a.isBartered and -1 or 1
+        end
+
+        local mode = I.UI.getMode()
+        local inBarterMode = mode == 'Barter'
+
+        local aEquipped = helpers.isItemEquipped(a.item, self.target, ctx.overrides.equipped)
+        local bEquipped = helpers.isItemEquipped(b.item, self.target, ctx.overrides.equipped)
+
+        local aFavorited = isFavorited(a.item)
+        local bFavorited = isFavorited(b.item)
+
+        if inBarterMode then
+            local config = helpers.getWindowSettings()
+            local reverseEquipped = config:get(constants.OPT_KEYS.SortingBarterReverseEquipped)
+            local reverseFavorite = config:get(constants.OPT_KEYS.SortingBarterReverseFavorite)
+
+            if reverseFavorite and not reverseEquipped then
+                -- if only favorites are reversed, prioritize sorting by favorite status
+                if aFavorited ~= bFavorited then
+                    -- favorited items come last (true > false)
+                    return bFavorited and -1 or 1
+                end
+
+                if aEquipped ~= bEquipped then
+                    -- equipped items come first (true > false)
+                    return aEquipped and -1 or 1
+                end
+            else
+                if aEquipped ~= bEquipped then
+                    -- equipped items come first (true > false), unless we reverse it
+                    if reverseEquipped then
+                        return bEquipped and -1 or 1
+                    else
+                        return aEquipped and -1 or 1
+                    end
+                end
+
+                if aFavorited ~= bFavorited then
+                    -- favorited items come first (true > false), unless we reverse it
+                    if reverseFavorite then
+                        return bFavorited and -1 or 1
+                    else
+                        return aFavorited and -1 or 1
+                    end
+                end
+            end
+        else
+            if aEquipped ~= bEquipped then
+                -- equipped items come first (true > false)
+                return aEquipped and -1 or 1
+            end
+
+            if aFavorited ~= bFavorited then
+                -- favorited items come first (true > false)
+                return aFavorited and -1 or 1
+            end
+        end
+
+        -- Second, sort by Category
+        local categories = I.InventoryExtender.getCategories()
+        local indexA, indexB = nil, nil
+        for i, category in ipairs(categories) do
+            if category.key ~= 'Favorites' then
+                if category.filter then
+                    if category.filter(a.item) then
+                        indexA = i
+                    end
+                    if category.filter(b.item) then
+                        indexB = i
+                    end
+                    if indexA and indexB then
+                        break
+                    end
+                end
+            end
+        end
+        if indexA ~= indexB then
+            return ((indexA or math.huge) < (indexB or math.huge)) and -1 or 1
+        end
+
+        local typeA = (type(a.Type) == 'function' and a.Type() or a.Type or ''):lower()
+        local typeB = (type(b.Type) == 'function' and b.Type() or b.Type or ''):lower()
+        if typeA ~= typeB then
+            return typeA < typeB and -1 or 1
+        end
+
+        local nameA = (type(a.Name) == "function" and a.Name() or a.Name):lower()
+        local nameB = (type(b.Name) == "function" and b.Name() or b.Name):lower()
+        if nameA == nameB then
+            if a.item.recordId == b.item.recordId then
+                return a.item.id < b.item.id and -1 or 1
+            end
+            return a.item.recordId < b.item.recordId and -1 or 1
+        end
+        return nameA < nameB and -1 or 1
+    end
+
+
+    local function hasFavorites()
+        for _, isFavorite in pairs(ctx.favoriteItems or {}) do
+            if isFavorite then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function getAvailableCategories()
+        local categories = I.InventoryExtender.getCategories()
+        local filteredCategories = {}
+        for _, category in ipairs(categories) do
+            if category.key ~= 'Favorites' or (self.target == omwself and hasFavorites()) then
+                table.insert(filteredCategories, category)
+            end
+        end
+        return filteredCategories
+    end
 
     self.categoryFilter = CategoryFilter.create({
             maxHeight = 72,
@@ -289,7 +448,7 @@ function Inventory:onOpened(wnd, data, saved)
         end)
 
     self.list = I.UIToolkit.Components.sortedList {
-        columns = ALL_COLUMNS(),
+        columns = ALL_COLUMNS(fallBackSort),
         size = v2(inner.x, inner.y - rowHeight - 10),
         noBorder = true,
     }
@@ -361,8 +520,13 @@ function Inventory:createData()
 
     local ctx = I.InventoryExtender.getContext()
 
+    ---@param item openmw.Object|{stacks:openmw.Object[], totalCount:number}
+    ---@param isBartered boolean
+    ---@param isVirtual boolean
+    ---@return InventoryExtenderRedone.RowData
     local function createRowData(item, isBartered, isVirtual)
-        local itemStack = isVirtual and item.stacks[1] or item
+        ---@type openmw.Object
+        local itemStack = isVirtual and item.stacks[1] or item --[[@as openmw.Object]]
 
         if not types.Item.isCarriable(itemStack) then return nil end
 
@@ -378,6 +542,7 @@ function Inventory:createData()
             end
         end
 
+        ---@type InventoryExtenderRedone.RowData
         local rowData = {
             id = itemStack.id,
             Name = helpers.getItemName(itemStack),

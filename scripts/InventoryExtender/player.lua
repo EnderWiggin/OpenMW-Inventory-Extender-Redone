@@ -168,7 +168,6 @@ local defaultCategories = {
             Class = true,
             AR = true,
             Damage = true,
-            Condition = true,
         },
     },
     {
