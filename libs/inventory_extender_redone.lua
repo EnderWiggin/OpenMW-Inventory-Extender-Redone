@@ -15,3 +15,5 @@
 ---@field Name string|fun():string
 ---@field Type string|fun():string
 ---@field isBartered boolean
+---@field showAsEnchanted fun():boolean
+---@field itemRecord {id:string, name:string, icon:string}

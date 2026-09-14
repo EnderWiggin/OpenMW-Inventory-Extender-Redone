@@ -39,6 +39,7 @@ end
 
 ---@type UIToolkit.ListItem.Column.Renderer
 local function iconRenderer(data, cfg, height)
+    ---@cast data InventoryExtenderRedone.RowData
     local width = cfg.width
     local sz = cfg.arg and cfg.arg.sz or math.min(height, width or height)
     local options = cfg.arg or {}
@@ -287,57 +288,51 @@ function Inventory:onOpened(wnd, data, saved)
     end)
 
     self.filter:add('barterFilter', function(row)
-        if I.UI.getMode() == 'Barter' then
-            if helpers.isGold(row.item) then
-                return false
-            end
+        if I.UI.getMode() ~= 'Barter' then return not row.isBartered end
 
-            if row.item.type.record(row.item).isKey then
-                return false
-            end
+        local item = row.item
+        if helpers.isGold(item) then return false end
 
-            local barterNpc = ctx.windowArgs.Trade
-            if not barterNpc then
-                return false
-            end
-            local services = barterNpc.type.record(barterNpc).servicesOffered
+        if item.type.record(item).isKey then return false end
 
-            if not services.MagicItems or not row.itemRecord.enchant then
-                for t, serviceName in pairs(constants.TypeToService) do
-                    if types[t].objectIsInstance(row.item) then
-                        if not services[serviceName] then
-                            return false
-                        end
-                        break
+        local barterNpc = self.arg
+        if not barterNpc then return false end
+        local services = barterNpc.type.record(barterNpc).servicesOffered
+
+        if not services.MagicItems or not row.itemRecord.enchant then
+            for t, serviceName in pairs(constants.TypeToService) do
+                if types[t].objectIsInstance(item) then
+                    if not services[serviceName] then
+                        return false
                     end
+                    break
                 end
             end
-
-            local buying = ctx.barterState.buying
-            local selling = ctx.barterState.selling
-
-            if self.type == 'Inventory' then
-                if row.isBartered then
-                    return buying[row.item.id] and buying[row.item.id].count > 0
-                end
-
-                local sellingCount = selling[row.item.id] and selling[row.item.id].count or 0
-                return row.getCount() > sellingCount
-            elseif self.type == 'Trade' then
-                if self.target.type.hasEquipped(self.target, row.item) then
-                    return false
-                end
-
-                if row.isBartered then
-                    return selling[row.item.id] and selling[row.item.id].count > 0
-                end
-
-                local buyingCount = buying[row.item.id] and buying[row.item.id].count or 0
-                return row.getCount() > buyingCount
-            end
-        else
-            return not row.isBartered
         end
+
+        local buying = ctx.barterState.buying
+        local selling = ctx.barterState.selling
+
+        if self.type == 'Inventory' then
+            if row.isBartered then
+                return buying[item.id] and buying[item.id].count > 0
+            end
+
+            local sellingCount = selling[item.id] and selling[item.id].count or 0
+            return row.getCount() > sellingCount
+        elseif self.type == 'Trade' then
+            if self.target.type.hasEquipped(self.target, item) then
+                return false
+            end
+
+            if row.isBartered then
+                return selling[item.id] and selling[item.id].count > 0
+            end
+
+            local buyingCount = buying[item.id] and buying[item.id].count or 0
+            return row.getCount() > buyingCount
+        end
+        return true
     end)
 
     self.filter:add('pickpocketVisibilityFilter', function(row)
@@ -499,8 +494,6 @@ function Inventory:onOpened(wnd, data, saved)
         },
         ---@param category InventoryExtenderRedone.Category
         function(category)
-            print('----', 'CATEGORY', helpers.deepPrint(category))
-
             if category.filter then
                 self.filter:add('category', function(row)
                     return category.filter(row.item)
@@ -513,6 +506,7 @@ function Inventory:onOpened(wnd, data, saved)
             self.list:setHiddenColumns(category.hiddenColumns)
 
             self:updateTitle()
+            --TODO: update sort column
         end, function(text)
             print('----', 'SEARCH', text)
         end)
@@ -528,6 +522,7 @@ function Inventory:onOpened(wnd, data, saved)
     local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
     if category then self.list:setHiddenColumns(category.hiddenColumns) end
     self.list:setItems(self:createData())
+    --TODO: update sort column
 
     wnd:setContent(ui.content {
         self.categoryFilter,
