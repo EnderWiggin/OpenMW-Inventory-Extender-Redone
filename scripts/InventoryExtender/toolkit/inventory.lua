@@ -18,6 +18,7 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
 local l10n = core.l10n('InventoryExtender')
+local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 
 
 local H              = require 'scripts.UIToolkit.helpers'
@@ -114,7 +115,7 @@ local function renderNumber(data, cfg, height)
     }
 
     ColumnItem.applySize(layout, cfg, height)
-    return ui.create(layout)
+    return layout
 end
 
 local function ALL_COLUMNS(defaultSort)
@@ -277,6 +278,75 @@ function Inventory:onOpened(wnd, data, saved)
         self.target = data
     end
     self.filter = CompoundFilter:new()
+    self.filter:add('draggedItemFilter', function(row)
+        local drag = ctx.dragAndDrop
+        if drag.draggingObject then
+            return row.item.id ~= drag.draggingObject.id or row.getCount() > drag.draggingCount
+        end
+        return true
+    end)
+
+    self.filter:add('barterFilter', function(row)
+        if I.UI.getMode() == 'Barter' then
+            if helpers.isGold(row.item) then
+                return false
+            end
+
+            if row.item.type.record(row.item).isKey then
+                return false
+            end
+
+            local barterNpc = ctx.windowArgs.Trade
+            if not barterNpc then
+                return false
+            end
+            local services = barterNpc.type.record(barterNpc).servicesOffered
+
+            if not services.MagicItems or not row.itemRecord.enchant then
+                for t, serviceName in pairs(constants.TypeToService) do
+                    if types[t].objectIsInstance(row.item) then
+                        if not services[serviceName] then
+                            return false
+                        end
+                        break
+                    end
+                end
+            end
+
+            local buying = ctx.barterState.buying
+            local selling = ctx.barterState.selling
+
+            if self.type == 'Inventory' then
+                if row.isBartered then
+                    return buying[row.item.id] and buying[row.item.id].count > 0
+                end
+
+                local sellingCount = selling[row.item.id] and selling[row.item.id].count or 0
+                return row.getCount() > sellingCount
+            elseif self.type == 'Trade' then
+                if self.target.type.hasEquipped(self.target, row.item) then
+                    return false
+                end
+
+                if row.isBartered then
+                    return selling[row.item.id] and selling[row.item.id].count > 0
+                end
+
+                local buyingCount = buying[row.item.id] and buying[row.item.id].count or 0
+                return row.getCount() > buyingCount
+            end
+        else
+            return not row.isBartered
+        end
+    end)
+
+    self.filter:add('pickpocketVisibilityFilter', function(row)
+        if self.type ~= 'Container' or I.UI.getMode() ~= 'Container' then
+            return true
+        end
+
+        return Pickpocket.isVisible(ctx.pickpocket, row.item)
+    end)
 
     local inner = wnd:getInnerSize()
     local theme = I.UIToolkit.getTheme()
