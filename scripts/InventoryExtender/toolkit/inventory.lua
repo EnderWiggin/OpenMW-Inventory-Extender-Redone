@@ -168,6 +168,7 @@ end
 ---@class IER.Inventory: UIToolkit.WindowHandler
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
+---@field wnd UIToolkit.Window
 local Inventory = Class(WindowHandler)
 
 function Inventory:init(type)
@@ -176,6 +177,8 @@ end
 
 function Inventory:onOpened(wnd, data, saved)
     self.arg = data
+    self.wnd = wnd
+
     if self.type == 'Inventory' then
         self.target = omwself
     else
@@ -200,6 +203,7 @@ function Inventory:onOpened(wnd, data, saved)
         getViewMode = getItemViewMode,
     }, function(category)
         print('----', 'CATEGORY', category)
+        self:updateTitle()
     end, function(text)
         print('----', 'SEARCH', text)
     end)
@@ -217,6 +221,12 @@ function Inventory:onOpened(wnd, data, saved)
         { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, rowHeight + 8), } },
         self.list.element,
     })
+    self:updateTitle()
+end
+
+function Inventory:onClosed()
+    self.wnd = nil
+    self.arg = nil
 end
 
 function Inventory:onResized(inner)
@@ -225,6 +235,38 @@ function Inventory:onResized(inner)
     local rowHeight = util.round(1.5 * (textSize + 2))
 
     self.list:setSize(inner - v2(0, rowHeight + 10))
+end
+
+function Inventory:getStorageSuffix()
+    if self.type ~= 'Inventory' then return nil end
+    local mode = I.UI.getMode()
+    if mode == 'Barter' or mode == 'Container' or mode == 'Companion' then
+        return ':' .. mode
+    end
+    return nil
+end
+
+---@private
+function Inventory:updateTitle()
+    local title
+    if I.UI.getMode() == 'Interface' then
+        title = helpers.getEquippedName(omwself)
+    else
+        local target = self.target or omwself
+        title = target.type.record(target).name
+    end
+
+    if configPlayer.tweaks.b_CompactCategoryFilter and self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
+        local categoryKey = self.categoryFilter.layout.userData.getCategory()
+        local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
+        if category and category.name then
+            title = title and (title .. ' - ' .. category.name) or category.name
+        end
+    end
+
+    if title then
+        self.wnd:setTitle(title)
+    end
 end
 
 ---@private
