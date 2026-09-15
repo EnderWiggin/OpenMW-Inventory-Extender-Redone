@@ -151,8 +151,8 @@ function ItemStackModal.create(params, ctx)
         }
     }}))
     ctx.modalElement.layout.events = {
-        mouseMove = async:callback(function(e, layout)
-            ctx.lastCursorPos = e.position
+        mouseMove = async:callback(function(e)
+            I.UIToolkit.setCursorPos(e.position)
             return true
         end),
     }

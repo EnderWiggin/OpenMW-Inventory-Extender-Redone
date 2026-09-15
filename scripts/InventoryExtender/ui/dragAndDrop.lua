@@ -1,3 +1,5 @@
+---@omw-context player
+
 local ui = require('openmw.ui')
 local core = require('openmw.core')
 local nearby = require('openmw.nearby')
@@ -32,7 +34,7 @@ local instantPickup = false
 local DragAndDrop = {}
 
 local function getViewportRaycastDistance(ctx)
-	local dist = core.getGMST("iMaxActivateDist") + camera.getThirdPersonDistance()
+    local dist = core.getGMST("iMaxActivateDist") + camera.getThirdPersonDistance()
     local telekinesis = types.Actor.activeEffects(omwself):getEffect(core.magic.EFFECT_TYPE.Telekinesis)
     if telekinesis then
         dist = dist + (telekinesis.magnitude * 22)
@@ -91,8 +93,8 @@ function DragAndDrop:startDrag(item, source, count, pickpocket, activationContex
         player = omwself,
         dragStart = true,
         pickpocket = pickpocket,
-    })   
-    
+    })
+
     self.source = omwself
     if configPlayer.misc.b_TooltipCompatibilityMode then
         self:setWrapperEnabled(true)
@@ -105,6 +107,15 @@ local function resetMode()
     DragAndDrop.ctx.resettingMode = true
     I.UI.removeMode(mode)
     I.UI.addMode(mode, modeArgs)
+end
+
+function DragAndDrop:updatePosition()
+    local icon = self.ctx.cursorAttachedIcon
+    if not icon then return end
+    local props = icon.layout.props
+    props.position = I.UIToolkit.getCursorPos()
+    props.visible = I.UIToolkit.cursorPosIsFresh()
+    I.UIToolkit.update(icon)
 end
 
 function DragAndDrop:setDraggingObject(object, doModeReset)
@@ -131,7 +142,7 @@ function DragAndDrop:setDraggingObject(object, doModeReset)
         layer = 'Notification',
         props = {
             size = v2(42, 42),
-            position = self.ctx.lastCursorPos or v2(0, 0),
+            position = I.UIToolkit.getCursorPos(),
         },
         content = ui.content {
             {
@@ -184,7 +195,7 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
             return false
         end
     end
-    
+
     if not helpers.doesItemFit(object, destination, count or self.draggingCount) then
         ui.showMessage(core.getGMST('sContentsMessage3')) -- "The item will not fit."
         return false
@@ -277,7 +288,7 @@ local function createObjectTooltip(hitObject, position, ctx)
     elseif ctx.isConsoleOpen then
         ctx.activeTooltip = ui.create(specialTemplates.lineTooltip('"' .. hitObject.recordId .. '"', hitObject.id))
     end
-    
+
     if ctx.activeTooltip then
         ctx.activeTooltip.layout.name = hitObject.id
         ctx.activeTooltip.layout.props.anchor = v2(absToRel(position).x, 0)
@@ -308,7 +319,7 @@ function DragAndDrop:dropAt(object, count, position)
     if configPlayer.misc.b_TooltipCompatibilityMode then
         self:setWrapperEnabled(false)
     end
-    
+
     omwself:sendEvent('BreakInvisibility')
 end
 
@@ -342,8 +353,8 @@ function DragAndDrop:dropAtFeet(object, count, callback)
                 callback()
             end
         end),
-        omwself.position + util.vector3(0, 0, omwself:getBoundingBox().halfSize.z), 
-        omwself.position + util.vector3(0, 0, -100000000000), 
+        omwself.position + util.vector3(0, 0, omwself:getBoundingBox().halfSize.z),
+        omwself.position + util.vector3(0, 0, -100000000000),
         { ignore = omwself }
     )
 end
@@ -361,7 +372,7 @@ function DragAndDrop:init(ctx)
     self.source = nil
     self.ctx = ctx
 
-    self.wrapper = ui.create{
+    self.wrapper = ui.create {
         layer = 'DragBlocker',
         props = {
             relativeSize = v2(0, 0),
@@ -382,7 +393,7 @@ function DragAndDrop:init(ctx)
         mouseMove = async:callback(function(e)
             local layerSize = ui.layers[ui.layers.indexOf('DragBlocker')].size
             self:getHoveredGameObject(v2(e.position.x / layerSize.x, e.position.y / layerSize.y))
-            self.ctx.lastCursorPos = e.position
+            I.UIToolkit.setCursorPos(e.position)
             -- Update tooltip based on hovered object
             if self.draggingObject then
                 if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
@@ -402,11 +413,11 @@ function DragAndDrop:init(ctx)
                         auxUi.deepDestroy(self.ctx.activeTooltip)
                         self.ctx.activeTooltip = nil
                     end
-                    
+
                     if self.hoveredObject then
                         createObjectTooltip(self.hoveredObject, e.position, self.ctx)
                     end
-                    
+
                     self.lastHoveredObject = self.hoveredObject
                 elseif self.ctx.activeTooltip and self.ctx.activeTooltip.layout and self.hoveredObject then
                     -- Same object, just update position
@@ -448,7 +459,7 @@ function DragAndDrop:init(ctx)
             end
         end),
         mousePress = async:callback(function(e)
-            if e.button ~= 1 then return end 
+            if e.button ~= 1 then return end
             if self.draggingObject then
                 if self.ctx.favoriteItems[self.draggingObject.id] == true then
                     ui.showMessage(l10n('UI_Msg_FavoriteItem'))
@@ -501,9 +512,9 @@ function DragAndDrop:_onRelease()
 
     if not self._lastInvState then return end
 
-    if self.draggingObject then 
+    if self.draggingObject then
         self._lastInvState = nil
-        return 
+        return
     end
 
     local instant = input.isAltPressed()
@@ -534,6 +545,7 @@ function DragAndDrop:onMouseButtonPress(button)
         self:_onPress()
     end
 end
+
 function DragAndDrop:onMouseButtonRelease(button)
     if button == 1 then
         self:_onRelease()
@@ -549,7 +561,7 @@ end
 function DragAndDrop:onControllerButtonRelease(id)
     if id == input.CONTROLLER_BUTTON.A then
         self:_onRelease()
-     end
+    end
 end
 
 return DragAndDrop

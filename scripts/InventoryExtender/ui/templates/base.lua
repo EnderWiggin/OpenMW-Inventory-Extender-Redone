@@ -765,12 +765,7 @@ Templates.window = function(title, content, draggable, onDrag, pinned, ctx)
             end),
             mouseMove = async:callback(function(e, layout)
                 userData.hadMouseMoveThisFrame = true
-                ctx.lastCursorPos = e.position
-                if ctx.cursorAttachedIcon then
-                    ctx.cursorAttachedIcon.layout.props.visible = true
-                    ctx.cursorAttachedIcon.layout.props.position = e.position
-                    ctx.cursorAttachedIcon:update() 
-                end
+                I.UIToolkit.setCursorPos(e.position)
                 if userData.dragging and userData.dragStartAbs and userData.dragStartSize and userData.dragStartPos then
                     local delta = e.position - userData.dragStartAbs
                     local layerSize = ui.layers[ui.layers.indexOf('Windows')].size

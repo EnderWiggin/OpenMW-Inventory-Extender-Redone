@@ -304,6 +304,10 @@ function WindowManager:onFrame()
         end
     end
 
+    if mouseMoved then
+        self.ctx.dragAndDrop:updatePosition()
+     end
+
     for _, window in pairs(self.windows) do
         -- Clear stale hovered row pos if mouse moved NOT over the element's item table
         if mouseMoved then

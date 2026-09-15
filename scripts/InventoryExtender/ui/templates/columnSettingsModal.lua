@@ -150,7 +150,7 @@ function ColumnSettingsModal.create(params, ctx)
     }))
     ctx.modalElement.layout.events = {
         mouseMove = async:callback(function(e)
-            ctx.lastCursorPos = e.position
+            I.UIToolkit.setCursorPos(e.position)
             return true
         end),
     }
