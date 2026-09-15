@@ -519,24 +519,26 @@ function Inventory:onOpened(wnd, data, saved)
             --TODO: update sort column
         end, function(text)
             print('----', 'SEARCH', text)
-        end)
+        end
+    )
 
+    local topBarHeight = self.categoryFilter:getSize().y
     self.list = I.UIToolkit.Components.sortedList {
         columns = ALL_COLUMNS(fallBackSort),
-        size = v2(inner.x, inner.y - rowHeight - 10),
+        size = v2(inner.x, inner.y - topBarHeight - 2),
         noBorder = true,
     }
-    self.list:updateProps { position = v2(0, rowHeight + 10) }
+    self.list:updateProps { position = v2(0, topBarHeight + 2) }
     self.list:setFilter(self.filter)
-    local categoryKey = self.categoryFilter.layout.userData.getCategory()
+    local categoryKey = self.categoryFilter:getCategory()
     local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
     if category then self.list:setHiddenColumns(category.hiddenColumns) end
     self.list:setItems(self:createData())
     --TODO: update sort column
 
     wnd:setContent(ui.content {
-        self.categoryFilter,
-        { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, rowHeight + 8), } },
+        self.categoryFilter.element,
+        { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, topBarHeight + 2), } },
         self.list.element,
     })
     self:updateTitle()
@@ -548,11 +550,9 @@ function Inventory:onClosed()
 end
 
 function Inventory:onResized(inner)
-    local theme = I.UIToolkit.getTheme()
-    local textSize = theme.Sizes.textNormal
-    local rowHeight = util.round(1.5 * (textSize + 2))
+    local topBarHeight = self.categoryFilter:getSize().y
 
-    self.list:setSize(inner - v2(0, rowHeight + 10))
+    self.list:setSize(inner - v2(0, topBarHeight + 2))
 end
 
 function Inventory:getStorageSuffix()
@@ -570,8 +570,8 @@ function Inventory:updateTitle()
         title = target.type.record(target).name
     end
 
-    if configPlayer.tweaks.b_CompactCategoryFilter and self.categoryFilter and self.categoryFilter.layout and self.categoryFilter.layout.userData.getCategory then
-        local categoryKey = self.categoryFilter.layout.userData.getCategory()
+    if configPlayer.tweaks.b_CompactCategoryFilter then
+        local categoryKey = self.categoryFilter:getCategory()
         local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
         if category and category.name then
             title = title and (title .. ' - ' .. category.name) or category.name

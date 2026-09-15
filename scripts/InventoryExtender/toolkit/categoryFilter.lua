@@ -16,9 +16,31 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 
 local l10n = core.l10n('InventoryExtender')
 
-local CategoryFilter = {}
 
+local H         = require 'scripts.UIToolkit.helpers'
+local Class     = require 'scripts.UIToolkit.class'
+local Component = require 'scripts.UIToolkit.components.component'
+
+
+---@class InventoryExtenderRedone.CategoryFilter : UIToolkit.Component
+---@field new fun(self:InventoryExtenderRedone.CategoryFilter):InventoryExtenderRedone.CategoryFilter
+local CategoryFilter = Class(Component)
+
+---@param props any
+---@param onCategoryChange any
+---@param onSearchChange any
+---@return InventoryExtenderRedone.CategoryFilter
 function CategoryFilter.create(props, onCategoryChange, onSearchChange)
+    local filter = CategoryFilter:new()
+    filter:init(props, onCategoryChange, onSearchChange)
+
+    return filter
+end
+
+---@param props any
+---@param onCategoryChange any
+---@param onSearchChange any
+function CategoryFilter:init(props, onCategoryChange, onSearchChange)
     local maxHeight = props.maxHeight or 48
     local compact = props.compact == true
     local vanillaStyle = props.vanillaStyle == true
@@ -71,66 +93,6 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
         end
     end
 
-    local function replaceSearchBar(text)
-        local indexOfBar = element.layout.content.topBar.content:indexOf('searchBar')
-        local indexOfProxy = element.layout.content.topBar.content:indexOf('searchBarProxy')
-
-        element.layout.content.topBar.content.searchBar = nil
-        element.layout.content.topBar.content.searchBarProxy = nil
-
-        element.layout.content.topBar.content:insert(indexOfBar, { name = 'searchBarProxy' })
-        element.layout.content.topBar.content:insert(indexOfProxy, createSearchBar(text))
-        ctx.updateQueue[element] = true
-    end
-
-    createSearchBar = function(text)
-        return {
-            name = 'searchBar',
-            template = I.MWUI.templates.box,
-            content = ui.content {
-                {
-                    name = 'padding',
-                    template = I.MWUI.templates.padding,
-                    content = ui.content {
-                        {
-                            name = 'textEdit',
-                            template = baseTemplates.textEditLine,
-                            props = {
-                                size = v2(200, topBarHeight - 12),
-                                text = text,
-                                textColor = text == placeholder and constants.Colors.DISABLED or constants.Colors.DEFAULT,
-                            },
-                            events = {
-                                textChanged = async:callback(function(text, layout)
-                                    layout.props.text = text
-                                    if layout.props.textColor == constants.Colors.DISABLED then
-                                        layout.props.textColor = constants.Colors.DEFAULT
-                                        element:update()
-                                    end
-                                    if onSearchChange then
-                                        onSearchChange(text)
-                                    end
-                                end),
-                                focusGain = async:callback(function(_, layout)
-                                    if layout.props.text == placeholder then
-                                        layout.props.text = ''
-                                        element:update()
-                                    end
-                                end),
-                                focusLoss = async:callback(function(_, layout)
-                                    if layout.props.text == '' then
-                                        layout.props.text = placeholder
-                                    end
-                                    replaceSearchBar(layout.props.text)
-                                end),
-                            }
-                        }
-                    }
-                }
-            },
-        }
-    end
-
     local categoryBarLayout = {
         name = 'categoryBar',
         template = configPlayer.tweaks.b_CategoryBarBorders and I.MWUI.templates.borders or nil,
@@ -148,6 +110,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
             position = compact and v2(0, 0) or v2(0, topBarHeight + 8),
             size = v2(0, categoryBarHeight),
             anchor = compact and nil or v2(0.5, 0),
+            relativeSize = compact and nil or v2(1, 0),
             relativePosition = compact and nil or v2(0.5, 0),
         },
         external = compact and { grow = 1, stretch = 1, } or nil,
@@ -172,21 +135,24 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
             external = { grow = 1, stretch = 1, }
         })
     end
-    topBarContent:add(createSearchBar(placeholder))
-    topBarContent:add({
-        name = 'searchBarProxy', -- when destroying the search bar, flip the indices of these to force focus loss and free the keyboard
-    })
+    topBarContent:add(I.UIToolkit.Components.textEdit {
+        width = 200,
+        placeholder = placeholder,
+        onValueChanged = onSearchChange,
+        showClearButton = true,
+    }.element)
     if props.onOpenSettings then
         topBarContent:add(baseTemplates.intervalH(4))
         topBarContent:add(specialTemplates.interactive({
-            onClick = function()
-                props.onOpenSettings()
-            end,
-            tooltipFn = function()
-                return specialTemplates.lineTooltip(l10n('UI_Tooltip_ColumnSettings'))
-            end,
-            name = 'columnSettings',
-        }, baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), toolbarButtonSize, nil, 'columnSettingsButton'),
+                onClick = function()
+                    props.onOpenSettings()
+                end,
+                tooltipFn = function()
+                    return specialTemplates.lineTooltip(l10n('UI_Tooltip_ColumnSettings'))
+                end,
+                name = 'columnSettings',
+            },
+            baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), toolbarButtonSize, nil, 'columnSettingsButton'),
             ctx))
     end
     if props.onToggleView and configPlayer.window.b_ShowViewModeButton then
@@ -198,7 +164,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
             end,
             tooltipFn = function()
                 local text = getViewMode() == 'ItemViewMode_Grid' and l10n('UI_Tooltip_TableView') or
-                l10n('UI_Tooltip_GridView')
+                    l10n('UI_Tooltip_GridView')
                 return specialTemplates.lineTooltip(text)
             end,
             name = 'viewModeToggle',
@@ -224,6 +190,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
     local state = {
         selectedCategory = nil,
     }
+    self.state = state
 
     local function getCategories()
         if props.getCategories then
@@ -242,17 +209,16 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
         return category.icon
     end
 
-    element = ui.create({
+    element = ui.create {
         props = {
             size = v2(0, elementHeight),
             relativeSize = v2(1, 0),
         },
-        content = compact and ui.content { topBarLayout } or ui.content {
-            topBarLayout,
-            categoryBarLayout,
-        },
+        content = compact
+            and ui.content { topBarLayout }
+            or ui.content { topBarLayout, categoryBarLayout, },
         userData = {},
-    })
+    }
 
     local updateCategories
 
@@ -316,7 +282,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
             local isDisabled = isCategoryDisabled(category, categoryDisabledLookup)
             local iconSize = v2(categoryBarHeight - compactIconPadding, categoryBarHeight - compactIconPadding)
             local iconAlpha = isSelected and vanillaOpacityStates.active or
-            ((isDisabled and not isSelected) and vanillaOpacityStates.disabled or vanillaOpacityStates.default)
+                ((isDisabled and not isSelected) and vanillaOpacityStates.disabled or vanillaOpacityStates.default)
             local buttonContent
             local categoryIconPath = getCategoryIconPath(category)
 
@@ -402,7 +368,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
 
         if not compact then
             element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and
-            (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
+                (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
         end
 
         updateViewModeButton()
@@ -471,7 +437,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
     end
     element.layout.userData.clearSearch = clearSearch
 
-    local function cycleCategory(i)
+    function self.cycleCategory(self, i)
         local categories = getCategories()
         if #categories == 0 then return end
         local buttons = getCategoryBarContent()
@@ -496,7 +462,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
 
             local button = buttons[newIndex]
             local isDisabled = button and button.layout and button.layout.userData and button.layout.userData.disabled or
-            false
+                false
             if not isDisabled then
                 foundEnabled = true
                 break
@@ -513,12 +479,9 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
         else
             updateCategories()
         end
-
-        replaceSearchBar(element.layout.content.topBar.content.searchBar.content.padding.content.textEdit.props.text)
     end
-    element.layout.userData.cycleCategory = cycleCategory
 
-    element.layout.userData.setCategory = function(categoryKey)
+    function self.setCategory(self, categoryKey)
         local categories = getCategories()
         local categoryDisabledLookup = props.getCategoryDisabledLookup and props.getCategoryDisabledLookup() or nil
         local resolvedCategoryKey = resolveCategoryKey(categoryKey, categories, categoryDisabledLookup)
@@ -532,11 +495,15 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
         end
     end
 
-    element.layout.userData.getCategory = function()
-        return state.selectedCategory
-    end
+    Component.init(self, element)
+end
 
-    return element
+function CategoryFilter:getCategory()
+    return self.state.selectedCategory
+end
+
+function CategoryFilter:getSize()
+    return self.element.layout.props.size
 end
 
 return CategoryFilter
