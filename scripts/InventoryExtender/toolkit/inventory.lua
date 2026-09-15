@@ -1073,20 +1073,23 @@ function Inventory:createData()
                 end
                 return false
             end,
-            disabledFn = function()
-                if not isBartered and I.UI.getMode() == 'Container' and self.type == 'Inventory' then
-                    local container = ctx.windowArgs.Container
+            isDisabled = function()
+                if not isBartered and self.type == 'Inventory' and I.UI.getMode() == 'Container' then
+                    local container = self.arg
                     if Container.objectIsInstance(container) and Container.record(container).isOrganic then
                         return true
                     end
-                    return not helpers.doesItemFit(itemStack, ctx.windowArgs.Container, 1)
+                    return not helpers.doesItemFit(itemStack, container, 1)
                 end
+                return false
             end,
         }
 
-        -- if isBartered then
-        --     rowData.activeFn = function() return true end
-        -- end
+        --[[ uncomment to have bartered items look active
+        if isBartered then
+            rowData.isActive = function() return true end
+        end
+        ]]
 
         return rowData
     end
