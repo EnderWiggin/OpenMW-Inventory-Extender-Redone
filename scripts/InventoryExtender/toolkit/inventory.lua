@@ -20,6 +20,7 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local barterUtils = require('scripts.InventoryExtender.util.barter')
 local constants = require('scripts.InventoryExtender.util.constants')
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
 local l10n = core.l10n('InventoryExtender')
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal') --TODO: change to UI Toolkit popup
@@ -39,6 +40,10 @@ end
 
 local function shouldShowEnchantedSwirl(forceEnchantSwirl)
     return forceEnchantSwirl or getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Icon'
+end
+
+local function shouldShowEnchantedNameIcon()
+    return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Swirl'
 end
 
 ---@type UIToolkit.ListItem.Column.Renderer
@@ -123,7 +128,54 @@ local function renderNumber(data, cfg, height)
     return layout
 end
 
-local function ALL_COLUMNS(defaultSort)
+local function getNonDraggedCount(row, type)
+    local nonDraggedCount = row.getCount()
+    local ctx = I.InventoryExtender.getContext()
+
+    local drag = ctx.dragAndDrop
+    if drag.draggingObject and drag.draggingObject.id == row.item.id then
+        nonDraggedCount = nonDraggedCount - drag.draggingCount
+    end
+
+    if I.UI.getMode() == 'Barter' then
+        local buying = ctx.barterState.buying
+        local selling = ctx.barterState.selling
+        if row.isBartered then
+            if type == 'Inventory' then
+                nonDraggedCount = (buying[row.item.id] or {}).count or 0
+            else
+                nonDraggedCount = (selling[row.item.id] or {}).count or 0
+            end
+        else
+            if type == 'Inventory' then
+                nonDraggedCount = nonDraggedCount - ((selling[row.item.id] or {}).count or 0)
+            elseif type == 'Trade' then
+                nonDraggedCount = nonDraggedCount - ((buying[row.item.id] or {}).count or 0)
+            end
+        end
+    end
+
+    return nonDraggedCount
+end
+
+local function isStealing(actor, ownerInfo)
+    if not ownerInfo then return false end
+
+    if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
+        return true
+    end
+
+    if ownerInfo.factionId then
+        local reqRank = ownerInfo.factionRank or 1
+        if types.NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
+            return true
+        end
+    end
+    return false
+end
+
+
+local function ALL_COLUMNS(defaultSort, nameRenderer)
     local theme = I.UIToolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local lineHeight = textSize + 2
@@ -142,7 +194,7 @@ local function ALL_COLUMNS(defaultSort)
             id = 'Name',
             name = l10n('Column_Name'),
             sort = { numeric = false },
-            render = ColumnItem.renderText,
+            render = nameRenderer,
         },
         {
             id = 'Type',
@@ -388,6 +440,8 @@ function Inventory:onOpened(wnd, data, saved)
     local theme = I.UIToolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local rowHeight = util.round(1.5 * (textSize + 2))
+    local T = I.UIToolkit.Templates
+    local texture = I.UIToolkit.texture
 
     local function isFavorited(item)
         return item ~= nil and ctx.favoriteItems[item.id] == true
@@ -585,6 +639,107 @@ function Inventory:onOpened(wnd, data, saved)
             and not row.isBartered
             and isFavorited(row.item)
             and I.UI.getMode() ~= 'Interface'
+    end
+
+    local function getItemBadgeState(row)
+        local favorite = isFavorited(row.item)
+        local stolen = false
+
+        if configPlayer.tweaks.b_StolenIndicator then
+            if self.type == 'Inventory' and ctx.stolenItems then
+                stolen = ctx.stolenItems[row.item.recordId] ~= nil
+            elseif self.type == 'Container' then
+                if ctx.pickpocket and ctx.pickpocket.active then
+                    stolen = true
+                elseif types.Container.objectIsInstance(self.target) then
+                    stolen = isStealing(omwself, self.target.owner)
+                end
+            end
+        end
+
+        return {
+            favorite = favorite,
+            stolen = stolen,
+        }
+    end
+    ---@type UIToolkit.ListItem.Column.Renderer
+    local function nameRenderer(row, cfg, height)
+        ---@cast row InventoryExtenderRedone.RowData
+        local nonDraggedCount = getNonDraggedCount(row)
+
+        local text = helpers.getItemName(row.item) ..
+            (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
+
+        local badgeState = getItemBadgeState(row)
+        local enchanted = false
+        if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
+            enchanted = true
+        end
+
+        local content = ui.content {
+            {
+                template = T.text(),
+                props = {
+                    text = text,
+                },
+                userData = {
+                    colorable = true,
+                }
+            },
+        }
+        local iconSize = math.min(rowHeight, 12)
+        if badgeState.favorite then
+            content:add(T.intervalH(8))
+            content:add({
+                type = ui.TYPE.Image,
+                props = {
+                    resource = texture(iconPack.getPath('item/favorited.dds')),
+                    size = v2(iconSize, iconSize),
+                    color = constants.Colors.GOLD,
+                },
+            })
+        end
+        if badgeState.stolen then
+            content:add(T.intervalH(8))
+            content:add({
+                type = ui.TYPE.Image,
+                props = {
+                    resource = texture(iconPack.getPath('item/stolen.dds')),
+                    size = v2(iconSize, iconSize),
+                    color = constants.Colors.DAMAGED,
+                },
+            })
+        end
+        if enchanted then
+            content:add(T.intervalH(8))
+            content:add({
+                type = ui.TYPE.Image,
+                props = {
+                    resource = texture(iconPack.getPath('item/enchanted.dds')),
+                    size = v2(iconSize, iconSize),
+                    color = constants.Colors.BAR_MAGIC,
+                },
+            })
+        end
+
+        local layout = {
+            name = 'Name',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+                autoSize = false,
+            },
+            content = content,
+            userData = {
+                text = text,
+                favorite = badgeState.favorite,
+                stolen = badgeState.stolen,
+                enchanted = enchanted,
+            }
+        }
+        ColumnItem.applySize(layout, cfg, height)
+        return layout
     end
 
     local onRowUse, onRowPickup
@@ -786,7 +941,7 @@ function Inventory:onOpened(wnd, data, saved)
 
     local topBarHeight = self.categoryFilter:getSize().y
     self.list = I.UIToolkit.Components.sortedList {
-        columns = ALL_COLUMNS(fallBackSort),
+        columns = ALL_COLUMNS(fallBackSort, nameRenderer),
         size = v2(inner.x, inner.y - topBarHeight - 2),
         noBorder = true,
         onItemClicked = function(data, idx)
