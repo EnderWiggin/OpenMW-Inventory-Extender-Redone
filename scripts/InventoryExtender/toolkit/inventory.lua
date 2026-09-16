@@ -364,7 +364,8 @@ function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
     self.suffix = getStorageSuffix(self.type)
-    local ctx = I.InventoryExtender.getContext()
+    local IE = I.InventoryExtender
+    local ctx = IE.getContext()
 
     if self.type == 'Inventory' then
         self.target = omwself
@@ -516,7 +517,7 @@ function Inventory:onOpened(wnd, data, saved)
         end
 
         -- Second, sort by Category
-        local categories = I.InventoryExtender.getCategories()
+        local categories = IE.getCategories()
         local indexA, indexB = nil, nil
         for i, category in ipairs(categories) do
             if category.key ~= 'Favorites' then
@@ -565,7 +566,7 @@ function Inventory:onOpened(wnd, data, saved)
     end
 
     local function getAvailableCategories()
-        local categories = I.InventoryExtender.getCategories()
+        local categories = IE.getCategories()
         local filteredCategories = {}
         for _, category in ipairs(categories) do
             if category.key ~= 'Favorites' or (self.target == omwself and hasFavorites()) then
@@ -951,7 +952,7 @@ function Inventory:onOpened(wnd, data, saved)
     self.list:updateProps { position = v2(0, topBarHeight + 2) }
     self.list:setFilter(self.filter)
     local categoryKey = self.categoryFilter:getCategory()
-    local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
+    local category = categoryKey and IE.getCategory(categoryKey)
     if category then self.list:setHiddenColumns(category.hiddenColumns) end
     self.list:setItems(self:createData())
     --TODO: update sort column
