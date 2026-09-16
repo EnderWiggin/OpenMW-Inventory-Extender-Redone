@@ -1,3 +1,21 @@
+1.2.0 (16.09.26) Most of these changes were released way earlier as unversioned tweaks
+- fixed errors happening if controller shoulder button is pressed while inventory is not open
+- distinguish left and right apparel in type column
+- new API to disable all windows (requested by Quick Loot mod to facilitate activation of scripted containers)
+- added setting to scale icons in grid mode
+- made modified alchemy determine known effects, like in vanilla
+- fixed some TR Data ingredients not displaying all their effects because they have gaps in effects
+- do not send mercantile skillUsed if skillGain is 0 - same as vanilla
+- scale effect, value, weight and armor class icons with text size
+- fixed wrong Mercantile skill gains
+- fixed merchants not selling not-equipped items that have same item record as the ones they have equipped
+- show proper message when trying to sell/buy/store summoned items
+- added option for tooltips to show stolen item details
+- fixed no stolen indicator for items in owned containers
+- added option to ignore container capacity (in Gameplay section)
+- send skill use when successfully pickpocketing item
+- vanilla parity: do not consider items and containers being owned it they have global variable and that variable has non 0 value
+
 1.1.0 (6/4/26)
 - Added Russian localization by Sergey Rudyi
 
