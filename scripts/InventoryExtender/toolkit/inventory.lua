@@ -158,8 +158,14 @@ local function getNonDraggedCount(row, type)
     return nonDraggedCount
 end
 
-local function isStealing(actor, ownerInfo)
+local function isStealing(actor, ownerInfo, variable)
     if not ownerInfo then return false end
+
+    local ctx = I.InventoryExtender.getContext()
+    if variable then
+        local value = ctx.containerVariables[variable]
+        if value and value ~= 0 then return false end
+    end
 
     if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
         return true
@@ -653,7 +659,7 @@ function Inventory:onOpened(wnd, data, saved)
                 if ctx.pickpocket and ctx.pickpocket.active then
                     stolen = true
                 elseif types.Container.objectIsInstance(self.target) then
-                    stolen = isStealing(omwself, self.target.owner)
+                    stolen = isStealing(omwself, self.target.owner, self.target.globalVariable)
                 end
             end
         end
