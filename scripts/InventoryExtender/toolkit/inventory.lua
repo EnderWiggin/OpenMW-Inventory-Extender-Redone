@@ -987,6 +987,10 @@ function Inventory:getStorageSuffix()
     return getStorageSuffix(self.type)
 end
 
+function Inventory:update()
+    self.list:filter()
+end
+
 ---@private
 function Inventory:updateTitle()
     local title

@@ -16,8 +16,6 @@ local constants = require("scripts.InventoryExtender.util.constants")
 local helpers = require("scripts.InventoryExtender.util.helpers")
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
 
-local InvHandler = require 'scripts.InventoryExtender.toolkit.inventory'
-
 local l10n = core.l10n('InventoryExtender')
 
 local function isFavorited(item)
@@ -40,15 +38,6 @@ local function init()
             'Companion',
         }
         for _, windowName in ipairs(overrides) do
-            local handler = InvHandler:new()
-            handler:init(windowName)
-            I.UIToolkit.WindowManager.register('InventoryExtender:' .. windowName, {
-                title = windowName, --TODO: l10n
-                handler = handler,
-                draggable = true,
-                resizing = true,
-                pinnable = false, --TODO: set this
-            })
             I.UI.registerWindow(windowName, function(arg) API.show(windowName, arg) end,
                 function(arg) API.hide(windowName, arg) end)
         end

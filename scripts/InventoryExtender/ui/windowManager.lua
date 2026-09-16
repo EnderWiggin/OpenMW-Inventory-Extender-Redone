@@ -1,3 +1,5 @@
+---@omw-context player
+
 local core = require('openmw.core')
 local ui = require('openmw.ui')
 local auxUi = require('openmw_aux.ui')
@@ -14,6 +16,10 @@ local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 
 local DragAndDrop = require('scripts.InventoryExtender.ui.dragAndDrop')
 local InventoryWindow = require('scripts.InventoryExtender.ui.windows.inventory')
+
+
+local InvHandler = require 'scripts.InventoryExtender.toolkit.inventory'
+
 
 local validDragModes = {
     Interface = true,
@@ -80,17 +86,32 @@ local showing = {
     Companion = false,
 }
 
+local allToolkitWindows = {}
+
 function WindowManager:create(windowName)
     if windowName == 'Inventory' or windowName == 'Container' or windowName == 'Trade' or windowName == 'Companion' then
         self.windows[windowName] = InventoryWindow:create(windowName, self.ctx)
     end
-    
+
     return self.windows[windowName]
 end
 
 function WindowManager:init()
-    for _, windowName in ipairs{"Inventory", "Trade", "Container", "Companion"} do
+    for _, windowName in ipairs { "Inventory", "Trade", "Container", "Companion" } do
         self:create(windowName)
+        local handler = InvHandler:new()
+        handler:init(windowName)
+
+        local windowId = 'InventoryExtender:' .. windowName
+        allToolkitWindows[#allToolkitWindows + 1] = windowId
+        I.UIToolkit.WindowManager.register(windowId, {
+            title = windowName,
+            handler = handler,
+            draggable = true,
+            resizing = true,
+            pinnable = false, --TODO: set this
+            minSize = v2(200, 60),
+        })
     end
 end
 
@@ -119,6 +140,14 @@ function WindowManager:update()
             else
                 window:update()
             end
+        end
+    end
+    local manager = I.UIToolkit.WindowManager
+    for i = 1, #allToolkitWindows do
+        local wnd = manager.getHandler(allToolkitWindows[i])
+        if wnd then
+            ---@cast wnd IER.Inventory
+            wnd:update()
         end
     end
     if self.ctx.activeTooltip then
@@ -213,7 +242,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
 
     if newMode == nil and oldMode == 'Container' and self.ctx.windowArgs.Container then
         if self.ctx.pickpocket and self.ctx.pickpocket.active and not self.ctx.pickpocket.resolved and
-           Pickpocket.isTarget(self.ctx.windowArgs.Container) then
+            Pickpocket.isTarget(self.ctx.windowArgs.Container) then
             local success = Pickpocket.rollClose(omwself, self.ctx.windowArgs.Container)
             if not success then
                 core.sendGlobalEvent('IE_CommitPickpocket', {
@@ -236,7 +265,8 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         self.ctx.activeTooltip = nil
     end
     if self.ctx.dragAndDrop.wrapper then
-        self.ctx.dragAndDrop:setWrapperEnabled(not configPlayer.misc.b_TooltipCompatibilityMode and validDragModes[newMode])
+        self.ctx.dragAndDrop:setWrapperEnabled(not configPlayer.misc.b_TooltipCompatibilityMode and
+            validDragModes[newMode])
         self.ctx.dragAndDrop.lastHoveredObject = nil
     end
     self.ctx.dragAndDrop:stopDrag()
@@ -287,7 +317,7 @@ function WindowManager:onFrame()
         else
             self.ctx.focusedInteractive = self.ctx.focusedInteractiveDelayed
         end
-        self.ctx.focusedInteractiveDelayed = nil 
+        self.ctx.focusedInteractiveDelayed = nil
     end
 
     for element in pairs(self.ctx.updateQueue) do
@@ -307,7 +337,7 @@ function WindowManager:onFrame()
 
     if mouseMoved then
         self.ctx.dragAndDrop:updatePosition()
-     end
+    end
 
     for _, window in pairs(self.windows) do
         -- Clear stale hovered row pos if mouse moved NOT over the element's item table
@@ -418,7 +448,8 @@ function WindowManager:onKeyPress(key)
 
     if key.code == input.KEY.A or key.code == input.KEY.D then
         if focusedWindow and focusedWindow.categoryFilter then
-            local direction = key.code == input.KEY.A and input.CONTROLLER_BUTTON.LeftShoulder or input.CONTROLLER_BUTTON.RightShoulder
+            local direction = key.code == input.KEY.A and input.CONTROLLER_BUTTON.LeftShoulder or
+                input.CONTROLLER_BUTTON.RightShoulder
             focusedWindow:onControllerButtonPress(direction)
             return true
         end
@@ -439,7 +470,8 @@ function WindowManager:onKeyPress(key)
 
     if configPlayer.keybinds.b_SwapUsePickup and WindowManager.ctx.dragAndDrop.draggingObject then
         if focusedWindow and focusedWindow.target then
-            local state = focusedWindow.itemTable and focusedWindow.itemTable.layout and focusedWindow.itemTable.layout.userData.getState and focusedWindow.itemTable.layout.userData.getState()
+            local state = focusedWindow.itemTable and focusedWindow.itemTable.layout and
+                focusedWindow.itemTable.layout.userData.getState and focusedWindow.itemTable.layout.userData.getState()
             if state and state.lastPointerRowPos ~= nil then
                 state.lastUsedRowPos = state.lastPointerRowPos
             end
