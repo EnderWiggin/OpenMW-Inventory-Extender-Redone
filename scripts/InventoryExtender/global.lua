@@ -16,9 +16,17 @@ local function queueDelayedJob(func, frameDelay)
     table.insert(delayedJobs, { func = func, frameDelay = frameDelay })
 end
 
-local function isStealing(actor, ownerInfo)
+---@param actor any
+---@param ownerInfo any
+---@param globalVariable string?
+local function isStealing(actor, ownerInfo, globalVariable)
     if not ownerInfo then
         return false
+    end
+    if globalVariable then
+        local globals = world.mwscript.getGlobalVariables(actor)
+        local value = globals[globalVariable]
+        if value and value ~= 0 then return false end
     end
     local victim = {}
     if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
@@ -154,7 +162,7 @@ local function moveInto(props)
     end
 
     local sourceIsCompanion = props.source and isCompanion(props.source)
-    local ownerInfo
+    local ownerInfo, globalVariable
     if props.pickpocket and props.pickpocket.target then
         ownerInfo = {
             recordId = props.pickpocket.target.recordId,
@@ -163,10 +171,12 @@ local function moveInto(props)
         ownerInfo = nil
     elseif props.source and types.Container.objectIsInstance(props.source) then
         ownerInfo = props.source.owner
+        globalVariable = props.source.globalVariable
     else
         ownerInfo = obj.owner
+        globalVariable = obj.globalVariable
     end
-    local victimInfo = isStealing(props.player, ownerInfo)
+    local victimInfo = isStealing(props.player, ownerInfo, globalVariable)
     local victimActor
     if victimInfo then
         if victimInfo.recordId then
@@ -274,7 +284,7 @@ local function moveAll(props)
     local sourceInv = props.source.type.inventory(props.source)
     local items = props.items or sourceInv:getAll()
 
-    local victimInfo = isStealing(props.player, props.source.owner)
+    local victimInfo = isStealing(props.player, props.source.owner, props.source.globalVariable)
     local victimActor
     if victimInfo then
         if victimInfo.recordId then
@@ -317,7 +327,7 @@ local checkStolenNextNextUpdate = {}
 local checkStolenBooks = {}
 local function onItemActivated(item, actor)
     if not types.Item.isCarriable(item) then return true end
-    local victim = isStealing(actor, item.owner)
+    local victim = isStealing(actor, item.owner, item.globalVariable)
     if victim and not helpers.isGold(item) then
         if types.Book.objectIsInstance(item) then
             checkStolenBooks[actor.id] = checkStolenBooks[actor.id] or {}
@@ -328,6 +338,17 @@ local function onItemActivated(item, actor)
             table.insert(checkStolenNextNextUpdate[actor.id], { actor = actor, item = item, victim = victim, prevCount = actor.type.inventory(actor):countOf(item.recordId) })
         end
     end
+end
+
+local function onContainerActivated(container, actor)
+    if not types.Player.objectIsInstance(actor) then return true end
+
+    local globalVariable = container.globalVariable
+    if not globalVariable then return true end
+
+    local globals = world.mwscript.getGlobalVariables(actor)
+    actor:sendEvent('IE_ContainerVariable', { key = globalVariable, value = globals[globalVariable] })
+    return true
 end
 
 local lastItemPickedUp = nil
@@ -431,6 +452,8 @@ for _, type in pairs(types) do
         I.Activation.addHandlerForType(type, onItemActivated)
     end
 end
+
+I.Activation.addHandlerForType(types.Container, onContainerActivated)
 
 local function initChestLocks()
     local prisonCells = CellUtils.getPrisonCells()
@@ -659,7 +682,7 @@ local eventHandlers = {
     IE_OwnedItemInactive = function(props)
         if lastItemPickedUp then
             if props.recordId == lastItemPickedUp.recordId and props.owner then
-                local victim = isStealing(lastItemPickedUp.player, props.owner)
+                local victim = isStealing(lastItemPickedUp.player, props.owner, props.globalVariable)
                 if victim and not helpers.isGold(props.recordId) then
                     lastItemPickedUp.player:sendEvent('IE_StoleItem', { recordId = props.recordId, count = lastItemPickedUp.count, victim = victim })
                     lastItemPickedUp.player:sendEvent('IE_Update')

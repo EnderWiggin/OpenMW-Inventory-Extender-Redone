@@ -327,8 +327,13 @@ function Inventory:create(windowType, ctx)
         return nonDraggedCount
     end
 
-    local function isStealing(actor, ownerInfo)
+    local function isStealing(actor, ownerInfo, variable)
         if not ownerInfo then return false end
+
+        if variable then
+            local value = self.ctx.containerVariables[variable]
+            if value and value ~= 0 then return false end
+        end
 
         if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
             return true
@@ -354,7 +359,7 @@ function Inventory:create(windowType, ctx)
                 if self.ctx.pickpocket and self.ctx.pickpocket.active then
                     stolen = true
                 elseif types.Container.objectIsInstance(self.target) then
-                    stolen = isStealing(omwself, self.target.owner)
+                    stolen = isStealing(omwself, self.target.owner, self.target.globalVariable)
                 end
             end
         end
@@ -877,6 +882,8 @@ function Inventory:create(windowType, ctx)
                     })
                     I.UI.removeMode('Container')
                     return false
+                else
+                    omwself:sendEvent('IE_PickpocketSuccess', { item = row.item, target = self.target })
                 end
             end
 
