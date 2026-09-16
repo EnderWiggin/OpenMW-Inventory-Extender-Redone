@@ -43,32 +43,30 @@ local function getClosestMarkerFromExteriorPosition(position)
     local minGridSize = math.huge
 
     for _, marker in ipairs(validMarkers) do
-        if marker.cell then -- Skip interior markers
-            goto continue
-        end
-        local deltaX = marker.x - cellX
-        local deltaY = marker.y - cellY
-        local gridSize = math.max(math.abs(deltaX), math.abs(deltaY)) * 2
+        if not marker.cell then
+            local deltaX = marker.x - cellX
+            local deltaY = marker.y - cellY
+            local gridSize = math.max(math.abs(deltaX), math.abs(deltaY)) * 2
 
-        if gridSize == 0 then
-            -- Immediate match, check existence now as it's the best possible case
-            local success = pcall(world.getCellById, marker.interior)
-            if success then
-                return marker
+            if gridSize == 0 then
+                -- Immediate match, check existence now as it's the best possible case
+                local success = pcall(world.getCellById, marker.interior)
+                if success then
+                    return marker
+                end
+            elseif gridSize <= minGridSize then
+                -- Collect candidates without checking existence yet
+                if gridSize < minGridSize then
+                    bestMarkers = {}
+                    minGridSize = gridSize
+                end
+                table.insert(bestMarkers, {
+                    marker = marker,
+                    col = gridSize / 2 + deltaX,
+                    row = gridSize / 2 + deltaY
+                })
             end
-        elseif gridSize <= minGridSize then
-            -- Collect candidates without checking existence yet
-            if gridSize < minGridSize then
-                bestMarkers = {}
-                minGridSize = gridSize
-            end
-            table.insert(bestMarkers, {
-                marker = marker,
-                col = gridSize / 2 + deltaX,
-                row = gridSize / 2 + deltaY
-            })
         end
-        ::continue::
     end
 
     if #bestMarkers == 0 then
