@@ -70,6 +70,7 @@ WindowManager.ctx = {
     companionProfit = {},
     pickpocket = nil,
     updateQueue = {},
+    containerVariables = {},
 }
 
 local showing = {
