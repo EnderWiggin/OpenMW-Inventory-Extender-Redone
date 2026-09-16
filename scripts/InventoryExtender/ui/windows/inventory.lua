@@ -875,6 +875,8 @@ function Inventory:create(windowType, ctx)
                     })
                     I.UI.removeMode('Container')
                     return false
+                else
+                    omwself:sendEvent('IE_PickpocketSuccess', { item = row.item, target = self.target })
                 end
             end
 
