@@ -248,6 +248,10 @@ local eventHandlers = {
             useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
         })
     end,
+    IE_ContainerVariable = function(data)
+        windowManager.ctx.containerVariables[data.key] = data.value
+        self:sendEvent('IE_Update')
+    end,
 }
 -- deprecated event names
 eventHandlers.MI_StoleItem = eventHandlers.IE_StoleItem

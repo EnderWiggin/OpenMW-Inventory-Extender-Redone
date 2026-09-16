@@ -16,6 +16,7 @@ return {
                 core.sendGlobalEvent('IE_OwnedItemInactive', {
                     recordId = self.recordId,
                     owner = owner,
+                    globalVariable = self.globalVariable,
                 })
             end
         end
