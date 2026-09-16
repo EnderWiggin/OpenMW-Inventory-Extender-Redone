@@ -181,43 +181,47 @@ local function autoEquipArmor(slots)
         return oldArmorType >= newArmorType
     end
 
-    for _, item in ipairs(types.Actor.inventory(self):getAll()) do
+    local function processItem(item)
         local isArmor = types.Armor.objectIsInstance(item)
         local isClothing = actorIsNpc and types.Clothing.objectIsInstance(item)
 
-        if isArmor or isClothing then
-            if isArmor then
-                local armorRecord = item.type.record(item)
-                if actorIsNpc then
-                    if (I.Combat.getEffectiveArmorRating(item, self) or 0) <= unarmoredRating then
-                        goto continue
-                    end
-                elseif armorRecord.type ~= types.Armor.TYPE.Shield then
-                    goto continue
-                end
-            end
+        if not (isArmor or isClothing) then
+            return
+        end
 
-            local itemSlots = helpers.getEquipmentSlots(item) or {}
-            for _, slot in ipairs(itemSlots) do
-                local oldItem = slots[slot]
-                local canEquip = true
-
-                if oldItem then
-                    if isArmor then
-                        canEquip = shouldEquipArmor(item, oldItem)
-                    else
-                        canEquip = shouldEquipClothing(item, oldItem, slot)
-                    end
+        if isArmor then
+            local armorRecord = item.type.record(item)
+            if actorIsNpc then
+                if (I.Combat.getEffectiveArmorRating(item, self) or 0) <= unarmoredRating then
+                    return
                 end
-
-                if canEquip then
-                    slots[slot] = item
-                    break
-                end
+            elseif armorRecord.type ~= types.Armor.TYPE.Shield then
+                return
             end
         end
 
-        ::continue::
+        local itemSlots = helpers.getEquipmentSlots(item) or {}
+        for _, slot in ipairs(itemSlots) do
+            local oldItem = slots[slot]
+            local canEquip = true
+
+            if oldItem then
+                if isArmor then
+                    canEquip = shouldEquipArmor(item, oldItem)
+                else
+                    canEquip = shouldEquipClothing(item, oldItem, slot)
+                end
+            end
+
+            if canEquip then
+                slots[slot] = item
+                break
+            end
+        end
+    end
+
+    for _, item in ipairs(types.Actor.inventory(self):getAll()) do
+        processItem(item)
     end
 end
 
