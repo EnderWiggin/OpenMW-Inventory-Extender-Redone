@@ -1005,6 +1005,7 @@ end
 
 function Inventory:update()
     self.list:filter()
+    if self.infoBar then self.infoBar:update() end
 end
 
 ---@private
@@ -1198,6 +1199,44 @@ function Inventory:initInfoBar(ctx)
             self.encumbranceBar:setMax(util.round(type.getCapacity(self.target)))
             self.encumbranceBar:setValue(util.round(type.getEncumbrance(self.target)))
             return encumbranceLayout
+        end)
+    end
+
+    --Gold
+    if self.type == 'Inventory' or self.type == 'Trade' then
+        local goldProps = { text = '' }
+        local goldLayout = {
+            name = 'gold',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = ui.texture { path = 'icons/gold.dds' },
+                        size = v2(1, 1) * theme.Sizes.textNormal,
+                    }
+                },
+                T.intervalH(4),
+                {
+                    template = T.text(),
+                    props = goldProps,
+                }
+            }
+        }
+        self.infoBar:addProvider(function()
+            if not self.target then return nil end
+            local goldAmount
+            if self.type == 'Inventory' then
+                goldAmount = self.target.type.inventory(self.target):countOf('gold_001')
+            else
+                goldAmount = self.target.type.getBarterGold(self.target)
+            end
+            goldProps.text = helpers.addSeparators(goldAmount)
+            return goldLayout
         end)
     end
 end
