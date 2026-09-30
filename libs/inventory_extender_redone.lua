@@ -17,3 +17,13 @@
 ---@field isBartered boolean
 ---@field showAsEnchanted fun():boolean
 ---@field itemRecord {id:string, name:string, icon:string}
+
+
+---@class InventoryExtenderRedone.InfoBarOpts
+---@field maxHeight number?
+
+---@class InventoryExtenderRedone.InfoBar : UIToolkit.Component
+---@field create fun(opts:InventoryExtenderRedone.InfoBarOpts):InventoryExtenderRedone.InfoBar
+---@field addProvider fun(self:InventoryExtenderRedone.InfoBar, provider:InventoryExtenderRedone.InfoBar.Provider):InventoryExtenderRedone.InfoBar provider must return layout or element or nil. It is also responsible for destroying old element if necessary.
+
+---@alias InventoryExtenderRedone.InfoBar.Provider fun(ctx:table):openmw.ui.LayoutOrElement?

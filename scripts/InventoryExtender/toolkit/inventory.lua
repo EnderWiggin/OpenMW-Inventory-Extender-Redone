@@ -24,6 +24,7 @@ local iconPack = require('scripts.InventoryExtender.util.iconPack')
 local l10n = core.l10n('InventoryExtender')
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal') --TODO: change to UI Toolkit popup
+local InfoBar = require('scripts.InventoryExtender.toolkit.info_bar')
 
 
 local H              = require 'scripts.UIToolkit.helpers'
@@ -31,6 +32,9 @@ local Class          = require 'scripts.UIToolkit.class'
 local WindowHandler  = require 'scripts.UIToolkit.window_handler'
 local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_item'
 local CompoundFilter = require 'scripts.UIToolkit.compound_filter'
+local Toolkit        = I.UIToolkit
+local Components     = Toolkit.Components
+local T              = Toolkit.Templates
 
 local CategoryFilter = require('scripts.InventoryExtender.toolkit.categoryFilter')
 
@@ -71,7 +75,7 @@ local function iconRenderer(data, cfg, height)
                 name = 'itemBackground',
                 type = ui.TYPE.Image,
                 props = {
-                    resource = I.UIToolkit.texture(bgrPath, v2(40, 40), bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
+                    resource = Toolkit.texture(bgrPath, v2(40, 40), bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
                     anchor = v2(0.5, 0.5),
                     relativePosition = v2(0.5, 0.5),
                     size = v2(sz, sz),
@@ -82,7 +86,7 @@ local function iconRenderer(data, cfg, height)
                 name = 'itemIcon',
                 type = ui.TYPE.Image,
                 props = {
-                    resource = I.UIToolkit.texture(data.itemRecord.icon),
+                    resource = Toolkit.texture(data.itemRecord.icon),
                     anchor = v2(0.5, 0.5),
                     relativePosition = v2(0.5, 0.5),
                     size = v2(sz, sz),
@@ -113,7 +117,7 @@ local function renderNumber(data, cfg, height)
     ---@type openmw.ui.Layout
     local layout = {
         name = cfg.id,
-        template = I.UIToolkit.Templates.text(),
+        template = T.text(),
         props = {
             textAlignV = ui.ALIGNMENT.Center,
             textAlignH = textAlignH,
@@ -182,7 +186,7 @@ end
 
 
 local function ALL_COLUMNS(defaultSort, nameRenderer)
-    local theme = I.UIToolkit.getTheme()
+    local theme = Toolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local lineHeight = textSize + 2
     local fontRatio = textSize / 16
@@ -444,11 +448,10 @@ function Inventory:onOpened(wnd, data, saved)
     end)
 
     local inner = wnd:getInnerSize()
-    local theme = I.UIToolkit.getTheme()
+    local theme = Toolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local rowHeight = util.round(1.5 * (textSize + 2))
-    local T = I.UIToolkit.Templates
-    local texture = I.UIToolkit.texture
+    local texture = Toolkit.texture
 
     local function isFavorited(item)
         return item ~= nil and ctx.favoriteItems[item.id] == true
@@ -946,13 +949,16 @@ function Inventory:onOpened(wnd, data, saved)
         end
     end
 
+    self.infoBar = InfoBar.create({}) --[[@as InventoryExtenderRedone.InfoBarPrivate  ]]
+
+    local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self.categoryFilter:getSize().y
-    self.list = I.UIToolkit.Components.sortedList {
+    self.list = Components.sortedList {
         columns = ALL_COLUMNS(fallBackSort, nameRenderer),
-        size = v2(inner.x, inner.y - topBarHeight - 2),
+        size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         noBorder = true,
-        onItemClicked = function(data, idx)
-            onRowUse(data, false, false)
+        onItemClicked = function(row)
+            onRowUse(row, false, false)
         end
     }
     self.list:updateProps { position = v2(0, topBarHeight + 2) }
@@ -963,10 +969,56 @@ function Inventory:onOpened(wnd, data, saved)
     self.list:setItems(self:createData())
     --TODO: update sort column
 
+    self.infoBar:updateProps({
+        relativePosition = v2(0, 1),
+        anchor = v2(0, 1)
+    })
+
+    if self.type ~= 'Trade' then
+        self.encumbranceBar = Components.progressBar {
+            width = 100,
+            color = theme.Colors.MAGICK,
+        }
+        local encumbranceLayout = {
+            name = 'encumbrance',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = Toolkit.texture 'icons/weight.dds',
+                        size = v2(1, 1) * theme.Sizes.textNormal,
+                    }
+                },
+                T.intervalH(4),
+                self.encumbranceBar.element,
+            }
+        }
+        self.infoBar:addProvider(function()
+            if not self.target then return nil end
+            if self.type == 'Container' and
+                (types.Container.objectIsInstance(self.target) and types.Container.record(self.target).isOrganic)
+                or (ctx.pickpocket and ctx.pickpocket.active)
+            then
+                return nil
+            end
+            local type = self.target.type
+            self.encumbranceBar:setMax(util.round(type.getCapacity(self.target)))
+            self.encumbranceBar:setValue(util.round(type.getEncumbrance(self.target)))
+            return encumbranceLayout
+        end)
+    end
+
     wnd:setContent(ui.content {
         self.categoryFilter.element,
-        { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, topBarHeight + 2), } },
+        { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, topBarHeight), } },
         self.list.element,
+        { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, -infoHeight), relativePosition = v2(0, 1), anchor = v2(0, 1), } },
+        self.infoBar.element,
     })
     self:updateTitle()
 end
@@ -977,9 +1029,10 @@ function Inventory:onClosed()
 end
 
 function Inventory:onResized(inner)
+    local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self.categoryFilter:getSize().y
 
-    self.list:setSize(inner - v2(0, topBarHeight + 2))
+    self.list:setSize(inner - v2(0, topBarHeight + infoHeight + 4))
 end
 
 function Inventory:getStorageSuffix()
