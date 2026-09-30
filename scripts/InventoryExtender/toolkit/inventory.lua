@@ -974,7 +974,7 @@ function Inventory:onOpened(wnd, data, saved)
         anchor = v2(0, 1)
     })
 
-    self:initInfoBar(ctx)
+    self:initInfoBar(ctx, onRowPickup)
 
     wnd:setContent(ui.content {
         self.categoryFilter.element,
@@ -1158,8 +1158,21 @@ function Inventory:createData()
     return data
 end
 
+local function createDraggedActivationRow(ctx, item)
+    local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
+    return {
+        id = item.id,
+        item = item,
+        itemRecord = item.type.record(item),
+        isBartered = activationContext.isBartered,
+        getCount = function()
+            return ctx.dragAndDrop.draggingCount or item.count
+        end,
+    }
+end
+
 ---@private
-function Inventory:initInfoBar(ctx)
+function Inventory:initInfoBar(ctx, onRowPickup)
     local theme = Toolkit.getTheme()
 
     --Encumbrance
@@ -1238,6 +1251,76 @@ function Inventory:initInfoBar(ctx)
             goldProps.text = helpers.addSeparators(goldAmount)
             return goldLayout
         end)
+    end
+
+    -- Armor rating
+    if self.type == 'Inventory' then
+        local armorProps = { text = '' }
+        local armorLayout = {
+            name = 'armorRating',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = ui.texture { path = 'icons/a/a_cuirass_ebon.dds' },
+                        size = v2(1, 1) * theme.Sizes.textNormal,
+                    }
+                },
+                T.intervalH(4),
+                {
+                    template = T.text(),
+                    props = armorProps,
+                }
+            }
+        }
+
+        self.infoBar:addProvider(function()
+            if not self.target then return nil end
+            armorProps.text = H.addSeparators(math.floor(I.Combat.getArmorRating(self.target)))
+            return armorLayout
+        end)
+
+        --Stretching filler
+        local filler = { external = { grow = 1, stretch = 1 } }
+        self.infoBar:addProvider(function() return filler end)
+
+        --use item
+        local btnUse = Components.textButton {
+            name = 'use',
+            style = theme.IntRe and 'empty' or 'thin',
+            text = core.getGMST('sUse'),
+            onClick = function()
+                local draggedItem = ctx.dragAndDrop.draggingObject
+                if not draggedItem then return end
+                local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
+                local result = onRowPickup(createDraggedActivationRow(ctx, draggedItem), nil,
+                    activationContext.windowType,
+                    true)
+                if result ~= false then
+                    ctx.dragAndDrop:stopDrag()
+                    self.infoBar:update()
+                    --self:refresh()
+                end
+            end,
+            tooltip = function()
+                if configPlayer.keybinds.b_SwapUsePickup then
+                    return l10n('UI_Tooltip_UseButton_Swapped')
+                end
+                return l10n('UI_Tooltip_UseButton', { key = input.getKeyName(configPlayer.keybinds.k_UseItem) })
+            end,
+        }
+
+        self.infoBar:addProvider(function()
+            btnUse:setVisible(ctx.dragAndDrop.draggingObject ~= nil)
+            return btnUse.element
+        end)
+
+        --self.infoBar.layout.userData.addInfoLayout({})
     end
 end
 
