@@ -81,6 +81,7 @@ function InfoBar:update()
             self.element.layout.content:add(layout)
         end
     end
+    self.element.layout.content:add(T.intervalH(Toolkit.getTheme().Sizes.standardGap))
     Toolkit.queueUpdate(self.element)
 end
 
