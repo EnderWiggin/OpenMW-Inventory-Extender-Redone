@@ -974,44 +974,7 @@ function Inventory:onOpened(wnd, data, saved)
         anchor = v2(0, 1)
     })
 
-    if self.type ~= 'Trade' then
-        self.encumbranceBar = Components.progressBar {
-            width = 100,
-            color = theme.Colors.MAGICK,
-        }
-        local encumbranceLayout = {
-            name = 'encumbrance',
-            type = ui.TYPE.Flex,
-            props = {
-                horizontal = true,
-                arrange = ui.ALIGNMENT.Center,
-            },
-            content = ui.content {
-                {
-                    type = ui.TYPE.Image,
-                    props = {
-                        resource = Toolkit.texture 'icons/weight.dds',
-                        size = v2(1, 1) * theme.Sizes.textNormal,
-                    }
-                },
-                T.intervalH(4),
-                self.encumbranceBar.element,
-            }
-        }
-        self.infoBar:addProvider(function()
-            if not self.target then return nil end
-            if self.type == 'Container' and
-                (types.Container.objectIsInstance(self.target) and types.Container.record(self.target).isOrganic)
-                or (ctx.pickpocket and ctx.pickpocket.active)
-            then
-                return nil
-            end
-            local type = self.target.type
-            self.encumbranceBar:setMax(util.round(type.getCapacity(self.target)))
-            self.encumbranceBar:setValue(util.round(type.getEncumbrance(self.target)))
-            return encumbranceLayout
-        end)
-    end
+    self:initInfoBar(ctx)
 
     wnd:setContent(ui.content {
         self.categoryFilter.element,
@@ -1192,6 +1155,51 @@ function Inventory:createData()
     end
 
     return data
+end
+
+---@private
+function Inventory:initInfoBar(ctx)
+    local theme = Toolkit.getTheme()
+
+    --Encumbrance
+    if self.type ~= 'Trade' then
+        self.encumbranceBar = Components.progressBar {
+            width = 100,
+            color = theme.Colors.MAGICK,
+        }
+        local encumbranceLayout = {
+            name = 'encumbrance',
+            type = ui.TYPE.Flex,
+            props = {
+                horizontal = true,
+                arrange = ui.ALIGNMENT.Center,
+            },
+            content = ui.content {
+                {
+                    type = ui.TYPE.Image,
+                    props = {
+                        resource = Toolkit.texture 'icons/weight.dds',
+                        size = v2(1, 1) * theme.Sizes.textNormal,
+                    }
+                },
+                T.intervalH(4),
+                self.encumbranceBar.element,
+            }
+        }
+        self.infoBar:addProvider(function()
+            if not self.target then return nil end
+            if self.type == 'Container' and
+                (types.Container.objectIsInstance(self.target) and types.Container.record(self.target).isOrganic)
+                or (ctx.pickpocket and ctx.pickpocket.active)
+            then
+                return nil
+            end
+            local type = self.target.type
+            self.encumbranceBar:setMax(util.round(type.getCapacity(self.target)))
+            self.encumbranceBar:setValue(util.round(type.getEncumbrance(self.target)))
+            return encumbranceLayout
+        end)
+    end
 end
 
 return Inventory
