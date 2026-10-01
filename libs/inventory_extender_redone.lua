@@ -17,6 +17,7 @@
 ---@field isBartered boolean
 ---@field showAsEnchanted fun():boolean
 ---@field itemRecord {id:string, name:string, icon:string}
+---@field getCount fun():number
 
 
 ---@class InventoryExtenderRedone.InfoBarOpts

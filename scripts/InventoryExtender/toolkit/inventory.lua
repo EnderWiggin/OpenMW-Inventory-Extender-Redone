@@ -150,19 +150,26 @@ local function getNonDraggedCount(row, type)
         local selling = ctx.barterState.selling
         if row.isBartered then
             if type == 'Inventory' then
-                nonDraggedCount = (buying[row.item.id] or {}).count or 0
+                local buy = buying[row.item.id]
+                nonDraggedCount = buy and buy.count or 0
             else
-                nonDraggedCount = (selling[row.item.id] or {}).count or 0
+                local sell = selling[row.item.id]
+                nonDraggedCount = sell and sell.count or 0
             end
         else
             if type == 'Inventory' then
-                nonDraggedCount = nonDraggedCount - ((selling[row.item.id] or {}).count or 0)
+                local sell = selling[row.item.id]
+                if sell then
+                    nonDraggedCount = nonDraggedCount - (sell.count or 0)
+                end
             elseif type == 'Trade' then
-                nonDraggedCount = nonDraggedCount - ((buying[row.item.id] or {}).count or 0)
+                local buy = buying[row.item.id]
+                if buy then
+                    nonDraggedCount = nonDraggedCount - (buy.count or 0)
+                end
             end
         end
     end
-
     return nonDraggedCount
 end
 
