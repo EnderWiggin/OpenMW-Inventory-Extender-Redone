@@ -1005,7 +1005,7 @@ function Inventory:getStorageSuffix()
 end
 
 function Inventory:update()
-    self.list:filter()
+    self.list:setItems(self:createData())
     if self.infoBar then self.infoBar:update() end
 end
 
