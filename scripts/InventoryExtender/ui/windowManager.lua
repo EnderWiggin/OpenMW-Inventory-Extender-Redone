@@ -328,12 +328,7 @@ function WindowManager:onFrame()
     local dt = core.getRealFrameDuration()
 
     -- I.Cursor when??? (:
-    local mouseMoved
-    if I.UI.getMode() ~= nil then
-        if input.getMouseMoveX() ~= 0 or input.getMouseMoveY() ~= 0 then
-            mouseMoved = true
-        end
-    end
+    local mouseMoved = I.UIToolkit.cursorMovedThisFrame()
 
     if mouseMoved then
         self.ctx.dragAndDrop:updatePosition()
