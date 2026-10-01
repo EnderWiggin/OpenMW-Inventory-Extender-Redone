@@ -38,7 +38,7 @@ function CategoryFilter.create(props, onCategoryChange, onSearchChange)
 end
 
 ---@param props any
----@param onCategoryChange any
+---@param onCategoryChange fun(category:InventoryExtenderRedone.Category)
 ---@param onSearchChange any
 function CategoryFilter:init(props, onCategoryChange, onSearchChange)
     local maxHeight = props.maxHeight or 48
@@ -234,18 +234,18 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
     local function getDefaultCategoryKey(categories, categoryDisabledLookup)
         for _, category in ipairs(categories) do
             if category.defaultSelected ~= false and not isCategoryDisabled(category, categoryDisabledLookup) then
-                return category.key
+                return category.key, category
             end
         end
-
-        return categories[1] and categories[1].key or nil
+        local category = categories[1]
+        return category and category.key or nil, category
     end
 
     local function resolveCategoryKey(categoryKey, categories, categoryDisabledLookup)
         categories = categories or getCategories()
         for _, category in ipairs(categories) do
             if category.key == categoryKey then
-                return categoryKey
+                return categoryKey, category
             end
         end
 
@@ -475,23 +475,21 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
 
         state.selectedCategory = categories[newIndex].key
         if onCategoryChange then
-            onCategoryChange(state.selectedCategory)
-        else
-            updateCategories()
+            onCategoryChange(categories[newIndex])
         end
+        updateCategories()
     end
 
     function self.setCategory(self, categoryKey)
         local categories = getCategories()
         local categoryDisabledLookup = props.getCategoryDisabledLookup and props.getCategoryDisabledLookup() or nil
-        local resolvedCategoryKey = resolveCategoryKey(categoryKey, categories, categoryDisabledLookup)
+        local resolvedCategoryKey, category = resolveCategoryKey(categoryKey, categories, categoryDisabledLookup)
         if state.selectedCategory ~= resolvedCategoryKey then
             state.selectedCategory = resolvedCategoryKey
             if onCategoryChange then
-                onCategoryChange(state.selectedCategory)
-            else
-                updateCategories()
+                onCategoryChange(category)
             end
+            updateCategories()
         end
     end
 

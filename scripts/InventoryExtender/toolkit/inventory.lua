@@ -12,6 +12,7 @@ local aux_util  = require 'openmw_aux.util'
 
 local I         = require 'openmw.interfaces'
 local v2        = util.vector2
+local KEY       = input.KEY
 
 local Container = types.Container
 
@@ -395,6 +396,7 @@ function Inventory:onOpened(wnd, data, saved)
     self.suffix = getStorageSuffix(self.type)
     local IE = I.InventoryExtender
     local ctx = IE.getContext()
+    self.ctx = ctx
 
     if self.type == 'Inventory' then
         self.target = omwself
@@ -636,40 +638,6 @@ function Inventory:onOpened(wnd, data, saved)
         end
     )
 
-    ---@param row InventoryExtenderRedone.RowData
-    ---@param windowType string
-    ---@return openmw.Object
-    local function getUseItemSource(row, windowType)
-        local effectiveWindowType = windowType
-        if row.item.parentContainer ~= nil then
-            return row.item.parentContainer
-        end
-        if effectiveWindowType == 'Container' or effectiveWindowType == 'Companion' then
-            return self.target
-        end
-        return omwself
-    end
-
-    ---@param row InventoryExtenderRedone.RowData
-    ---@param windowType string
-    ---@return {target:openmw.Object}|nil
-    local function getUseItemPickpocket(row, windowType)
-        local effectiveWindowType = windowType
-        local mode = I.UI.getMode()
-        if mode == 'Container' and effectiveWindowType == 'Container' and ctx.pickpocket and ctx.pickpocket.active then
-            return { target = self.target }
-        end
-        return nil
-    end
-
-    local function isFavoriteTransferBlocked(row)
-        return self.target == omwself
-            and row and row.item ~= nil
-            and not row.isBartered
-            and isFavorited(row.item)
-            and I.UI.getMode() ~= 'Interface'
-    end
-
     local function getItemBadgeState(row)
         local favorite = isFavorited(row.item)
         local stolen = false
@@ -771,203 +739,6 @@ function Inventory:onOpened(wnd, data, saved)
         return layout
     end
 
-    local onRowUse, onRowPickup
-
-    ---@param row InventoryExtenderRedone.RowData
-    ---@param windowType string
-    ---@param allowOutsideInterface boolean
-    onRowPickup = function(row, windowType, allowOutsideInterface)
-        if I.UI.getMode() == 'Barter' then
-            return onRowUse(row, true, true)
-        end
-
-        for i = #ctx.handlers.onRowPickup, 1, -1 do
-            local handler = ctx.handlers.onRowPickup[i]
-            if handler.handler(row, ctx, self.type) == false then
-                return false
-            end
-        end
-
-        if not canPickupItem(row, windowType, allowOutsideInterface) then
-            return false
-        end
-
-        if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
-            local equipment = omwself.type.getEquipment(omwself)
-            for slot, equippedItem in pairs(equipment) do
-                if equippedItem == row.item then
-                    equipment[slot] = nil
-                    omwself.type.setEquipment(omwself, equipment)
-                    local sound = helpers.getItemSound(row.item, 'down')
-                    if sound then
-                        ambient.playSound(sound)
-                    end
-                    omwself:sendEvent('IE_Update')
-                    break
-                end
-            end
-        else
-            core.sendGlobalEvent('IE_UseItem', {
-                object = row.item,
-                actor = omwself,
-                source = getUseItemSource(row, windowType),
-                pickpocket = getUseItemPickpocket(row, windowType),
-            })
-        end
-    end
-
-    onRowUse = function(row, fromKBMKeybind, forceBarterAction)
-        if ctx.dragAndDrop.draggingObject then
-            if fromKBMKeybind then
-                ctx.dragAndDrop:stopDrag(self.target)
-            end
-            return true
-        end
-
-        if configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
-            return onRowPickup(row, self.type, true)
-        end
-
-        for i = #ctx.handlers.onRowUse, 1, -1 do
-            local handler = ctx.handlers.onRowUse[i]
-            if handler.handler(row, ctx, self.type) == false then
-                return false
-            end
-        end
-
-        if helpers.isBoundItem(row.item) then
-            local gmst
-            if I.UI.getMode() == 'Barter' then
-                if self.type == 'Trade' then
-                    gmst = 'sBarterDialog10' --can't buy summoned items
-                else
-                    gmst = 'sBarterDialog9'  --can't sell summoned items
-                end
-            else
-                gmst = 'sContentsMessage1' --can't remove summoned item
-            end
-            if gmst then ui.showMessage(core.getGMST(gmst)) end
-            return
-        end
-
-        if isFavoriteTransferBlocked(row) then
-            ui.showMessage(l10n('UI_Msg_FavoriteItem'))
-            return false
-        end
-
-        local transfer = input.isAltPressed() or I.UI.getMode() == 'Barter'
-        local takeAll = input.isShiftPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerRight) > 0.5
-        local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
-
-        if takeAll and takeOne and not forceBarterAction then
-            onRowPickup(row, self.type, false)
-            return
-        end
-
-        local itemCount = row.getCount()
-        if I.UI.getMode() == 'Barter' then
-            if row.isBartered then
-                if self.type == 'Inventory' then
-                    itemCount = (ctx.barterState.buying[row.item.id] or {}).count or 0
-                else
-                    itemCount = (ctx.barterState.selling[row.item.id] or {}).count or 0
-                end
-            else
-                if self.type == 'Inventory' then
-                    itemCount = itemCount - ((ctx.barterState.selling[row.item.id] or {}).count or 0)
-                elseif self.type == 'Trade' then
-                    itemCount = itemCount - ((ctx.barterState.buying[row.item.id] or {}).count or 0)
-                end
-            end
-        end
-
-        local function doAction(count)
-            local mode = I.UI.getMode()
-            local pickpocket = ctx.pickpocket
-            local isPickpocketTake = mode == 'Container' and self.type == 'Container' and pickpocket and
-                pickpocket.active
-
-            if isPickpocketTake then
-                local success = Pickpocket.rollTake(omwself, self.target, row.item, row.getCount())
-                if not success then
-                    pickpocket.resolved = true
-                    core.sendGlobalEvent('IE_CommitPickpocket', {
-                        player = omwself,
-                        target = self.target,
-                        victimAware = true,
-                    })
-                    I.UI.removeMode('Container')
-                    return false
-                end
-            end
-
-            if transfer then
-                if mode == 'Container' or mode == 'Companion' then
-                    if self.type == 'Inventory' then
-                        if ctx.windowArgs[mode] then
-                            ctx.dragAndDrop:transferInto(row.item, ctx.windowArgs[mode], omwself, count)
-                        end
-                    else
-                        ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count,
-                            isPickpocketTake and { target = self.target } or nil)
-                    end
-                elseif mode == 'Barter' then
-                    if row.isBartered then
-                        local table = self.type == 'Inventory' and ctx.barterState.buying or ctx.barterState.selling
-                        if table[row.item.id] then
-                            table[row.item.id].count = table[row.item.id].count - count
-                            if table[row.item.id].count <= 0 then
-                                table[row.item.id] = nil
-                            end
-                        end
-                    else
-                        local table = self.type == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
-                        table[row.item.id] = table[row.item.id] or
-                            { item = row.item, stacks = row.virtualStacks, count = 0 }
-                        table[row.item.id].count = math.min(table[row.item.id].count + count, row.getCount())
-                    end
-                    local sound = helpers.getItemSound(row.item, 'down')
-                    if sound then
-                        ambient.playSound(sound)
-                    end
-                    barterUtils.updateOffer(ctx)
-                    omwself:sendEvent('IE_Update')
-                elseif mode == 'Interface' then
-                    if not isFavorited(row.item) then
-                        ctx.dragAndDrop:dropAtViewportPosition(row.item, count, v2(0.5, 0.5), true)
-                    else
-                        ui.showMessage(l10n('UI_Msg_FavoriteItem'))
-                    end
-                end
-            else
-                ctx.dragAndDrop:startDrag(
-                    row.item,
-                    self.target,
-                    count,
-                    isPickpocketTake and { target = self.target } or nil,
-                    {
-                        windowType = self.type,
-                        isBartered = row.isBartered,
-                    }
-                )
-            end
-            return true
-        end
-
-        if itemCount > 1 and not takeAll and not takeOne then
-            local modal = ItemStackModal.create({
-                itemName = row.itemRecord.name,
-                maxCount = itemCount,
-                onConfirm = function(count)
-                    doAction(count)
-                end,
-            }, ctx)
-            ctx.modalElement = modal
-        else
-            doAction(takeOne and 1 or itemCount)
-        end
-    end
-
     self.infoBar = InfoBar.create({}) --[[@as InventoryExtenderRedone.InfoBarPrivate  ]]
 
     local infoHeight = self.infoBar:getHeight()
@@ -983,7 +754,7 @@ function Inventory:onOpened(wnd, data, saved)
             ctx.dragAndDrop:stopDrag(self.target)
         end,
         onItemClicked = function(row)
-            onRowUse(row, false, false)
+            self:onRowUse(row, false, false)
         end
     }
     local column = saved and saved.sortingColumn or 'Icon'
@@ -1002,7 +773,7 @@ function Inventory:onOpened(wnd, data, saved)
         anchor = v2(0, 1)
     })
 
-    self:initInfoBar(ctx, onRowPickup)
+    self:initInfoBar()
 
     wnd:setContent(ui.content {
         self.categoryFilter.element,
@@ -1032,6 +803,33 @@ function Inventory:onResized(inner)
     self.list:setSize(inner - v2(0, topBarHeight + infoHeight + 4))
 end
 
+function Inventory:onKeyboardButtonPress(key)
+    --TODO: add bindings for these
+    if key == KEY.A then
+        self.categoryFilter:cycleCategory(-1)
+    elseif key == KEY.D then
+        self.categoryFilter:cycleCategory(1)
+    elseif key == KEY.W then
+        self.list.list:shiftHoveredItem(-1)
+    elseif key == KEY.S then
+        self.list.list:shiftHoveredItem(1)
+    elseif key == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
+        self:toggleFavorite()
+    elseif key == configPlayer.keybinds.k_UseItem then
+        local ctx = self.ctx
+        local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        if configPlayer.keybinds.b_SwapUsePickup then
+            if ctx.dragAndDrop.draggingObject then
+                ctx.dragAndDrop:stopDrag(self.target)
+            elseif row then
+                self:onRowUse(row, true, false)
+            end
+        elseif row then
+            self:onRowPickup(row, self.type, false)
+        end
+    end
+end
+
 function Inventory:getStorageSuffix()
     if self.wnd then return self.suffix end
     return getStorageSuffix(self.type)
@@ -1041,6 +839,269 @@ function Inventory:update()
     self.list.provider:clear()
     self.list:setItems(self:createData())
     if self.infoBar then self.infoBar:update() end
+end
+
+function Inventory:isFavorite(item)
+    return item ~= nil and self.ctx.favoriteItems[item.id] == true
+end
+
+---@param row InventoryExtenderRedone.RowData?
+function Inventory:toggleFavorite(row)
+    if not row then
+        row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+    end
+    if not row then return end
+    local item = row.item
+    if not item then return end
+    if not self:canToggleFavoriteRow(row) then return end
+    local ctx = self.ctx
+    local currentValue = ctx.favoriteItems[item.id] == true
+
+    if currentValue then
+        ctx.favoriteItems[item.id] = nil
+    else
+        ctx.favoriteItems[item.id] = true
+    end
+
+    ctx.favoriteRevision = (ctx.favoriteRevision or 0) + 1
+    self.list.provider:refreshColumns(row, 'Name')
+    self.list:sort()
+end
+
+function Inventory:canToggleFavoriteRow(row)
+    return self.target == omwself and row and row.item ~= nil and not row.isBartered
+        and not self.ctx.dragAndDrop.draggingObject
+end
+
+function Inventory:isFavoriteTransferBlocked(row)
+    return self.target == omwself
+        and row and row.item ~= nil
+        and not row.isBartered
+        and self:isFavorite(row.item)
+        and I.UI.getMode() ~= 'Interface'
+end
+
+---@param row InventoryExtenderRedone.RowData
+---@param windowType string
+---@return openmw.Object
+function Inventory:getUseItemSource(row, windowType)
+    local effectiveWindowType = windowType
+    if row.item.parentContainer ~= nil then
+        return row.item.parentContainer
+    end
+    if effectiveWindowType == 'Container' or effectiveWindowType == 'Companion' then
+        return self.target
+    end
+    return omwself
+end
+
+---@param row InventoryExtenderRedone.RowData
+---@param windowType string
+---@return {target:openmw.Object}|nil
+function Inventory:getUseItemPickpocket(row, windowType)
+    local effectiveWindowType = windowType
+    local ctx = self.ctx
+    local mode = I.UI.getMode()
+    if mode == 'Container' and effectiveWindowType == 'Container' and ctx.pickpocket and ctx.pickpocket.active then
+        return { target = self.target }
+    end
+    return nil
+end
+
+---@param row InventoryExtenderRedone.RowData
+---@param windowType string
+---@param allowOutsideInterface boolean
+function Inventory:onRowPickup(row, windowType, allowOutsideInterface)
+    if I.UI.getMode() == 'Barter' then
+        return self:onRowUse(row, true, true)
+    end
+    local ctx = self.ctx
+    for i = #ctx.handlers.onRowPickup, 1, -1 do
+        local handler = ctx.handlers.onRowPickup[i]
+        if handler.handler(row, ctx, self.type) == false then
+            return false
+        end
+    end
+
+    if not canPickupItem(row, windowType, allowOutsideInterface) then
+        return false
+    end
+
+    if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
+        local equipment = omwself.type.getEquipment(omwself)
+        for slot, equippedItem in pairs(equipment) do
+            if equippedItem == row.item then
+                equipment[slot] = nil
+                omwself.type.setEquipment(omwself, equipment)
+                local sound = helpers.getItemSound(row.item, 'down')
+                if sound then
+                    ambient.playSound(sound)
+                end
+                omwself:sendEvent('IE_Update')
+                break
+            end
+        end
+    else
+        core.sendGlobalEvent('IE_UseItem', {
+            object = row.item,
+            actor = omwself,
+            source = self:getUseItemSource(row, windowType),
+            pickpocket = self:getUseItemPickpocket(row, windowType),
+        })
+    end
+end
+
+function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
+    local ctx = self.ctx
+    if ctx.dragAndDrop.draggingObject then
+        if fromKBMKeybind then
+            ctx.dragAndDrop:stopDrag(self.target)
+        end
+        return true
+    end
+
+    if configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
+        return self:onRowPickup(row, self.type, true)
+    end
+
+    for i = #ctx.handlers.onRowUse, 1, -1 do
+        local handler = ctx.handlers.onRowUse[i]
+        if handler.handler(row, ctx, self.type) == false then
+            return false
+        end
+    end
+
+    if helpers.isBoundItem(row.item) then
+        local gmst
+        if I.UI.getMode() == 'Barter' then
+            if self.type == 'Trade' then
+                gmst = 'sBarterDialog10' --can't buy summoned items
+            else
+                gmst = 'sBarterDialog9'  --can't sell summoned items
+            end
+        else
+            gmst = 'sContentsMessage1' --can't remove summoned item
+        end
+        if gmst then ui.showMessage(core.getGMST(gmst)) end
+        return
+    end
+
+    if self:isFavoriteTransferBlocked(row) then
+        ui.showMessage(l10n('UI_Msg_FavoriteItem'))
+        return false
+    end
+
+    local transfer = input.isAltPressed() or I.UI.getMode() == 'Barter'
+    local takeAll = input.isShiftPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerRight) > 0.5
+    local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
+
+    if takeAll and takeOne and not forceBarterAction then
+        self:onRowPickup(row, self.type, false)
+        return
+    end
+
+    local itemCount = row.getCount()
+    if I.UI.getMode() == 'Barter' then
+        if row.isBartered then
+            if self.type == 'Inventory' then
+                itemCount = (ctx.barterState.buying[row.item.id] or {}).count or 0
+            else
+                itemCount = (ctx.barterState.selling[row.item.id] or {}).count or 0
+            end
+        else
+            if self.type == 'Inventory' then
+                itemCount = itemCount - ((ctx.barterState.selling[row.item.id] or {}).count or 0)
+            elseif self.type == 'Trade' then
+                itemCount = itemCount - ((ctx.barterState.buying[row.item.id] or {}).count or 0)
+            end
+        end
+    end
+
+    local function doAction(count)
+        local mode = I.UI.getMode()
+        local pickpocket = ctx.pickpocket
+        local isPickpocketTake = mode == 'Container' and self.type == 'Container' and pickpocket and
+            pickpocket.active
+
+        if isPickpocketTake then
+            local success = Pickpocket.rollTake(omwself, self.target, row.item, row.getCount())
+            if not success then
+                pickpocket.resolved = true
+                core.sendGlobalEvent('IE_CommitPickpocket', {
+                    player = omwself,
+                    target = self.target,
+                    victimAware = true,
+                })
+                I.UI.removeMode('Container')
+                return false
+            end
+        end
+
+        if transfer then
+            if mode == 'Container' or mode == 'Companion' then
+                if self.type == 'Inventory' then
+                    if ctx.windowArgs[mode] then
+                        ctx.dragAndDrop:transferInto(row.item, ctx.windowArgs[mode], omwself, count)
+                    end
+                else
+                    ctx.dragAndDrop:transferInto(row.item, omwself, self.target, count,
+                        isPickpocketTake and { target = self.target } or nil)
+                end
+            elseif mode == 'Barter' then
+                if row.isBartered then
+                    local table = self.type == 'Inventory' and ctx.barterState.buying or ctx.barterState.selling
+                    if table[row.item.id] then
+                        table[row.item.id].count = table[row.item.id].count - count
+                        if table[row.item.id].count <= 0 then
+                            table[row.item.id] = nil
+                        end
+                    end
+                else
+                    local table = self.type == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
+                    table[row.item.id] = table[row.item.id] or
+                        { item = row.item, stacks = row.virtualStacks, count = 0 }
+                    table[row.item.id].count = math.min(table[row.item.id].count + count, row.getCount())
+                end
+                local sound = helpers.getItemSound(row.item, 'down')
+                if sound then
+                    ambient.playSound(sound)
+                end
+                barterUtils.updateOffer(ctx)
+                omwself:sendEvent('IE_Update')
+            elseif mode == 'Interface' then
+                if not self:isFavorite(row.item) then
+                    ctx.dragAndDrop:dropAtViewportPosition(row.item, count, v2(0.5, 0.5), true)
+                else
+                    ui.showMessage(l10n('UI_Msg_FavoriteItem'))
+                end
+            end
+        else
+            ctx.dragAndDrop:startDrag(
+                row.item,
+                self.target,
+                count,
+                isPickpocketTake and { target = self.target } or nil,
+                {
+                    windowType = self.type,
+                    isBartered = row.isBartered,
+                }
+            )
+        end
+        return true
+    end
+
+    if itemCount > 1 and not takeAll and not takeOne then
+        local modal = ItemStackModal.create({
+            itemName = row.itemRecord.name,
+            maxCount = itemCount,
+            onConfirm = function(count)
+                doAction(count)
+            end,
+        }, ctx)
+        ctx.modalElement = modal
+    else
+        doAction(takeOne and 1 or itemCount)
+    end
 end
 
 ---@private
@@ -1207,7 +1268,8 @@ local function createDraggedActivationRow(ctx, item)
 end
 
 ---@private
-function Inventory:initInfoBar(ctx, onRowPickup)
+function Inventory:initInfoBar()
+    local ctx = self.ctx
     local theme = Toolkit.getTheme()
 
     --Encumbrance
@@ -1335,9 +1397,8 @@ function Inventory:initInfoBar(ctx, onRowPickup)
                 local draggedItem = ctx.dragAndDrop.draggingObject
                 if not draggedItem then return end
                 local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
-                local result = onRowPickup(createDraggedActivationRow(ctx, draggedItem), nil,
-                    activationContext.windowType,
-                    true)
+                local result = self:onRowPickup(createDraggedActivationRow(ctx, draggedItem),
+                    activationContext.windowType, true)
                 if result ~= false then
                     ctx.dragAndDrop:stopDrag()
                     self.infoBar:update()
