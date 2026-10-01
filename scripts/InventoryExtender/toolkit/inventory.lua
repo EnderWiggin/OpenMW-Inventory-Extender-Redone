@@ -843,6 +843,7 @@ end
 
 function Inventory:onControllerButtonPress(button)
     --TODO: add bindings for these
+    local ctx = self.ctx
     if button == BUTTON.LeftShoulder then
         self.categoryFilter:cycleCategory(-1)
     elseif button == BUTTON.RightShoulder then
@@ -857,6 +858,17 @@ function Inventory:onControllerButtonPress(button)
         local ctx = self.ctx
         local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
         if configPlayer.keybinds.b_SwapUsePickup then
+            if ctx.dragAndDrop.draggingObject then
+                ctx.dragAndDrop:stopDrag(self.target)
+            elseif row then
+                self:onRowUse(row, true, false)
+            end
+        elseif row then
+            self:onRowPickup(row, self.type, false)
+        end
+    elseif button == BUTTON.A and I.UIToolkit.getCtx().focusedScrollable ~= self.list.list then
+        local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        if not configPlayer.keybinds.b_SwapUsePickup then
             if ctx.dragAndDrop.draggingObject then
                 ctx.dragAndDrop:stopDrag(self.target)
             elseif row then
