@@ -1085,7 +1085,7 @@ function Inventory:createData()
             Name = helpers.getItemName(itemStack),
             SearchText = helpers.getItemSearchText(itemStack):lower(),
             Type = function()
-                return helpers.getItemTypeLabel(itemStack)
+                return helpers.getItemTypeLabel(itemStack) or '-'
             end,
             Damage = function()
                 return helpers.getWeaponDamage(itemStack)
