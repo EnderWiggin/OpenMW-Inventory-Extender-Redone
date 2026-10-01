@@ -134,6 +134,8 @@ local function renderNumber(data, cfg, height)
     return layout
 end
 
+---@param row InventoryExtenderRedone.RowData
+---@param type string
 local function getNonDraggedCount(row, type)
     local nonDraggedCount = row.getCount()
     local ctx = I.InventoryExtender.getContext()
@@ -677,7 +679,7 @@ function Inventory:onOpened(wnd, data, saved)
     ---@type UIToolkit.ListItem.Column.Renderer
     local function nameRenderer(row, cfg, height)
         ---@cast row InventoryExtenderRedone.RowData
-        local nonDraggedCount = getNonDraggedCount(row)
+        local nonDraggedCount = getNonDraggedCount(row, self.type)
 
         local text = helpers.getItemName(row.item) ..
             (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
@@ -1007,6 +1009,7 @@ function Inventory:getStorageSuffix()
 end
 
 function Inventory:update()
+    self.list.provider:clear()
     self.list:setItems(self:createData())
     if self.infoBar then self.infoBar:update() end
 end
