@@ -282,6 +282,7 @@ Helpers.getEquippedName = function(actor)
 end
 
 Helpers.isItemEquipped = function(item, actor, overrides)
+    if not actor then return false end
     if overrides then
         for i = #overrides, 1, -1 do
             local result = overrides[i].handler(item, actor)
