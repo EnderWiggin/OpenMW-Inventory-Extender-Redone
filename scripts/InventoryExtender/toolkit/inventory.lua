@@ -956,6 +956,7 @@ function Inventory:onOpened(wnd, data, saved)
     self.list = Components.sortedList {
         columns = ALL_COLUMNS(fallBackSort, nameRenderer),
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
+        rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
         noBorder = true,
         onItemClicked = function(row)
             onRowUse(row, false, false)
