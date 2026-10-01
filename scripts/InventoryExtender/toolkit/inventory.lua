@@ -13,6 +13,7 @@ local aux_util  = require 'openmw_aux.util'
 local I         = require 'openmw.interfaces'
 local v2        = util.vector2
 local KEY       = input.KEY
+local BUTTON    = input.CONTROLLER_BUTTON
 
 local Container = types.Container
 
@@ -786,6 +787,9 @@ function Inventory:onOpened(wnd, data, saved)
 end
 
 function Inventory:onClosed()
+    if self.ctx.dragAndDrop.draggingObject then
+        self.ctx.dragAndDrop:stopDrag()
+    end
     self.wnd = nil
     self.arg = nil
     local column, asc = self.list.header:getActiveColumn()
@@ -827,6 +831,47 @@ function Inventory:onKeyboardButtonPress(key)
         elseif row then
             self:onRowPickup(row, self.type, false)
         end
+    end
+end
+
+function Inventory:onKeyboardButtonRepeat(key)
+    --TODO: add bindings for these
+    if key == KEY.W or key == KEY.S then
+        self:onKeyboardButtonPress(key)
+    end
+end
+
+function Inventory:onControllerButtonPress(button)
+    --TODO: add bindings for these
+    if button == BUTTON.LeftShoulder then
+        self.categoryFilter:cycleCategory(-1)
+    elseif button == BUTTON.RightShoulder then
+        self.categoryFilter:cycleCategory(1)
+    elseif button == BUTTON.DPadUp then
+        self.list.list:shiftHoveredItem(-1)
+    elseif button == BUTTON.DPadDown then
+        self.list.list:shiftHoveredItem(1)
+    elseif button == BUTTON.Y then
+        self:toggleFavorite()
+    elseif button == BUTTON.X then
+        local ctx = self.ctx
+        local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        if configPlayer.keybinds.b_SwapUsePickup then
+            if ctx.dragAndDrop.draggingObject then
+                ctx.dragAndDrop:stopDrag(self.target)
+            elseif row then
+                self:onRowUse(row, true, false)
+            end
+        elseif row then
+            self:onRowPickup(row, self.type, false)
+        end
+    end
+end
+
+function Inventory:onControllerButtonRepeat(button)
+    --TODO: add bindings for these
+    if button == BUTTON.DPadDown or button == BUTTON.DPadUp then
+        self:onControllerButtonPress(button)
     end
 end
 
