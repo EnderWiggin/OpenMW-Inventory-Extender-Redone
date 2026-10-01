@@ -21,6 +21,7 @@ local helpers = require('scripts.InventoryExtender.util.helpers')
 local barterUtils = require('scripts.InventoryExtender.util.barter')
 local constants = require('scripts.InventoryExtender.util.constants')
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
+local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorpses')
 local l10n = core.l10n('InventoryExtender')
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal') --TODO: change to UI Toolkit popup
@@ -1255,8 +1256,10 @@ function Inventory:initInfoBar(ctx, onRowPickup)
         end)
     end
 
-    -- Armor rating
+    local filler = { external = { grow = 1, stretch = 1 } }
+
     if self.type == 'Inventory' then
+        -- Armor rating
         local armorProps = { text = '' }
         local armorLayout = {
             name = 'armorRating',
@@ -1288,7 +1291,6 @@ function Inventory:initInfoBar(ctx, onRowPickup)
         end)
 
         --Stretching filler
-        local filler = { external = { grow = 1, stretch = 1 } }
         self.infoBar:addProvider(function() return filler end)
 
         --use item
@@ -1321,6 +1323,107 @@ function Inventory:initInfoBar(ctx, onRowPickup)
             btnUse:setVisible(ctx.dragAndDrop.draggingObject ~= nil)
             return btnUse.element
         end)
+
+        --self.infoBar.layout.userData.addInfoLayout({})
+    end
+
+    if self.type == 'Container' or self.type == 'Companion' then
+        --Stretching filler
+        self.infoBar:addProvider(function() return filler end)
+
+        if self.type == 'Container' then
+            --dispose
+            local btnDispose = Components.textButton {
+                name = 'dispose',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = constants.Strings.DISPOSE_OF_CORPSE,
+                onClick = function()
+                    if I.UI.getMode() ~= 'Container' or not ctx.windowArgs.Container then return end
+                    ctx.dragAndDrop:moveAll(self.target, omwself)
+
+                    if persistentCorpses[self.target.recordId] then
+                        ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
+                    else
+                        core.sendGlobalEvent('IE_DisposeOfCorpse', { target = ctx.windowArgs.Container })
+                    end
+                    I.UI.removeMode('Container')
+                end,
+            }
+
+            self.infoBar:addProvider(function()
+                local visible = false
+                if ctx.windowArgs.Container then
+                    visible = types.Actor.objectIsInstance(ctx.windowArgs.Container)
+                        and types.Actor.isDead(ctx.windowArgs.Container)
+                end
+                btnDispose:setVisible(visible)
+                return btnDispose.element
+            end)
+
+            --Take All
+            local btnTakeAll = Components.textButton {
+                name = 'takeAll',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = constants.Strings.TAKE_ALL,
+                onClick = function()
+                    if I.UI.getMode() ~= 'Container' or not ctx.windowArgs.Container then return end
+                    local visibleOnly = input.isShiftPressed()
+                    local items = nil
+
+                    if visibleOnly then
+                        local visibleItems = self.list.list:getItems() --[[@as InventoryExtenderRedone.RowData]]
+                        items = {}
+                        for i = 1, #visibleItems do
+                            local row = visibleItems[i]
+                            if row and row.item then
+                                table.insert(items, row.item)
+                            end
+                        end
+                    end
+
+                    if not items or #items > 0 then
+                        ctx.dragAndDrop:moveAll(self.target, omwself, items)
+                    end
+
+                    if not visibleOnly then
+                        I.UI.removeMode('Container')
+                    end
+                end,
+                tooltip = l10n('UI_Tooltip_TakeAllButton_Shift'),
+            }
+            self.infoBar:addProvider(function()
+                btnTakeAll:setVisible(not (ctx.pickpocket and ctx.pickpocket.active))
+                return btnTakeAll.element
+            end)
+        end
+
+        --companion profit value
+        if self.type == 'Companion' then
+            local profitProps = {}
+            local profitLayout = {
+                template = T.text(),
+                props = profitProps,
+            }
+
+            self.infoBar:addProvider(function()
+                if self.target == nil then return nil end
+                local profit = ctx.companionProfit[self.target.id] or 0
+                profitProps.text = constants.Strings.PROFIT_VALUE .. ': ' .. helpers.addSeparators(profit)
+                return profitLayout
+            end)
+        end
+
+        ---close
+        local btnClose = Components.textButton {
+            name = 'close',
+            style = theme.IntRe and 'empty' or 'thin',
+            text = constants.Strings.CLOSE,
+            onClick = function()
+                I.UI.removeMode(self.type)
+            end,
+        }
+
+        self.infoBar:addProvider(function() return btnClose.element end)
 
         --self.infoBar.layout.userData.addInfoLayout({})
     end
