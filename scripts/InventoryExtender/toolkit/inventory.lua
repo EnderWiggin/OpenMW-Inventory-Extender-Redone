@@ -38,6 +38,11 @@ local Toolkit        = I.UIToolkit
 local Components     = Toolkit.Components
 local T              = Toolkit.Templates
 
+
+---@class IER.Inventory.SaveData
+---@field sortingColumn string?
+---@field sortingDirection boolean?
+
 local CategoryFilter = require('scripts.InventoryExtender.toolkit.categoryFilter')
 
 local function getEnchantedIndicatorMode()
@@ -381,6 +386,9 @@ function Inventory:init(type)
     self.type = type
 end
 
+---@param wnd UIToolkit.Window
+---@param data any
+---@param saved IER.Inventory.SaveData
 function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
@@ -978,6 +986,9 @@ function Inventory:onOpened(wnd, data, saved)
             onRowUse(row, false, false)
         end
     }
+    local column = saved and saved.sortingColumn or 'Icon'
+    local sortDir = saved and saved.sortingDirection
+    self.list.header:toggleColumn(column, sortDir)
     self.list:updateProps { position = v2(0, topBarHeight + 2) }
     self.list:setFilter(self.filter)
     local categoryKey = self.categoryFilter:getCategory()
@@ -1006,6 +1017,12 @@ end
 function Inventory:onClosed()
     self.wnd = nil
     self.arg = nil
+    local column, asc = self.list.header:getActiveColumn()
+    ---@type IER.Inventory.SaveData
+    return {
+        sortingColumn = column,
+        sortingDirection = asc,
+    }
 end
 
 function Inventory:onResized(inner)
