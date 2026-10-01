@@ -969,6 +969,11 @@ function Inventory:onOpened(wnd, data, saved)
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
         noBorder = true,
+        onListClicked = function(button, source)
+            if button ~= 1 then return end
+            if not ctx.dragAndDrop.draggingObject then return end
+            ctx.dragAndDrop:stopDrag(self.target)
+        end,
         onItemClicked = function(row)
             onRowUse(row, false, false)
         end
