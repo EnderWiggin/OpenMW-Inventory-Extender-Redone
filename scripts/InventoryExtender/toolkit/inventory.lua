@@ -26,6 +26,7 @@ local l10n = core.l10n('InventoryExtender')
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal') --TODO: change to UI Toolkit popup
 local InfoBar = require('scripts.InventoryExtender.toolkit.info_bar')
+local BarterControls = require('scripts.InventoryExtender.toolkit.barter_controls')
 
 
 local H              = require 'scripts.UIToolkit.helpers'
@@ -1424,6 +1425,19 @@ function Inventory:initInfoBar(ctx, onRowPickup)
         }
 
         self.infoBar:addProvider(function() return btnClose.element end)
+
+        --self.infoBar.layout.userData.addInfoLayout({})
+    end
+
+    if self.type == 'Trade' then
+        --Barter controls
+        local barterControls = BarterControls:new()
+        barterControls:init(self)
+
+        self.infoBar:addProvider(function()
+            barterControls:update(ctx)
+            return barterControls.element
+        end)
 
         --self.infoBar.layout.userData.addInfoLayout({})
     end
