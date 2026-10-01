@@ -784,6 +784,34 @@ function Inventory:onOpened(wnd, data, saved)
         self.infoBar.element,
     })
     self:updateTitle()
+
+    local swap = configPlayer.keybinds.b_SwapUsePickup
+    ---@type UIToolkit.Controller.HintList
+    local hints
+    if I.UI.getMode() == 'Barter' then
+        hints = { --TODO: l10n
+            { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, { id = BUTTON.X } } },
+            'separator',
+            { text = 'Category',              input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
+            { text = 'Select',                input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+        }
+    else
+        hints = { --TODO: l10n
+            { text = swap and 'Use' or 'Pickup', input = { id = BUTTON.A } },
+            { text = swap and 'Pickup' or 'Use', input = { id = BUTTON.X } },
+            'separator',
+            { text = 'Category', input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
+            { text = 'Select',   input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+        }
+    end
+    if self.target == omwself then
+        table.insert(hints, 1, { text = 'Favorite', input = { id = BUTTON.Y } }) --TODO: l10n
+    end
+    wnd:setControllerHints(hints)
 end
 
 function Inventory:onClosed()
