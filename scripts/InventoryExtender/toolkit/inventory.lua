@@ -749,7 +749,7 @@ function Inventory:onOpened(wnd, data, saved)
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
         noBorder = true,
-        onListClicked = function(button, source)
+        onListClicked = function(button)
             if button ~= 1 then return end
             if not ctx.dragAndDrop.draggingObject then return end
             ctx.dragAndDrop:stopDrag(self.target)
@@ -922,6 +922,7 @@ function Inventory:toggleFavorite(row)
 
     ctx.favoriteRevision = (ctx.favoriteRevision or 0) + 1
     self.list.provider:refreshColumns(row, 'Name')
+    self.list.list:setHovered(nil)
     self.list:sort()
 end
 
