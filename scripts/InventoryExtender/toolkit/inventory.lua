@@ -1181,6 +1181,7 @@ function Inventory:initInfoBar(ctx, onRowPickup)
         self.encumbranceBar = Components.progressBar {
             width = 100,
             color = theme.Colors.MAGICK,
+            clamp = false,
         }
         local encumbranceLayout = {
             name = 'encumbrance',
