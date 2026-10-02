@@ -1440,7 +1440,7 @@ function Inventory:create(windowType, ctx)
                     if I.UI.getMode() == 'Container' and ctx.windowArgs.Container then
                         ctx.dragAndDrop:moveAll(self.target, omwself)
                         
-                        if persistentCorpses[self.target.recordId] then
+                        if persistentCorpses(self.target) then
                             ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
                         else
                             core.sendGlobalEvent('IE_DisposeOfCorpse', { target = ctx.windowArgs.Container })
