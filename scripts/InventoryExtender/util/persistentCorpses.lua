@@ -2,7 +2,7 @@
 -- so we need to hardcode a list here.
 -- Includes vanilla, expansions, and PTR content.
 
-return {
+local persistent = {
     ["AAkarRV_DeadBodM"] = true,
     ["AAkarRV_SS_SwordSinger"] = true,
     ["ABtv_Dae_DremoraVault"] = true,
@@ -748,3 +748,15 @@ return {
     ["wizard dead 01"] = true,
     ["wraith_sul_senipul"] = true,
 }
+
+for k, v in pairs(persistent) do
+    persistent[k:lower()] = v
+end
+
+return function(object)
+    local record = object.type.record(object)
+    if record and record.isPersistent ~= nil then
+        return record.isPersistent
+    end
+    return persistent[object.recordId]
+end
