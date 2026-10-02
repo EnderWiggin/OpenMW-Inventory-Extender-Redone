@@ -204,9 +204,15 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
     end
 
     if destination then
+        local uiMode = I.UI.getMode()
         local autoEquip
-        if I.UI.getMode() == 'Companion' and (types.Armor.objectIsInstance(object) or types.Clothing.objectIsInstance(object) or types.Weapon.objectIsInstance(object)) then
+        if uiMode == 'Companion' and (types.Armor.objectIsInstance(object) or types.Clothing.objectIsInstance(object) or types.Weapon.objectIsInstance(object)) then
             autoEquip = self.ctx.windowArgs['Companion']
+        elseif uiMode == 'Container' then
+            local target = self.ctx.windowArgs['Container']
+            if types.NPC.objectIsInstance(target) then
+                autoEquip = target
+            end
         end
 
         core.sendGlobalEvent('IE_MoveInto', {
