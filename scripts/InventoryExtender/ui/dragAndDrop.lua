@@ -17,6 +17,7 @@ local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
+local cursor = require('scripts.InventoryExtender.ui.cursor')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 
@@ -367,6 +368,12 @@ function DragAndDrop:init(ctx)
     self.source = nil
     self.ctx = ctx
 
+    local props = {
+        relativeSize = v2(0, 0),
+        propagateEvents = true,
+    }
+    cursor.apply(props, 'drop_ground')
+
     self.wrapper = ui.create{
         layer = 'DragBlocker',
         props = {
@@ -376,11 +383,7 @@ function DragAndDrop:init(ctx)
         content = ui.content {
             {
                 name = 'dropPointer',
-                props = {
-                    relativeSize = v2(0, 0),
-                    pointer = 'drop_ground',
-                    propagateEvents = true,
-                }
+                props = props
             }
         }
     }

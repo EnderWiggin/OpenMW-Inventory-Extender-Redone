@@ -10,6 +10,7 @@ local omwConstants = require('scripts.omw.mwui.constants')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
+local cursor = require('scripts.InventoryExtender.ui.cursor')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 
@@ -623,7 +624,7 @@ local function makeDraggable(borderTemplate, onDragTypeChanged)
     local function setDragType(index)
         local borderPiece = content[index]
         if borderPiece.userData and borderPiece.userData.dragType then
-            borderPiece.props.pointer = dragTypePointers[borderPiece.userData.dragType] or 'arrow'
+            cursor.apply(borderPiece.props, dragTypePointers[borderPiece.userData.dragType] or 'arrow')
             borderPiece.events = {
                 focusGain = async:callback(function(e, layout)
                     if onDragTypeChanged then
