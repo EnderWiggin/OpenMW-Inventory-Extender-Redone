@@ -473,6 +473,15 @@ function Inventory:onOpened(wnd, data, saved)
         return Pickpocket.isVisible(ctx.pickpocket, row.item)
     end)
 
+    ---@type string|nil
+    local searchText = nil
+    self.filter:add('search', function(row)
+        if not searchText or searchText == '' then return true end
+
+        local haystack = row.SearchText or helpers.getItemSearchText(row.item):lower()
+        return haystack:find(searchText, 1, true) ~= nil
+    end)
+
     local inner = wnd:getInnerSize()
     local theme = Toolkit.getTheme()
     local textSize = theme.Sizes.textNormal
@@ -639,7 +648,8 @@ function Inventory:onOpened(wnd, data, saved)
             self:updateTitle()
             --TODO: update sort column
         end, function(text)
-            print('----', 'SEARCH', text)
+            searchText = text and text:lower()
+            self.list:filter()
         end
     )
 
@@ -771,7 +781,6 @@ function Inventory:onOpened(wnd, data, saved)
     local category = categoryKey and IE.getCategory(categoryKey)
     if category then self.list:setHiddenColumns(category.hiddenColumns) end
     self.list:setItems(self:createData())
-    --TODO: update sort column
 
     self.infoBar:updateProps({
         relativePosition = v2(0, 1),
