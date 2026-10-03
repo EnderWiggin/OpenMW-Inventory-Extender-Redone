@@ -398,9 +398,13 @@ function Inventory:onOpened(wnd, data, saved)
     local IE = I.InventoryExtender
     local ctx = IE.getContext()
     self.ctx = ctx
+    self.mode = I.UI.getMode()
 
     if self.type == 'Inventory' then
         self.target = omwself
+        if self.mode == 'Interface' then
+            self.wnd:setPinnable(true)
+        end
     else
         self.target = data
     end

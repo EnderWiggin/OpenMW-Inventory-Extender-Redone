@@ -204,6 +204,9 @@ function WindowManager:show(windowName, arg)
         end
     end
 
+    --TODO: do not close if not Inventory or same mode?
+    --TODO: or maybe invent mode switching for inventory?
+    I.UIToolkit.WindowManager.close('InventoryExtender:' .. windowName, true)
     I.UIToolkit.WindowManager.open('InventoryExtender:' .. windowName, arg)
 end
 
