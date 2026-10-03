@@ -59,6 +59,13 @@ local function shouldShowEnchantedNameIcon()
     return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Swirl'
 end
 
+local function getSyncedCategoryKey(categoryKey, targetWindow)
+    if categoryKey == 'Favorites' and targetWindow and targetWindow.target ~= omwself then
+        return 'All'
+    end
+    return categoryKey
+end
+
 ---@type UIToolkit.ListItem.Column.Renderer
 local function iconRenderer(data, cfg, height)
     ---@cast data InventoryExtenderRedone.RowData
@@ -620,6 +627,22 @@ function Inventory:onOpened(wnd, data, saved)
         return filteredCategories
     end
 
+    local function trySyncedCategorySwitch(category)
+        if ctx.syncingCategoryFilter then return end
+
+        local invert = configPlayer.tweaks.b_InvertCategorySwitching
+        local shouldSync = invert and input.isShiftPressed() or not invert and not input.isShiftPressed()
+        if not shouldSync then return end
+
+        ctx.syncingCategoryFilter = true
+        I.InventoryExtender.forEachOpenWindow(function(targetWnd)
+            ---@cast targetWnd IER.Inventory
+            if targetWnd == self then return end
+            targetWnd.categoryFilter:setCategory(category)
+        end)
+        ctx.syncingCategoryFilter = false
+    end
+
     self.categoryFilter = CategoryFilter.create({
             maxHeight = 72,
             compact = configPlayer.tweaks.b_CompactCategoryFilter,
@@ -644,9 +667,12 @@ function Inventory:onOpened(wnd, data, saved)
 
             self.list:filter(false)
             self.list:setHiddenColumns(category.hiddenColumns)
+            self.list.list:setPosition(0)
 
             self:updateTitle()
             --TODO: update sort column
+
+            trySyncedCategorySwitch(category.key)
         end, function(text)
             searchText = text and text:lower()
             self.list:filter()
