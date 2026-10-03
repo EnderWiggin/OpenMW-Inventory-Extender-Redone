@@ -21,6 +21,20 @@ local InventoryWindow = require('scripts.InventoryExtender.ui.windows.inventory'
 local InvHandler = require 'scripts.InventoryExtender.toolkit.inventory'
 
 
+local DefaultPosition = {
+    ['InventoryExtender:Inventory'] = v2(0.015, 0.54),
+    ['InventoryExtender:Container'] = v2(0.5, 0.05),
+    ['InventoryExtender:Trade'] = v2(0.5, 0.05),
+    ['InventoryExtender:Companion'] = v2(0.5, 0.05),
+}
+
+local DefaultDimensions = {
+    ['InventoryExtender:Inventory'] = v2(0.45, 0.38),
+    ['InventoryExtender:Container'] = v2(0.45, 0.85),
+    ['InventoryExtender:Trade'] = v2(0.45, 0.85),
+    ['InventoryExtender:Companion'] = v2(0.45, 0.85),
+}
+
 local validDragModes = {
     Interface = true,
     Container = true,
@@ -102,15 +116,18 @@ function WindowManager:init()
         local handler = InvHandler:new()
         handler:init(windowName)
 
+        local manager = I.UIToolkit.WindowManager
         local windowId = 'InventoryExtender:' .. windowName
         allToolkitWindows[#allToolkitWindows + 1] = windowId
-        I.UIToolkit.WindowManager.register(windowId, {
+        manager.register(windowId, {
             title = windowName,
             handler = handler,
             draggable = true,
             resizing = true,
             pinnable = false, --TODO: set this
-            minSize = v2(200, 60),
+            position = manager.toAbsolute(DefaultPosition[windowId]),
+            size = manager.toAbsolute(DefaultDimensions[windowId]),
+            minSize = v2(300, 200),
         })
     end
 end

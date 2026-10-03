@@ -920,6 +920,11 @@ function Inventory:getStorageSuffix()
     return getStorageSuffix(self.type)
 end
 
+function Inventory:getDefaultStorage()
+    if self.type ~= 'Inventory' or I.UI.getMode() == 'Interface' then return nil end
+    return { position = v2(0.05, 0.05), size = v2(0.45, 0.85) }
+end
+
 function Inventory:update()
     self.list.provider:clear()
     self.list:setItems(self:createData())
