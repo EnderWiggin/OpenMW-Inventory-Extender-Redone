@@ -840,6 +840,7 @@ function Inventory:onResized(inner)
 end
 
 function Inventory:onKeyboardButtonPress(key)
+    if I.UI.getMode() == nil then return end
     --TODO: add bindings for these
     if key == KEY.A then
         self.categoryFilter:cycleCategory(-1)
@@ -874,6 +875,7 @@ function Inventory:onKeyboardButtonRepeat(key)
 end
 
 function Inventory:onControllerButtonPress(button)
+    if I.UI.getMode() == nil then return end
     --TODO: add bindings for these
     local ctx = self.ctx
     if button == BUTTON.LeftShoulder then
