@@ -45,6 +45,11 @@ function API.getWindows()
     return windowManager.windows
 end
 
+---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
+function API.forEachOpenWindow(apply)
+    return windowManager:forEachOpenWindow(apply)
+end
+
 function API.getWindow(windowName)
     return windowManager.windows[windowName]
 end

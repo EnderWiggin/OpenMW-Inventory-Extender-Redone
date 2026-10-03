@@ -110,14 +110,20 @@ function WindowManager:create(windowName)
     return self.windows[windowName]
 end
 
+local WINDOW_TYPES = { "Inventory", "Trade", "Container", "Companion" }
+local function getWindowId(type)
+    return 'InventoryExtender:' .. type
+end
+
 function WindowManager:init()
-    for _, windowName in ipairs { "Inventory", "Trade", "Container", "Companion" } do
+    for i = 1, #WINDOW_TYPES do
+        local windowName = WINDOW_TYPES[i]
         self:create(windowName)
         local handler = InvHandler:new()
         handler:init(windowName)
 
         local manager = I.UIToolkit.WindowManager
-        local windowId = 'InventoryExtender:' .. windowName
+        local windowId = getWindowId(windowName)
         allToolkitWindows[#allToolkitWindows + 1] = windowId
         manager.register(windowId, {
             title = windowName,
@@ -206,8 +212,9 @@ function WindowManager:show(windowName, arg)
 
     --TODO: do not close if not Inventory or same mode?
     --TODO: or maybe invent mode switching for inventory?
-    I.UIToolkit.WindowManager.close('InventoryExtender:' .. windowName, true)
-    I.UIToolkit.WindowManager.open('InventoryExtender:' .. windowName, arg)
+    local windowId = getWindowId(windowName)
+    I.UIToolkit.WindowManager.close(windowId, true)
+    I.UIToolkit.WindowManager.open(windowId, arg)
 end
 
 function WindowManager:hide(windowName, arg, force)
@@ -229,7 +236,20 @@ function WindowManager:hide(windowName, arg, force)
         self.ctx.activeTooltip = nil
     end
 
-    I.UIToolkit.WindowManager.close('InventoryExtender:' .. windowName)
+    I.UIToolkit.WindowManager.close(getWindowId(windowName))
+end
+
+---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
+function WindowManager:forEachOpenWindow(apply)
+    for i = 1, #WINDOW_TYPES do
+        local windowName = WINDOW_TYPES[i]
+        local windowId = getWindowId(windowName)
+        local wnd = I.UIToolkit.WindowManager.getWindow(windowId)
+        if wnd then
+            local handler = I.UIToolkit.WindowManager.getHandler(windowId) --[[@as IER.Inventory]]
+            apply(handler, wnd)
+        end
+    end
 end
 
 function WindowManager:onUiModeChanged(oldMode, newMode, arg)
