@@ -73,25 +73,11 @@ local function teleport(props)
             mwscript.variables.onpcdrop = 1
         end
     end
+    local box = obj:getBoundingBox()
+    local offset = util.vector3(0, 0, box.halfSize.z - box.center.z)
+    position = position + offset
 
     obj:teleport(cellOrName, position, options)
-    core.sendGlobalEvent('IE_PostTeleport', {
-        obj = obj,
-        position = position,
-        cell = cellOrName,
-        options = options,
-        player = props.player,
-    })
-end
-
-local function postTeleport(props)
-    local obj = props.obj
-    local box = obj:getBoundingBox()
-    local localCenter = box.center - obj.position
-    local offset = util.vector3(0, 0, box.halfSize.z - localCenter.z)
-
-    obj:teleport(obj.cell, obj.position + offset)
-
     props.player:sendEvent('IE_Update')
 end
 
@@ -655,7 +641,6 @@ local eventHandlers = {
     IE_ConfiscateToOwner = confiscateToOwner,
     IE_CommitPickpocket = commitPickpocket,
     IE_Teleport = teleport,
-    IE_PostTeleport = postTeleport,
     IE_ScriptedDragStart = scriptedDragStart,
     IE_MoveInto = moveInto,
     IE_MoveAll = moveAll,
@@ -725,7 +710,6 @@ eventHandlers.MI_TryConfiscate = eventHandlers.IE_TryConfiscate
 eventHandlers.MI_ConfiscateToOwner = eventHandlers.IE_ConfiscateToOwner
 eventHandlers.MI_CommitPickpocket = eventHandlers.IE_CommitPickpocket
 eventHandlers.MI_Teleport = eventHandlers.IE_Teleport
-eventHandlers.MI_PostTeleport = eventHandlers.IE_PostTeleport
 eventHandlers.MI_ScriptedDragStart = eventHandlers.IE_ScriptedDragStart
 eventHandlers.MI_MoveInto = eventHandlers.IE_MoveInto
 eventHandlers.MI_MoveAll = eventHandlers.IE_MoveAll

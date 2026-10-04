@@ -1,3 +1,11 @@
+1.3.0 (02.10.26)
+- removed 2nd positioning teleport for dropped items, this fixes on item placed interactions:
+  - mwscript's `onpcdrop` (for example `Paradox Scale` from `The Popular Plague` mod)
+  - lua's `onItemActive` handlers (for example OAAB's mannequins)
+- persistent corpse detection: if 0.52's `isPersistent` property is available - use it
+- added OAAB's mannequins to persistent corpse list
+- enabled auto equip for corpses on item transfer - fixes mannequins not equipping items
+
 1.2.0 (16.09.26) Most of these changes were released way earlier as unversioned tweaks
 - fixed errors happening if controller shoulder button is pressed while inventory is not open
 - distinguish left and right apparel in type column
