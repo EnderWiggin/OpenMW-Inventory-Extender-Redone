@@ -255,7 +255,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = 50 * fontRatio,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
@@ -265,7 +265,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = 60 * fontRatio,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
@@ -275,7 +275,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = 60 * fontRatio,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
@@ -284,7 +284,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             name = l10n('Column_Condition'),
             width = 55 * fontRatio,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
             ---@param a InventoryExtenderRedone.RowData
@@ -297,10 +297,10 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
                     return 0
                 end
                 if aValue == nil then
-                    return 1
+                    return -1
                 end
                 if bValue == nil then
-                    return -1
+                    return 1
                 end
 
                 return aValue < bValue and -1 or 1
@@ -312,7 +312,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = w,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
@@ -322,7 +322,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = 70 * fontRatio,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
@@ -332,7 +332,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = w,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
@@ -342,7 +342,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             sort = { numeric = true },
             width = w,
             align = ui.ALIGNMENT.End,
-            defaultOrder = 'desc',
+            descending = true,
             render = renderNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         }
@@ -693,7 +693,6 @@ function Inventory:onOpened(wnd, data, saved)
             self.list.list:setPosition(0)
 
             self:updateTitle()
-            --TODO: update sort column
 
             trySyncedCategorySwitch(category.key)
         end, function(text)
@@ -810,6 +809,7 @@ function Inventory:onOpened(wnd, data, saved)
     local topBarHeight = self.categoryFilter:getSize().y
     self.list = Components.sortedList {
         columns = ALL_COLUMNS(fallBackSort, nameRenderer),
+        defaultColumn = 'Icon',
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
         noBorder = true,
