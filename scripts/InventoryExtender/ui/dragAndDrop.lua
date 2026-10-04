@@ -378,6 +378,11 @@ function DragAndDrop:init(ctx)
     self.source = nil
     self.ctx = ctx
 
+    local pointerProps = {
+        relativeSize = v2(0, 0),
+        propagateEvents = true,
+    }
+    I.UIToolkit.Cursors.applyCursor(pointerProps, 'drop_ground')
     self.wrapper = ui.create {
         layer = 'DragBlocker',
         props = {
@@ -387,11 +392,7 @@ function DragAndDrop:init(ctx)
         content = ui.content {
             {
                 name = 'dropPointer',
-                props = {
-                    relativeSize = v2(0, 0),
-                    pointer = 'drop_ground',
-                    propagateEvents = true,
-                }
+                props = pointerProps
             }
         }
     }
