@@ -727,10 +727,14 @@ function Inventory:onOpened(wnd, data, saved)
         ctx.syncingCategoryFilter = false
     end
 
-    local function updateHiddenColumns()
+    local function updateHiddenColumns(category)
+        if not category then
+            local categoryKey = self.categoryFilter:getCategory()
+            category = categoryKey and IE.getCategory(categoryKey)
+        end
         self.list:setHiddenColumns(combineHiddenColumns(
             self.list.header.columns,
-            self.categoryFilter:getCategory().hiddenColumns
+            category and category.hiddenColumns
         ))
     end
 
@@ -965,7 +969,7 @@ function Inventory:onOpened(wnd, data, saved)
     self.list:setFilter(self.filter)
     local categoryKey = self.categoryFilter:getCategory()
     local category = categoryKey and IE.getCategory(categoryKey)
-    if category then self.list:setHiddenColumns(category.hiddenColumns) end
+    if category then updateHiddenColumns(category) end
     self.list:setItems(self:createData())
 
     self.infoBar:updateProps({
@@ -984,7 +988,6 @@ function Inventory:onOpened(wnd, data, saved)
     })
     self:updateTitle()
     self.categoryFilter.updateCategories()
-    updateHiddenColumns()
 
     local swap = configPlayer.keybinds.b_SwapUsePickup
     ---@type UIToolkit.Controller.HintList
