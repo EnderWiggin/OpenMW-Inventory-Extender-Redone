@@ -357,10 +357,42 @@ end
 local OptionalColumns = {
     Condition = true,
     Weight_Total = true,
+    ['V/W'] = true,
+}
+
+local EditableColumns = {
+    'Type',
+    'Damage',
+    'Class',
+    'AR',
+    'Quality',
+    'Condition',
+    'Weight',
+    'Weight_Total',
+    'Value',
+    'V/W',
 }
 
 local function getColumnVisibility()
-    return windowOptionsSection:get(columnVisibilityKey) or {}
+    return windowOptionsSection:getCopy(columnVisibilityKey) or {}
+end
+
+local function setColumnVisibility(columnId, visible)
+    local visibility = getColumnVisibility()
+    if visible then
+        if OptionalColumns[columnId] then
+            visibility[columnId] = true
+        else
+            visibility[columnId] = nil
+        end
+    else
+        visibility[columnId] = false
+    end
+    windowOptionsSection:set(columnVisibilityKey, visibility)
+end
+
+local function resetHiddenColumns()
+    windowOptionsSection:set(columnVisibilityKey, {})
 end
 
 local function isColumnVisible(columnId, visibility)
@@ -690,16 +722,60 @@ function Inventory:onOpened(wnd, data, saved)
         I.InventoryExtender.forEachOpenWindow(function(targetWnd)
             ---@cast targetWnd IER.Inventory
             if targetWnd == self then return end
-            targetWnd.categoryFilter:setCategory(category)
+            targetWnd.categoryFilter:setCategory(getSyncedCategoryKey(category, targetWnd))
         end)
         ctx.syncingCategoryFilter = false
     end
 
+    local function updateHiddenColumns()
+        self.list:setHiddenColumns(combineHiddenColumns(
+            self.list.header.columns,
+            self.categoryFilter:getCategory().hiddenColumns
+        ))
+    end
+
     local function openColumnSettings()
-        I.UIToolkit.Popups.show {
+        if self._closeSettingsPopup then
+            self._closeSettingsPopup()
+            self._closeSettingsPopup = nil
+        end
+        ---@type openmw.ui.LayoutOrElement[]
+        local elements = {}
+
+        for i = 1, #EditableColumns do
+            if i > 1 then
+                elements[#elements + 1] = T.intervalV(4)
+            end
+            local id = EditableColumns[i]
+            local column = self.list.header:getColumnConfig(id)
+            assert(column)
+
+            elements[#elements + 1] = Toolkit.Components.checkbox {
+                name = id,
+                text = column.name,
+                width = 200,
+                default = isColumnVisible(id),
+                onValueChanged = function(value)
+                    setColumnVisibility(id, value)
+                    updateHiddenColumns()
+                end,
+            }.element
+        end
+        self._closeSettingsPopup = I.UIToolkit.Popups.show {
             title = l10n('UI_ColumnSettingsTitle'),
-            body = '',
-            buttons = { { text = constants.Strings.OK } },
+            body = {
+                template = T.box { padding = 4 },
+                props = {},
+                content = ui.content { {
+                    type = ui.TYPE.Flex,
+                    props = {},
+                    content = ui.content(elements)
+                } }
+            },
+            buttons = { { text = constants.Strings.OK }, { text = 'Defaults', onClicked = function()
+                resetHiddenColumns()
+                updateHiddenColumns()
+            end } },
         }
     end
 
@@ -908,6 +984,7 @@ function Inventory:onOpened(wnd, data, saved)
     })
     self:updateTitle()
     self.categoryFilter.updateCategories()
+    updateHiddenColumns()
 
     local swap = configPlayer.keybinds.b_SwapUsePickup
     ---@type UIToolkit.Controller.HintList
@@ -939,6 +1016,10 @@ function Inventory:onOpened(wnd, data, saved)
 end
 
 function Inventory:onClosed()
+    if self._closeSettingsPopup then
+        self._closeSettingsPopup()
+        self._closeSettingsPopup = nil
+    end
     if self.ctx.dragAndDrop.draggingObject then
         self.ctx.dragAndDrop:stopDrag()
     end
