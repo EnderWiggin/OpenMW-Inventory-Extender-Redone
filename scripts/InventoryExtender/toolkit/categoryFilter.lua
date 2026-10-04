@@ -378,7 +378,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
 
     updateCategories()
 
-    element.layout.userData.updateCategories = updateCategories
+    self.updateCategories = updateCategories
 
     element.layout.userData.updateViewModeButton = updateViewModeButton
 

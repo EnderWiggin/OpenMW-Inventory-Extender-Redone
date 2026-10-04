@@ -649,7 +649,30 @@ function Inventory:onOpened(wnd, data, saved)
             vanillaStyle = configPlayer.tweaks.b_VanillaCategoryIcons,
             getCategories = getAvailableCategories,
             getCategoryDisabledLookup = function()
-                return {}
+                if not self.list then return nil end
+
+                self.filter:disable('category', true)
+                local rows = self.filter:filter(self.list.allItems) --[[@as InventoryExtenderRedone.RowData[] ]]
+                self.filter:disable('category', false)
+
+                local categories = getAvailableCategories()
+                local disabledLookup = {}
+
+                for i = 1, #categories do
+                    local category = categories[i]
+                    if category.filter ~= nil then
+                        disabledLookup[category.key] = true
+                        for j = 1, #rows do
+                            local item = rows[j].item
+                            if category.filter(item) then
+                                disabledLookup[category.key] = nil
+                                break
+                            end
+                        end
+                    end
+                end
+
+                return disabledLookup
             end,
             onOpenSettings = openColumnSettings,
             onToggleView = toggleItemViewMode,
@@ -676,6 +699,7 @@ function Inventory:onOpened(wnd, data, saved)
         end, function(text)
             searchText = text and text:lower()
             self.list:filter()
+            self.categoryFilter.updateCategories()
         end
     )
 
@@ -823,6 +847,7 @@ function Inventory:onOpened(wnd, data, saved)
         self.infoBar.element,
     })
     self:updateTitle()
+    self.categoryFilter.updateCategories()
 
     local swap = configPlayer.keybinds.b_SwapUsePickup
     ---@type UIToolkit.Controller.HintList
@@ -969,6 +994,7 @@ end
 function Inventory:update()
     self.list.provider:clear()
     self.list:setItems(self:createData())
+    self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
 end
 
