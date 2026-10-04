@@ -8,7 +8,6 @@ local I = require('openmw.interfaces')
 local async = require('openmw.async')
 local core = require('openmw.core')
 
-local baseTemplates = require('scripts.InventoryExtender.ui.templates.base')
 local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 local constants = require('scripts.InventoryExtender.util.constants')
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
@@ -17,6 +16,8 @@ local configPlayer = require('scripts.InventoryExtender.config.player')
 local l10n = core.l10n('InventoryExtender')
 
 
+local Toolkit   = I.UIToolkit
+local T         = Toolkit.Templates
 local H         = require 'scripts.UIToolkit.helpers'
 local Class     = require 'scripts.UIToolkit.class'
 local Component = require 'scripts.UIToolkit.components.component'
@@ -63,7 +64,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
 
     local element, createSearchBar
     local placeholder = l10n('UI_SearchBarPlaceholder')
-    local toolbarButtonSize = v2(topBarHeight - 12, topBarHeight - 12)
+    local toolbarButtonSize = v2(topBarHeight - 4, topBarHeight - 4)
 
     local function getViewMode()
         if props.getViewMode then
@@ -77,20 +78,6 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
             return iconPack.getPath('view_table.dds')
         end
         return iconPack.getPath('view_grid.dds')
-    end
-
-    local function updateViewModeButton()
-        if not props.onToggleView or not element or not element.layout then
-            return
-        end
-
-        for _, e in pairs(element.layout.content.topBar.content) do
-            if e.layout and e.layout.name == 'viewModeToggle' then
-                e.layout.content[1].props.resource = baseTemplates.createTexture(getViewModeToggleIconPath())
-                e:update()
-                break
-            end
-        end
     end
 
     local categoryBarLayout = {
@@ -116,16 +103,14 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         external = compact and { grow = 1, stretch = 1, } or nil,
     }
 
-    local topBarContent = ui.content {
-        baseTemplates.intervalH(8),
-    }
+    local topBarContent = ui.content { T.intervalH(8), }
     if compact then
         topBarContent:add(categoryBarLayout)
-        topBarContent:add(baseTemplates.intervalH(8))
+        topBarContent:add(T.intervalH(8))
     else
         topBarContent:add({
             name = 'selectedCategoryName',
-            template = baseTemplates.textHeader,
+            template = T.text(),
             props = {
                 text = '',
                 textSize = topBarHeight,
@@ -142,35 +127,42 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         showClearButton = true,
     }.element)
     if props.onOpenSettings then
-        topBarContent:add(baseTemplates.intervalH(4))
-        topBarContent:add(specialTemplates.interactive({
-                onClick = function()
-                    props.onOpenSettings()
-                end,
-                tooltipFn = function()
-                    return specialTemplates.lineTooltip(l10n('UI_Tooltip_ColumnSettings'))
-                end,
-                name = 'columnSettings',
-            },
-            baseTemplates.imageButton(iconPack.getPath('edit_mode.dds'), toolbarButtonSize, nil, 'columnSettingsButton'),
-            ctx))
+        topBarContent:add(T.intervalH(4))
+        topBarContent:add(Toolkit.Components.imageButton {
+            icon = iconPack.getPath('edit_mode.dds'),
+            size = toolbarButtonSize,
+            onClick = function()
+                props.onOpenSettings()
+            end,
+            tooltip = l10n('UI_Tooltip_ColumnSettings'),
+            name = 'columnSettings',
+        }.element)
+    end
+
+    local viewModeButton
+    local function updateViewModeButton()
+        if not viewModeButton then return end
+        viewModeButton:setIcon(getViewModeToggleIconPath())
     end
     if props.onToggleView and configPlayer.window.b_ShowViewModeButton then
-        topBarContent:add(baseTemplates.intervalH(4))
-        topBarContent:add(specialTemplates.interactive({
+        viewModeButton = Toolkit.Components.imageButton {
+            icon = getViewModeToggleIconPath(),
+            size = toolbarButtonSize,
             onClick = function()
                 props.onToggleView()
                 updateViewModeButton()
             end,
-            tooltipFn = function()
-                local text = getViewMode() == 'ItemViewMode_Grid' and l10n('UI_Tooltip_TableView') or
-                    l10n('UI_Tooltip_GridView')
-                return specialTemplates.lineTooltip(text)
+            tooltip = function()
+                return getViewMode() == 'ItemViewMode_Grid'
+                    and l10n('UI_Tooltip_TableView')
+                    or l10n('UI_Tooltip_GridView')
             end,
-            name = 'viewModeToggle',
-        }, baseTemplates.imageButton(getViewModeToggleIconPath(), toolbarButtonSize, nil, 'viewModeToggleButton'), ctx))
+            name = 'columnSettings',
+        }
+        topBarContent:add(T.intervalH(4))
+        topBarContent:add(viewModeButton.element)
     end
-    topBarContent:add(baseTemplates.intervalH(8))
+    topBarContent:add(T.intervalH(8))
 
     local topBarLayout = {
         name = 'topBar',
@@ -292,7 +284,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
                         name = 'categoryBackground',
                         type = ui.TYPE.Image,
                         props = {
-                            resource = baseTemplates.createTexture(iconPack.getPath('category_bgr.dds')),
+                            resource = Toolkit.texture(iconPack.getPath('category_bgr.dds')),
                             relativeSize = v2(1, 0),
                             size = v2(0, iconSize.y + (compact and 6 or -2)),
                             relativePosition = v2(0.5, 0.5),
@@ -380,7 +372,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
 
     self.updateCategories = updateCategories
 
-    element.layout.userData.updateViewModeButton = updateViewModeButton
+    self.updateViewModeButton = updateViewModeButton
 
     local function resizeImages(totalWidth)
         local categories = getCategories()

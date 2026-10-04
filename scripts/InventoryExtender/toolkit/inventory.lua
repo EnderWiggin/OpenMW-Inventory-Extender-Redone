@@ -6,6 +6,7 @@ local core      = require 'openmw.core'
 local input     = require 'openmw.input'
 local ui        = require 'openmw.ui'
 local util      = require 'openmw.util'
+local storage   = require 'openmw.storage'
 local types     = require 'openmw.types'
 local omwself   = require 'openmw.self'
 local aux_util  = require 'openmw_aux.util'
@@ -39,6 +40,10 @@ local CompoundFilter = require 'scripts.UIToolkit.compound_filter'
 local Toolkit        = I.UIToolkit
 local Components     = Toolkit.Components
 local T              = Toolkit.Templates
+
+
+local windowOptionsSection = storage.playerSection('InventoryExtender')
+local columnVisibilityKey  = 'ColumnVisibility'
 
 
 ---@class IER.Inventory.SaveData
@@ -349,6 +354,53 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
     }
 end
 
+local OptionalColumns = {
+    Condition = true,
+    Weight_Total = true,
+}
+
+local function getColumnVisibility()
+    return windowOptionsSection:get(columnVisibilityKey) or {}
+end
+
+local function isColumnVisible(columnId, visibility)
+    visibility = visibility or getColumnVisibility()
+    if OptionalColumns[columnId] then
+        return visibility[columnId] == true
+    end
+    return visibility[columnId] ~= false
+end
+
+---@param columns {id:string}[]
+---@param categoryHidden table<string, boolean>?
+---@return table<string, boolean>
+local function combineHiddenColumns(columns, categoryHidden)
+    local hidden = {}
+    local visibility = getColumnVisibility()
+    local visible = 0
+
+    for i = 1, #columns do
+        local id = columns[i].id
+        if not isColumnVisible(id, visibility) then
+            hidden[id] = true
+        else
+            visible = visible + 1
+        end
+    end
+
+    if categoryHidden then
+        for k, v in pairs(categoryHidden) do
+            if v then hidden[k] = true end
+        end
+    end
+
+    if visible == 0 and columns[1] then
+        hidden[columns[1].id] = nil
+    end
+
+    return hidden
+end
+
 local function getStorageSuffix(type)
     if type ~= 'Inventory' then return nil end
     local mode = I.UI.getMode()
@@ -643,6 +695,14 @@ function Inventory:onOpened(wnd, data, saved)
         ctx.syncingCategoryFilter = false
     end
 
+    local function openColumnSettings()
+        I.UIToolkit.Popups.show {
+            title = l10n('UI_ColumnSettingsTitle'),
+            body = '',
+            buttons = { { text = constants.Strings.OK } },
+        }
+    end
+
     self.categoryFilter = CategoryFilter.create({
             maxHeight = 72,
             compact = configPlayer.tweaks.b_CompactCategoryFilter,
@@ -689,7 +749,7 @@ function Inventory:onOpened(wnd, data, saved)
             end
 
             self.list:filter(false)
-            self.list:setHiddenColumns(category.hiddenColumns)
+            self.list:setHiddenColumns(combineHiddenColumns(self.list.header.columns, category.hiddenColumns))
             self.list.list:setPosition(0)
 
             self:updateTitle()
