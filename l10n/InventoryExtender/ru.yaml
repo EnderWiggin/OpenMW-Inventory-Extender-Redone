@@ -258,3 +258,11 @@ ConfigSortingBarterReverseFavorite: "При торговле сортирова�
 
 ConfigTooltipShowItemUseCost: "Показывать стоимость использования предмета"
 ConfigTooltipShowItemUseCostDesc: "Показывать стоимость заряда за одно применение для магических предметов."
+
+Hint_Use: "Использовать"
+Hint_Pickup: "Взять"
+Hint_Category: "Категория"
+Hint_Select: "Выбрать"
+Hint_Favorite: "Избранное"
+
+Popup_BTN_Defaults: "По умолчанию"

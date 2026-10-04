@@ -759,6 +759,7 @@ function Inventory:onOpened(wnd, data, saved)
                 text = column.name,
                 width = 200,
                 default = isColumnVisible(id),
+                accentedCheckmark = true,
                 onValueChanged = function(value)
                     setColumnVisibility(id, value)
                     updateHiddenColumns()
@@ -776,7 +777,7 @@ function Inventory:onOpened(wnd, data, saved)
                     content = ui.content(elements)
                 } }
             },
-            buttons = { { text = constants.Strings.OK }, { text = 'Defaults', onClicked = function()
+            buttons = { { text = constants.Strings.OK }, { text = l10n 'Popup_BTN_Defaults', onClicked = function()
                 resetHiddenColumns()
                 updateHiddenColumns()
             end } },
@@ -1002,18 +1003,18 @@ function Inventory:onOpened(wnd, data, saved)
             { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
         }
     else
-        hints = { --TODO: l10n
-            { text = swap and 'Use' or 'Pickup', input = { id = BUTTON.A } },
-            { text = swap and 'Pickup' or 'Use', input = { id = BUTTON.X } },
+        hints = {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = { id = BUTTON.X } },
             'separator',
-            { text = 'Category', input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
-            { text = 'Select',   input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+            { text = l10n 'Hint_Category', input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
+            { text = l10n 'Hint_Select',   input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
             'separator',
             { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
         }
     end
     if self.target == omwself then
-        table.insert(hints, 1, { text = 'Favorite', input = { id = BUTTON.Y } }) --TODO: l10n
+        table.insert(hints, 1, { text = l10n 'Hint_Favorite', input = { id = BUTTON.Y } })
     end
     wnd:setControllerHints(hints)
 end

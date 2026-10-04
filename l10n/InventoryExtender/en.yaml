@@ -262,3 +262,11 @@ ConfigSortingBarterReverseFavorite: When bartering, sort favorite items last
 
 ConfigTooltipShowItemUseCost: Show item use cost
 ConfigTooltipShowItemUseCostDesc: Show the charges cost per cast for magic items.
+
+Hint_Use: Use
+Hint_Pickup: Pickup
+Hint_Category: Category
+Hint_Select: Select
+Hint_Favorite: Favorite
+
+Popup_BTN_Defaults: Defaults
