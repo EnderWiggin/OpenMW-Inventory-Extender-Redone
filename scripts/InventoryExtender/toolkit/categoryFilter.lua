@@ -145,18 +145,20 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         viewModeButton:setIcon(getViewModeToggleIconPath())
     end
     if props.onToggleView and configPlayer.window.b_ShowViewModeButton then
+        local function getTooltip()
+            return getViewMode() == 'ItemViewMode_Grid'
+                and l10n('UI_Tooltip_TableView')
+                or l10n('UI_Tooltip_GridView')
+        end
         viewModeButton = Toolkit.Components.imageButton {
             icon = getViewModeToggleIconPath(),
             size = toolbarButtonSize,
             onClick = function()
                 props.onToggleView()
                 updateViewModeButton()
+                I.UTKTooltips.setTooltip(getTooltip())
             end,
-            tooltip = function()
-                return getViewMode() == 'ItemViewMode_Grid'
-                    and l10n('UI_Tooltip_TableView')
-                    or l10n('UI_Tooltip_GridView')
-            end,
+            tooltip = getTooltip,
             name = 'columnSettings',
         }
         topBarContent:add(T.intervalH(4))

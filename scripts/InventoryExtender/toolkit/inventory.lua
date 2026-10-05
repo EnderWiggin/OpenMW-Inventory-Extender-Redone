@@ -30,6 +30,8 @@ local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
 local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal') --TODO: change to UI Toolkit popup
 local InfoBar = require('scripts.InventoryExtender.toolkit.info_bar')
 local BarterControls = require('scripts.InventoryExtender.toolkit.barter_controls')
+local GridIcon = require('scripts.InventoryExtender.toolkit.grid_icon_provider')
+local ItemTable = require('scripts.InventoryExtender.toolkit.item_table')
 
 
 local H              = require 'scripts.UIToolkit.helpers'
@@ -42,6 +44,7 @@ local Components     = Toolkit.Components
 local T              = Toolkit.Templates
 
 
+local playerWindowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
 local windowOptionsSection = storage.playerSection('InventoryExtender')
 local columnVisibilityKey  = 'ColumnVisibility'
 
@@ -56,8 +59,8 @@ local function getEnchantedIndicatorMode()
     return configPlayer.tweaks.s_EnchantedIndicatorMode or 'EnchantedIndicatorMode_Both'
 end
 
-local function shouldShowEnchantedSwirl(forceEnchantSwirl)
-    return forceEnchantSwirl or getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Icon'
+local function shouldShowEnchantedSwirl()
+    return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Icon'
 end
 
 local function shouldShowEnchantedNameIcon()
@@ -74,51 +77,10 @@ end
 ---@type UIToolkit.ListItem.Column.Renderer
 local function iconRenderer(data, cfg, height)
     ---@cast data InventoryExtenderRedone.RowData
-    local width = cfg.width
+    local width = cfg.width or height
     local sz = cfg.arg and cfg.arg.sz or math.min(height, width or height)
-    local options = cfg.arg or {}
-    local ctx = I.InventoryExtender.getContext()
-
-    local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
-    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl(options.forceEnchantSwirl) or false
-    local bgrVisible = data.isBartered or equipped or showEnchantSwirl
-    local magicString = showEnchantSwirl and '_magic' or ''
-    local postString = (data.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or
-        '_none'
-    local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
-    return {
-        name = 'Icon',
-        props = {
-            size = v2(width, height),
-        },
-        content = ui.content {
-            {
-                name = 'itemBackground',
-                type = ui.TYPE.Image,
-                props = {
-                    resource = Toolkit.texture(bgrPath, v2(40, 40), bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
-                    anchor = v2(0.5, 0.5),
-                    relativePosition = v2(0.5, 0.5),
-                    size = v2(sz, sz),
-                    visible = bgrVisible,
-                }
-            },
-            {
-                name = 'itemIcon',
-                type = ui.TYPE.Image,
-                props = {
-                    resource = Toolkit.texture(data.itemRecord.icon),
-                    anchor = v2(0.5, 0.5),
-                    relativePosition = v2(0.5, 0.5),
-                    size = v2(sz, sz),
-                }
-            },
-        },
-        userData = {
-            bgrVisible = bgrVisible,
-            bgrPath = bgrPath,
-        }
-    }
+    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
+    return GridIcon.renderIcon(data, v2(width, height), v2(sz, sz), v2(sz, sz), showEnchantSwirl)
 end
 
 ---@type UIToolkit.ListItem.Column.Renderer
@@ -732,8 +694,8 @@ function Inventory:onOpened(wnd, data, saved)
             local categoryKey = self.categoryFilter:getCategory()
             category = categoryKey and IE.getCategory(categoryKey)
         end
-        self.list:setHiddenColumns(combineHiddenColumns(
-            self.list.header.columns,
+        self.table:setHiddenColumns(combineHiddenColumns(
+            self.table.header.columns,
             category and category.hiddenColumns
         ))
     end
@@ -751,7 +713,7 @@ function Inventory:onOpened(wnd, data, saved)
                 elements[#elements + 1] = T.intervalV(4)
             end
             local id = EditableColumns[i]
-            local column = self.list.header:getColumnConfig(id)
+            local column = self.table.header:getColumnConfig(id)
             assert(column)
 
             elements[#elements + 1] = Toolkit.Components.checkbox {
@@ -784,16 +746,34 @@ function Inventory:onOpened(wnd, data, saved)
         }
     end
 
+    local function getItemViewMode()
+        return playerWindowSettings:getCopy('s_ItemViewMode')
+    end
+
+    local function toggleItemViewMode()
+        local showGrid = getItemViewMode() ~= 'ItemViewMode_Grid'
+        local newMode = showGrid and 'ItemViewMode_Grid' or 'ItemViewMode_Table'
+
+        playerWindowSettings:set('s_ItemViewMode', newMode)
+
+        I.InventoryExtender.forEachOpenWindow(function(handler)
+            handler.table:setShowGrid(showGrid)
+            if handler ~= self then
+                handler.categoryFilter.updateViewModeButton()
+            end
+        end)
+    end
+
     self.categoryFilter = CategoryFilter.create({
             maxHeight = 72,
             compact = configPlayer.tweaks.b_CompactCategoryFilter,
             vanillaStyle = configPlayer.tweaks.b_VanillaCategoryIcons,
             getCategories = getAvailableCategories,
             getCategoryDisabledLookup = function()
-                if not self.list then return nil end
+                if not self.table then return nil end
 
                 self.filter:disable('category', true)
-                local rows = self.filter:filter(self.list.allItems) --[[@as InventoryExtenderRedone.RowData[] ]]
+                local rows = self.filter:filter(self.table.allItems) --[[@as InventoryExtenderRedone.RowData[] ]]
                 self.filter:disable('category', false)
 
                 local categories = getAvailableCategories()
@@ -829,16 +809,16 @@ function Inventory:onOpened(wnd, data, saved)
                 self.filter:remove('category')
             end
 
-            self.list:filter(false)
-            self.list:setHiddenColumns(combineHiddenColumns(self.list.header.columns, category.hiddenColumns))
-            self.list.list:setPosition(0)
+            self.table:filter(false)
+            self.table:setHiddenColumns(combineHiddenColumns(self.table.header.columns, category.hiddenColumns))
+            self.table:setPosition(0)
 
             self:updateTitle()
 
             trySyncedCategorySwitch(category.key)
         end, function(text)
             searchText = text and text:lower()
-            self.list:filter()
+            self.table:filter()
             self.categoryFilter.updateCategories()
         end
     )
@@ -948,9 +928,12 @@ function Inventory:onOpened(wnd, data, saved)
 
     local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self.categoryFilter:getSize().y
-    self.list = Components.sortedList {
+    self.table = ItemTable:new()
+    self.table:init {
         columns = ALL_COLUMNS(fallBackSort, nameRenderer),
         defaultColumn = 'Icon',
+        showGrid = getItemViewMode() == 'ItemViewMode_Grid',
+        horizontalGrid = false, --TODO: read from settings
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
         noBorder = true,
@@ -965,13 +948,13 @@ function Inventory:onOpened(wnd, data, saved)
     }
     local column = saved and saved.sortingColumn or 'Icon'
     local sortDir = saved and saved.sortingDirection
-    self.list.header:toggleColumn(column, sortDir)
-    self.list:updateProps { position = v2(0, topBarHeight + 2) }
-    self.list:setFilter(self.filter)
+    self.table.header:toggleColumn(column, sortDir)
+    self.table:updateProps { position = v2(0, topBarHeight + 2) }
+    self.table:setFilter(self.filter --[[@as UIToolkit.SortedList.Filter]])
     local categoryKey = self.categoryFilter:getCategory()
     local category = categoryKey and IE.getCategory(categoryKey)
     if category then updateHiddenColumns(category) end
-    self.list:setItems(self:createData())
+    self.table:setItems(self:createData())
 
     self.infoBar:updateProps({
         relativePosition = v2(0, 1),
@@ -983,7 +966,7 @@ function Inventory:onOpened(wnd, data, saved)
     wnd:setContent(ui.content {
         self.categoryFilter.element,
         { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, topBarHeight), } },
-        self.list.element,
+        self.table.element,
         { template = I.MWUI.templates.horizontalLine, props = { position = v2(0, -infoHeight), relativePosition = v2(0, 1), anchor = v2(0, 1), } },
         self.infoBar.element,
     })
@@ -1029,7 +1012,7 @@ function Inventory:onClosed()
     end
     self.wnd = nil
     self.arg = nil
-    local column, asc = self.list.header:getActiveColumn()
+    local column, asc = self.table.header:getActiveColumn()
     ---@type IER.Inventory.SaveData
     return {
         sortingColumn = column,
@@ -1041,7 +1024,7 @@ function Inventory:onResized(inner)
     local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self.categoryFilter:getSize().y
 
-    self.list:setSize(inner - v2(0, topBarHeight + infoHeight + 4))
+    self.table:setSize(inner - v2(0, topBarHeight + infoHeight + 4))
 end
 
 function Inventory:onKeyboardButtonPress(key)
@@ -1052,14 +1035,14 @@ function Inventory:onKeyboardButtonPress(key)
     elseif key == KEY.D then
         self.categoryFilter:cycleCategory(1)
     elseif key == KEY.W then
-        self.list.list:shiftHoveredItem(-1)
+        self.list.list:shiftHoveredItem(-1) --TODO: switch to table
     elseif key == KEY.S then
-        self.list.list:shiftHoveredItem(1)
+        self.list.list:shiftHoveredItem(1)  --TODO: switch to table
     elseif key == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
         self:toggleFavorite()
     elseif key == configPlayer.keybinds.k_UseItem then
         local ctx = self.ctx
-        local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        local row = self.table:getHovered()
         if configPlayer.keybinds.b_SwapUsePickup then
             if ctx.dragAndDrop.draggingObject then
                 ctx.dragAndDrop:stopDrag(self.target)
@@ -1088,14 +1071,13 @@ function Inventory:onControllerButtonPress(button)
     elseif button == BUTTON.RightShoulder then
         self.categoryFilter:cycleCategory(1)
     elseif button == BUTTON.DPadUp then
-        self.list.list:shiftHoveredItem(-1)
+        self.list.list:shiftHoveredItem(-1) --TODO: switch to table
     elseif button == BUTTON.DPadDown then
-        self.list.list:shiftHoveredItem(1)
+        self.list.list:shiftHoveredItem(1)  --TODO: switch to table
     elseif button == BUTTON.Y then
         self:toggleFavorite()
     elseif button == BUTTON.X then
-        local ctx = self.ctx
-        local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        local row = self.table:getHovered()
         if configPlayer.keybinds.b_SwapUsePickup then
             if ctx.dragAndDrop.draggingObject then
                 ctx.dragAndDrop:stopDrag(self.target)
@@ -1105,8 +1087,8 @@ function Inventory:onControllerButtonPress(button)
         elseif row then
             self:onRowPickup(row, self.type, false)
         end
-    elseif button == BUTTON.A and I.UIToolkit.getCtx().focusedScrollable ~= self.list.list then
-        local row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+    elseif button == BUTTON.A and I.UIToolkit.getCtx().focusedScrollable ~= self.table:currentScrollable() then
+        local row = self.table:getHovered()
         if not configPlayer.keybinds.b_SwapUsePickup then
             if ctx.dragAndDrop.draggingObject then
                 ctx.dragAndDrop:stopDrag(self.target)
@@ -1137,8 +1119,9 @@ function Inventory:getDefaultStorage()
 end
 
 function Inventory:update()
-    self.list.provider:clear()
-    self.list:setItems(self:createData())
+    self.table.provider:clear()
+    self.table.gridProvider:clear()
+    self.table:setItems(self:createData())
     self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
 end
@@ -1150,7 +1133,7 @@ end
 ---@param row InventoryExtenderRedone.RowData?
 function Inventory:toggleFavorite(row)
     if not row then
-        row = self.list.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        row = self.table:getHovered()
     end
     if not row then return end
     local item = row.item
@@ -1166,9 +1149,9 @@ function Inventory:toggleFavorite(row)
     end
 
     ctx.favoriteRevision = (ctx.favoriteRevision or 0) + 1
-    self.list.provider:refreshColumns(row, 'Name')
-    self.list.list:setHovered(nil)
-    self.list:sort()
+    self.table.provider:refreshColumns(row, 'Name')
+    self.table:setHovered(nil)
+    self.table:sort()
 end
 
 function Inventory:canToggleFavoriteRow(row)
@@ -1768,7 +1751,7 @@ function Inventory:initInfoBar()
                     local items = nil
 
                     if visibleOnly then
-                        local visibleItems = self.list.list:getItems() --[[@as InventoryExtenderRedone.RowData]]
+                        local visibleItems = self.table.filteredItems
                         items = {}
                         for i = 1, #visibleItems do
                             local row = visibleItems[i]

@@ -27,4 +27,9 @@
 ---@field create fun(opts:InventoryExtenderRedone.InfoBarOpts):InventoryExtenderRedone.InfoBar
 ---@field addProvider fun(self:InventoryExtenderRedone.InfoBar, provider:InventoryExtenderRedone.InfoBar.Provider):InventoryExtenderRedone.InfoBar provider must return layout or element or nil. It is also responsible for destroying old element if necessary.
 
+---@class InventoryExtenderRedone.ItemTableOpts: UIToolkit.SortedListOpts
+---@field showGrid boolean?
+---@field horizontalGrid boolean?
+
+
 ---@alias InventoryExtenderRedone.InfoBar.Provider fun(ctx:table):openmw.ui.LayoutOrElement?
