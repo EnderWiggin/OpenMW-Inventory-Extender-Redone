@@ -20,7 +20,7 @@ local GridIcon = Class(GridItemBase)
 
 function GridIcon:getItemSize()
     if not self.size then
-        self.size = v2(40, 40) * configPlayer.window.n_GridIconScale
+        self.size = v2(42, 42) * configPlayer.window.n_GridIconScale
     end
     return self.size
 end
@@ -30,7 +30,9 @@ end
 function GridIcon:makeComponent(data)
     local sz = self:getItemSize()
     local component = Component:new()
-    local base = GridIcon.renderIcon(data, sz, sz - v2(8, 8), sz, data.showAsEnchanted())
+    local innerSz = sz - v2(4, 4)
+    local iconSz = sz - v2(10, 10)
+    local base = GridIcon.renderIcon(data, sz, iconSz, innerSz, data.showAsEnchanted(), true)
 
     --TODO: add favorites badge
     --TODO: add stolen badge
@@ -44,6 +46,7 @@ function GridIcon:makeComponent(data)
                 text = helpers.getCountString(count),
                 anchor = util.vector2(1, 1),
                 relativePosition = util.vector2(1, 1),
+                position = v2(-4, -4),
                 textShadow = true,
             }
         })
@@ -59,48 +62,80 @@ function GridIcon:getTooltip(data)
     return data.tooltip
 end
 
-function GridIcon.renderIcon(data, outerSize, iconSize, bgSize, showEnchantSwirl)
+function GridIcon.renderIcon(data, outerSize, iconSize, bgSize, showEnchantSwirl, shadow)
     local ctx = I.InventoryExtender.getContext()
 
     local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
-    local bgrVisible = data.isBartered or equipped or showEnchantSwirl
+    local bgrVisible = data.isBartered or equipped or showEnchantSwirl or shadow
     local magicString = showEnchantSwirl and '_magic' or ''
     local postString = (data.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or
         '_none'
     local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
+    local content = ui.content {
+        {
+            name = 'itemBackground',
+            type = ui.TYPE.Image,
+            props = {
+                resource = Toolkit.texture(bgrPath, v2(40, 40),
+                    bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
+                anchor = v2(0.5, 0.5),
+                relativePosition = v2(0.5, 0.5),
+                size = bgSize,
+                visible = bgrVisible,
+            }
+        },
+        {
+            name = 'itemIcon',
+            type = ui.TYPE.Image,
+            props = {
+                resource = Toolkit.texture(data.itemRecord.icon),
+                anchor = v2(0.5, 0.5),
+                relativePosition = v2(0.5, 0.5),
+                size = iconSize,
+            }
+        },
+    }
+    if shadow then
+        content:insert(2, {
+            name = 'itemShadow',
+            type = ui.TYPE.Image,
+            props = {
+                resource = Toolkit.texture(data.itemRecord.icon),
+                anchor = v2(0.5, 0.5),
+                relativePosition = v2(0.5, 0.5),
+                position = v2(4, 4),
+                size = iconSize,
+                color = util.color.rgb(0, 0, 0),
+                alpha = 0.5,
+            }
+        })
+    end
     return {
         name = 'Icon',
         props = {
             size = outerSize,
         },
-        content = ui.content {
-            {
-                name = 'itemBackground',
-                type = ui.TYPE.Image,
-                props = {
-                    resource = Toolkit.texture(bgrPath, v2(40, 40), bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
-                    anchor = v2(0.5, 0.5),
-                    relativePosition = v2(0.5, 0.5),
-                    size = bgSize,
-                    visible = bgrVisible,
-                }
-            },
-            {
-                name = 'itemIcon',
-                type = ui.TYPE.Image,
-                props = {
-                    resource = Toolkit.texture(data.itemRecord.icon),
-                    anchor = v2(0.5, 0.5),
-                    relativePosition = v2(0.5, 0.5),
-                    size = iconSize,
-                }
-            },
-        },
+        content = content,
         userData = {
             bgrVisible = bgrVisible,
             bgrPath = bgrPath,
         }
     }
+end
+
+---@return openmw.ui.Element?
+function GridIcon:getHighlightView()
+    if not self.highlight then
+        self.highlight = ui.create {
+            name = 'item-highlight',
+            type = ui.TYPE.Image,
+            props = {
+                resource = Toolkit.texture('textures/omw_menu_icon_active.dds'),
+                size = self:getItemSize(),
+            },
+        }
+    end
+    return self.highlight
 end
 
 return GridIcon

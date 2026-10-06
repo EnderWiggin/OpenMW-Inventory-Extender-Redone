@@ -1030,14 +1030,18 @@ end
 function Inventory:onKeyboardButtonPress(key)
     if I.UI.getMode() == nil then return end
     --TODO: add bindings for these
-    if key == KEY.A then
+    if key == KEY.Z then
         self.categoryFilter:cycleCategory(-1)
-    elseif key == KEY.D then
+    elseif key == KEY.C then
         self.categoryFilter:cycleCategory(1)
     elseif key == KEY.W then
-        self.list.list:shiftHoveredItem(-1) --TODO: switch to table
+        self.table:shiftHoveredItem(v2(0, -1)) --TODO: consider diagonals
     elseif key == KEY.S then
-        self.list.list:shiftHoveredItem(1)  --TODO: switch to table
+        self.table:shiftHoveredItem(v2(0, 1))
+    elseif key == KEY.A then
+        self.table:shiftHoveredItem(v2(-1, 0))
+    elseif key == KEY.D then
+        self.table:shiftHoveredItem(v2(1, 0))
     elseif key == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
         self:toggleFavorite()
     elseif key == configPlayer.keybinds.k_UseItem then
@@ -1057,7 +1061,7 @@ end
 
 function Inventory:onKeyboardButtonRepeat(key)
     --TODO: add bindings for these
-    if key == KEY.W or key == KEY.S then
+    if key == KEY.W or key == KEY.S or key == KEY.A or key == KEY.D then
         self:onKeyboardButtonPress(key)
     end
 end
@@ -1070,10 +1074,14 @@ function Inventory:onControllerButtonPress(button)
         self.categoryFilter:cycleCategory(-1)
     elseif button == BUTTON.RightShoulder then
         self.categoryFilter:cycleCategory(1)
-    elseif button == BUTTON.DPadUp then
-        self.list.list:shiftHoveredItem(-1) --TODO: switch to table
+    elseif button == BUTTON.DPadUp then --TODO: consider diagonals
+        self.table:shiftHoveredItem(v2(0, -1))
     elseif button == BUTTON.DPadDown then
-        self.list.list:shiftHoveredItem(1)  --TODO: switch to table
+        self.table:shiftHoveredItem(v2(0, 1))
+    elseif button == BUTTON.DPadLeft then
+        self.table:shiftHoveredItem(v2(-1, 0))
+    elseif button == BUTTON.DPadRight then
+        self.table:shiftHoveredItem(v2(1, 0))
     elseif button == BUTTON.Y then
         self:toggleFavorite()
     elseif button == BUTTON.X then
@@ -1103,7 +1111,8 @@ end
 
 function Inventory:onControllerButtonRepeat(button)
     --TODO: add bindings for these
-    if button == BUTTON.DPadDown or button == BUTTON.DPadUp then
+    if button == BUTTON.DPadDown or button == BUTTON.DPadUp
+        or button == BUTTON.DPadLeft or button == BUTTON.DPadRight then
         self:onControllerButtonPress(button)
     end
 end
@@ -1119,8 +1128,8 @@ function Inventory:getDefaultStorage()
 end
 
 function Inventory:update()
-    self.table.provider:clear()
-    self.table.gridProvider:clear()
+    --self.table.provider:clear()
+    --self.table.gridProvider:clear()
     self.table:setItems(self:createData())
     self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
@@ -1419,12 +1428,12 @@ function Inventory:createData()
         return {}
     end
 
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = self.ctx
 
     ---@param item openmw.Object|{stacks:openmw.Object[], totalCount:number}
     ---@param isBartered boolean
     ---@param isVirtual boolean
-    ---@return InventoryExtenderRedone.RowData
+    ---@return InventoryExtenderRedone.RowData?
     local function createRowData(item, isBartered, isVirtual)
         ---@type openmw.Object
         local itemStack = isVirtual and item.stacks[1] or item --[[@as openmw.Object]]

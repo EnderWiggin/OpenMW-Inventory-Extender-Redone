@@ -283,6 +283,15 @@ function ItemTable:setHovered(idOrIndex)
     end
 end
 
+---@param shift openmw.util.Vector2
+function ItemTable:shiftHoveredItem(shift)
+    if self.showGrid then
+        return self.grid:shiftHoveredItem(shift)
+    else
+        return self.list:shiftHoveredItem(shift.y)
+    end
+end
+
 ---@return UIToolkit.Scrollable
 function ItemTable:currentScrollable()
     if self.showGrid then
