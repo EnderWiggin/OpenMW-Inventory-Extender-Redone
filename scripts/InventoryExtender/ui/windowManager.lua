@@ -194,6 +194,7 @@ function WindowManager:show(windowName, arg)
 
     self.ctx.windowArgs[windowName] = arg or self.ctx.windowArgs[windowName]
 
+--[[
     if not self.windows[windowName] then
         self:create(windowName)
     end
@@ -209,6 +210,7 @@ function WindowManager:show(windowName, arg)
             window:refresh()
         end
     end
+]]
 
     --TODO: do not close if not Inventory or same mode?
     --TODO: or maybe invent mode switching for inventory?
@@ -221,6 +223,7 @@ function WindowManager:hide(windowName, arg, force)
     if self.ctx.resettingMode then
         return
     end
+    I.UIToolkit.WindowManager.close(getWindowId(windowName))
 
     showing[windowName] = false
     local window = self.windows[windowName]
@@ -235,8 +238,6 @@ function WindowManager:hide(windowName, arg, force)
         auxUi.deepDestroy(self.ctx.activeTooltip)
         self.ctx.activeTooltip = nil
     end
-
-    I.UIToolkit.WindowManager.close(getWindowId(windowName))
 end
 
 ---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
