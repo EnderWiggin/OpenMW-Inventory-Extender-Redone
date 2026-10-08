@@ -83,18 +83,23 @@ local function iconRenderer(data, cfg, height)
     return GridIcon.renderIcon(data, v2(width, height), v2(sz, sz), v2(sz, sz), showEnchantSwirl)
 end
 
----@type UIToolkit.ListItem.Column.Renderer
-local function renderNumber(data, cfg, height)
-    local value = data[cfg.id] or ''
+---@param value any
+---@return string
+local function formatNumber(value)
     if type(value) == 'function' then
         value = value()
     end
 
     if value == 0 or value == nil then
-        value = '-'
+        return '-'
     elseif type(value) == 'number' then
-        value = H.addSeparators(H.roundToPlaces(value, 2))
+        return H.addSeparators(H.roundToPlaces(value, 2))
     end
+    return tostring(value)
+end
+
+---@type UIToolkit.ListItem.Column.Renderer
+local function renderNumber(data, cfg, height)
     local textSize = cfg.arg and cfg.arg.textSize or nil
     local textAlignH = cfg.arg and cfg.arg.textAlignH or nil
     ---@type openmw.ui.Layout
@@ -106,13 +111,22 @@ local function renderNumber(data, cfg, height)
             textAlignH = textAlignH,
             autoSize = false,
             textSize = textSize,
-            text = tostring(value),
+            text = formatNumber(data[cfg.id]),
         },
         userData = { colorable = true },
     }
 
     ColumnItem.applySize(layout, cfg, height)
     return layout
+end
+
+---@type UIToolkit.ListItem.Column.Updater
+local function updateNumber(part, data, cfg)
+    local new = formatNumber(data[cfg.id])
+    local props = H.props(part)
+    if props.text == new then return false end
+    props.text = new
+    return true
 end
 
 ---@param row InventoryExtenderRedone.RowData
@@ -224,6 +238,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -234,6 +249,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -244,6 +260,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -253,6 +270,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
             ---@param a InventoryExtenderRedone.RowData
             ---@param b InventoryExtenderRedone.RowData
@@ -281,6 +299,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -291,6 +310,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -301,6 +321,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         },
         {
@@ -311,6 +332,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             align = ui.ALIGNMENT.End,
             descending = true,
             render = renderNumber,
+            update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
         }
     }
@@ -977,11 +999,11 @@ function Inventory:onOpened(wnd, data, saved)
     ---@type UIToolkit.Controller.HintList
     local hints
     if I.UI.getMode() == 'Barter' then
-        hints = { --TODO: l10n
+        hints = {
             { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, { id = BUTTON.X } } },
             'separator',
-            { text = 'Category',              input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
-            { text = 'Select',                input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+            { text = l10n 'Hint_Category',    input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
+            { text = l10n 'Hint_Select',      input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
             'separator',
             { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
         }
@@ -1128,9 +1150,10 @@ function Inventory:getDefaultStorage()
 end
 
 function Inventory:update()
-    --self.table.provider:clear()
-    --self.table.gridProvider:clear()
-    self.table:setItems(self:createData())
+    self.table.provider:markCacheDirty()
+    self.table.gridProvider:clear() --TODO: mark grid dirty?
+    local data = self:createData()
+    self.table:setItems(data)
     self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
 end
