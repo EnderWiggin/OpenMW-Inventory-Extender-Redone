@@ -78,6 +78,7 @@ function ItemTable:init(opts)
             width = cfg.width,
             auto = cfg.auto,
             render = cfg.render,
+            update = cfg.update,
             arg = cfg.arg,
         }
 

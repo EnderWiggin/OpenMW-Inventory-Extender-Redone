@@ -194,7 +194,7 @@ local function isStealing(actor, ownerInfo, variable)
 end
 
 
-local function ALL_COLUMNS(defaultSort, nameRenderer)
+local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
     local theme = Toolkit.getTheme()
     local textSize = theme.Sizes.textNormal
     local lineHeight = textSize + 2
@@ -214,6 +214,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer)
             name = l10n('Column_Name'),
             sort = { numeric = false },
             render = nameRenderer,
+            update = nameUpdater,
         },
         {
             id = 'Type',
@@ -908,6 +909,7 @@ function Inventory:onOpened(wnd, data, saved)
 
         local content = ui.content {
             {
+                name = 'name',
                 template = T.text(),
                 props = {
                     text = text,
@@ -918,39 +920,39 @@ function Inventory:onOpened(wnd, data, saved)
             },
         }
         local iconSize = math.min(rowHeight, 12)
-        if badgeState.favorite then
-            content:add(T.intervalH(8))
-            content:add({
-                type = ui.TYPE.Image,
-                props = {
-                    resource = texture(iconPack.getPath('item/favorited.dds')),
-                    size = v2(iconSize, iconSize),
-                    color = constants.Colors.GOLD,
-                },
-            })
-        end
-        if badgeState.stolen then
-            content:add(T.intervalH(8))
-            content:add({
-                type = ui.TYPE.Image,
-                props = {
-                    resource = texture(iconPack.getPath('item/stolen.dds')),
-                    size = v2(iconSize, iconSize),
-                    color = constants.Colors.DAMAGED,
-                },
-            })
-        end
-        if enchanted then
-            content:add(T.intervalH(8))
-            content:add({
-                type = ui.TYPE.Image,
-                props = {
-                    resource = texture(iconPack.getPath('item/enchanted.dds')),
-                    size = v2(iconSize, iconSize),
-                    color = constants.Colors.BAR_MAGIC,
-                },
-            })
-        end
+        content:add(T.intervalH(8))
+        content:add({
+            name = 'favorite',
+            type = ui.TYPE.Image,
+            props = {
+                resource = texture(iconPack.getPath('item/favorited.dds')),
+                size = v2(iconSize, iconSize),
+                color = constants.Colors.GOLD,
+                visible = badgeState.favorite,
+            },
+        })
+        content:add(T.intervalH(8))
+        content:add({
+            name = 'stolen',
+            type = ui.TYPE.Image,
+            props = {
+                resource = texture(iconPack.getPath('item/stolen.dds')),
+                size = v2(iconSize, iconSize),
+                color = constants.Colors.DAMAGED,
+                visible = badgeState.stolen,
+            },
+        })
+        content:add(T.intervalH(8))
+        content:add({
+            name = 'enchanted',
+            type = ui.TYPE.Image,
+            props = {
+                resource = texture(iconPack.getPath('item/enchanted.dds')),
+                size = v2(iconSize, iconSize),
+                color = constants.Colors.BAR_MAGIC,
+                visible = enchanted,
+            },
+        })
 
         local layout = {
             name = 'Name',
@@ -972,13 +974,56 @@ function Inventory:onOpened(wnd, data, saved)
         return layout
     end
 
+    ---@type UIToolkit.ListItem.Column.Updater
+    local function nameUpdater(part, row, cfg)
+        local changed = false
+        ---@cast row InventoryExtenderRedone.RowData
+        local nonDraggedCount = getNonDraggedCount(row, self.type)
+
+        local text = helpers.getItemName(row.item) ..
+            (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
+
+        local badgeState = getItemBadgeState(row)
+        local enchanted = false
+        if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
+            enchanted = true
+        end
+
+        local props = H.props(part.content['name'])
+        if props.text ~= text then
+            props.text = text
+            changed = true
+        end
+
+        props = H.props(part.content['favorite'])
+        if props.visible ~= badgeState.favorite then
+            props.visible = badgeState.favorite
+            changed = true
+        end
+
+        props = H.props(part.content['stolen'])
+        if props.visible ~= badgeState.stolen then
+            props.visible = badgeState.stolen
+            changed = true
+        end
+
+        props = H.props(part.content['enchanted'])
+        if props.visible ~= enchanted then
+            props.visible = enchanted
+            changed = true
+        end
+
+        return changed
+    end
+
+
     self.infoBar = InfoBar.create({}) --[[@as InventoryExtenderRedone.InfoBarPrivate  ]]
 
     local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self.categoryFilter:getSize().y
     self.table = ItemTable:new()
     self.table:init {
-        columns = ALL_COLUMNS(fallBackSort, nameRenderer),
+        columns = ALL_COLUMNS(fallBackSort, nameRenderer, nameUpdater),
         defaultColumn = 'Icon',
         showGrid = getItemViewMode() == 'ItemViewMode_Grid',
         horizontalGrid = false, --TODO: read from settings
