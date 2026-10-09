@@ -553,8 +553,10 @@ function Inventory:onOpened(wnd, data, saved)
     self.filter:add('search', function(row)
         if not searchText or searchText == '' then return true end
 
-        local haystack = row.SearchText or helpers.getItemSearchText(row.item):lower()
-        return haystack:find(searchText, 1, true) ~= nil
+        if not row.SearchText then
+            row.SearchText = helpers.getItemSearchText(row.item):lower()
+        end
+        return row.SearchText:find(searchText, 1, true) ~= nil
     end)
 
     local inner = wnd:getInnerSize()
@@ -1500,7 +1502,6 @@ function Inventory:createData()
         local rowData = {
             id = itemStack.id,
             Name = helpers.getItemName(itemStack),
-            SearchText = helpers.getItemSearchText(itemStack):lower(),
             Type = function()
                 return helpers.getItemTypeLabel(itemStack) or '-'
             end,
