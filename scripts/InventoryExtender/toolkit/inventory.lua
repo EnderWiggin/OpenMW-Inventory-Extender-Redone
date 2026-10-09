@@ -86,6 +86,32 @@ local function iconRenderer(data, cfg, height)
     return GridIcon.renderIcon(data, v2(width, height), v2(sz, sz), v2(sz, sz), showEnchantSwirl)
 end
 
+---@param data InventoryExtenderRedone.RowData
+---@type UIToolkit.ListItem.Column.Updater
+local function iconUpdater(part, data)
+    local changed = false
+
+    local props = H.props(part.content['itemIcon'])
+    local tex = Toolkit.texture(data.itemRecord.icon)
+    if tex ~= props.resource then
+        props.resource = tex
+        changed = true
+    end
+
+    local ctx = I.InventoryExtender.getContext()
+    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
+    local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
+    props = H.props(part.content['itemBackground'])
+    tex = GridIcon.getBackgroundTexture(data.isBartered, equipped, showEnchantSwirl)
+
+    if tex ~= props.resource then
+        props.resource = tex
+        changed = true
+    end
+
+    return changed
+end
+
 ---@param value any
 ---@return string
 local function formatNumber(value)
@@ -208,6 +234,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
             width = lineHeight * 1.5 + 8,
             sort = defaultSort,
             render = iconRenderer,
+            update = iconUpdater,
         },
         {
             id = 'Name',

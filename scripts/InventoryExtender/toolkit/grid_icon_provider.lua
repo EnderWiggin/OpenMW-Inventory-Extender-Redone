@@ -62,26 +62,43 @@ function GridIcon:getTooltip(data)
     return data.tooltip
 end
 
+local BGR_SZ = v2(40, 40)
+local BGR_OFFSET = v2(2, 2)
+local BGR_OFFSET_BARTER = v2(4, 4)
+
+---@param bartered boolean
+---@param equipped boolean
+---@param enchanted boolean
+---@return openmw.ui.TextureResource
+function GridIcon.getBackgroundTexture(bartered, equipped, enchanted)
+    local magic = enchanted and '_magic' or ''
+    local suffix = '_none'
+    if bartered then
+        suffix = '_barter'
+    elseif equipped then
+        suffix = '_equip'
+    elseif enchanted then
+        suffix = ''
+    end
+
+    local bgrPath = string.format('textures/menu_icon%s%s.dds', magic, suffix)
+    local offset = bgrPath == 'textures/menu_icon_barter.dds' and BGR_OFFSET_BARTER or BGR_OFFSET
+    return Toolkit.texture(bgrPath, BGR_SZ, offset)
+end
+
 function GridIcon.renderIcon(data, outerSize, iconSize, bgSize, showEnchantSwirl, shadow)
     local ctx = I.InventoryExtender.getContext()
 
     local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
-    local bgrVisible = data.isBartered or equipped or showEnchantSwirl or shadow
-    local magicString = showEnchantSwirl and '_magic' or ''
-    local postString = (data.isBartered and '_barter') or (equipped and '_equip') or (magicString ~= '' and '') or
-        '_none'
-    local bgrPath = 'textures/menu_icon' .. magicString .. postString .. '.dds'
     local content = ui.content {
         {
             name = 'itemBackground',
             type = ui.TYPE.Image,
             props = {
-                resource = Toolkit.texture(bgrPath, v2(40, 40),
-                    bgrPath == 'textures/menu_icon_barter.dds' and v2(4, 4) or v2(2, 2)),
+                resource = GridIcon.getBackgroundTexture(data.isBartered, equipped, showEnchantSwirl),
                 anchor = v2(0.5, 0.5),
                 relativePosition = v2(0.5, 0.5),
                 size = bgSize,
-                visible = bgrVisible,
             }
         },
         {
@@ -116,10 +133,6 @@ function GridIcon.renderIcon(data, outerSize, iconSize, bgSize, showEnchantSwirl
             size = outerSize,
         },
         content = content,
-        userData = {
-            bgrVisible = bgrVisible,
-            bgrPath = bgrPath,
-        }
     }
 end
 
