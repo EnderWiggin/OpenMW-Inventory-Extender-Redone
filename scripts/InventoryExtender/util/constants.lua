@@ -1,4 +1,7 @@
+---@omw-context runtime
+
 local core = require('openmw.core')
+local types = require('openmw.types')
 local util = require('openmw.util')
 
 local colorFromGMST = function(gmst)
@@ -278,6 +281,21 @@ C.TypeToService = {
     Apparatus = "Apparatus",
     Repair = "RepairItem",
     Miscellaneous = "Misc",
+}
+
+C.ServiceToType = {
+    Weapon = types.Weapon,
+    Armor = types.Armor,
+    Clothing = types.Clothing,
+    Books = types.Book,
+    Potions = types.Potion,
+    Ingredients = types.Ingredient,
+    Picks = types.Lockpick,
+    Probes = types.Probe,
+    Lights = types.Light,
+    Apparatus = types.Apparatus,
+    RepairItem = types.Repair,
+    Misc = types.Miscellaneous,
 }
 
 return C

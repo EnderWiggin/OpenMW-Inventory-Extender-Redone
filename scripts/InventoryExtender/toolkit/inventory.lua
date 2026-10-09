@@ -16,7 +16,10 @@ local v2        = util.vector2
 local KEY       = input.KEY
 local BUTTON    = input.CONTROLLER_BUTTON
 
+local Actor     = types.Actor
 local Container = types.Container
+local Item      = types.Item
+local NPC       = types.NPC
 
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
@@ -183,7 +186,7 @@ local function isStealing(actor, ownerInfo, variable)
 
     if ownerInfo.factionId then
         local reqRank = ownerInfo.factionRank or 1
-        if types.NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
+        if NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
             return true
         end
     end
@@ -505,8 +508,8 @@ function Inventory:onOpened(wnd, data, saved)
         local services = barterNpc.type.record(barterNpc).servicesOffered
 
         if not services.MagicItems or not row.itemRecord.enchant then
-            for t, serviceName in pairs(constants.TypeToService) do
-                if types[t].objectIsInstance(item) then
+            for serviceName, type in pairs(constants.ServiceToType) do
+                if type.objectIsInstance(item) then
                     if not services[serviceName] then
                         return false
                     end
@@ -878,7 +881,7 @@ function Inventory:onOpened(wnd, data, saved)
             elseif self.type == 'Container' then
                 if ctx.pickpocket and ctx.pickpocket.active then
                     stolen = true
-                elseif types.Container.objectIsInstance(self.target) then
+                elseif Container.objectIsInstance(self.target) then
                     stolen = isStealing(omwself, self.target.owner, self.target.globalVariable)
                 end
             end
@@ -1484,7 +1487,7 @@ function Inventory:createData()
         ---@type openmw.Object
         local itemStack = isVirtual and item.stacks[1] or item --[[@as openmw.Object]]
 
-        if not types.Item.isCarriable(itemStack) then return nil end
+        if not Item.isCarriable(itemStack) then return nil end
 
         local record = itemStack.type.record(itemStack)
         local value = helpers.getItemValue(itemStack)
@@ -1532,7 +1535,7 @@ function Inventory:createData()
                 if record.enchant then
                     return true
                 end
-                if configPlayer.tweaks.b_FilledGemsAppearEnchanted and types.Item.itemData(itemStack).soul then
+                if configPlayer.tweaks.b_FilledGemsAppearEnchanted and Item.itemData(itemStack).soul then
                     return true
                 end
                 return false
@@ -1641,7 +1644,7 @@ function Inventory:initInfoBar()
         self.infoBar:addProvider(function()
             if not self.target then return nil end
             if self.type == 'Container' and
-                (types.Container.objectIsInstance(self.target) and types.Container.record(self.target).isOrganic)
+                (Container.objectIsInstance(self.target) and Container.record(self.target).isOrganic)
                 or (ctx.pickpocket and ctx.pickpocket.active)
             then
                 return nil
@@ -1787,8 +1790,8 @@ function Inventory:initInfoBar()
             self.infoBar:addProvider(function()
                 local visible = false
                 if ctx.windowArgs.Container then
-                    visible = types.Actor.objectIsInstance(ctx.windowArgs.Container)
-                        and types.Actor.isDead(ctx.windowArgs.Container)
+                    visible = Actor.objectIsInstance(ctx.windowArgs.Container)
+                        and Actor.isDead(ctx.windowArgs.Container)
                 end
                 btnDispose:setVisible(visible)
                 return btnDispose.element
