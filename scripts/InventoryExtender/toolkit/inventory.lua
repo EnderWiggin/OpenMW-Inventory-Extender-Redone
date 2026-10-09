@@ -1249,7 +1249,7 @@ end
 
 function Inventory:update()
     self.table.provider:markCacheDirty()
-    self.table.gridProvider:clear() --TODO: mark grid dirty?
+    self.table.gridProvider:markDirty()
     local data = self:createData()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()

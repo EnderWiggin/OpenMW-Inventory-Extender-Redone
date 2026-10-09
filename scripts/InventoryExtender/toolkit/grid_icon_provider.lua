@@ -8,6 +8,7 @@ local v2 = util.vector2
 local Class = require('scripts.UIToolkit.class')
 local GridItemBase = require('scripts.UIToolkit.components.grid_item_provider')
 local Component = require('scripts.UIToolkit.components.component')
+local H = require('scripts.UIToolkit.helpers')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local configPlayer = require('scripts.InventoryExtender.config.player')
@@ -54,6 +55,65 @@ function GridIcon:makeComponent(data)
 
     component:init(ui.create(base))
     return component
+end
+
+---@param data InventoryExtenderRedone.RowData
+---@return UIToolkit.Component
+function GridIcon:getComponent(data)
+    local component = GridItemBase.getComponent(self, data) --[[@as UIToolkit.ListItem.ColumnComponent]]
+    if component.dirty then
+        self:refreshDirty(component, data)
+    end
+    return component
+end
+
+function GridIcon:markDirty()
+    for id, cached in pairs(self.cache) do
+        if cached:isDestroyed() then
+            self.cache[id] = nil
+        else
+            cached.dirty = true
+        end
+    end
+end
+
+---@param component UIToolkit.Component
+---@param data InventoryExtenderRedone.RowData
+function GridIcon:refreshDirty(component, data)
+    local ctx = I.InventoryExtender.getContext()
+    local changed = false
+    local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
+    local enchanted = data.showAsEnchanted()
+    local bartered = data.isBartered
+    local content = component.element.layout.content --[[@as openmw.ui.Content]]
+
+    local props = H.props(content['itemIcon'])
+    local tex = Toolkit.texture(data.itemRecord.icon)
+    if props.resource ~= tex then
+        changed = true
+        props.resource = tex
+        props = H.props(content['itemShadow'])
+        props.resource = tex
+    end
+
+    props = H.props(content['itemBackground'])
+    tex = GridIcon.getBackgroundTexture(bartered, equipped, enchanted)
+    if props.resource ~= tex then
+        changed = true
+        props.resource = tex
+    end
+
+    --TODO: update count
+    --TODO: update favorite
+    --TODO: update stolen
+
+    if changed then
+        Toolkit.queueUpdate(component.element)
+    end
+end
+
+function GridIcon:clear()
+    GridItemBase.clear(self)
 end
 
 ---@param data UIToolkit.ListData.Text
