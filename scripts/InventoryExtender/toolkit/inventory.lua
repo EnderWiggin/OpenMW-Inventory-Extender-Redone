@@ -579,14 +579,25 @@ function Inventory:onOpened(wnd, data, saved)
             return a.isBartered and -1 or 1
         end
 
-        local mode = I.UI.getMode()
+        local mode = self.mode
         local inBarterMode = mode == 'Barter'
 
-        local aEquipped = helpers.isItemEquipped(a.item, self.target, ctx.overrides.equipped)
-        local bEquipped = helpers.isItemEquipped(b.item, self.target, ctx.overrides.equipped)
+        a.sortCache = a.sortCache or {}
+        local aCache = a.sortCache --[[@as table]]
+        b.sortCache = b.sortCache or {}
+        local bCache = b.sortCache --[[@as table]]
 
-        local aFavorited = isFavorited(a.item)
-        local bFavorited = isFavorited(b.item)
+        if aCache.isEquipped == nil then
+            aCache.isEquipped = helpers.isItemEquipped(a.item, self.target, ctx.overrides.equipped)
+        end
+        if bCache.isEquipped == nil then
+            bCache.isEquipped = helpers.isItemEquipped(b.item, self.target, ctx.overrides.equipped)
+        end
+        local aEquipped = aCache.isEquipped
+        local bEquipped = bCache.isEquipped
+
+        local aFavorite = isFavorited(a.item)
+        local bFavorite = isFavorited(b.item)
 
         if inBarterMode then
             local config = helpers.getWindowSettings()
@@ -595,18 +606,18 @@ function Inventory:onOpened(wnd, data, saved)
 
             if reverseFavorite and not reverseEquipped then
                 -- if only favorites are reversed, prioritize sorting by favorite status
-                if aFavorited ~= bFavorited then
-                    -- favorited items come last (true > false)
-                    return bFavorited and -1 or 1
+                if aFavorite ~= bFavorite then
+                    -- favorite items come last
+                    return bFavorite and -1 or 1
                 end
 
                 if aEquipped ~= bEquipped then
-                    -- equipped items come first (true > false)
+                    -- equipped items come first
                     return aEquipped and -1 or 1
                 end
             else
                 if aEquipped ~= bEquipped then
-                    -- equipped items come first (true > false), unless we reverse it
+                    -- equipped items come first, unless we reverse it
                     if reverseEquipped then
                         return bEquipped and -1 or 1
                     else
@@ -614,57 +625,67 @@ function Inventory:onOpened(wnd, data, saved)
                     end
                 end
 
-                if aFavorited ~= bFavorited then
-                    -- favorited items come first (true > false), unless we reverse it
+                if aFavorite ~= bFavorite then
+                    -- favorite items come first, unless we reverse it
                     if reverseFavorite then
-                        return bFavorited and -1 or 1
+                        return bFavorite and -1 or 1
                     else
-                        return aFavorited and -1 or 1
+                        return aFavorite and -1 or 1
                     end
                 end
             end
         else
             if aEquipped ~= bEquipped then
-                -- equipped items come first (true > false)
+                -- equipped items come first
                 return aEquipped and -1 or 1
             end
 
-            if aFavorited ~= bFavorited then
-                -- favorited items come first (true > false)
-                return aFavorited and -1 or 1
+            if aFavorite ~= bFavorite then
+                -- favorite items come first
+                return aFavorite and -1 or 1
             end
         end
 
         -- Second, sort by Category
-        local categories = IE.getCategories()
-        local indexA, indexB = nil, nil
-        for i, category in ipairs(categories) do
-            if category.key ~= 'Favorites' then
-                if category.filter then
-                    if category.filter(a.item) then
+        local indexA, indexB = aCache.category, bCache.category
+        if not indexA or not indexB then
+            local categories = IE.getCategories()
+            for i = 1, #categories do
+                local category = categories[i]
+                if category.key ~= 'Favorites' and category.filter then
+                    if not indexA and category.filter(a.item) then
                         indexA = i
                     end
-                    if category.filter(b.item) then
+                    if not indexB and category.filter(b.item) then
                         indexB = i
                     end
-                    if indexA and indexB then
-                        break
-                    end
+                end
+                if indexA and indexB then
+                    break
                 end
             end
+            indexA = indexA or math.huge
+            indexB = indexB or math.huge
+            aCache.category = indexA
+            bCache.category = indexB
         end
         if indexA ~= indexB then
-            return ((indexA or math.huge) < (indexB or math.huge)) and -1 or 1
+            return (indexA < indexB) and -1 or 1
         end
 
-        local typeA = (type(a.Type) == 'function' and a.Type() or a.Type or ''):lower()
-        local typeB = (type(b.Type) == 'function' and b.Type() or b.Type or ''):lower()
+        if not aCache.type then aCache.type = (type(a.Type) == 'function' and a.Type() or a.Type or ''):lower() end
+        local typeA = aCache.type
+        if not bCache.type then bCache.type = (type(b.Type) == 'function' and b.Type() or b.Type or ''):lower() end
+        local typeB = bCache.type
         if typeA ~= typeB then
             return typeA < typeB and -1 or 1
         end
 
-        local nameA = (type(a.Name) == "function" and a.Name() or a.Name):lower()
-        local nameB = (type(b.Name) == "function" and b.Name() or b.Name):lower()
+
+        if not aCache.name then aCache.name = (type(a.Name) == "function" and a.Name() or a.Name):lower() end
+        local nameA = aCache.name
+        if not bCache.name then bCache.name = (type(b.Name) == "function" and b.Name() or b.Name):lower() end
+        local nameB = bCache.name
         if nameA == nameB then
             if a.item.recordId == b.item.recordId then
                 return a.item.id < b.item.id and -1 or 1

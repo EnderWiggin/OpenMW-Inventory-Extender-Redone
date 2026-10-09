@@ -18,6 +18,7 @@
 ---@field showAsEnchanted fun():boolean
 ---@field itemRecord {id:string, name:string, icon:string}
 ---@field getCount fun():number
+---@field sortCache table?
 
 
 ---@class InventoryExtenderRedone.InfoBarOpts
