@@ -696,22 +696,26 @@ end
 Helpers.getMerchantItems = function(npc)
     local unmerged = {}
     local carried = npc.type.inventory(npc):getAll()
-    for _, item in ipairs(carried) do
-        table.insert(unmerged, item)
+    for i = 1, #carried do
+        table.insert(unmerged, carried[i])
     end
     local success, nearby = pcall(require, 'openmw.nearby')
     if success then
-        for _, item in ipairs(nearby.items) do
+        local items = nearby.items
+        for i = 1, #items do
+            local item = items[i]
             if item.owner.recordId == npc.recordId then
                 table.insert(unmerged, item)
             end
         end
-        for _, container in ipairs(nearby.containers) do
+        local containers = nearby.containers
+        for i = 1, #containers do
+            local container = containers[i]
             if container.owner.recordId == npc.recordId then
                 local inv = container.type.inventory(container)
                 local contItems = inv:getAll()
-                for _, item in ipairs(contItems) do
-                    table.insert(unmerged, item)
+                for j = 1, #contItems do
+                    table.insert(unmerged, contItems[j])
                 end
             end
         end
@@ -725,11 +729,13 @@ Helpers.getMerchantItems = function(npc)
     end
 
     local virtualMerged = {}
-    for _, item in ipairs(unmerged) do
+    for i = 1, #unmerged do
+        local item = unmerged[i]
         local key = item.recordId:lower()
         if virtualMerged[key] then
             local existing = false
-            for _, virtualStack in ipairs(virtualMerged[key]) do
+            for j = 1, #virtualMerged[key] do
+                local virtualStack = virtualMerged[key][j]
                 if canStack(item, virtualStack.stacks[1]) then
                     existing = true
                     table.insert(virtualStack.stacks, item)

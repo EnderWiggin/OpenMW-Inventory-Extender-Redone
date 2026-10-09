@@ -1586,7 +1586,7 @@ function Inventory:createData()
                 return false
             end,
             isDisabled = function()
-                if not isBartered and self.type == 'Inventory' and I.UI.getMode() == 'Container' then
+                if not isBartered and self.type == 'Inventory' and self.mode == 'Container' then
                     local container = self.arg
                     if Container.objectIsInstance(container) and Container.record(container).isOrganic then
                         return true
@@ -1610,29 +1610,31 @@ function Inventory:createData()
 
     -- Add primary inventory
     if self.type ~= 'Trade' then
-        for _, item in ipairs(self.target.type.inventory(self.target):getAll()) do
-            table.insert(data, createRowData(item, false, false))
+        local allItems = self.target.type.inventory(self.target):getAll()
+        for i = 1, #allItems do
+            data[#data + 1] = createRowData(allItems[i], false, false)
         end
     else
         for _, recordId in pairs(helpers.getMerchantItems(self.target)) do
-            for _, virtualItem in ipairs(recordId) do
-                table.insert(data, createRowData(virtualItem, false, true))
+            for i = 1, #recordId do
+                table.insert(data, createRowData(recordId[i], false, true))
             end
         end
     end
 
     -- Add bartered items from other inventory
-    if I.UI.getMode() == 'Barter' then
+    if self.mode == 'Barter' then
         if self.type == 'Trade' then
-            for _, item in ipairs(omwself.type.inventory(omwself):getAll()) do
-                table.insert(data, createRowData(item, true, false))
+            local ownItems = omwself.type.inventory(omwself):getAll()
+            for i = 1, #ownItems do
+                table.insert(data, createRowData(ownItems[i], true, false))
             end
         else
             local barterNpc = ctx.windowArgs.Trade or self.arg --TODO: consider removing `ctx.windowArgs`
             if barterNpc then
                 for _, recordId in pairs(helpers.getMerchantItems(barterNpc)) do
-                    for _, virtualItem in ipairs(recordId) do
-                        table.insert(data, createRowData(virtualItem, true, true))
+                    for i = 1, #recordId do
+                        table.insert(data, createRowData(recordId[i], true, true))
                     end
                 end
             end
