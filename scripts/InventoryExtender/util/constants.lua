@@ -1,8 +1,8 @@
 ---@omw-context runtime
 
 local core = require('openmw.core')
-local types = require('openmw.types')
 local util = require('openmw.util')
+local context = require('scripts.UIToolkit.scriptContext')
 
 local colorFromGMST = function(gmst)
     local colorString = core.getGMST(gmst)
@@ -250,12 +250,13 @@ if trData and trData.BOUND_ITEMS then
         for _, itemId in ipairs(data.items) do
             C.BoundItemIDs[itemId:lower()] = true
         end
-    end 
+    end
 end
 
 -- Bound Balance Bound Items
 local bbBase = 'momw_bb_bound_'
-local bbItemTypes = { 'battle_axe', 'boots', 'cuirass', 'dagger', 'gauntletl', 'gauntletr', 'greaves', 'helm', 'longbow', 'longsword', 'mace', 'pauldronl', 'pauldronr', 'shield', 'spear' }
+local bbItemTypes = { 'battle_axe', 'boots', 'cuirass', 'dagger', 'gauntletl', 'gauntletr', 'greaves', 'helm', 'longbow',
+    'longsword', 'mace', 'pauldronl', 'pauldronr', 'shield', 'spear' }
 local bbLevels = { 'i', 'ii', 'iii', 'iv', 'v', 'vi' }
 local bbSuffixes = { '', '_td', '_tw', '_oaab' }
 
@@ -283,19 +284,24 @@ C.TypeToService = {
     Miscellaneous = "Misc",
 }
 
-C.ServiceToType = {
-    Weapon = types.Weapon,
-    Armor = types.Armor,
-    Clothing = types.Clothing,
-    Books = types.Book,
-    Potions = types.Potion,
-    Ingredients = types.Ingredient,
-    Picks = types.Lockpick,
-    Probes = types.Probe,
-    Lights = types.Light,
-    Apparatus = types.Apparatus,
-    RepairItem = types.Repair,
-    Misc = types.Miscellaneous,
-}
+if context.hasTypes() then
+    ---@omw-context-begin player|global
+    local types = require('openmw.types')
+    C.ServiceToType = {
+        Weapon = types.Weapon,
+        Armor = types.Armor,
+        Clothing = types.Clothing,
+        Books = types.Book,
+        Potions = types.Potion,
+        Ingredients = types.Ingredient,
+        Picks = types.Lockpick,
+        Probes = types.Probe,
+        Lights = types.Light,
+        Apparatus = types.Apparatus,
+        RepairItem = types.Repair,
+        Misc = types.Miscellaneous,
+    }
+    ---@omw-context-end
+end
 
 return C
