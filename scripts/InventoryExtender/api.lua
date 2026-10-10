@@ -225,6 +225,19 @@ end
 --- @deprecated Use registerRowPickupHandler instead
 API.registerRowActivateHandler = API.registerRowPickupHandler
 
+---@param itemOrId string|openmw.Object
+function API.isFavorite(itemOrId)
+    if not itemOrId then return false end
+    local ctx = windowManager.ctx
+    local id
+    if type(itemOrId) == 'string' then
+        id = itemOrId
+    else
+        id = itemOrId.id
+    end
+    return ctx.favoriteItems[id] == true
+end
+
 local eventHandlers = {
     UiModeChanged = function(data)
         windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
