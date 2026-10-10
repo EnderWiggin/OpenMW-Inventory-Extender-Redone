@@ -39,19 +39,19 @@ function GridIcon:makeComponent(data)
     --TODO: add stolen badge
 
     local count = data.getCount()
-    if count and count > 1 then
-        base.content:add({
-            type = ui.TYPE.Text,
-            template = Toolkit.Templates.header(),
-            props = {
-                text = helpers.getCountString(count),
-                anchor = util.vector2(1, 1),
-                relativePosition = util.vector2(1, 1),
-                position = v2(-4, -4),
-                textShadow = true,
-            }
-        })
-    end
+    base.content:add({
+        name = 'count',
+        type = ui.TYPE.Text,
+        template = Toolkit.Templates.header(),
+        props = {
+            text = helpers.getCountString(count),
+            anchor = util.vector2(1, 1),
+            relativePosition = util.vector2(1, 1),
+            position = v2(-4, -4),
+            textShadow = true,
+            visible = count and count > 1
+        }
+    })
 
     component:init(ui.create(base))
     return component
@@ -103,7 +103,16 @@ function GridIcon:refreshDirty(component, data)
         props.resource = tex
     end
 
-    --TODO: update count
+    local count = data.getCount()
+    local text = helpers.getCountString(count)
+    local visible = count and count > 1
+    props = H.props(content['count'])
+    if props.text ~= text or props.visible ~= visible then
+        changed = true
+        props.text = text
+        props.visible = visible
+    end
+
     --TODO: update favorite
     --TODO: update stolen
 

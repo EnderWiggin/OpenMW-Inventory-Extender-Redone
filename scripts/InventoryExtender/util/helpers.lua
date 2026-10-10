@@ -237,7 +237,7 @@ Helpers.toLookup = function(list)
 end
 
 Helpers.getCountString = function(count)
-    if count == 1 then
+    if not count or count == 1 then
         return ''
     elseif count > 999999999 then
         return math.floor(count / 1000000000) .. 'b'
