@@ -118,7 +118,7 @@ end
 function WindowManager:init()
     for i = 1, #WINDOW_TYPES do
         local windowName = WINDOW_TYPES[i]
-        self:create(windowName)
+        --self:create(windowName)
         local handler = InvHandler:new()
         handler:init(windowName)
 
