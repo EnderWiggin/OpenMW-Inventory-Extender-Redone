@@ -12,16 +12,23 @@ local H = require('scripts.UIToolkit.helpers')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local configPlayer = require('scripts.InventoryExtender.config.player')
+local iconPack = require('scripts.InventoryExtender.util.iconPack')
+local constants = require('scripts.InventoryExtender.util.constants')
 local Toolkit = I.UIToolkit
 
 
+local SZ = 42
+local INNER_SZ = SZ - 4
+local ICON_SZ = SZ - 10
+
 ---@class InventoryExtenderRedone.GridIcon: UIToolkit.GridItem.Base
 ---@field new fun(self:InventoryExtenderRedone.GridIcon):InventoryExtenderRedone.GridIcon
+---@field getBadges fun(row:InventoryExtenderRedone.RowData):table
 local GridIcon = Class(GridItemBase)
 
 function GridIcon:getItemSize()
     if not self.size then
-        self.size = v2(42, 42) * configPlayer.window.n_GridIconScale
+        self.size = v2(1, 1) * util.round(SZ * configPlayer.window.n_GridIconScale)
     end
     return self.size
 end
@@ -31,12 +38,20 @@ end
 function GridIcon:makeComponent(data)
     local sz = self:getItemSize()
     local component = Component:new()
-    local innerSz = sz - v2(4, 4)
-    local iconSz = sz - v2(10, 10)
+    local innerSz = v2(1, 1) * util.round(INNER_SZ * configPlayer.window.n_GridIconScale)
+    local iconSz = v2(1, 1) * util.round(ICON_SZ * configPlayer.window.n_GridIconScale)
     local base = GridIcon.renderIcon(data, sz, iconSz, innerSz, data.showAsEnchanted(), true)
 
-    --TODO: add favorites badge
-    --TODO: add stolen badge
+    local badges = self:getBadgeLayouts(data)
+    base.content:add {
+        name = 'badges',
+        type = ui.TYPE.Widget,
+        props = {
+            position = v2(1, 1) * math.floor(configPlayer.window.n_GridIconScale * (SZ - INNER_SZ) / 2),
+            size = innerSz,
+        },
+        content = ui.content(badges),
+    }
 
     local count = data.getCount()
     base.content:add({
@@ -47,7 +62,7 @@ function GridIcon:makeComponent(data)
             text = helpers.getCountString(count),
             anchor = util.vector2(1, 1),
             relativePosition = util.vector2(1, 1),
-            position = v2(-4, -4),
+            position = innerSz - sz,
             textShadow = true,
             visible = count and count > 1
         }
@@ -67,13 +82,24 @@ function GridIcon:getComponent(data)
     return component
 end
 
-function GridIcon:markDirty()
+function GridIcon:markAllDirty()
     for id, cached in pairs(self.cache) do
         if cached:isDestroyed() then
             self.cache[id] = nil
         else
             cached.dirty = true
         end
+    end
+end
+
+function GridIcon:markDirty(idOrData)
+    local id = type(idOrData) == 'string' and idOrData or idOrData.id
+    local cached = self.cache[id]
+    if not cached then return end
+    if cached:isDestroyed() then
+        self.cache[id] = nil
+    else
+        cached.dirty = true
     end
 end
 
@@ -103,6 +129,13 @@ function GridIcon:refreshDirty(component, data)
         props.resource = tex
     end
 
+    local badges = content['badges']
+    local layouts, tmp = self:getBadgeLayouts(data, badges.content)
+    if tmp then
+        changed = tmp
+        badges.content = ui.content(layouts)
+    end
+
     local count = data.getCount()
     local text = helpers.getCountString(count)
     local visible = count and count > 1
@@ -112,9 +145,6 @@ function GridIcon:refreshDirty(component, data)
         props.text = text
         props.visible = visible
     end
-
-    --TODO: update favorite
-    --TODO: update stolen
 
     if changed then
         Toolkit.queueUpdate(component.element)
@@ -129,6 +159,64 @@ end
 ---@return UTKTooltips.AnyTooltip?
 function GridIcon:getTooltip(data)
     return data.tooltip
+end
+
+---@param name string
+---@param path string
+---@param color openmw.util.Color
+---@param idx integer
+---@param n integer
+local function makeBadge(name, path, color, idx, n)
+    local r = 1 / n
+    local y = math.floor(idx / n)
+    local x = idx - n * y
+    return {
+        name = name,
+        type = ui.TYPE.Image,
+        props = {
+            resource = Toolkit.texture(path),
+            relativePosition = v2(x, y) * r,
+            relativeSize = v2(r, r),
+            color = color,
+        },
+    }
+end
+
+---@param data InventoryExtenderRedone.RowData
+---@param existing openmw.ui.Content?
+---@return openmw.ui.Layout[] badges, boolean changed
+function GridIcon:getBadgeLayouts(data, existing)
+    local badges = self.getBadges(data)
+    local layouts = {}
+    local changed = not existing
+    local n = 3
+
+    local was = {}
+    if existing then
+        for i = 1, #existing do
+            was[existing[i].name] = true
+        end
+    end
+
+    if badges.favorite then
+        layouts[#layouts + 1] = makeBadge('favorite', iconPack.getPath('item/favorited.dds'), constants.Colors.GOLD,
+            #layouts, n)
+        if not was['favorite'] then changed = true end
+        was['favorite'] = nil
+    end
+
+    if badges.stolen then
+        layouts[#layouts + 1] = makeBadge('stolen', iconPack.getPath('item/stolen.dds'), constants.Colors.DAMAGED,
+            #layouts, n)
+        if not was['stolen'] then changed = true end
+        was['stolen'] = nil
+    end
+
+    if not changed and next(was) then
+        changed = true
+    end
+
+    return layouts, changed
 end
 
 local BGR_SZ = v2(40, 40)
@@ -155,6 +243,13 @@ function GridIcon.getBackgroundTexture(bartered, equipped, enchanted)
     return Toolkit.texture(bgrPath, BGR_SZ, offset)
 end
 
+---@param data InventoryExtenderRedone.RowData
+---@param outerSize openmw.util.Vector2
+---@param iconSize openmw.util.Vector2
+---@param bgSize openmw.util.Vector2
+---@param showEnchantSwirl boolean
+---@param shadow boolean?
+---@return openmw.ui.Layout
 function GridIcon.renderIcon(data, outerSize, iconSize, bgSize, showEnchantSwirl, shadow)
     local ctx = I.InventoryExtender.getContext()
 

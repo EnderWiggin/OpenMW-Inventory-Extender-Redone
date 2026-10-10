@@ -31,6 +31,7 @@
 ---@class InventoryExtenderRedone.ItemTableOpts: UIToolkit.SortedListOpts
 ---@field showGrid boolean?
 ---@field horizontalGrid boolean?
+---@field getBadges fun(row:InventoryExtenderRedone.RowData):table
 
 
 ---@alias InventoryExtenderRedone.InfoBar.Provider fun(ctx:table):openmw.ui.LayoutOrElement?

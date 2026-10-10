@@ -1053,6 +1053,7 @@ function Inventory:onOpened(wnd, data, saved)
         columns = ALL_COLUMNS(fallBackSort, nameRenderer, nameUpdater),
         defaultColumn = 'Icon',
         showGrid = getItemViewMode() == 'ItemViewMode_Grid',
+        getBadges = getItemBadgeState,
         horizontalGrid = false, --TODO: read from settings
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
@@ -1249,7 +1250,7 @@ end
 
 function Inventory:update()
     self.table.provider:markCacheDirty()
-    self.table.gridProvider:markDirty()
+    self.table.gridProvider:markAllDirty()
     local data = self:createData()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()
@@ -1280,6 +1281,7 @@ function Inventory:toggleFavorite(row)
 
     ctx.favoriteRevision = (ctx.favoriteRevision or 0) + 1
     self.table.provider:refreshColumns(row, 'Name')
+    self.table.gridProvider:markDirty(row)
     self.table:setHovered(nil)
     self.table:sort()
 end

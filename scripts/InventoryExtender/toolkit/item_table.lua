@@ -111,6 +111,7 @@ function ItemTable:init(opts)
     }
 
     self.gridProvider = GridIconProvider:new()
+    self.gridProvider.getBadges = opts.getBadges
 
     self.list:setVisible(not self.showGrid)
 
