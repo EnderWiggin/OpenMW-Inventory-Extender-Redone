@@ -1047,7 +1047,7 @@ function Inventory:onOpened(wnd, data, saved)
     self.infoBar = InfoBar.create({}) --[[@as InventoryExtenderRedone.InfoBarPrivate  ]]
 
     local infoHeight = self.infoBar:getHeight()
-    local topBarHeight = self.categoryFilter:getSize().y
+    local topBarHeight = self:getTopBarHeight()
     self.table = ItemTable:new()
     self.table:init {
         columns = ALL_COLUMNS(fallBackSort, nameRenderer, nameUpdater),
@@ -1143,9 +1143,17 @@ end
 
 function Inventory:onResized(inner)
     local infoHeight = self.infoBar:getHeight()
-    local topBarHeight = self.categoryFilter:getSize().y
+    local topBarHeight = self:getTopBarHeight()
 
     self.table:setSize(inner - v2(0, topBarHeight + infoHeight + 4))
+end
+
+function Inventory:getTopBarHeight()
+    local topBarHeight = self.categoryFilter:getSize().y
+    if not configPlayer.tweaks.b_CompactCategoryFilter then
+        topBarHeight = topBarHeight + 8
+    end
+    return topBarHeight
 end
 
 function Inventory:onKeyboardButtonPress(key)

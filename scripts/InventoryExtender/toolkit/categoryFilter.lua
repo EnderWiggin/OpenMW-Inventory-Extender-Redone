@@ -96,9 +96,9 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         props = {
             position = compact and v2(0, 0) or v2(0, topBarHeight + 8),
             size = v2(0, categoryBarHeight),
-            anchor = compact and nil or v2(0.5, 0),
-            relativeSize = compact and nil or v2(1, 0),
-            relativePosition = compact and nil or v2(0.5, 0),
+            anchor = not compact and v2(0.5, 0) or nil,
+            relativeSize = not compact and v2(1, 0) or nil,
+            relativePosition = not compact and v2(0.5, 0) or nil,
         },
         external = compact and { grow = 1, stretch = 1, } or nil,
     }
