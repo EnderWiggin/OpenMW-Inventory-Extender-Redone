@@ -38,6 +38,7 @@ local ItemTable = require('scripts.InventoryExtender.toolkit.item_table')
 
 
 local H              = require 'scripts.UIToolkit.helpers'
+local C              = require 'scripts.UIToolkit.constants'
 local Class          = require 'scripts.UIToolkit.class'
 local WindowHandler  = require 'scripts.UIToolkit.window_handler'
 local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_item'
@@ -592,9 +593,7 @@ function Inventory:onOpened(wnd, data, saved)
 
     local inner = wnd:getInnerSize()
     local theme = Toolkit.getTheme()
-    local textSize = theme.Sizes.textNormal
-    local rowHeight = util.round(1.5 * (textSize + 2))
-    local texture = Toolkit.texture
+    local rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult)
 
     local function isFavorited(item)
         return item ~= nil and ctx.favoriteItems[item.id] == true
@@ -920,6 +919,71 @@ function Inventory:onOpened(wnd, data, saved)
             stolen = stolen,
         }
     end
+
+    ---@param name string
+    ---@param path string
+    ---@param color openmw.util.Color
+    ---@param sz number
+    ---@param idx integer
+    local function makeBadge(name, path, color, sz, idx)
+        return {
+            name = name,
+            type = ui.TYPE.Image,
+            props = {
+                resource = Toolkit.texture(path),
+                position = v2(idx * (sz + 4), 0),
+                anchor = v2(0, 0.5),
+                relativePosition = v2(0, 0.5),
+                size = v2(sz, sz),
+                color = color,
+            },
+        }
+    end
+
+    ---@param row InventoryExtenderRedone.RowData
+    ---@param sz number
+    ---@param existing openmw.ui.Content?
+    ---@return openmw.ui.Layout[] badges, boolean changed
+    local function getBadgeLayouts(row, sz, existing)
+        local badges = getItemBadgeState(row)
+        local layouts = {}
+        local changed = not existing
+        local was = {}
+        if existing then
+            for i = 1, #existing do
+                was[existing[i].name] = true
+            end
+        end
+
+        if badges.favorite then
+            layouts[#layouts + 1] = makeBadge('favorite', iconPack.getPath('item/favorited.dds'),
+                constants.Colors.GOLD, sz, #layouts)
+            if not was['favorite'] then changed = true end
+            was['favorite'] = nil
+        end
+
+        if badges.stolen then
+            layouts[#layouts + 1] = makeBadge('stolen', iconPack.getPath('item/stolen.dds'),
+                constants.Colors.DAMAGED, sz, #layouts)
+            if not was['stolen'] then changed = true end
+            was['stolen'] = nil
+        end
+
+        if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
+            layouts[#layouts + 1] = makeBadge('enchanted', iconPack.getPath('item/enchanted.dds'),
+                constants.Colors.BAR_MAGIC, sz, #layouts)
+            if not was['stolen'] then changed = true end
+            was['stolen'] = nil
+        end
+
+
+        if not changed and next(was) then
+            changed = true
+        end
+
+        return layouts, changed
+    end
+
     ---@type UIToolkit.ListItem.Column.Renderer
     local function nameRenderer(row, cfg, height)
         ---@cast row InventoryExtenderRedone.RowData
@@ -927,12 +991,6 @@ function Inventory:onOpened(wnd, data, saved)
 
         local text = helpers.getItemName(row.item) ..
             (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
-
-        local badgeState = getItemBadgeState(row)
-        local enchanted = false
-        if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
-            enchanted = true
-        end
 
         local content = ui.content {
             {
@@ -946,40 +1004,17 @@ function Inventory:onOpened(wnd, data, saved)
                 }
             },
         }
-        local iconSize = math.min(rowHeight, 12)
-        content:add(T.intervalH(8))
-        content:add({
-            name = 'favorite',
-            type = ui.TYPE.Image,
-            props = {
-                resource = texture(iconPack.getPath('item/favorited.dds')),
-                size = v2(iconSize, iconSize),
-                color = constants.Colors.GOLD,
-                visible = badgeState.favorite,
-            },
-        })
-        content:add(T.intervalH(8))
-        content:add({
-            name = 'stolen',
-            type = ui.TYPE.Image,
-            props = {
-                resource = texture(iconPack.getPath('item/stolen.dds')),
-                size = v2(iconSize, iconSize),
-                color = constants.Colors.DAMAGED,
-                visible = badgeState.stolen,
-            },
-        })
-        content:add(T.intervalH(8))
-        content:add({
-            name = 'enchanted',
-            type = ui.TYPE.Image,
-            props = {
-                resource = texture(iconPack.getPath('item/enchanted.dds')),
-                size = v2(iconSize, iconSize),
-                color = constants.Colors.BAR_MAGIC,
-                visible = enchanted,
-            },
-        })
+        local iconSize = util.round(theme.Sizes.lineHeight * 0.75)
+        if not C.API.GAP then content:add(T.intervalH(8)) end
+
+        local badges = getBadgeLayouts(row, iconSize)
+        content:add {
+            name = 'badges',
+            type = ui.TYPE.Widget,
+            props = {},
+            external = { grow = 1, stretch = 1 },
+            content = ui.content(badges),
+        }
 
         local layout = {
             name = 'Name',
@@ -988,14 +1023,9 @@ function Inventory:onOpened(wnd, data, saved)
                 horizontal = true,
                 arrange = ui.ALIGNMENT.Center,
                 autoSize = false,
+                gap = C.API.GAP and 8 or nil,
             },
             content = content,
-            userData = {
-                text = text,
-                favorite = badgeState.favorite,
-                stolen = badgeState.stolen,
-                enchanted = enchanted,
-            }
         }
         ColumnItem.applySize(layout, cfg, height)
         return layout
@@ -1010,33 +1040,17 @@ function Inventory:onOpened(wnd, data, saved)
         local text = helpers.getItemName(row.item) ..
             (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
 
-        local badgeState = getItemBadgeState(row)
-        local enchanted = false
-        if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then
-            enchanted = true
-        end
-
         local props = H.props(part.content['name'])
         if props.text ~= text then
             props.text = text
             changed = true
         end
 
-        props = H.props(part.content['favorite'])
-        if props.visible ~= badgeState.favorite then
-            props.visible = badgeState.favorite
-            changed = true
-        end
-
-        props = H.props(part.content['stolen'])
-        if props.visible ~= badgeState.stolen then
-            props.visible = badgeState.stolen
-            changed = true
-        end
-
-        props = H.props(part.content['enchanted'])
-        if props.visible ~= enchanted then
-            props.visible = enchanted
+        local iconSize = util.round(theme.Sizes.lineHeight * 0.75)
+        local badgesPart = part.content['badges']
+        local badges, badgesChanged = getBadgeLayouts(row, iconSize, badgesPart.content)
+        if badgesChanged then
+            badgesPart.content = ui.content(badges)
             changed = true
         end
 
@@ -1056,7 +1070,7 @@ function Inventory:onOpened(wnd, data, saved)
         getBadges = getItemBadgeState,
         horizontalGrid = false, --TODO: read from settings
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
-        rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult),
+        rowHeight = rowHeight,
         noBorder = true,
         onListClicked = function(button)
             if button ~= 1 then return end
