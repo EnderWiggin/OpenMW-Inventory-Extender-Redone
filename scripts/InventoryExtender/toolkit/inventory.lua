@@ -1067,7 +1067,7 @@ function Inventory:onOpened(wnd, data, saved)
         columns = ALL_COLUMNS(fallBackSort, nameRenderer, nameUpdater),
         defaultColumn = 'Icon',
         showGrid = getItemViewMode() == 'ItemViewMode_Grid',
-        getBadges = getItemBadgeState,
+        getBadges = function(row) return self:getItemBadgeState(row) end,
         horizontalGrid = false, --TODO: read from settings
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = rowHeight,
@@ -1578,8 +1578,9 @@ function Inventory:createData()
     ---@param item openmw.Object|{stacks:openmw.Object[], totalCount:number}
     ---@param isBartered boolean
     ---@param isVirtual boolean
+    ---@param isOwned boolean
     ---@return InventoryExtenderRedone.RowData?
-    local function createRowData(item, isBartered, isVirtual)
+    local function createRowData(item, isBartered, isVirtual, isOwned)
         ---@type openmw.Object
         local itemStack = isVirtual and item.stacks[1] or item --[[@as openmw.Object]]
 
@@ -1626,7 +1627,7 @@ function Inventory:createData()
             isBartered = isBartered,
             virtualStacks = isVirtual and item.stacks or nil,
             getCount = getItemCount,
-            tooltip = { object = itemStack, observer = omwself },
+            tooltip = { object = itemStack, observer = omwself, owned = isOwned },
             showAsEnchanted = function()
                 if record.enchant then
                     return true
@@ -1659,16 +1660,25 @@ function Inventory:createData()
 
     local data = {}
 
+    local isOwned = false
+    if self.type == 'Container' then
+        if ctx.pickpocket and ctx.pickpocket.active then
+            isOwned = true
+        elseif Container.objectIsInstance(self.target) then
+            isOwned = isStealing(omwself, self.target.owner, self.target.globalVariable)
+        end
+    end
+
     -- Add primary inventory
     if self.type ~= 'Trade' then
         local allItems = self.target.type.inventory(self.target):getAll()
         for i = 1, #allItems do
-            data[#data + 1] = createRowData(allItems[i], false, false)
+            data[#data + 1] = createRowData(allItems[i], false, false, isOwned)
         end
     else
         for _, recordId in pairs(helpers.getMerchantItems(self.target)) do
             for i = 1, #recordId do
-                table.insert(data, createRowData(recordId[i], false, true))
+                table.insert(data, createRowData(recordId[i], false, true, isOwned))
             end
         end
     end
@@ -1678,14 +1688,14 @@ function Inventory:createData()
         if self.type == 'Trade' then
             local ownItems = omwself.type.inventory(omwself):getAll()
             for i = 1, #ownItems do
-                table.insert(data, createRowData(ownItems[i], true, false))
+                table.insert(data, createRowData(ownItems[i], true, false, isOwned))
             end
         else
             local barterNpc = ctx.windowArgs.Trade or self.arg --TODO: consider removing `ctx.windowArgs`
             if barterNpc then
                 for _, recordId in pairs(helpers.getMerchantItems(barterNpc)) do
                     for i = 1, #recordId do
-                        table.insert(data, createRowData(recordId[i], true, true))
+                        table.insert(data, createRowData(recordId[i], true, true, isOwned))
                     end
                 end
             end
