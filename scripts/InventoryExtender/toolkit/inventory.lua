@@ -1067,7 +1067,7 @@ function Inventory:onOpened(wnd, data, saved)
         columns = ALL_COLUMNS(fallBackSort, nameRenderer, nameUpdater),
         defaultColumn = 'Icon',
         showGrid = getItemViewMode() == 'ItemViewMode_Grid',
-        getBadges = function(row) return self:getItemBadgeState(row) end,
+        getBadges = getItemBadgeState,
         horizontalGrid = false, --TODO: read from settings
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = rowHeight,
