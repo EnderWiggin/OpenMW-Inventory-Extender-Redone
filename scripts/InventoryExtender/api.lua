@@ -297,6 +297,8 @@ eventHandlers.MI_CompanionProfit = eventHandlers.IE_CompanionProfit
 eventHandlers.MI_SetDraggingObject = eventHandlers.IE_SetDraggingObject
 eventHandlers.MI_BarterFinalized = eventHandlers.IE_BarterFinalized
 
+require 'scripts.InventoryExtender.interop.utk_tooltips'
+
 return {
     interfaceName = 'InventoryExtender',
     interface = API,
