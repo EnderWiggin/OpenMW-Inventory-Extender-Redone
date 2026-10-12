@@ -10,6 +10,11 @@ local input = require('openmw.input')
 local omwself = require('openmw.self')
 local v2 = util.vector2
 
+
+local Toolkit = I.UIToolkit
+local Manager = Toolkit.WindowManager
+
+
 local constants = require('scripts.InventoryExtender.util.constants')
 local configPlayer = require('scripts.InventoryExtender.config.player')
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
@@ -122,7 +127,7 @@ function WindowManager:init()
         local handler = InvHandler:new()
         handler:init(windowName)
 
-        local manager = I.UIToolkit.WindowManager
+        local manager = Manager
         local windowId = getWindowId(windowName)
         allToolkitWindows[#allToolkitWindows + 1] = windowId
         manager.register(windowId, {
@@ -165,12 +170,10 @@ function WindowManager:update()
             end
         end
     end
-    local manager = I.UIToolkit.WindowManager
     for i = 1, #allToolkitWindows do
-        local wnd = manager.getHandler(allToolkitWindows[i])
-        if wnd then
-            ---@cast wnd IER.Inventory
-            wnd:update()
+        local handler = Manager.getHandler(allToolkitWindows[i]) --[[@as IER.Inventory]]
+        if handler then
+            handler:update()
         end
     end
     if self.ctx.activeTooltip then
@@ -194,7 +197,7 @@ function WindowManager:show(windowName, arg)
 
     self.ctx.windowArgs[windowName] = arg or self.ctx.windowArgs[windowName]
 
---[[
+    --[[
     if not self.windows[windowName] then
         self:create(windowName)
     end
@@ -215,15 +218,15 @@ function WindowManager:show(windowName, arg)
     --TODO: do not close if not Inventory or same mode?
     --TODO: or maybe invent mode switching for inventory?
     local windowId = getWindowId(windowName)
-    I.UIToolkit.WindowManager.close(windowId, true)
-    I.UIToolkit.WindowManager.open(windowId, arg)
+    Manager.close(windowId, true)
+    Manager.open(windowId, arg)
 end
 
 function WindowManager:hide(windowName, arg, force)
     if self.ctx.resettingMode then
         return
     end
-    I.UIToolkit.WindowManager.close(getWindowId(windowName))
+    Manager.close(getWindowId(windowName))
 
     showing[windowName] = false
     local window = self.windows[windowName]
@@ -245,9 +248,9 @@ function WindowManager:forEachOpenWindow(apply)
     for i = 1, #WINDOW_TYPES do
         local windowName = WINDOW_TYPES[i]
         local windowId = getWindowId(windowName)
-        local wnd = I.UIToolkit.WindowManager.getWindow(windowId)
+        local wnd = Manager.getWindow(windowId)
         if wnd then
-            local handler = I.UIToolkit.WindowManager.getHandler(windowId) --[[@as IER.Inventory]]
+            local handler = Manager.getHandler(windowId) --[[@as IER.Inventory]]
             apply(handler, wnd)
         end
     end
