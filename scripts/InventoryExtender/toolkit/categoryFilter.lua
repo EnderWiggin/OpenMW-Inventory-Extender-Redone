@@ -46,9 +46,9 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
     local compact = props.compact == true
     local vanillaStyle = props.vanillaStyle == true
 
-    local topBarHeight = specialTemplates.LINE_HEIGHT * 1.5
+    local topBarHeight = util.round(specialTemplates.LINE_HEIGHT * 1.5)
     local categoryBarHeight = compact and (topBarHeight - 4) or (maxHeight - topBarHeight)
-    local elementHeight = compact and (topBarHeight + 8) or maxHeight
+    local elementHeight = compact and (topBarHeight + 8) or maxHeight + 8
     local compactIconPadding = 8
     local vanillaOpacityStates = {
         default = 0.45,
@@ -82,7 +82,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
 
     local categoryBarLayout = {
         name = 'categoryBar',
-        template = configPlayer.tweaks.b_CategoryBarBorders and I.MWUI.templates.borders or nil,
+        template = configPlayer.tweaks.b_CategoryBarBorders and T.border { padding = 0 } or nil,
         content = ui.content {
             {
                 name = 'categoryBarButtons',
@@ -95,7 +95,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         },
         props = {
             position = compact and v2(0, 0) or v2(0, topBarHeight + 8),
-            size = v2(0, categoryBarHeight),
+            size = v2(compact and 0 or -16, categoryBarHeight - 4),
             anchor = not compact and v2(0.5, 0) or nil,
             relativeSize = not compact and v2(1, 0) or nil,
             relativePosition = not compact and v2(0.5, 0) or nil,
@@ -110,7 +110,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
     else
         topBarContent:add({
             name = 'selectedCategoryName',
-            template = T.text(),
+            template = T.header(),
             props = {
                 text = '',
                 textSize = topBarHeight,
@@ -121,7 +121,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         })
     end
     topBarContent:add(I.UIToolkit.Components.textEdit {
-        width = 200,
+        width = compact and 150 or 200,
         placeholder = placeholder,
         onValueChanged = onSearchChange,
         showClearButton = true,
@@ -259,12 +259,11 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
             auxUi.deepDestroy(categoryBarContent[i])
         end
 
+        categoryBarContent = ui.content {}
         if compact then
-            element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content = ui.content {}
-            categoryBarContent = element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content
+            element.layout.content.topBar.content.categoryBar.content.categoryBarButtons.content = categoryBarContent
         else
-            element.layout.content.categoryBar.content.categoryBarButtons.content = ui.content {}
-            categoryBarContent = element.layout.content.categoryBar.content.categoryBarButtons.content
+            element.layout.content.categoryBar.content.categoryBarButtons.content = categoryBarContent
         end
 
         local categories = getCategories()
@@ -274,7 +273,8 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         for i, category in ipairs(categories) do
             local isSelected = state.selectedCategory == category.key
             local isDisabled = isCategoryDisabled(category, categoryDisabledLookup)
-            local iconSize = v2(categoryBarHeight - compactIconPadding, categoryBarHeight - compactIconPadding)
+            local imageSize = categoryBarHeight - compactIconPadding
+            local iconSize = v2(imageSize, imageSize)
             local iconAlpha = isSelected and vanillaOpacityStates.active or
                 ((isDisabled and not isSelected) and vanillaOpacityStates.disabled or vanillaOpacityStates.default)
             local buttonContent

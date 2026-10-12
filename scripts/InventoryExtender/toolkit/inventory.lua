@@ -1163,11 +1163,7 @@ function Inventory:onResized(inner)
 end
 
 function Inventory:getTopBarHeight()
-    local topBarHeight = self.categoryFilter:getSize().y
-    if not configPlayer.tweaks.b_CompactCategoryFilter then
-        topBarHeight = topBarHeight + 8
-    end
-    return topBarHeight
+    return self.categoryFilter:getSize().y
 end
 
 function Inventory:onKeyboardButtonPress(key)
