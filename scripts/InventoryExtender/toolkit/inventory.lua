@@ -1083,7 +1083,7 @@ function Inventory:onOpened(wnd, data, saved)
     }
     local column = saved and saved.sortingColumn or 'Icon'
     local sortDir = saved and saved.sortingDirection
-    self.table.header:toggleColumn(column, sortDir)
+    if column then self.table.header:toggleColumn(column, sortDir ~= false) end
     self.table:updateProps { position = v2(0, topBarHeight + 2) }
     self.table:setFilter(self.filter --[[@as UIToolkit.SortedList.Filter]])
     local categoryKey = self.categoryFilter:getCategory()
