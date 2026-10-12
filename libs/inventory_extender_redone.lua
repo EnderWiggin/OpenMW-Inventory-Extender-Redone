@@ -34,4 +34,11 @@
 ---@field getBadges fun(row:InventoryExtenderRedone.RowData):table
 
 
+---@class InventoryExtenderRedone.ItemStackModalOpts
+---@field itemName string?
+---@field maxCount number
+---@field selectedCount number?
+---@field onConfirm fun(count:number) called after the popup is closed with the count confirmed
+
+
 ---@alias InventoryExtenderRedone.InfoBar.Provider fun(ctx:table):openmw.ui.LayoutOrElement?

@@ -30,11 +30,11 @@ local iconPack = require('scripts.InventoryExtender.util.iconPack')
 local persistentCorpses = require('scripts.InventoryExtender.util.persistentCorpses')
 local l10n = core.l10n('InventoryExtender')
 local Pickpocket = require('scripts.InventoryExtender.util.pickpocket')
-local ItemStackModal = require('scripts.InventoryExtender.ui.templates.itemStackModal') --TODO: change to UI Toolkit popup
 local InfoBar = require('scripts.InventoryExtender.toolkit.info_bar')
 local BarterControls = require('scripts.InventoryExtender.toolkit.barter_controls')
 local GridIcon = require('scripts.InventoryExtender.toolkit.grid_icon_provider')
 local ItemTable = require('scripts.InventoryExtender.toolkit.item_table')
+local ItemStackModal = require('scripts.InventoryExtender.toolkit.item_stack_modal')
 
 
 local H              = require 'scripts.UIToolkit.helpers'
@@ -1142,6 +1142,10 @@ function Inventory:onClosed()
         self._closeSettingsPopup()
         self._closeSettingsPopup = nil
     end
+    if self._closeItemStackPopup then
+        self._closeItemStackPopup()
+        self._closeItemStackPopup = nil
+    end
     if self.ctx.dragAndDrop.draggingObject then
         self.ctx.dragAndDrop:stopDrag()
     end
@@ -1527,14 +1531,13 @@ function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
     end
 
     if itemCount > 1 and not takeAll and not takeOne then
-        local modal = ItemStackModal.create({
+        self._closeItemStackPopup = ItemStackModal.show({
             itemName = row.itemRecord.name,
             maxCount = itemCount,
             onConfirm = function(count)
                 doAction(count)
             end,
-        }, ctx)
-        ctx.modalElement = modal
+        })
     else
         doAction(takeOne and 1 or itemCount)
     end
