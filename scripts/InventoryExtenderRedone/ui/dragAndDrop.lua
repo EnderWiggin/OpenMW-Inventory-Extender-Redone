@@ -485,7 +485,9 @@ function DragAndDrop:_onPress()
     if not configPlayer.misc.b_TooltipCompatibilityMode then return end
 
     self._lastInvState = {}
-    for _, item in ipairs(types.Player.inventory(omwself):getAll()) do
+    local inventory = types.Player.inventory(omwself):getAll()
+    for i = 1, #inventory do
+        local item = inventory[i]
         self._lastInvState[item.id] = { recordId = item.recordId, count = item.count }
     end
 end
@@ -501,7 +503,9 @@ function DragAndDrop:_onRelease()
     end
 
     local instant = input.isAltPressed()
-    for _, item in ipairs(types.Player.inventory(omwself):getAll()) do
+    local inventory = types.Player.inventory(omwself):getAll()
+    for i = 1, #inventory do
+        local item = inventory[i]
         local lastState = self._lastInvState[item.id]
         if not lastState or lastState.count < item.count then
             if not instant then
