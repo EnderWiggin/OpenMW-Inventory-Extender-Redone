@@ -990,7 +990,7 @@ function Inventory:onOpened(wnd, data, saved)
         local nonDraggedCount = getNonDraggedCount(row, self.type)
 
         local text = helpers.getItemName(row.item) ..
-            (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
+            (nonDraggedCount > 1 and (' (%s)'):format(H.addSeparators(nonDraggedCount)) or '')
 
         local content = ui.content {
             {
@@ -1038,7 +1038,7 @@ function Inventory:onOpened(wnd, data, saved)
         local nonDraggedCount = getNonDraggedCount(row, self.type)
 
         local text = helpers.getItemName(row.item) ..
-            (nonDraggedCount > 1 and (' (%s)'):format(helpers.addSeparators(nonDraggedCount)) or '')
+            (nonDraggedCount > 1 and (' (%s)'):format(H.addSeparators(nonDraggedCount)) or '')
 
         local props = H.props(part.content['name'])
         if props.text ~= text then
@@ -1796,7 +1796,7 @@ function Inventory:initInfoBar()
             else
                 goldAmount = self.target.type.getBarterGold(self.target)
             end
-            goldProps.text = helpers.addSeparators(goldAmount)
+            goldProps.text = H.addSeparators(goldAmount)
             return goldLayout
         end)
     end
@@ -1952,7 +1952,7 @@ function Inventory:initInfoBar()
             self.infoBar:addProvider(function()
                 if self.target == nil then return nil end
                 local profit = ctx.companionProfit[self.target.id] or 0
-                profitProps.text = constants.Strings.PROFIT_VALUE .. ': ' .. helpers.addSeparators(profit)
+                profitProps.text = constants.Strings.PROFIT_VALUE .. ': ' .. H.addSeparators(profit)
                 return profitLayout
             end)
         end
