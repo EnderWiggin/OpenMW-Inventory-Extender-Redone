@@ -18,11 +18,6 @@ API.VERSION = 1
 API.Constants = constants
 API.Helpers = helpers
 
-API.Templates = {
-    BASE = require('scripts.InventoryExtenderRedone.ui.templates.base'),
-    MAGIC = require('scripts.InventoryExtenderRedone.ui.templates.magic'),
-}
-
 API.allWindowsDisabled = false
 
 ---Set to true to temporarily disable IE windows
@@ -143,39 +138,6 @@ function API.unregisterCategory(key)
     categoriesChanged = true
 end
 
---- Register a tooltip modifier function.
---- Modifiers are called in order of registration, and each modifier receives the current modified layout.
---- The passed layout is a direct reference and can be modified in-place.
---- Optionally, a modifier can return a new layout to replace the current one entirely.
---- @param id string A unique identifier for the modifier
---- @param modifier fun(item: GameObject, layout: Layout):Layout|nil The modifier function
-function API.registerTooltipModifier(id, modifier)
-    for _, existingModifier in ipairs(windowManager.ctx.modifiers.tooltip) do
-        if existingModifier.id:lower() == id:lower() then
-            existingModifier.modifier = modifier
-            return
-        end
-    end
-    table.insert(windowManager.ctx.modifiers.tooltip, { id = id, modifier = modifier })
-end
-
---- Register a cell content modifier function for rows in the item table.
---- Modifiers are called in order of registration when a cell's content is updated, and each modifier receives the current cell layout.
---- The passed layout is a direct reference and can be modified in-place.
---- Optionally, a modifier can return new layout to replace the current one entirely.
---- WIP KINDA BROKEN :)
---- @param id string A unique identifier for the modifier
---- @param modifier fun(cell: Layout, row: table, ctx: table, windowType: string):Layout|nil The modifier function
-function API.registerCellContentModifier(id, modifier)
-    for _, existingModifier in ipairs(windowManager.ctx.modifiers.cellContent) do
-        if existingModifier.id:lower() == id:lower() then
-            existingModifier.modifier = modifier
-            return
-        end
-    end
-    table.insert(windowManager.ctx.modifiers.cellContent, { id = id, modifier = modifier })
-end
-
 --- Register a function to override the equipped status of items in the inventory.
 --- Handlers are called in reverse order of registration until one returns a non-nil value, at which point that value is used as the result. 
 --- If no handlers return a non-nil value, the default value is used.
@@ -205,8 +167,6 @@ function API.registerRowUseHandler(id, handler)
     end
     table.insert(windowManager.ctx.handlers.onRowUse, { id = id, handler = handler })
 end
---- @deprecated Use registerRowUseHandler instead
-API.registerRowClickHandler = API.registerRowUseHandler
 
 --- Register a function to handle pick-up actions (default: R, or left-click if swapped) on item rows in the inventory.
 --- By default, this picks up the item or drops/transfers it if Alt is held. In barter, it is routed to the "use" handler.
@@ -222,8 +182,6 @@ function API.registerRowPickupHandler(id, handler)
     end
     table.insert(windowManager.ctx.handlers.onRowPickup, { id = id, handler = handler })
 end
---- @deprecated Use registerRowPickupHandler instead
-API.registerRowActivateHandler = API.registerRowPickupHandler
 
 ---@param itemOrId string|openmw.Object
 function API.isFavorite(itemOrId)
@@ -289,13 +247,6 @@ local eventHandlers = {
         self:sendEvent('IE_Update')
     end,
 }
--- deprecated event names
-eventHandlers.MI_StoleItem = eventHandlers.IE_StoleItem
-eventHandlers.MI_ItemsConfiscated = eventHandlers.IE_ItemsConfiscated
-eventHandlers.MI_Update = eventHandlers.IE_Update
-eventHandlers.MI_CompanionProfit = eventHandlers.IE_CompanionProfit
-eventHandlers.MI_SetDraggingObject = eventHandlers.IE_SetDraggingObject
-eventHandlers.MI_BarterFinalized = eventHandlers.IE_BarterFinalized
 
 require 'scripts.InventoryExtenderRedone.interop.utk_tooltips'
 
