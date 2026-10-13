@@ -14,12 +14,9 @@ local I = require('openmw.interfaces')
 local ambient = require('openmw.ambient')
 local input = require('openmw.input')
 
-local baseTemplates = require('scripts.InventoryExtenderRedone.ui.templates.base')
-local specialTemplates = require('scripts.InventoryExtenderRedone.ui.templates.magic')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
-local cursor = require('scripts.InventoryExtenderRedone.ui.cursor')
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 
@@ -257,6 +254,16 @@ function DragAndDrop:moveAll(source, destination, items)
     })
 end
 
+-- The library owns the tooltip element, so clear it only when it was made for our hit-test
+-- object; otherwise it belongs to a window widget and must stay.
+local function clearTooltipIfFor(hitObject)
+    if not hitObject then return end
+    local tip = I.UTKTooltips.currentTooltip()
+    if tip and tip.object == hitObject then
+        I.UTKTooltips.setTooltip(nil)
+    end
+end
+
 function DragAndDrop:stopDrag(target)
     if target and self.draggingObject then
         if not self:transferInto(self.draggingObject, target) then
@@ -267,10 +274,7 @@ function DragAndDrop:stopDrag(target)
     self.draggingCount = nil
     self.draggingActivationContext = nil
     self.source = nil
-    if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
-        self.ctx.activeTooltip.layout.props.visible = false
-        self.ctx.activeTooltip:update()
-    end
+    clearTooltipIfFor(self.lastHoveredObject)
     if self.ctx.cursorAttachedIcon then
         auxUi.deepDestroy(self.ctx.cursorAttachedIcon)
         self.ctx.cursorAttachedIcon = nil
@@ -280,27 +284,17 @@ function DragAndDrop:stopDrag(target)
     end
 end
 
-local function absToRel(absPos)
-    local layerSize = ui.layers[ui.layers.indexOf('DragBlocker')].size
-    return v2(
-        absPos.x / layerSize.x,
-        absPos.y / layerSize.y
-    )
-end
-
-local function createObjectTooltip(hitObject, position, ctx)
-    -- Check if it's an item
+-- UTKTooltips positions the tooltip itself (cursor-follow or world-object viewport) each frame,
+-- so no anchor/position math here. The console line tooltip keeps `object` so clearTooltipIfFor
+-- can still match it by identity.
+local function createObjectTooltip(hitObject, ctx)
     if types.Item.isCarriable(hitObject) then
-        ctx.activeTooltip = ui.create(specialTemplates.itemTooltip(hitObject, true, ctx))
+        I.UTKTooltips.setTooltip({ object = hitObject, observer = omwself })
     elseif ctx.isConsoleOpen then
-        ctx.activeTooltip = ui.create(specialTemplates.lineTooltip('"' .. hitObject.recordId .. '"', hitObject.id))
-    end
-
-    if ctx.activeTooltip then
-        ctx.activeTooltip.layout.name = hitObject.id
-        ctx.activeTooltip.layout.props.anchor = v2(absToRel(position).x, 0)
-        ctx.activeTooltip.layout.props.position = v2(position.x, position.y + 32)
-        ctx.activeTooltip:update()
+        I.UTKTooltips.setTooltip({
+            object = hitObject,
+            recipe = { items = { { text = '"' .. hitObject.recordId .. '"' } } },
+        })
     end
 end
 
@@ -404,10 +398,7 @@ function DragAndDrop:init(ctx)
             I.UIToolkit.setCursorPos(e.position)
             -- Update tooltip based on hovered object
             if self.draggingObject then
-                if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
-                    auxUi.deepDestroy(self.ctx.activeTooltip)
-                    self.ctx.activeTooltip = nil
-                end
+                clearTooltipIfFor(self.lastHoveredObject)
                 if needsReset then
                     resetMode()
                     needsReset = false
@@ -417,27 +408,14 @@ function DragAndDrop:init(ctx)
             else
                 if self.hoveredObject ~= self.lastHoveredObject then
                     -- Object changed, remake tooltip
-                    if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
-                        auxUi.deepDestroy(self.ctx.activeTooltip)
-                        self.ctx.activeTooltip = nil
-                    end
+                    -- repositions its element every frame.
+                    clearTooltipIfFor(self.lastHoveredObject)
 
                     if self.hoveredObject then
-                        createObjectTooltip(self.hoveredObject, e.position, self.ctx)
+                        createObjectTooltip(self.hoveredObject, self.ctx)
                     end
 
                     self.lastHoveredObject = self.hoveredObject
-                elseif self.ctx.activeTooltip and self.ctx.activeTooltip.layout and self.hoveredObject then
-                    -- Same object, just update position
-                    local distToBottom = layerSize.y - e.position.y
-                    if distToBottom < layerSize.y / 2 then
-                        self.ctx.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 1)
-                        self.ctx.activeTooltip.layout.props.position = v2(e.position.x, e.position.y - 32)
-                    else
-                        self.ctx.activeTooltip.layout.props.anchor = v2(absToRel(e.position).x, 0)
-                        self.ctx.activeTooltip.layout.props.position = v2(e.position.x, e.position.y + 32)
-                    end
-                    self.ctx.activeTooltip:update()
                 end
             end
 
@@ -456,10 +434,7 @@ function DragAndDrop:init(ctx)
             end
         end),
         focusLoss = async:callback(function()
-            if self.ctx.activeTooltip and self.ctx.activeTooltip.layout then
-                auxUi.deepDestroy(self.ctx.activeTooltip)
-                self.ctx.activeTooltip = nil
-            end
+            clearTooltipIfFor(self.lastHoveredObject)
             self.lastHoveredObject = nil
             if self.ctx.cursorAttachedIcon then
                 self.ctx.cursorAttachedIcon.layout.props.visible = false
