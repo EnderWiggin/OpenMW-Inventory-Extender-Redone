@@ -6,6 +6,7 @@ local input = require('openmw.input')
 local I = require('openmw.interfaces')
 
 local BUTTON = input.CONTROLLER_BUTTON
+local v2 = util.vector2
 
 local Toolkit = I.UIToolkit
 local T = Toolkit.Templates
@@ -14,17 +15,21 @@ local Popups = Toolkit.Popups
 
 local constants = require('scripts.InventoryExtender.util.constants')
 
-local SLIDER_LENGTH = 360
+local HANDLE_SIZE = 32
+local SLIDER_LENGTH = 400
+local SLIDER_WIDTH = 18
 
 local ItemStackModal = {}
 
----@param params InventoryExtenderRedone.ItemStackModalOpts
+---@param opts InventoryExtenderRedone.ItemStackModalOpts
 ---@return fun() closes the popup. Closing does not confirm the count.
-function ItemStackModal.show(params)
-    local maxCount = params.maxCount or 1
-    local onConfirm = params.onConfirm or function(count) end
+function ItemStackModal.show(opts)
+    local maxCount = opts.maxCount
+    local onConfirm = opts.onConfirm
+    assert(maxCount)
+    assert(onConfirm)
 
-    local selectedCount = params.selectedCount or maxCount
+    local selectedCount = opts.selectedCount or maxCount
 
     local function validate(text)
         local number = tonumber(text)
@@ -38,26 +43,29 @@ function ItemStackModal.show(params)
         width = 100,
         default = selectedCount,
         validate = validate,
+        textAlignH = ui.ALIGNMENT.Center,
         onValueChanged = function(value)
             selectedCount = value
             slider:setPosition(value - 1, true)
         end,
     }
+    local editHeight = edit.element.layout.props.size.y
+    local textSize = Toolkit.getTheme().Sizes.textNormal
 
     -- the slider is a scrollbar: its position is the count minus one, so dragging and typing set the same value
     slider = Components.scrollBar {
         horizontal = true,
         length = SLIDER_LENGTH,
         maxScroll = math.max(0, maxCount - 1),
-        handleSize = 32,
-        width = 20,
+        handleSize = HANDLE_SIZE,
+        width = SLIDER_WIDTH,
         scrollStep = 1,
         onScroll = function(position)
-            edit:setValue(position + 1)
             selectedCount = position + 1
+            edit:setValue(selectedCount)
         end,
     }
-    -- the scrollbar starts at zero, but the count starts at maxCount: park the handle where it agrees
+    -- the scrollbar starts at zero, but the count starts at maxCount
     slider:setPosition(selectedCount - 1, true)
 
     local body = {
@@ -70,6 +78,7 @@ function ItemStackModal.show(params)
                 type = ui.TYPE.Flex,
                 props = {
                     horizontal = true,
+                    size = v2(SLIDER_LENGTH, editHeight),
                     arrange = ui.ALIGNMENT.Center,
                     align = ui.ALIGNMENT.Center,
                 },
@@ -78,10 +87,12 @@ function ItemStackModal.show(params)
                         name = 'itemName',
                         template = T.text(),
                         props = {
-                            text = params.itemName or '',
+                            text = opts.itemName or '',
+                            size = v2(0, textSize),
+                            autoSize = false,
                         },
+                        external = { grow = 1 },
                     },
-                    T.intervalH(8),
                     edit.element,
                 },
             },
@@ -98,11 +109,7 @@ function ItemStackModal.show(params)
         buttons = {
             {
                 text = constants.Strings.OK,
-                -- the popup adds an Interface UI mode while it is open in interface mode,
-                -- so the take action must run after the popup closed the mode back down
-                noClose = true,
                 onClicked = function()
-                    closePopup()
                     onConfirm(selectedCount)
                 end,
             },
