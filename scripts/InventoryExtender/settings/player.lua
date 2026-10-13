@@ -3,7 +3,7 @@ local I = require('openmw.interfaces')
 local input = require('openmw.input')
 
 local l10n = core.l10n('InventoryExtender')
-local versionString = "1.3.1 Tweaked"
+local versionString = "1.3.2 Tweaked"
 
 local renderers = require('scripts.InventoryExtender.ui.renderers')
 local iconPack = require('scripts.InventoryExtender.util.iconPack')
