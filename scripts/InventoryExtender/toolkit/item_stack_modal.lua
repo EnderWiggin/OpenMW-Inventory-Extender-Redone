@@ -1,12 +1,15 @@
 ---@omw-context player
 
+local core = require('openmw.core')
 local ui = require('openmw.ui')
 local util = require('openmw.util')
 local input = require('openmw.input')
 local I = require('openmw.interfaces')
 
 local BUTTON = input.CONTROLLER_BUTTON
+local KEY = input.KEY
 local v2 = util.vector2
+local l10n = core.l10n('InventoryExtender')
 
 local Toolkit = I.UIToolkit
 local T = Toolkit.Templates
@@ -102,6 +105,34 @@ function ItemStackModal.show(opts)
     }
 
     local closePopup
+    local function onButton(button)
+        if button == BUTTON.Y then
+            closePopup()
+        elseif button == BUTTON.X then
+            onConfirm(selectedCount)
+            closePopup()
+        elseif button == BUTTON.LeftShoulder then
+            if selectedCount <= 1 then return end
+            slider:setPosition(selectedCount - 2) --slider's position needs to be 1 lower that selected count
+        elseif button == BUTTON.RightShoulder then
+            if selectedCount >= maxCount then return end
+            slider:setPosition(selectedCount) --slider's position needs to be 1 lower that selected count
+        end
+    end
+    local function onKey(key)
+        if key == KEY.R then
+            closePopup()
+        elseif key == KEY.E then
+            onConfirm(selectedCount)
+            closePopup()
+        elseif key == KEY.A then
+            if selectedCount <= 1 then return end
+            slider:setPosition(selectedCount - 2) --slider's position needs to be 1 lower that selected count
+        elseif key == KEY.D then
+            if selectedCount >= maxCount then return end
+            slider:setPosition(selectedCount) --slider's position needs to be 1 lower that selected count
+        end
+    end
 
     closePopup = Popups.show {
         title = constants.Strings.TAKE,
@@ -115,11 +146,15 @@ function ItemStackModal.show(opts)
             },
             { text = constants.Strings.CANCEL },
         },
-        onControllerButtonPress = function(button)
-            if button == BUTTON.Y then
-                closePopup()
-            end
-        end,
+        onControllerButtonPress = onButton,
+        onControllerButtonRepeat = onButton,
+        onKeyboardButtonPress = onKey,
+        onKeyboardButtonRepeat = onKey,
+        controllerHints = {
+            { text = constants.Strings.OK,     input = { id = BUTTON.X } },
+            { text = constants.Strings.CANCEL, input = { id = BUTTON.Y } },
+            { text = l10n 'Hint_Count',        input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } } },
+        },
     }
 
     return closePopup
