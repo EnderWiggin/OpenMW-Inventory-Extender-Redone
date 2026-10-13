@@ -129,10 +129,10 @@ local function moveInto(props)
         [string "scripts/inventoryextender/global.lua"]:233: in function <[string "scripts/inventoryextender/global.lua"]:118>
     ]]
     if not obj:isValid() then
-        print('[WARN] trying to move invalid object:', obj)
+        error('[WARN] trying to move invalid object: '..tostring(obj))
         return
     elseif not obj.count or obj.count <= 0 then
-        print('[WARN] trying to move empty object:', obj, obj.count)
+        error('[WARN] trying to move empty object: '..tostring(obj) ..', count: '.. tostring(obj.count))
         return
     end
 
@@ -245,7 +245,7 @@ local function moveInto(props)
 
     if moveCount ~= obj.count or helpers.isGold(obj) then
         obj = obj:split(moveCount)
-        if props.source ~= props.destination then
+        if props.source ~= props.destination and resultingObj == props.obj then
             resultingObj = obj
         end
     end
