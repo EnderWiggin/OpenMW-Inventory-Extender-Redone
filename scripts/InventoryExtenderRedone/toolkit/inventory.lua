@@ -1377,12 +1377,12 @@ function Inventory:onRowPickup(row, windowType, allowOutsideInterface)
                 if sound then
                     ambient.playSound(sound)
                 end
-                omwself:sendEvent('IE_Update')
+                omwself:sendEvent('IER_Update')
                 break
             end
         end
     else
-        core.sendGlobalEvent('IE_UseItem', {
+        core.sendGlobalEvent('IER_UseItem', {
             object = row.item,
             actor = omwself,
             source = self:getUseItemSource(row, windowType),
@@ -1467,7 +1467,7 @@ function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
             local success = Pickpocket.rollTake(omwself, self.target, row.item, row.getCount())
             if not success then
                 pickpocket.resolved = true
-                core.sendGlobalEvent('IE_CommitPickpocket', {
+                core.sendGlobalEvent('IER_CommitPickpocket', {
                     player = omwself,
                     target = self.target,
                     victimAware = true,
@@ -1507,7 +1507,7 @@ function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
                     ambient.playSound(sound)
                 end
                 barterUtils.updateOffer(ctx)
-                omwself:sendEvent('IE_Update')
+                omwself:sendEvent('IER_Update')
             elseif mode == 'Interface' then
                 if not self:isFavorite(row.item) then
                     ctx.dragAndDrop:dropAtViewportPosition(row.item, count, v2(0.5, 0.5), true)
@@ -1888,7 +1888,7 @@ function Inventory:initInfoBar()
                     if persistentCorpses(self.target) then
                         ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
                     else
-                        core.sendGlobalEvent('IE_DisposeOfCorpse', { target = ctx.windowArgs.Container })
+                        core.sendGlobalEvent('IER_DisposeOfCorpse', { target = ctx.windowArgs.Container })
                     end
                     I.UI.removeMode('Container')
                 end,

@@ -78,7 +78,7 @@ local function teleport(props)
     position = position + offset
 
     obj:teleport(cellOrName, position, options)
-    props.player:sendEvent('IE_Update')
+    props.player:sendEvent('IER_Update')
 end
 
 local function isCompanion(npc)
@@ -107,12 +107,12 @@ end
 local function scriptedDragStart(props)
     if props.obj.parentContainer == nil then return end
 
-    props.player:sendEvent('IE_SetDraggingObject', {
+    props.player:sendEvent('IER_SetDraggingObject', {
         obj = props.resultingObj,
         target = props.destination,
         resetMode = true,
     })
-    props.player:sendEvent('IE_Update')
+    props.player:sendEvent('IER_Update')
 end
 
 local function moveInto(props)
@@ -123,7 +123,7 @@ local function moveInto(props)
     local moveCount = props.count or obj.count
 
     --[[This check guards against errors happening when trying to pickup item that's already gone. Reported with stack traces like this:
-    eventHandler[IE_MoveInto] failed. Lua error: Can't remove 8 of 0 items
+    eventHandler[IER_MoveInto] failed. Lua error: Can't remove 8 of 0 items
     stack traceback:
         [C]: in function 'split'
         [string "scripts/inventoryextender/global.lua"]:233: in function <[string "scripts/inventoryextender/global.lua"]:118>
@@ -188,7 +188,7 @@ local function moveInto(props)
             end
         end
         if not helpers.isGold(obj) then
-            props.player:sendEvent('IE_StoleItem', { recordId = obj.recordId, count = moveCount, victim = victimInfo })
+            props.player:sendEvent('IER_StoleItem', { recordId = obj.recordId, count = moveCount, victim = victimInfo })
         end
     end
 
@@ -205,7 +205,7 @@ local function moveInto(props)
             local scriptRecord = core.mwscripts.records[mwscript]
             if scriptRecord and scriptRecord.text:lower():find('onactivate') then
                 world._runStandardActivationAction(obj, props.player)
-                core.sendGlobalEvent('IE_ScriptedDragStart', { player = props.player, obj = obj, resultingObj = resultingObj, target = destination })
+                core.sendGlobalEvent('IER_ScriptedDragStart', { player = props.player, obj = obj, resultingObj = resultingObj, target = destination })
                 return
             end
         end
@@ -225,7 +225,7 @@ local function moveInto(props)
         if profit then
             profit = profit - (helpers.getItemValue(obj) * moveCount)
             world.mwscript.getLocalScript(props.source).variables.minimumprofit = profit
-            props.player:sendEvent('IE_CompanionProfit', {
+            props.player:sendEvent('IER_CompanionProfit', {
                 companion = props.source,
                 profit = profit,
             })
@@ -236,7 +236,7 @@ local function moveInto(props)
         if profit then
             profit = profit + (helpers.getItemValue(obj) * moveCount)
             world.mwscript.getLocalScript(props.destination).variables.minimumprofit = profit
-            props.player:sendEvent('IE_CompanionProfit', {
+            props.player:sendEvent('IER_CompanionProfit', {
                 companion = props.destination,
                 profit = profit,
             })
@@ -260,7 +260,7 @@ local function moveInto(props)
     end
 
     if props.dragStart then
-        props.player:sendEvent('IE_SetDraggingObject', {
+        props.player:sendEvent('IER_SetDraggingObject', {
             obj = resultingObj,
             target = destination,
         })
@@ -272,7 +272,7 @@ local function moveInto(props)
             props.autoEquip:removeScript('scripts/InventoryExtenderRedone/autoEquip.lua')
         end, 2)
     else
-        props.player:sendEvent('IE_Update')
+        props.player:sendEvent('IER_Update')
     end
     
     return obj
@@ -302,7 +302,7 @@ local function moveAll(props)
         if types.Item.isCarriable(item) then
             if victimInfo then
                 if not helpers.isGold(item) then
-                    props.player:sendEvent('IE_StoleItem', { recordId = item.recordId, count = item.count, victim = victimInfo })
+                    props.player:sendEvent('IER_StoleItem', { recordId = item.recordId, count = item.count, victim = victimInfo })
                 end
                 totalCrimeValue = totalCrimeValue + (helpers.getItemValue(item) * item.count)
             end
@@ -319,7 +319,7 @@ local function moveAll(props)
         })
     end
 
-    props.player:sendEvent('IE_Update')
+    props.player:sendEvent('IER_Update')
 end
 
 local checkStolenNextUpdate = {}
@@ -347,7 +347,7 @@ local function onContainerActivated(container, actor)
     if not globalVariable then return true end
 
     local globals = world.mwscript.getGlobalVariables(actor)
-    actor:sendEvent('IE_ContainerVariable', { key = globalVariable, value = globals[globalVariable] })
+    actor:sendEvent('IER_ContainerVariable', { key = globalVariable, value = globals[globalVariable] })
     return true
 end
 
@@ -378,7 +378,7 @@ local function onUpdate(dt)
                 local currentCount = actor.type.inventory(actor):countOf(item.recordId)
                 if currentCount > prevCount then
                     local stolenCount = currentCount - prevCount
-                    actor:sendEvent('IE_StoleItem', { recordId = item.recordId, count = stolenCount, victim = victim })
+                    actor:sendEvent('IER_StoleItem', { recordId = item.recordId, count = stolenCount, victim = victim })
                 end
                 table.remove(entries, i)
             end
@@ -436,7 +436,7 @@ local function onUiModeChanged(data)
                 local currentCount = data.actor.type.inventory(data.actor):countOf(item.recordId)
                 if currentCount > prevCount then
                     local stolenCount = currentCount - prevCount
-                    data.actor:sendEvent('IE_StoleItem', { recordId = item.recordId, count = stolenCount, victim = victim })
+                    data.actor:sendEvent('IER_StoleItem', { recordId = item.recordId, count = stolenCount, victim = victim })
                 end
                 table.remove(entries, i)
             end
@@ -547,7 +547,7 @@ local function confiscateStolenItems(data)
                 containerMemory[cellId] = current
 
                 types.Lockable.lock(container, IE_LOCK_LEVEL)
-                data.player:sendEvent('IE_ItemsConfiscated', { stolenMap = data.stolenMap })
+                data.player:sendEvent('IER_ItemsConfiscated', { stolenMap = data.stolenMap })
                 return
             end
             break
@@ -576,7 +576,7 @@ local function confiscateToOwner(data)
         victimAware = true,
     })
     data.item:split(toRemove):moveInto(types.Actor.inventory(data.victim))
-    data.player:sendEvent('IE_ItemsConfiscated', { stolenMap = data.stolenMap })
+    data.player:sendEvent('IER_ItemsConfiscated', { stolenMap = data.stolenMap })
 end
 
 local function setItemData(item, data)
@@ -645,30 +645,30 @@ local function finalizeBarter(props)
             types.NPC.setBarterGold(props.merchant, types.NPC.getBarterGold(props.merchant) - props.barterState.currentBalance)
         end
     end
-    props.player:sendEvent('IE_BarterFinalized', {
+    props.player:sendEvent('IER_BarterFinalized', {
         skillGain = props.skillGain,
     })
 end
 
 local eventHandlers = {
-    IE_TryConfiscate = confiscateStolenItems,
-    IE_ConfiscateToOwner = confiscateToOwner,
-    IE_CommitPickpocket = commitPickpocket,
-    IE_Teleport = teleport,
-    IE_ScriptedDragStart = scriptedDragStart,
-    IE_MoveInto = moveInto,
-    IE_MoveAll = moveAll,
-    IE_FinalizeBarter = finalizeBarter,
-    IE_UIModeChanged = onUiModeChanged,
-    IE_StolenChestInactive = updateChestMemory,
-    IE_DisposeOfCorpse = function(props)
+    IER_TryConfiscate = confiscateStolenItems,
+    IER_ConfiscateToOwner = confiscateToOwner,
+    IER_CommitPickpocket = commitPickpocket,
+    IER_Teleport = teleport,
+    IER_ScriptedDragStart = scriptedDragStart,
+    IER_MoveInto = moveInto,
+    IER_MoveAll = moveAll,
+    IER_FinalizeBarter = finalizeBarter,
+    IER_UIModeChanged = onUiModeChanged,
+    IER_StolenChestInactive = updateChestMemory,
+    IER_DisposeOfCorpse = function(props)
         disposedBodies[props.target.recordId] = true
         props.target:remove()
     end,
-    IE_ModDisposition = function(props)
+    IER_ModDisposition = function(props)
         types.NPC.modifyBaseDisposition(props.target, props.player, props.amount)
     end,
-    IE_ItemPickedUp = function(props)
+    IER_ItemPickedUp = function(props)
         lastItemPickedUp = {
             recordId = props.recordId,
             count = props.count,
@@ -678,18 +678,18 @@ local eventHandlers = {
             lastItemPickedUp = nil
         end, 2)
     end,
-    IE_OwnedItemInactive = function(props)
+    IER_OwnedItemInactive = function(props)
         if lastItemPickedUp then
             if props.recordId == lastItemPickedUp.recordId and props.owner then
                 local victim = isStealing(lastItemPickedUp.player, props.owner, props.globalVariable)
                 if victim and not helpers.isGold(props.recordId) then
-                    lastItemPickedUp.player:sendEvent('IE_StoleItem', { recordId = props.recordId, count = lastItemPickedUp.count, victim = victim })
-                    lastItemPickedUp.player:sendEvent('IE_Update')
+                    lastItemPickedUp.player:sendEvent('IER_StoleItem', { recordId = props.recordId, count = lastItemPickedUp.count, victim = victim })
+                    lastItemPickedUp.player:sendEvent('IER_Update')
                 end
             end
         end
     end,
-    IE_UseItem = function(props)
+    IER_UseItem = function(props)
         if props.object and props.actor and props.object.parentContainer ~= props.actor then
             local movedObject = moveInto({
                 obj = props.object,
@@ -705,7 +705,7 @@ local eventHandlers = {
                     actor = props.actor,
                 })
                 queueDelayedJob(function()
-                    props.actor:sendEvent('IE_Update')
+                    props.actor:sendEvent('IER_Update')
                 end, 2)
             end
             return
@@ -715,23 +715,23 @@ local eventHandlers = {
             actor = props.actor,
         })
         queueDelayedJob(function()
-            props.actor:sendEvent('IE_Update')
+            props.actor:sendEvent('IER_Update')
         end, 2)
     end,
 }
 -- deprecated event names
-eventHandlers.MI_TryConfiscate = eventHandlers.IE_TryConfiscate
-eventHandlers.MI_ConfiscateToOwner = eventHandlers.IE_ConfiscateToOwner
-eventHandlers.MI_CommitPickpocket = eventHandlers.IE_CommitPickpocket
-eventHandlers.MI_Teleport = eventHandlers.IE_Teleport
-eventHandlers.MI_ScriptedDragStart = eventHandlers.IE_ScriptedDragStart
-eventHandlers.MI_MoveInto = eventHandlers.IE_MoveInto
-eventHandlers.MI_MoveAll = eventHandlers.IE_MoveAll
-eventHandlers.MI_FinalizeBarter = eventHandlers.IE_FinalizeBarter
-eventHandlers.MI_UIModeChanged = eventHandlers.IE_UIModeChanged
-eventHandlers.MI_StolenChestInactive = eventHandlers.IE_StolenChestInactive
-eventHandlers.MI_DisposeOfCorpse = eventHandlers.IE_DisposeOfCorpse
-eventHandlers.MI_ModDisposition = eventHandlers.IE_ModDisposition
+eventHandlers.MI_TryConfiscate = eventHandlers.IER_TryConfiscate
+eventHandlers.MI_ConfiscateToOwner = eventHandlers.IER_ConfiscateToOwner
+eventHandlers.MI_CommitPickpocket = eventHandlers.IER_CommitPickpocket
+eventHandlers.MI_Teleport = eventHandlers.IER_Teleport
+eventHandlers.MI_ScriptedDragStart = eventHandlers.IER_ScriptedDragStart
+eventHandlers.MI_MoveInto = eventHandlers.IER_MoveInto
+eventHandlers.MI_MoveAll = eventHandlers.IER_MoveAll
+eventHandlers.MI_FinalizeBarter = eventHandlers.IER_FinalizeBarter
+eventHandlers.MI_UIModeChanged = eventHandlers.IER_UIModeChanged
+eventHandlers.MI_StolenChestInactive = eventHandlers.IER_StolenChestInactive
+eventHandlers.MI_DisposeOfCorpse = eventHandlers.IER_DisposeOfCorpse
+eventHandlers.MI_ModDisposition = eventHandlers.IER_ModDisposition
 
 return {
     engineHandlers = {

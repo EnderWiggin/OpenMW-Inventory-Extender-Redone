@@ -232,7 +232,7 @@ local function autoEquip(player)
     types.Actor.setEquipment(self, slots)
 
     if player then
-        player:sendEvent('IE_Update')
+        player:sendEvent('IER_Update')
     end
 end
 

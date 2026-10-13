@@ -3,18 +3,18 @@ local self = require('openmw.self')
 local core = require('openmw.core')
 
 local eventHandlers = {
-    IE_ContainerClosed = function()
+    IER_ContainerClosed = function()
         anim.playBlended(self, 'containerclose', { priority = anim.PRIORITY.Scripted })
     end,
 }
 -- deprecated
-eventHandlers.MI_ContainerClosed = eventHandlers.IE_ContainerClosed
+eventHandlers.MI_ContainerClosed = eventHandlers.IER_ContainerClosed
 
 return {
     engineHandlers = {
         onInactive = function()
             if self.recordId == 'stolen_goods' then
-                core.sendGlobalEvent('IE_StolenChestInactive', self)
+                core.sendGlobalEvent('IER_StolenChestInactive', self)
             end
         end
     },

@@ -57,7 +57,7 @@ local lastCrimeLevel
 local function checkCrimeLevel()
     local crimeLevel = types.Player.getCrimeLevel(self)
     if lastCrimeLevel and crimeLevel < lastCrimeLevel then
-        core.sendGlobalEvent('IE_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
+        core.sendGlobalEvent('IER_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
     end
     
     lastCrimeLevel = crimeLevel
@@ -199,26 +199,26 @@ end
 local eventHandlers = {
     UiModeChanged = function(data)
         windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
-        core.sendGlobalEvent('IE_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
+        core.sendGlobalEvent('IER_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
     end,
-    IE_StoleItem = function(props)
+    IER_StoleItem = function(props)
         windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
         local id = props.victim.recordId or props.victim.factionId
         if id then
             windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) + props.count 
         end
     end,
-    IE_ItemsConfiscated = function(props)
+    IER_ItemsConfiscated = function(props)
         --print(helpers.deepPrint(props.stolenMap))
         windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
     end,
-    IE_Update = function()
+    IER_Update = function()
         windowManager:update()
     end,
-    IE_CompanionProfit = function(props)
+    IER_CompanionProfit = function(props)
         windowManager.ctx.companionProfit[props.companion.id] = props.profit
     end,
-    IE_SetDraggingObject = function(props)
+    IER_SetDraggingObject = function(props)
         local obj = props.obj
         if helpers.isGold(props.obj) then
             local targetInv = props.target.type.inventory(props.target)
@@ -230,21 +230,21 @@ local eventHandlers = {
 
         windowManager.ctx.dragAndDrop:setDraggingObject(obj, props.resetMode)
     end,
-    IE_BarterFinalized = function(props)
+    IER_BarterFinalized = function(props)
         if not props.skillGain or props.skillGain <= 0 then return end
         I.SkillProgression.skillUsed('mercantile', {
             scale = props.skillGain,
             useType = I.SkillProgression.SKILL_USE_TYPES.Mercantile_Success
         })
     end,
-    IE_PickpocketSuccess = function()
+    IER_PickpocketSuccess = function()
         I.SkillProgression.skillUsed('sneak', {
             useType = I.SkillProgression.SKILL_USE_TYPES.Sneak_PickPocket
         })
     end,
-    IE_ContainerVariable = function(data)
+    IER_ContainerVariable = function(data)
         windowManager.ctx.containerVariables[data.key] = data.value
-        self:sendEvent('IE_Update')
+        self:sendEvent('IER_Update')
     end,
 }
 

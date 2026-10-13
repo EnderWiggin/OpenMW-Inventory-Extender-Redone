@@ -13,7 +13,7 @@ return {
         end,
         onInactive = function()
             if next(owner) then
-                core.sendGlobalEvent('IE_OwnedItemInactive', {
+                core.sendGlobalEvent('IER_OwnedItemInactive', {
                     recordId = self.recordId,
                     owner = owner,
                     globalVariable = self.globalVariable,

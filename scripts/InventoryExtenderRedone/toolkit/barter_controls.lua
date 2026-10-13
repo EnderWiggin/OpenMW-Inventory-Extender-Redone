@@ -146,7 +146,7 @@ function BarterControls:init(wnd)
                     I.UI.setMode(nil)
                     ui.showMessage(string.format(constants.Strings.THATS_MINE,
                         entry.item.type.record(entry.item).name))
-                    core.sendGlobalEvent('IE_ConfiscateToOwner', {
+                    core.sendGlobalEvent('IER_ConfiscateToOwner', {
                         item = entry.item,
                         count = entry.count,
                         player = omwself,
@@ -159,7 +159,7 @@ function BarterControls:init(wnd)
 
             local offerAccepted, skillGain = barterUtils.haggle(target, state.currentBalance, state.currentMerchantOffer)
             if types.NPC.objectIsInstance(target) then
-                core.sendGlobalEvent('IE_ModDisposition', {
+                core.sendGlobalEvent('IER_ModDisposition', {
                     target = target,
                     player = omwself,
                     amount = offerAccepted
@@ -173,7 +173,7 @@ function BarterControls:init(wnd)
                 return
             end
 
-            core.sendGlobalEvent('IE_FinalizeBarter', {
+            core.sendGlobalEvent('IER_FinalizeBarter', {
                 player = omwself,
                 merchant = target,
                 barterState = state,

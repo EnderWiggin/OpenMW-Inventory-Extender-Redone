@@ -289,7 +289,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
             Pickpocket.isTarget(self.ctx.windowArgs.Container) then
             local success = Pickpocket.rollClose(omwself, self.ctx.windowArgs.Container)
             if not success then
-                core.sendGlobalEvent('IE_CommitPickpocket', {
+                core.sendGlobalEvent('IER_CommitPickpocket', {
                     player = omwself,
                     target = self.ctx.windowArgs.Container,
                     victimAware = true,
@@ -297,7 +297,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
             end
         end
         self.ctx.pickpocket = nil
-        self.ctx.windowArgs.Container:sendEvent('IE_ContainerClosed')
+        self.ctx.windowArgs.Container:sendEvent('IER_ContainerClosed')
     end
 
     if self.ctx.modalElement then

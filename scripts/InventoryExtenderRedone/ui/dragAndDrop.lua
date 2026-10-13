@@ -83,7 +83,7 @@ function DragAndDrop:startDrag(item, source, count, pickpocket, activationContex
     self.draggingCount = util.clamp(count or item.count, 1, item.count)
     self.draggingActivationContext = activationContext
 
-    core.sendGlobalEvent('IE_MoveInto', {
+    core.sendGlobalEvent('IER_MoveInto', {
         obj = item,
         count = self.draggingCount,
         source = source,
@@ -224,7 +224,7 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
             end
         end
 
-        core.sendGlobalEvent('IE_MoveInto', {
+        core.sendGlobalEvent('IER_MoveInto', {
             obj = object,
             count = self.draggingCount or object.count,
             source = self.source,
@@ -246,7 +246,7 @@ function DragAndDrop:moveAll(source, destination, items)
             ambient.playSound(upSound)
         end
     end
-    core.sendGlobalEvent('IE_MoveAll', {
+    core.sendGlobalEvent('IER_MoveAll', {
         source = source,
         destination = destination,
         player = omwself,
@@ -304,7 +304,7 @@ function DragAndDrop:dropAt(object, count, position)
         ambient.playSound(downSound)
     end
 
-    core.sendGlobalEvent('IE_Teleport', {
+    core.sendGlobalEvent('IER_Teleport', {
         obj = object,
         count = count or object.count,
         source = self.source or omwself,
@@ -515,8 +515,8 @@ function DragAndDrop:_onRelease()
                 needsReset = true
                 self.ctx.cursorAttachedIcon.layout.props.visible = false
             end
-            omwself:sendEvent('IE_Update')
-            core.sendGlobalEvent('IE_ItemPickedUp', {
+            omwself:sendEvent('IER_Update')
+            core.sendGlobalEvent('IER_ItemPickedUp', {
                 recordId = item.recordId,
                 count = item.count - (lastState and lastState.count or 0),
                 player = omwself,
