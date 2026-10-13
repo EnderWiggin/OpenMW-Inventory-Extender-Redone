@@ -19,6 +19,7 @@ local specialTemplates = require('scripts.InventoryExtender.ui.templates.magic')
 
 local helpers = require('scripts.InventoryExtender.util.helpers')
 local constants = require('scripts.InventoryExtender.util.constants')
+local cursor = require('scripts.InventoryExtender.ui.cursor')
 
 local configPlayer = require('scripts.InventoryExtender.config.player')
 

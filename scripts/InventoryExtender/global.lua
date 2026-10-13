@@ -122,6 +122,20 @@ local function moveInto(props)
     local recordId = obj.recordId
     local moveCount = props.count or obj.count
 
+    --[[This check guards against errors happening when trying to pickup item that's already gone. Reported with stack traces like this:
+    eventHandler[IE_MoveInto] failed. Lua error: Can't remove 8 of 0 items
+    stack traceback:
+        [C]: in function 'split'
+        [string "scripts/inventoryextender/global.lua"]:233: in function <[string "scripts/inventoryextender/global.lua"]:118>
+    ]]
+    if not obj:isValid() then
+        print('[WARN] trying to move invalid object:', obj)
+        return
+    elseif not obj.count or obj.count <= 0 then
+        print('[WARN] trying to move empty object:', obj, obj.count)
+        return
+    end
+
     local resultingObj = obj
     local destinationInv = destination.type.inventory(destination)
 
