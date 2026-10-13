@@ -1,0 +1,8 @@
+MENU: scripts/InventoryExtenderRedone/settings/player.lua
+GLOBAL: scripts/InventoryExtenderRedone/settings/global.lua
+GLOBAL: scripts/InventoryExtenderRedone/global.lua
+PLAYER: scripts/InventoryExtenderRedone/api.lua
+PLAYER: scripts/InventoryExtenderRedone/player.lua
+CUSTOM: scripts/InventoryExtenderRedone/autoEquip.lua
+CONTAINER: scripts/InventoryExtenderRedone/container.lua
+ARMOR, BOOK, CLOTHING, INGREDIENT, LIGHT, MISC_ITEM, POTION, WEAPON, APPARATUS, LOCKPICK, PROBE, REPAIR: scripts/InventoryExtenderRedone/item.lua
