@@ -36,17 +36,9 @@ function API.hide(windowName, arg, force)
     windowManager:hide(windowName, arg, force)
 end
 
-function API.getWindows()
-    return windowManager.windows
-end
-
 ---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
 function API.forEachOpenWindow(apply)
     return windowManager:forEachOpenWindow(apply)
-end
-
-function API.getWindow(windowName)
-    return windowManager.windows[windowName]
 end
 
 function API.getContext()
@@ -72,24 +64,12 @@ function API.onMouseWheel(v, h)
     windowManager:onMouseWheel(v, h)
 end
 
-function API.reset()
-    windowManager:reset()
-end
-
-function API.refresh()
-    windowManager:refresh()
-end
-
 function API.update()
     windowManager:update()
 end
 
 function API.setConsoleState(state)
     windowManager.ctx.isConsoleOpen = state
-    if windowManager.ctx.activeTooltip then
-        auxUi.deepDestroy(windowManager.ctx.activeTooltip)
-        windowManager.ctx.activeTooltip = nil
-    end
     windowManager.ctx.dragAndDrop.lastHoveredObject = nil
 end
 
@@ -273,19 +253,6 @@ return {
         end,
         onInit = function()
             windowManager:init()
-        end,
-        onUpdate = function()
-            if categoriesChanged then
-                for _, window in pairs(windowManager.windows) do
-                    if window.categoryFilter then
-                        window.categoryFilter.layout.userData.updateCategories()
-                    end
-                    if window.itemTable then
-                        window.itemTable.layout.userData.refresh()
-                    end
-                end
-                categoriesChanged = false
-            end
         end,
         onControllerButtonPress = function(id)
             windowManager:onControllerButtonPress(id)

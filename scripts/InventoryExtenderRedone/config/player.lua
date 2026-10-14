@@ -1,6 +1,5 @@
 local async = require('openmw.async')
 local storage = require('openmw.storage')
-local I = require('openmw.interfaces')
 
 local updateFns = {}
 
@@ -20,10 +19,6 @@ local function updateConfig()
 
 	for _, fn in ipairs(updateFns) do
 		fn()
-	end
-
-	if I.UI.getMode() == 'MainMenu' and I.InventoryExtender then
-		I.InventoryExtender.reset()
 	end
 end
 

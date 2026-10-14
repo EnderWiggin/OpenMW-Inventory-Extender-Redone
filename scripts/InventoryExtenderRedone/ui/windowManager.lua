@@ -65,7 +65,6 @@ WindowManager.windows = {
 WindowManager.ctx = {
     focusedScrollable = nil,
     modalElement = nil,
-    activeTooltip = nil,
     modifiers = {
         tooltip = {},
         cellContent = {},
@@ -176,10 +175,6 @@ function WindowManager:update()
             handler:update()
         end
     end
-    if self.ctx.activeTooltip then
-        auxUi.deepDestroy(self.ctx.activeTooltip)
-        self.ctx.activeTooltip = nil
-    end
 end
 
 function WindowManager:show(windowName, arg)
@@ -236,10 +231,6 @@ function WindowManager:hide(windowName, arg, force)
 
     if not (window:isPinned() and I.UI.getMode() == nil) or force then
         window:setVisible(false)
-    end
-    if self.ctx.activeTooltip then
-        auxUi.deepDestroy(self.ctx.activeTooltip)
-        self.ctx.activeTooltip = nil
     end
 end
 
@@ -303,10 +294,6 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     if self.ctx.modalElement then
         auxUi.deepDestroy(self.ctx.modalElement)
         self.ctx.modalElement = nil
-    end
-    if self.ctx.activeTooltip then
-        auxUi.deepDestroy(self.ctx.activeTooltip)
-        self.ctx.activeTooltip = nil
     end
     if self.ctx.dragAndDrop.wrapper then
         self.ctx.dragAndDrop:setWrapperEnabled(not configPlayer.misc.b_TooltipCompatibilityMode and
