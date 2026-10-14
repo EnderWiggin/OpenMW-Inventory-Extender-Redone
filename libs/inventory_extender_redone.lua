@@ -27,7 +27,7 @@
 ---@class InventoryExtenderRedone.Context
 ---@field handlers InventoryExtenderRedone.Handlers registered row action handlers, called in reverse registration order
 ---@field overrides InventoryExtenderRedone.Overrides equipped-status overrides, called in reverse order until one returns non-nil
----@field dragAndDrop table ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
+---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
 ---@field windowArgs table<string,openmw.Object?> key is one of InventoryExtenderRedone.WindowType; value is the arg passed to show (target NPC/container/merchant)
 ---@field lastUiMode string? last known UI mode (nil = interface)
 ---@field stolenItems table<string,table<string,number>> recordId -> (victim recordId or factionId -> count)
@@ -40,6 +40,37 @@
 ---@field isConsoleOpen boolean
 ---@field cursorAttachedIcon openmw.ui.Element? icon attached to the cursor while dragging
 ---@field syncingCategoryFilter boolean? guard set ad hoc by inventory.lua for recursive synced category switching
+
+
+-- ui/dragAndDrop.lua module table used as a singleton (not a Class() prototype):
+-- state is set via init(ctx) and mutated in place; methods are called with `:`.
+---@class InventoryExtenderRedone.DragAndDrop
+---@field init fun(self:InventoryExtenderRedone.DragAndDrop, ctx:InventoryExtenderRedone.Context) attaches ctx, creates the DragBlocker wrapper element and its mouseMove/focusLoss/mousePress events
+---@field ctx InventoryExtenderRedone.Context? set by init
+---@field wrapper openmw.ui.Element? DragBlocker layer element; dropPointer child shows the drop cursor while dragging
+---@field hoveredObject openmw.Object? last object under the cursor from the viewport raycast
+---@field lastHoveredObject openmw.Object? object the current tooltip was made for (tooltip ownership check)
+---@field hitPos openmw.util.Vector3? eligible world drop position from the last raycast (flat-enough surface)
+---@field draggingObject openmw.Object? item currently dragged, nil when not dragging
+---@field draggingCount number? number of units being dragged
+---@field draggingActivationContext table? {windowType, isBartered} where the drag was started
+---@field source openmw.Object? actor/container the dragged item came from
+---@field resolveViewportDropTarget fun(self:InventoryExtenderRedone.DragAndDrop, position:openmw.util.Vector2, callback:fun(result, hitPos)) async raycast from viewport position; callback gets the raw hit and an eligible drop position (nil if surface too steep)
+---@field getHoveredGameObject fun(self:InventoryExtenderRedone.DragAndDrop, position:openmw.util.Vector2) sets hoveredObject/hitPos from a viewport raycast
+---@field startDrag fun(self:InventoryExtenderRedone.DragAndDrop, item:openmw.Object, source:openmw.Object?, count:number?, pickpocket:table?, activationContext:table?) sends IER_MoveInto with dragStart; lands as setDraggingObject via the IE_SetDraggingObject player event
+---@field setDraggingObject fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object) enters drag state and creates ctx.cursorAttachedIcon (unless instantPickup)
+---@field updatePosition fun(self:InventoryExtenderRedone.DragAndDrop) moves ctx.cursorAttachedIcon to the current cursor position
+---@field transferInto fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, destination:openmw.Object?, source:openmw.Object?, count:number?, pickpocket:table?):boolean sends IER_MoveInto; false if item doesn't fit or container is organic
+---@field moveAll fun(self:InventoryExtenderRedone.DragAndDrop, source:openmw.Object, destination:openmw.Object, items:openmw.Object[]?) sends IER_MoveAll (Take All / dispose)
+---@field stopDrag fun(self:InventoryExtenderRedone.DragAndDrop, target:openmw.Object?):boolean? transfers into target if given, then clears drag state and cursor icon; false if the transfer failed
+---@field dropAt fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, count:number?, position:openmw.util.Vector3) sends IER_Teleport to drop the item in the world at position
+---@field dropAtViewportPosition fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, count:number?, position:openmw.util.Vector2, fallbackToFeet:boolean?, callback:fun()?) resolves a viewport drop target, falls back to dropAtFeet when allowed
+---@field dropAtFeet fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, count:number?, callback:fun()?) drops at a raycast point below the actor
+---@field setWrapperEnabled fun(self:InventoryExtenderRedone.DragAndDrop, enabled:boolean) shows/hides the DragBlocker wrapper (tooltip compatibility mode only)
+---@field onMouseButtonPress fun(self:InventoryExtenderRedone.DragAndDrop, button:number)
+---@field onMouseButtonRelease fun(self:InventoryExtenderRedone.DragAndDrop, button:number)
+---@field onControllerButtonPress fun(self:InventoryExtenderRedone.DragAndDrop, id:number)
+---@field onControllerButtonRelease fun(self:InventoryExtenderRedone.DragAndDrop, id:number)
 
 
 ---@class InventoryExtenderRedone.Category
