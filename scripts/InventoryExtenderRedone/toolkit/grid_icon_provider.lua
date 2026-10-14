@@ -106,7 +106,7 @@ end
 ---@param component UIToolkit.Component
 ---@param data InventoryExtenderRedone.RowData
 function GridIcon:refreshDirty(component, data)
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
     local changed = false
     local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
     local enchanted = data.showAsEnchanted()
@@ -251,7 +251,7 @@ end
 ---@param shadow boolean?
 ---@return openmw.ui.Layout
 function GridIcon.renderIcon(data, outerSize, iconSize, bgSize, showEnchantSwirl, shadow)
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
 
     local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
     local content = ui.content {

@@ -85,7 +85,7 @@ Interface.addPreCreateTooltipHandler(function(recipe, tooltip)
     local item = tooltip.object
     if not item then return end
 
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
 
     local stolen = ctx.stolenItems[item.recordId]
     if not stolen then return end

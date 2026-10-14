@@ -9,7 +9,7 @@ local ui = require('openmw.ui')
 local types = require('openmw.types')
 local util = require('openmw.util')
 
-local API = I.InventoryExtender
+local API = I.InventoryExtenderRedone
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local constants = require("scripts.InventoryExtenderRedone.util.constants")
@@ -191,25 +191,6 @@ input.registerTriggerHandler('Console', async:callback(function()
         wasConsolePressed = true
     end
 end))
-
--- API.registerCellContentModifier('test', function(cell, row, ctx, windowType)
---     if windowType ~= 'Inventory' then return end
---     if cell.name == 'V/W' then
---         local color = helpers.blendColors(constants.Colors.RED, constants.Colors.GREEN, math.min(1, row['V/W'] / 200))
---         cell.userData.baseColor = color
---         cell.userData.hoverColor = helpers.scaleColor(color, 1.5)
---         cell.userData.pressColor = helpers.scaleColor(color, 2)
---         cell.props.text = tostring(helpers.roundToPlaces(math.sin(core.getRealTime()), 2))
---     end
---     if cell.name == 'Name' then
---         local pink = util.color.rgb(1, 0.41, 0.71)
---         cell.content[1].userData.baseColor = pink
---         cell.content[1].userData.hoverColor = helpers.scaleColor(pink, 1.5)
---         cell.content[1].userData.pressColor = helpers.scaleColor(pink, 2)
---     end
--- end)
--- API.getWindow('Inventory').itemTable.layout.userData.getState().columns[3].visible = false
--- API.getWindow('Inventory').itemTable.layout.userData.redrawColumns()
 
 return {
     engineHandlers = {

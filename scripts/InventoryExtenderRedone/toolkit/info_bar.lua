@@ -52,7 +52,7 @@ end
 function InfoBar:addProvider(provider)
     if not provider then return end
     self.providers[#self.providers + 1] = provider
-    local layout = provider(I.InventoryExtender.getContext())
+    local layout = provider(I.InventoryExtenderRedone.getContext())
     if not layout then return end
     if not C.API.GAP then --TODO: remove when 0.52 is released
         self.element.layout.content:add(T.intervalH(Toolkit.getTheme().Sizes.standardGap))
@@ -67,7 +67,7 @@ function InfoBar:getHeight()
 end
 
 function InfoBar:update()
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
     local content = ui.content {}
     self.element.layout.content = content
     local gap = Toolkit.getTheme().Sizes.standardGap

@@ -99,7 +99,7 @@ local function iconUpdater(part, data)
         changed = true
     end
 
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
     local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
     local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
     props = H.props(part.content['itemBackground'])
@@ -163,7 +163,7 @@ end
 ---@param type string
 local function getNonDraggedCount(row, type)
     local nonDraggedCount = row.getCount()
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
 
     local drag = ctx.dragAndDrop
     if drag.draggingObject and drag.draggingObject.id == row.item.id then
@@ -201,7 +201,7 @@ end
 local function isStealing(actor, ownerInfo, variable)
     if not ownerInfo then return false end
 
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
     if variable then
         local value = ctx.containerVariables[variable]
         if value and value ~= 0 then return false end
@@ -502,7 +502,7 @@ function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
     self.suffix = getStorageSuffix(self.type)
-    local IE = I.InventoryExtender
+    local IE = I.InventoryExtenderRedone
     local ctx = IE.getContext()
     self.ctx = ctx
     self.mode = I.UI.getMode()
@@ -756,7 +756,7 @@ function Inventory:onOpened(wnd, data, saved)
         if not shouldSync then return end
 
         ctx.syncingCategoryFilter = true
-        I.InventoryExtender.forEachOpenWindow(function(targetWnd)
+        I.InventoryExtenderRedone.forEachOpenWindow(function(targetWnd)
             ---@cast targetWnd IER.Inventory
             if targetWnd == self then return end
             targetWnd.categoryFilter:setCategory(getSyncedCategoryKey(category, targetWnd))
@@ -831,7 +831,7 @@ function Inventory:onOpened(wnd, data, saved)
 
         playerWindowSettings:set('s_ItemViewMode', newMode)
 
-        I.InventoryExtender.forEachOpenWindow(function(handler)
+        I.InventoryExtenderRedone.forEachOpenWindow(function(handler)
             handler.table:setShowGrid(showGrid)
             if handler ~= self then
                 handler.categoryFilter.updateViewModeButton()
@@ -1555,7 +1555,7 @@ function Inventory:updateTitle()
 
     if configPlayer.tweaks.b_CompactCategoryFilter then
         local categoryKey = self.categoryFilter:getCategory()
-        local category = categoryKey and I.InventoryExtender.getCategory(categoryKey)
+        local category = categoryKey and I.InventoryExtenderRedone.getCategory(categoryKey)
         if category and category.name then
             title = title and (title .. ' - ' .. category.name) or category.name
         end

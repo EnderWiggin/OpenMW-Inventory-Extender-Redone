@@ -43,7 +43,7 @@ end
 
 ---@param wnd IER.Inventory
 function BarterControls:init(wnd)
-    local ctx = I.InventoryExtender.getContext()
+    local ctx = I.InventoryExtenderRedone.getContext()
 
     self.labelProps = {
         text = getLabelText(ctx.barterState)

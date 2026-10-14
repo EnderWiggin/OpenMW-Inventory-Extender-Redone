@@ -189,7 +189,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
         if props.getCategories then
             return props.getCategories() or {}
         end
-        return I.InventoryExtender.getCategories()
+        return I.InventoryExtenderRedone.getCategories()
     end
 
     local function getCategoryIconPath(category)
@@ -361,7 +361,7 @@ function CategoryFilter:init(props, onCategoryChange, onSearchChange)
 
         if not compact then
             element.layout.content.topBar.content.selectedCategoryName.props.text = state.selectedCategory and
-                (I.InventoryExtender.getCategory(state.selectedCategory).name or '') or ''
+                (I.InventoryExtenderRedone.getCategory(state.selectedCategory).name or '') or ''
         end
 
         updateViewModeButton()

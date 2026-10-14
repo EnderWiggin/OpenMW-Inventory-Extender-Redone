@@ -231,7 +231,7 @@ local eventHandlers = {
 require 'scripts.InventoryExtenderRedone.interop.utk_tooltips'
 
 return {
-    interfaceName = 'InventoryExtender',
+    interfaceName = 'InventoryExtenderRedone',
     interface = API,
     engineHandlers = {
         onSave = function()
