@@ -5,10 +5,8 @@ local util = require('openmw.util')
 local v2 = util.vector2
 local auxUi = require('openmw_aux.ui')
 local I = require('openmw.interfaces')
-local async = require('openmw.async')
 local core = require('openmw.core')
 
-local specialTemplates = require('scripts.InventoryExtenderRedone.ui.templates.magic')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
@@ -42,11 +40,12 @@ end
 ---@param onCategoryChange fun(category:InventoryExtenderRedone.Category)
 ---@param onSearchChange any
 function CategoryFilter:init(props, onCategoryChange, onSearchChange)
+    local theme = Toolkit.getTheme()
     local maxHeight = props.maxHeight or 48
     local compact = props.compact == true
     local vanillaStyle = props.vanillaStyle == true
 
-    local topBarHeight = util.round(specialTemplates.LINE_HEIGHT * 1.5)
+    local topBarHeight = util.round(theme.Sizes.lineHeight * 1.5)
     local categoryBarHeight = compact and (topBarHeight - 4) or (maxHeight - topBarHeight)
     local elementHeight = compact and (topBarHeight + 8) or maxHeight + 8
     local compactIconPadding = 8
