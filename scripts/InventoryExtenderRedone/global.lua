@@ -106,9 +106,16 @@ end
 
 local function scriptedDragStart(props)
     if props.obj.parentContainer == nil then return end
-
+    local obj = props.resultingObj
+    -- Patch for Purists immediately replaces cursed gem on pickup
+    -- Some other mods may do this too, so we skip trying to drag item if it has 0 count or is invalid
+    if not obj:isValid() then
+        return
+    elseif not obj.count or obj.count <= 0 then
+        return
+    end
     props.player:sendEvent('IER_SetDraggingObject', {
-        obj = props.resultingObj,
+        obj = obj,
         target = props.destination,
         resetMode = true,
     })
