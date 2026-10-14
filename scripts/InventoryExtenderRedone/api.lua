@@ -60,10 +60,6 @@ function API.onFrame()
     checkCrimeLevel()
 end
 
-function API.onMouseWheel(v, h)
-    windowManager:onMouseWheel(v, h)
-end
-
 function API.update()
     windowManager:update()
 end
@@ -265,9 +261,6 @@ return {
         end,
         onMouseButtonRelease = function(button)
             windowManager:onMouseButtonRelease(button)
-        end,
-        onKeyPress = function(key)
-            windowManager:onKeyPress(key)
         end,
     },
     eventHandlers = eventHandlers,

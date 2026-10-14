@@ -2,7 +2,6 @@
 
 local core = require('openmw.core')
 local ui = require('openmw.ui')
-local auxUi = require('openmw_aux.ui')
 local I = require('openmw.interfaces')
 local util = require('openmw.util')
 local async = require('openmw.async')
@@ -48,12 +47,6 @@ local validDragModes = {
 local WindowManager = {}
 
 WindowManager.ctx = {
-    focusedScrollable = nil,
-    modalElement = nil,
-    modifiers = {
-        tooltip = {},
-        cellContent = {},
-    },
     overrides = {
         equipped = {},
     },
@@ -77,7 +70,6 @@ WindowManager.ctx = {
     },
     companionProfit = {},
     pickpocket = nil,
-    updateQueue = {},
     containerVariables = {},
 }
 
@@ -190,10 +182,6 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         self.ctx.windowArgs.Container:sendEvent('IER_ContainerClosed')
     end
 
-    if self.ctx.modalElement then
-        auxUi.deepDestroy(self.ctx.modalElement)
-        self.ctx.modalElement = nil
-    end
     if self.ctx.dragAndDrop.wrapper then
         self.ctx.dragAndDrop:setWrapperEnabled(not configPlayer.misc.b_TooltipCompatibilityMode and
             validDragModes[newMode])
@@ -202,36 +190,8 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     self.ctx.dragAndDrop:stopDrag()
 end
 
-function WindowManager:onMouseWheel(v, h)
-    if self.ctx.focusedScrollable and self.ctx.focusedScrollable.layout then
-        local layout = self.ctx.focusedScrollable.layout
-        local pos = layout.content[1].props.position
-        layout.content[1].props.position = util.vector2(
-            pos.x,
-            util.clamp(pos.y + v * layout.userData.scrollStep, -layout.userData.scrollLimit, 0)
-        )
-        layout.userData.onScroll()
-    end
-end
-
 function WindowManager:onFrame()
     if not configPlayer.window.b_EnableMod then return end
-
-    if self.ctx.focusedInteractiveDelayed ~= nil then
-        if self.ctx.focusedInteractiveDelayed == false then
-            self.ctx.focusedInteractive = nil
-        else
-            self.ctx.focusedInteractive = self.ctx.focusedInteractiveDelayed
-        end
-        self.ctx.focusedInteractiveDelayed = nil
-    end
-
-    for element in pairs(self.ctx.updateQueue) do
-        element:update()
-    end
-    self.ctx.updateQueue = {}
-
-    local dt = core.getRealFrameDuration()
 
     -- I.Cursor when??? (:
     local mouseMoved = I.UIToolkit.cursorMovedThisFrame()
@@ -239,28 +199,10 @@ function WindowManager:onFrame()
     if mouseMoved then
         self.ctx.dragAndDrop:updatePosition()
     end
-
-    if self.ctx.focusedScrollable and self.ctx.focusedScrollable.layout then
-        local rightStick = input.getAxisValue(input.CONTROLLER_AXIS.RightY)
-        if math.abs(rightStick) > 0.2 then
-            local layout = self.ctx.focusedScrollable.layout
-            local pos = layout.content[1].props.position
-            layout.content[1].props.position = util.vector2(
-                pos.x,
-                util.clamp(pos.y - rightStick * layout.userData.scrollStep / 4 * dt * 60, -layout.userData.scrollLimit, 0)
-            )
-            layout.userData.onScroll()
-        end
-    end
 end
 
 function WindowManager:onControllerButtonPress(id)
     if not configPlayer.window.b_EnableMod then return end
-    if id == input.CONTROLLER_BUTTON.Y and self.ctx.modalElement then
-        auxUi.deepDestroy(self.ctx.modalElement)
-        self.ctx.modalElement = nil
-        return
-    end
 
     if validDragModes[I.UI.getMode() or ''] then
         WindowManager.ctx.dragAndDrop:onControllerButtonPress(id)
@@ -288,45 +230,6 @@ function WindowManager:onMouseButtonRelease(button)
 
     if validDragModes[I.UI.getMode() or ''] then
         WindowManager.ctx.dragAndDrop:onMouseButtonRelease(button)
-    end
-end
-
-function WindowManager:onKeyPress(key)
-    if not configPlayer.window.b_EnableMod then return end
-
-    local focusedInteractive = WindowManager.ctx.focusedInteractive
-
-    if key.code == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
-        if not focusedInteractive or not focusedInteractive.layout or not focusedInteractive.layout.userData then
-            return
-        end
-
-        if focusedInteractive.layout.userData.onFavoriteToggle then
-            return focusedInteractive.layout.userData.onFavoriteToggle()
-        end
-        return
-    end
-
-    if key.code ~= configPlayer.keybinds.k_UseItem then return end
-
-    if not focusedInteractive or not focusedInteractive.layout or not focusedInteractive.layout.userData then
-        return
-    end
-
-    if configPlayer.keybinds.b_SwapUsePickup then
-        if focusedInteractive.layout.userData.onKBMRowUse then
-            focusedInteractive.layout.userData.onKBMRowUse()
-            return true
-        elseif focusedInteractive.layout.userData.onRowUse then
-            focusedInteractive.layout.userData.onRowUse()
-            return true
-        end
-    elseif focusedInteractive.layout.userData.onKBMRowPickup then
-        focusedInteractive.layout.userData.onKBMRowPickup()
-        return true
-    elseif focusedInteractive.layout.userData.onRowPickup then
-        focusedInteractive.layout.userData.onRowPickup()
-        return true
     end
 end
 

@@ -211,8 +211,5 @@ return {
             wasConsolePressed = consolePressed
             wasGameMenuPressed = gameMenuPressed
         end,
-        onMouseWheel = function(v, h)
-            API.onMouseWheel(v, h)
-        end,
     },
 }
