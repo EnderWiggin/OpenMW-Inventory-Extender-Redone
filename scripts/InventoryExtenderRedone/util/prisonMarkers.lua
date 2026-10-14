@@ -1,3 +1,4 @@
+---@omw-context all
 local PrisonMarkers = {}
 
 PrisonMarkers['Morrowind.esm'] = {

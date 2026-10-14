@@ -1,3 +1,4 @@
+---@omw-context global|local|player
 local core = require('openmw.core')
 local util = require('openmw.util')
 local I = require('openmw.interfaces')

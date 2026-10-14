@@ -1,3 +1,4 @@
+---@omw-context local
 local anim = require('openmw.animation')
 local self = require('openmw.self')
 local core = require('openmw.core')

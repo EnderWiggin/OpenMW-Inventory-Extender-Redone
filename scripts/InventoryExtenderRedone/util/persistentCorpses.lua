@@ -1,3 +1,4 @@
+---@omw-context all
 -- The API currently doesn't expose the persistent flag on actors,
 -- so we need to hardcode a list here.
 -- Includes vanilla, expansions, and PTR content.

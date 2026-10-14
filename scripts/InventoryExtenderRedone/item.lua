@@ -1,3 +1,4 @@
+---@omw-context local
 local self = require('openmw.self')
 local core = require('openmw.core')
 

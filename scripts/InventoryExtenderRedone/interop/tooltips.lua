@@ -1,3 +1,4 @@
+---@omw-context all
 local vfs = require('openmw' .. '.vfs')
 
 local tooltipsData = {}

@@ -1,3 +1,4 @@
+---@omw-context player
 local types = require('openmw.types')
 local util = require('openmw.util')
 local self = require('openmw.self')

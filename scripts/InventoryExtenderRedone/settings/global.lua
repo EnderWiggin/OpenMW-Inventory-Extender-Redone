@@ -1,3 +1,4 @@
+---@omw-context global
 local I = require('openmw.interfaces')
 
 I.Settings.registerGroup {

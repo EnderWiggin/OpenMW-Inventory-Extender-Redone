@@ -1,3 +1,4 @@
+---@omw-context player|menu
 local storage = require('openmw.storage')
 local vfs = require('openmw.vfs')
 

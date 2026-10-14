@@ -1,3 +1,4 @@
+---@omw-context menu
 local core = require('openmw.core')
 local I = require('openmw.interfaces')
 local input = require('openmw.input')

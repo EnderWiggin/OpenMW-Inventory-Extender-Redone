@@ -1,3 +1,4 @@
+---@omw-context local
 local types = require('openmw.types')
 local self = require('openmw.self')
 local core = require('openmw.core')

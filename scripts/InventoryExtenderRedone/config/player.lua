@@ -1,3 +1,4 @@
+---@omw-context player|menu
 local async = require('openmw.async')
 local storage = require('openmw.storage')
 
