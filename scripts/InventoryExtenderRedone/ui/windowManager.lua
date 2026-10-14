@@ -78,7 +78,6 @@ WindowManager.ctx = {
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     windowArgs = {},
-    modeArgs = {},
     lastUiMode = nil,
     stolenItems = {},
     favoriteItems = {},
@@ -168,10 +167,6 @@ function WindowManager:update()
 end
 
 function WindowManager:show(windowName, arg)
-    if self.ctx.resettingMode then
-        return
-    end
-
     if windowName == 'Container' then
         if Pickpocket.isTarget(arg) then
             self.ctx.pickpocket = Pickpocket.createSession(omwself, arg)
@@ -190,9 +185,6 @@ function WindowManager:show(windowName, arg)
 end
 
 function WindowManager:hide(windowName, arg, force)
-    if self.ctx.resettingMode then
-        return
-    end
     Manager.close(getWindowId(windowName))
 
     showing[windowName] = false
@@ -224,15 +216,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         return
     end
 
-    if self.ctx.resettingMode then
-        return
-    end
-
     self.ctx.lastUiMode = newMode
-
-    if newMode and arg then
-        self.ctx.modeArgs[newMode] = arg
-    end
 
     if oldMode == 'Barter' and self.ctx.barterState.success then
         ui.showMessage(constants.Strings.BARTER_THANK_YOU, {
@@ -303,16 +287,6 @@ end
 
 function WindowManager:onFrame()
     if not configPlayer.window.b_EnableMod then return end
-
-    if self.ctx.resettingModeProcessed then
-        self.ctx.resettingModeProcessed = false
-        self.ctx.resettingMode = false
-        return
-    end
-
-    if self.ctx.resettingMode then
-        self.ctx.resettingModeProcessed = true
-    end
 
     if self.ctx.focusedInteractiveDelayed ~= nil then
         if self.ctx.focusedInteractiveDelayed == false then

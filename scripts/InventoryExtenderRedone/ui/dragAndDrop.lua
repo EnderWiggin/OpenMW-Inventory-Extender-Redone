@@ -26,7 +26,6 @@ if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })
 end
 
-local needsReset = false
 local instantPickup = false
 
 local DragAndDrop = {}
@@ -99,14 +98,6 @@ function DragAndDrop:startDrag(item, source, count, pickpocket, activationContex
     end
 end
 
-local function resetMode()
-    local mode = I.UI.getMode()
-    local modeArgs = DragAndDrop.ctx.modeArgs[mode] and { target = DragAndDrop.ctx.modeArgs[mode] } or nil
-    DragAndDrop.ctx.resettingMode = true
-    I.UI.removeMode(mode)
-    I.UI.addMode(mode, modeArgs)
-end
-
 function DragAndDrop:updatePosition()
     local icon = self.ctx.cursorAttachedIcon
     if not icon then return end
@@ -116,7 +107,7 @@ function DragAndDrop:updatePosition()
     I.UIToolkit.update(icon)
 end
 
-function DragAndDrop:setDraggingObject(object, doModeReset)
+function DragAndDrop:setDraggingObject(object)
     self.draggingObject = object
 
     local upSound = helpers.getItemSound(object, 'up')
@@ -179,10 +170,6 @@ function DragAndDrop:setDraggingObject(object, doModeReset)
             }
         }
     })
-
-    if doModeReset then
-        resetMode()
-    end
 end
 
 function DragAndDrop:transferInto(object, destination, source, count, pickpocket)
@@ -399,12 +386,6 @@ function DragAndDrop:init(ctx)
             -- Update tooltip based on hovered object
             if self.draggingObject then
                 clearTooltipIfFor(self.lastHoveredObject)
-                if needsReset then
-                    resetMode()
-                    needsReset = false
-                    self.ctx.cursorAttachedIcon.layout.props.visible = true
-                    self.ctx.cursorAttachedIcon:update()
-                end
             else
                 if self.hoveredObject ~= self.lastHoveredObject then
                     -- Object changed, remake tooltip
@@ -512,7 +493,6 @@ function DragAndDrop:_onRelease()
                 self.draggingCount = item.count - (lastState and lastState.count or 0)
                 self:setDraggingObject(item)
                 self:setWrapperEnabled(true)
-                needsReset = true
                 self.ctx.cursorAttachedIcon.layout.props.visible = false
             end
             omwself:sendEvent('IER_Update')

@@ -208,7 +208,7 @@ local eventHandlers = {
             end
         end
 
-        windowManager.ctx.dragAndDrop:setDraggingObject(obj, props.resetMode)
+        windowManager.ctx.dragAndDrop:setDraggingObject(obj)
     end,
     IER_BarterFinalized = function(props)
         if not props.skillGain or props.skillGain <= 0 then return end
