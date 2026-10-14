@@ -20,7 +20,6 @@ local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 
 local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
-local InventoryWindow = require('scripts.InventoryExtenderRedone.ui.windows.inventory')
 
 
 local InvHandler = require 'scripts.InventoryExtenderRedone.toolkit.inventory'
@@ -106,14 +105,6 @@ local showing = {
 
 local allToolkitWindows = {}
 
-function WindowManager:create(windowName)
-    if windowName == 'Inventory' or windowName == 'Container' or windowName == 'Trade' or windowName == 'Companion' then
-        self.windows[windowName] = InventoryWindow:create(windowName, self.ctx)
-    end
-
-    return self.windows[windowName]
-end
-
 local WINDOW_TYPES = { "Inventory", "Trade", "Container", "Companion" }
 local function getWindowId(type)
     return 'InventoryExtender:' .. type
@@ -122,7 +113,6 @@ end
 function WindowManager:init()
     for i = 1, #WINDOW_TYPES do
         local windowName = WINDOW_TYPES[i]
-        --self:create(windowName)
         local handler = InvHandler:new()
         handler:init(windowName)
 
@@ -134,7 +124,7 @@ function WindowManager:init()
             handler = handler,
             draggable = true,
             resizing = true,
-            pinnable = false, --TODO: set this
+            pinnable = false,
             position = manager.toAbsolute(DefaultPosition[windowId]),
             size = manager.toAbsolute(DefaultDimensions[windowId]),
             minSize = v2(300, 200),
@@ -191,24 +181,6 @@ function WindowManager:show(windowName, arg)
     end
 
     self.ctx.windowArgs[windowName] = arg or self.ctx.windowArgs[windowName]
-
-    --[[
-    if not self.windows[windowName] then
-        self:create(windowName)
-    end
-
-    showing[windowName] = true
-
-    self.windows[windowName]:loadState()
-    self.windows[windowName]:setVisible(true)
-    self.windows[windowName]:updateTarget()
-
-    for name, window in pairs(self.windows) do
-        if name ~= windowName and showing[name] then
-            window:refresh()
-        end
-    end
-]]
 
     --TODO: do not close if not Inventory or same mode?
     --TODO: or maybe invent mode switching for inventory?
