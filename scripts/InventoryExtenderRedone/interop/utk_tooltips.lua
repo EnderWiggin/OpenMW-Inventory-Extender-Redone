@@ -6,7 +6,8 @@ local ui        = require 'openmw.ui'
 local I         = require 'openmw.interfaces'
 
 local helpers   = require 'scripts.UIToolkit.tooltips.utils'
-local l10n      = core.l10n('InventoryExtender')
+local D         = require('scripts.InventoryExtenderRedone.config.defaults')
+local l10n      = core.l10n(D.L10N)
 local Interface = I.UTKTooltips
 local Toolkit   = I.UIToolkit
 local T         = Toolkit.Templates

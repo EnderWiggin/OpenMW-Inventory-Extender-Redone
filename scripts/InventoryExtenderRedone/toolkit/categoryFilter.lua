@@ -10,8 +10,9 @@ local core = require('openmw.core')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
-local l10n = core.l10n('InventoryExtender')
+local l10n = core.l10n(D.L10N)
 
 
 local Toolkit   = I.UIToolkit

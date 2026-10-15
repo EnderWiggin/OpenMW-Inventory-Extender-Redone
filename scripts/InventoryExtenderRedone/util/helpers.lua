@@ -12,8 +12,8 @@ local C = require('scripts.InventoryExtenderRedone.util.constants')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local configGlobal = require('scripts.InventoryExtenderRedone.config.global')
-local storage = require('openmw.storage')
-local l10n = core.l10n('InventoryExtender')
+local l10n = core.l10n(D.L10N)
+local il10n = core.l10n('Interface')
 
 local Helpers = {}
 
@@ -95,13 +95,13 @@ Helpers.deepPrint = function(tbl, indent)
     if type(tbl) ~= 'table' then return tostring(tbl) end
     indent = indent or 0
     local toprint = string.rep(" ", indent) .. "{\n"
-    indent = indent + 2 
+    indent = indent + 2
     for k, v in pairs(tbl) do
         toprint = toprint .. string.rep(" ", indent)
         if (type(k) == "number") then
             toprint = toprint .. "[" .. k .. "] = "
         elseif (type(k) == "string") then
-            toprint = toprint  .. k ..  " = "   
+            toprint = toprint .. k .. " = "
         end
         if (type(v) == "number") then
             toprint = toprint .. v .. ",\n"
@@ -113,7 +113,7 @@ Helpers.deepPrint = function(tbl, indent)
             toprint = toprint .. "\"" .. tostring(v) .. "\",\n"
         end
     end
-    toprint = toprint .. string.rep(" ", indent-2) .. "}"
+    toprint = toprint .. string.rep(" ", indent - 2) .. "}"
     return toprint
 end
 
@@ -226,7 +226,7 @@ Helpers.mergeTables = function(t1, t2)
 end
 
 Helpers.roundToPlaces = function(num, places)
-    local mult = 10^(places or 0)
+    local mult = 10 ^ (places or 0)
     return math.floor(num * mult + 0.5) / mult
 end
 
@@ -276,16 +276,16 @@ Helpers.isItemEquipped = function(item, actor, overrides)
     return actor.type.hasEquipped(actor, item)
 end
 
-Helpers.getEquipmentSlots = function (item)
+Helpers.getEquipmentSlots = function(item)
     --TODO: add support for Bardcraft instruments?
     if types.Armor.objectIsInstance(item) then
         return armorSlotMap[item.type.record(item).type]
     end
-    
+
     if types.Clothing.objectIsInstance(item) then
         return clothingSlotMap[item.type.record(item).type]
     end
-    
+
     if types.Weapon.objectIsInstance(item) then
         local weaponType = item.type.record(item).type
         if weaponType == types.Weapon.TYPE.Arrow or weaponType == types.Weapon.TYPE.Bolt then
@@ -293,7 +293,7 @@ Helpers.getEquipmentSlots = function (item)
         end
         return { types.Actor.EQUIPMENT_SLOT.CarriedRight }
     end
-    
+
     return nil
 end
 
@@ -318,6 +318,7 @@ Helpers.getWeaponInfo = function(item)
         return nil
     end
     local record = types.Weapon.records[item.recordId]
+    assert(record)
     local TYPE = types.Weapon.TYPE
     if record.type == TYPE.Arrow or record.type == TYPE.Bolt then
         return {
@@ -325,28 +326,24 @@ Helpers.getWeaponInfo = function(item)
             soundId = 'ammo',
             class = C.WeaponClass.Ammo,
         }
-        
     elseif record.type == TYPE.MarksmanBow then
         return {
             skill = 'marksman',
             soundId = 'weapon bow',
             class = C.WeaponClass.Ranged,
         }
-
     elseif record.type == TYPE.MarksmanCrossbow then
         return {
             skill = 'marksman',
             soundId = 'weapon crossbow',
             class = C.WeaponClass.Ranged,
         }
-
     elseif record.type == TYPE.MarksmanThrown then
         return {
             skill = 'marksman',
             soundId = 'weapon blunt',
             class = C.WeaponClass.Thrown,
         }
-
     elseif record.type == TYPE.AxeOneHand then
         return {
             skill = 'axe',
@@ -354,7 +351,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-
     elseif record.type == TYPE.AxeTwoHand then
         return {
             skill = 'axe',
@@ -362,7 +358,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-
     elseif record.type == TYPE.BluntOneHand then
         return {
             skill = 'bluntweapon',
@@ -370,7 +365,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-
     elseif record.type == TYPE.BluntTwoClose or record.type == TYPE.BluntTwoWide then
         return {
             skill = 'bluntweapon',
@@ -378,7 +372,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-
     elseif record.type == TYPE.LongBladeOneHand then
         return {
             skill = 'longblade',
@@ -386,7 +379,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-
     elseif record.type == TYPE.LongBladeTwoHand then
         return {
             skill = 'longblade',
@@ -394,7 +386,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-
     elseif record.type == TYPE.ShortBladeOneHand then
         return {
             skill = 'shortblade',
@@ -402,7 +393,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-
     elseif record.type == TYPE.SpearTwoWide then
         return {
             skill = 'spear',
@@ -410,7 +400,6 @@ Helpers.getWeaponInfo = function(item)
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-        
     end
 end
 
@@ -754,9 +743,13 @@ Helpers.getItemSound = function(item, upOrDown)
     local itemStr
     if types.Armor.objectIsInstance(item) then
         local skill = I.Combat.getArmorSkill(item)
-        if skill == 'lightarmor' then itemStr = 'armor light'
-        elseif skill == 'mediumarmor' then itemStr = 'armor medium'
-        else itemStr = 'armor heavy' end
+        if skill == 'lightarmor' then
+            itemStr = 'armor light'
+        elseif skill == 'mediumarmor' then
+            itemStr = 'armor medium'
+        else
+            itemStr = 'armor heavy'
+        end
     elseif types.Miscellaneous.objectIsInstance(item) then
         itemStr = Helpers.isGold(item) and 'gold' or 'misc'
     elseif types.Apparatus.objectIsInstance(item) then
@@ -888,7 +881,7 @@ if isPlayer then
         end
 
         local activeEffects = self.type.activeEffects(self)
-        if activeEffects:getEffect(core.magic.EFFECT_TYPE.Silence).magnitude > 0 then 
+        if activeEffects:getEffect(core.magic.EFFECT_TYPE.Silence).magnitude > 0 then
             return 0
         end
 
@@ -897,7 +890,8 @@ if isPlayer then
         end
 
         if spellRecord.type == core.magic.SPELL_TYPE.Power then
-            return self.type.spells(self):canUsePower(spellId) and 100 or 0 -- Powers can always be used if not on cooldown
+            return self.type.spells(self):canUsePower(spellId) and 100 or
+                0 -- Powers can always be used if not on cooldown
         end
 
         if spellRecord.type == core.magic.SPELL_TYPE.Spell then
@@ -943,7 +937,8 @@ if isPlayer then
             end
 
             local castBonus = -activeEffects:getEffect(core.magic.EFFECT_TYPE.Sound).magnitude
-            local castChance = (lowestSkill - util.round(cost) + castBonus + 0.2 * willpower.modified + 0.1 * luck.modified) * Helpers.getFatigueTerm()
+            local castChance = (lowestSkill - util.round(cost) + castBonus + 0.2 * willpower.modified + 0.1 * luck.modified) *
+                Helpers.getFatigueTerm()
 
             return math.floor(util.clamp(castChance, 0.0, 100.0)), effectiveSchool
         end
@@ -985,7 +980,7 @@ if isPlayer then
             return C.Magic.MagnitudeDisplayType.LEVEL
         end
         if magnitudeMap[C.Magic.MagnitudeDisplayType.PERCENTAGE][effect.id] or
-            effect.id:find('^weakness') or 
+            effect.id:find('^weakness') or
             effect.id:find('^resist') then
             return C.Magic.MagnitudeDisplayType.PERCENTAGE
         end
@@ -993,12 +988,10 @@ if isPlayer then
     end
 
     Helpers.createDurationString = function(duration)
-        local l10n = core.l10n('Interface')
-
         local string = ''
 
         if duration < 1.0 then
-            string = string .. l10n('DurationSecond', { seconds = 0 })
+            string = string .. il10n('DurationSecond', { seconds = 0 })
             return string
         end
 
@@ -1019,28 +1012,28 @@ if isPlayer then
 
         if years > 0 then
             units = units + 1
-            string = string .. l10n('DurationYear', { years = years })
+            string = string .. il10n('DurationYear', { years = years })
         end
         if months > 0 then
             units = units + 1
-            string = string .. l10n('DurationMonth', { months = months })
+            string = string .. il10n('DurationMonth', { months = months })
         end
         if units < 2 and days > 0 then
             units = units + 1
-            string = string .. l10n('DurationDay', { days = days })
+            string = string .. il10n('DurationDay', { days = days })
         end
         if units < 2 and hours > 0 then
             units = units + 1
-            string = string .. l10n('DurationHour', { hours = hours })
+            string = string .. il10n('DurationHour', { hours = hours })
         end
         if units >= 2 then
             return string
         end
         if minutes > 0 then
-            string = string .. l10n('DurationMinute', { minutes = minutes })
+            string = string .. il10n('DurationMinute', { minutes = minutes })
         end
         if seconds > 0 then
-            string = string .. l10n('DurationSecond', { seconds = seconds })
+            string = string .. il10n('DurationSecond', { seconds = seconds })
         end
 
         return string
@@ -1049,15 +1042,16 @@ if isPlayer then
     Helpers.createActiveEffectString = function(activeSpellEffect, spellName)
         local string = spellName or ''
         if activeSpellEffect.affectedSkill then
-            string = string .. ' (' .. core.stats.Skill.records[activeSpellEffect.affectedSkill].name .. ')' 
+            string = string .. ' (' .. core.stats.Skill.records[activeSpellEffect.affectedSkill].name .. ')'
         end
         if activeSpellEffect.affectedAttribute then
-            string = string .. ' (' .. core.stats.Attribute.records[activeSpellEffect.affectedAttribute].name .. ')' 
+            string = string .. ' (' .. core.stats.Attribute.records[activeSpellEffect.affectedAttribute].name .. ')'
         end
 
         local magnitudeType = Helpers.getEffectMagnitudeDisplayType(activeSpellEffect)
         if magnitudeType == C.Magic.MagnitudeDisplayType.TIMES_INT then
-            string = string .. ' ' .. Helpers.roundToPlaces(activeSpellEffect.magnitudeThisFrame / 10.0, 1) .. C.Strings.X_TIMES_INT
+            string = string ..
+                ' ' .. Helpers.roundToPlaces(activeSpellEffect.magnitudeThisFrame / 10.0, 1) .. C.Strings.X_TIMES_INT
         elseif magnitudeType ~= C.Magic.MagnitudeDisplayType.NONE then
             string = string .. ': ' .. tostring(math.floor(activeSpellEffect.magnitudeThisFrame))
             if magnitudeType == C.Magic.MagnitudeDisplayType.PERCENTAGE then
@@ -1082,7 +1076,8 @@ if isPlayer then
         end
 
         if activeSpellEffect.durationLeft and activeSpellEffect.durationLeft > 0 then
-            string = string .. ' ' .. C.Strings.DURATION .. ': ' .. Helpers.createDurationString(activeSpellEffect.durationLeft)
+            string = string ..
+                ' ' .. C.Strings.DURATION .. ': ' .. Helpers.createDurationString(activeSpellEffect.durationLeft)
         end
 
         return string
@@ -1161,7 +1156,8 @@ if isPlayer then
                 table.insert(effectsToShow, {
                     effect = effect,
                     visible = true,
-                    text = Helpers.createSpellEffectString(effect, enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect),
+                    text = Helpers.createSpellEffectString(effect,
+                        enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect),
                 })
             end
         elseif types.Potion.objectIsInstance(item) or types.Ingredient.objectIsInstance(item) then
@@ -1233,7 +1229,7 @@ if isPlayer then
             end
             isCustom = true
         end
-        
+
         local string = Helpers.getMagicEffectString(effectParams)
 
         if (effectParams.magnitudeMin or effectParams.magnitudeMax) and effect.hasMagnitude then
@@ -1247,7 +1243,8 @@ if isPlayer then
             if magnitudeType == C.Magic.MagnitudeDisplayType.TIMES_INT then
                 string = string .. ' ' .. Helpers.roundToPlaces(effectParams.magnitudeMin / 10.0, 1)
                 if effectParams.magnitudeMin ~= effectParams.magnitudeMax then
-                    string = string .. ' ' .. C.Strings.TO .. ' ' .. Helpers.roundToPlaces(effectParams.magnitudeMax / 10.0, 1)
+                    string = string ..
+                        ' ' .. C.Strings.TO .. ' ' .. Helpers.roundToPlaces(effectParams.magnitudeMax / 10.0, 1)
                 end
                 string = string .. C.Strings.X_TIMES_INT
             elseif magnitudeType ~= C.Magic.MagnitudeDisplayType.NONE then
@@ -1295,7 +1292,8 @@ if isPlayer then
             end
 
             if effectParams.area > 0 then
-                string = string .. ' ' .. C.Strings.IN .. ' ' .. tostring(effectParams.area) .. ' ' .. C.Strings.FOOT_AREA
+                string = string ..
+                    ' ' .. C.Strings.IN .. ' ' .. tostring(effectParams.area) .. ' ' .. C.Strings.FOOT_AREA
             end
 
             if not isPotion then
@@ -1314,7 +1312,8 @@ if isPlayer then
     end
 
     Helpers.scaleColor = function(color, scale)
-        return util.color.rgb(util.clamp(color.r * scale, 0, 1), util.clamp(color.g * scale, 0, 1), util.clamp(color.b * scale, 0, 1))
+        return util.color.rgb(util.clamp(color.r * scale, 0, 1), util.clamp(color.g * scale, 0, 1),
+            util.clamp(color.b * scale, 0, 1))
     end
 
     Helpers.blendColors = function(color1, color2, blend)

@@ -19,8 +19,9 @@ local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
-local l10n = core.l10n('InventoryExtender')
+local l10n = core.l10n(D.L10N)
 
 if not ui.layers.indexOf('DragBlocker') then
     ui.layers.insertBefore('Windows', 'DragBlocker', { interactive = true })

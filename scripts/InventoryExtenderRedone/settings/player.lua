@@ -3,8 +3,8 @@ local core = require('openmw.core')
 local I = require('openmw.interfaces')
 local input = require('openmw.input')
 
-local l10n = core.l10n('InventoryExtender')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local l10n = core.l10n(D.L10N)
 
 local renderers = require('scripts.InventoryExtenderRedone.ui.renderers')
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')

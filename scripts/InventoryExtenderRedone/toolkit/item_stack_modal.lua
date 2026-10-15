@@ -9,7 +9,8 @@ local I = require('openmw.interfaces')
 local BUTTON = input.CONTROLLER_BUTTON
 local KEY = input.KEY
 local v2 = util.vector2
-local l10n = core.l10n('InventoryExtender')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local l10n = core.l10n(D.L10N)
 
 local Toolkit = I.UIToolkit
 local T = Toolkit.Templates

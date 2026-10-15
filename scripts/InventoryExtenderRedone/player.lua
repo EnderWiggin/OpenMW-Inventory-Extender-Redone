@@ -13,11 +13,9 @@ local API = I.InventoryExtenderRedone
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
-local constants = require("scripts.InventoryExtenderRedone.util.constants")
-local helpers = require("scripts.InventoryExtenderRedone.util.helpers")
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
 
-local l10n = core.l10n('InventoryExtender')
+local l10n = core.l10n(D.L10N)
 
 local function isFavorited(item)
     local ctx = API.getContext and API.getContext()
