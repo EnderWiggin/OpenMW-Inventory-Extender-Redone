@@ -84,14 +84,6 @@ local clothingSlotMap = {
     },
 }
 
-local windowSettings = nil
-Helpers.getWindowSettings = function()
-    if windowSettings == nil then
-        windowSettings = storage.playerSection(D.Section.Window)
-    end
-    return windowSettings
-end
-
 
 Helpers.shallowCopy = function(tbl)
     if type(tbl) ~= 'table' then return tbl end

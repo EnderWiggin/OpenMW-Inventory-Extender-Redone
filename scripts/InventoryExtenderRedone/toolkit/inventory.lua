@@ -633,9 +633,9 @@ function Inventory:onOpened(wnd, data, saved)
         local bFavorite = isFavorited(b.item)
 
         if inBarterMode then
-            local config = helpers.getWindowSettings()
-            local reverseEquipped = config:get(constants.OPT_KEYS.SortingBarterReverseEquipped)
-            local reverseFavorite = config:get(constants.OPT_KEYS.SortingBarterReverseFavorite)
+            local config = configPlayer.window
+            local reverseEquipped = config.b_SortingBarterReverseEquipped
+            local reverseFavorite = config.b_SortingBarterReverseFavorite
 
             if reverseFavorite and not reverseEquipped then
                 -- if only favorites are reversed, prioritize sorting by favorite status
