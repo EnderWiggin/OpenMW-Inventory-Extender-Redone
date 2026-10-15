@@ -111,3 +111,11 @@ Interface.addPreCreateTooltipHandler(function(recipe, tooltip)
     table.insert(recipe.items, index, { type = 'ie-stolen-info', records = stolenRecords })
     table.insert(recipe.items, index, { type = 'gap', size = 4 })
 end)
+
+Interface.addPreCreateTooltipHandler(function(recipe, tooltip)
+    if not tooltip['markEquipped'] then return end
+    local items = recipe.items
+
+    items[#items + 1] = { type = 'gap', size = 4 }
+    items[#items + 1] = { type = 'text', text = l10n 'UI_Tooltip_Equipped', color = constants.Colors.GRAY }
+end)

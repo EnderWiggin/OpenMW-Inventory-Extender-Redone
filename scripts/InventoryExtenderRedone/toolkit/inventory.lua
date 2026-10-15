@@ -44,6 +44,7 @@ local Class          = require 'scripts.UIToolkit.class'
 local WindowHandler  = require 'scripts.UIToolkit.window_handler'
 local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_item'
 local CompoundFilter = require 'scripts.UIToolkit.compound_filter'
+local Tooltips       = I.UTKTooltips
 local Toolkit        = I.UIToolkit
 local Components     = Toolkit.Components
 local T              = Toolkit.Templates
@@ -1567,6 +1568,30 @@ function Inventory:updateTitle()
     end
 end
 
+local function getEquippedItemsForComparison(item, ctx)
+    local mode = configPlayer.window.s_CompareItemsMode
+    if mode == constants.COMPARISON_OPTS.ALT then
+        if not input.isAltPressed() then return nil end
+    elseif mode == constants.COMPARISON_OPTS.Always then
+        --do nothing - this always should pass
+    else
+        -- either Never or unknown - skip
+        return nil
+    end
+
+    local actor = omwself
+    local overrides = ctx.overrides.equipped
+
+    if helpers.isItemEquipped(item, actor, overrides) then
+        return nil
+    end
+
+    local slots = helpers.getEquipmentSlots(item)
+    local equipped = helpers.getEquippedItems(slots, actor, overrides)
+
+    return equipped
+end
+
 ---@private
 function Inventory:createData()
     if not self.target then
@@ -1598,6 +1623,29 @@ function Inventory:createData()
             end
         end
 
+        local function tooltip()
+            local baseTip = { object = itemStack, observer = omwself, owned = isOwned }
+            local comparison = getEquippedItemsForComparison(itemStack, ctx)
+            if not comparison or #comparison <= 0 then return baseTip end
+            local tips = { Tooltips.createTooltipLayout(baseTip) }
+            for i = 1, #comparison do
+                table.insert(tips, 1, Tooltips.createTooltipLayout({
+                    object = comparison[i],
+                    observer = omwself,
+                    isOwned = false,
+                    markEquipped = true,
+                }))
+            end
+            local layout = {
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                },
+                content = ui.content(tips),
+            }
+            return { layout = layout }
+        end
+
         ---@type InventoryExtenderRedone.RowData
         local rowData = {
             id = itemStack.id,
@@ -1627,7 +1675,7 @@ function Inventory:createData()
             isBartered = isBartered,
             virtualStacks = isVirtual and item.stacks or nil,
             getCount = getItemCount,
-            tooltip = { object = itemStack, observer = omwself, owned = isOwned },
+            tooltip = tooltip,
             showAsEnchanted = function()
                 if record.enchant then
                     return true
