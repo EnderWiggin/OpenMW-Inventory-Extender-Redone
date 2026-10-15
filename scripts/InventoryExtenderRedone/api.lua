@@ -7,12 +7,13 @@ local I = require('openmw.interfaces')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
 
 local API = {}
 
-API.VERSION = 1
+API.VERSION = D.API
 
 API.Constants = constants
 API.Helpers = helpers

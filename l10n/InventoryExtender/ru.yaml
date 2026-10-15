@@ -1,5 +1,9 @@
-ConfigTitle: "Новый инвентарь - InventoryExtender"
-ConfigSummary: "Lua-замена окна инвентаря на модернизированный интерфейс на основе списков.\n\n--- v%{version} --- \n\nАвтор: Ralts\n\nПеревод: Sergey Rudyi"
+ConfigTitle: Новый инвентарь - Inventory Extender Redone
+ConfigSummary: |-
+  Lua-замена окна инвентаря на модернизированный интерфейс на основе списков.
+  --- v%{version} --- 
+  Автор: TPABOBAP & Ralts
+  Перевод: Sergey Rudyi
 RequiresReload: "Некоторые изменения требуют перезапуска Lua для активации."
 ConfigCategoryKeybinds: "Горячие клавиши"
 KeybindUseItem: "Использовать предмет"
@@ -36,26 +40,11 @@ TableRowHeightMultDesc: |-
 TableScrollStep: "Шаг прокрутки таблицы"
 TableScrollStepDesc: |-
   Регулировка шага прокрутки в режиме таблицы (в количестве строк).
-TextSizeOverride: "Переопределение размера текста"
-TextSizeOverrideDesc: |-
-  Переопределить стандартный размер текста в окне инвентаря.
-  Установите 0, чтобы использовать размер по умолчанию из игры.
 IconPack: "Пакет иконок"
 IconPackDesc: |-
   Выберите, какой пакет иконок Inventory Extender использовать.
-InventoryWindowPinned: "Инвентарь закреплен"
-InventoryWindowDimensions: "Окно инвентаря"
-InventoryContainerWindowDimensions: "Инвентарь (контейнер)"
-InventoryBarterWindowDimensions: "Инвентарь (торговля)"
-InventoryCompanionWindowDimensions: "Инвентарь (компаньон)"
-ContainerWindowDimensions: "Окно контейнера"
-BarterWindowDimensions: "Окно торговли"
-CompanionWindowDimensions: "Окно компаньона"
 
 ConfigCategoryTweaks: "Исправления"
-CondensedWeightValue: "Компактные вес/цена"
-CondensedWeightValueDesc: |-
-  Сжимать информацию о весе и цене во всплывающих подсказках предметов.
 InvertCategorySwitching: "Инвертировать переключение категорий"
 InvertCategorySwitchingDesc: |-
   По умолчанию при смене категории другие окна переключаются на ту же категорию, если не удерживать Shift.
@@ -86,24 +75,6 @@ EnchantedIndicatorMode_Both: "И то, и другое"
 FilledGemsAppearEnchanted: "Заполненные камни как зачарованные"
 FilledGemsAppearEnchantedDesc: |-
   Отображать заполненные камни душ как зачарованные предметы, чтобы их было проще отличить.
-EnchantCapacityInTooltips: "Вместимость зачарования в подсказках"
-EnchantCapacityInTooltipsDesc: |-
-  Показывать вместимость зачарования предметов в их всплывающих подсказках.
-EnchantCapacityInTooltips_Never: "Никогда"
-EnchantCapacityInTooltips_Always: "Всегда"
-EnchantCapacityInTooltips_UnenchantedOnly: "Только незачарованные"
-SoulGemCapacityInTooltips: "Емкость камней душ в подсказках"
-SoulGemCapacityInTooltipsDesc: |-
-  Показывать емкость пустых камней душ в их всплывающих подсказках.
-SoulGemCapacityInTooltips_Never: "Никогда"
-SoulGemCapacityInTooltips_Always: "Всегда"
-SoulGemCapacityInTooltips_EmptyOnly: "Только пустые"
-SoulGemValueInTooltips: "Заряд камня душ в подсказках"
-SoulGemValueInTooltipsDesc: |-
-  Показывать объем души в заполненных камнях душ в их всплывающих подсказках.
-HideConditionChargeLabels: "Скрыть подписи прочности/заряда"
-HideConditionChargeLabelsDesc: |-
-  Скрыть текстовые подписи рядом с полосками “Прочность“ и “Заряд“ в подсказках для более центрированного вида.
 
 ConfigCategoryModIntegration: "Интеграция модов"
 InterfaceReimagined: "Поддержка Interface Reimagined"
@@ -242,11 +213,6 @@ UI_EnchantCapacity: "Емкость зачарования"
 UI_SoulCapacity: "Емкость души"
 UI_SoulValue: "Объем души"
 
-ConfigNumberSeparators: "Показывать разделители тысяч"
-ConfigNumberSeparators_None: "Нет"
-ConfigNumberSeparators_Comma: "Запятая"
-ConfigNumberSeparators_Space: "Пробел"
-
 ConfigCompareItemsMode: "Сравнивать с экипированным"
 ConfigCompareItemsModeDesc: "Покажет подсказку надетого предмета рядом с текущим предметом."
 ConfigCompareItemsMode_Never: "Никогда"
@@ -255,9 +221,6 @@ ConfigCompareItemsMode_Always: "Всегда"
 
 ConfigSortingBarterReverseEquipped: "При торговле сортировать экипированное в конец"
 ConfigSortingBarterReverseFavorite: "При торговле сортировать избранное в конец"
-
-ConfigTooltipShowItemUseCost: "Показывать стоимость использования предмета"
-ConfigTooltipShowItemUseCostDesc: "Показывать стоимость заряда за одно применение для магических предметов."
 
 Hint_Use: "Использовать"
 Hint_Pickup: "Взять"

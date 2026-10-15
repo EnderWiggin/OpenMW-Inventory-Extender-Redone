@@ -4,27 +4,26 @@ local I = require('openmw.interfaces')
 local input = require('openmw.input')
 
 local l10n = core.l10n('InventoryExtender')
-local versionString = "Experimental"
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local renderers = require('scripts.InventoryExtenderRedone.ui.renderers')
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
 local C = require('scripts.InventoryExtenderRedone.util.constants')
 
-I.Settings.registerRenderer('InventoryExtender/windowDimensions', renderers.windowDimensions)
 I.Settings.registerRenderer('InventoryExtender/inputKeySelection', renderers.inputKey)
 
 -- Settings page
 I.Settings.registerPage {
-    key = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    key = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigTitle',
-    description = l10n('ConfigSummary'):gsub('%%{version}', versionString),
+    description = l10n('ConfigSummary'):gsub('%%{version}', D.Version),
 }
 
 I.Settings.registerGroup {
     key = 'Settings/InventoryExtender/1_Keybinds',
-    page = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    page = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigCategoryKeybinds',
     permanentStorage = true,
     settings = {
@@ -54,8 +53,8 @@ I.Settings.registerGroup {
 
 I.Settings.registerGroup {
     key = 'Settings/InventoryExtender/2_WindowOptions',
-    page = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    page = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigCategoryWindowOptions',
     permanentStorage = true,
     settings = {
@@ -72,7 +71,7 @@ I.Settings.registerGroup {
             description = 'ItemViewModeDesc',
             default = 'ItemViewMode_Table',
             argument = {
-                l10n = 'InventoryExtender',
+                l10n = D.L10N,
                 items = {
                     'ItemViewMode_Table',
                     'ItemViewMode_Grid',
@@ -118,35 +117,14 @@ I.Settings.registerGroup {
             }
         },
         {
-            key = 'i_TextSizeOverride',
-            renderer = 'number',
-            name = 'TextSizeOverride',
-            description = 'TextSizeOverrideDesc',
-            default = 0,
-            argument = {
-                integer = true,
-                min = 0,
-            }
-        },
-        {
             key = 's_IconPack',
             renderer = 'select',
             name = 'IconPack',
             description = 'IconPackDesc',
             default = 'Base',
             argument = {
-                l10n = 'InventoryExtender',
+                l10n = D.L10N,
                 items = iconPack.getAvailablePacks(),
-            }
-        },
-        {
-            key = C.OPT_KEYS.SeparatorsMode,
-            renderer = 'select',
-            name = 'ConfigNumberSeparators',
-            default = C.SEPARATOR_OPTS.None,
-            argument = {
-                l10n = 'InventoryExtender',
-                items = { C.SEPARATOR_OPTS.None, C.SEPARATOR_OPTS.Comma, C.SEPARATOR_OPTS.Space },
             }
         },
         {
@@ -156,7 +134,7 @@ I.Settings.registerGroup {
             description = 'ConfigCompareItemsModeDesc',
             default = C.COMPARISON_OPTS.Never,
             argument = {
-                l10n = 'InventoryExtender',
+                l10n = D.L10N,
                 items = { C.COMPARISON_OPTS.Never, C.COMPARISON_OPTS.ALT, C.COMPARISON_OPTS.Always },
             }
         },
@@ -172,71 +150,16 @@ I.Settings.registerGroup {
             name = 'ConfigSortingBarterReverseFavorite',
             default = false,
         },
-        {
-            key = 'b_InventoryWindowPinned',
-            renderer = 'checkbox',
-            name = 'InventoryWindowPinned',
-            default = false,
-        },
-        {
-            key = 'd_InventoryWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'InventoryWindowDimensions',
-            default = { x = 0.015, y = 0.54, w = 0.45, h = 0.38, }
-        },
-        {
-            key = 'd_InventoryContainerWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'InventoryContainerWindowDimensions',
-            default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
-        },
-        {
-            key = 'd_InventoryBarterWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'InventoryBarterWindowDimensions',
-            default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
-        },
-        {
-            key = 'd_InventoryCompanionWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'InventoryCompanionWindowDimensions',
-            default = { x = 0.05, y = 0.05, w = 0.45, h = 0.85, }
-        },
-        {
-            key = 'd_ContainerWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'ContainerWindowDimensions',
-            default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
-        },
-        {
-            key = 'd_BarterWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'BarterWindowDimensions',
-            default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
-        },
-        {
-            key = 'd_CompanionWindowDimensions',
-            renderer = 'InventoryExtender/windowDimensions',
-            name = 'CompanionWindowDimensions',
-            default = { x = 0.5, y = 0.05, w = 0.45, h = 0.85, }
-        },
     },
 }
 
 I.Settings.registerGroup {
     key = 'Settings/InventoryExtender/3_Tweaks',
-    page = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    page = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigCategoryTweaks',
     permanentStorage = true,
     settings = {
-        {
-            key = 'b_CondensedWeightValue',
-            renderer = 'checkbox',
-            name = 'CondensedWeightValue',
-            description = 'CondensedWeightValueDesc',
-            default = true,
-        },
         {
             key = 'b_InvertCategorySwitching',
             renderer = 'checkbox',
@@ -286,7 +209,7 @@ I.Settings.registerGroup {
             description = 'EnchantedIndicatorModeDesc',
             default = 'EnchantedIndicatorMode_Swirl',
             argument = {
-                l10n = 'InventoryExtender',
+                l10n = D.L10N,
                 items = {
                     'EnchantedIndicatorMode_Swirl',
                     'EnchantedIndicatorMode_Icon',
@@ -301,64 +224,13 @@ I.Settings.registerGroup {
             description = 'FilledGemsAppearEnchantedDesc',
             default = true,
         },
-        {
-            key = 's_EnchantCapacityInTooltips',
-            renderer = 'select',
-            name = 'EnchantCapacityInTooltips',
-            description = 'EnchantCapacityInTooltipsDesc',
-            default = 'EnchantCapacityInTooltips_UnenchantedOnly',
-            argument = {
-                l10n = 'InventoryExtender',
-                items = {
-                    'EnchantCapacityInTooltips_Never',
-                    'EnchantCapacityInTooltips_Always',
-                    'EnchantCapacityInTooltips_UnenchantedOnly',
-                },
-            }
-        },
-        {
-            key = 's_SoulGemCapacityInTooltips',
-            renderer = 'select',
-            name = 'SoulGemCapacityInTooltips',
-            description = 'SoulGemCapacityInTooltipsDesc',
-            default = 'SoulGemCapacityInTooltips_EmptyOnly',
-            argument = {
-                l10n = 'InventoryExtender',
-                items = {
-                    'SoulGemCapacityInTooltips_Never',
-                    'SoulGemCapacityInTooltips_Always',
-                    'SoulGemCapacityInTooltips_EmptyOnly',
-                },
-            }
-        },
-        {
-            key = 'b_SoulGemValueInTooltips',
-            renderer = 'checkbox',
-            name = 'SoulGemValueInTooltips',
-            description = 'SoulGemValueInTooltipsDesc',
-            default = true,
-        },
-        {
-            key = C.OPT_KEYS.TooltipShowItemUseCost,
-            renderer = 'checkbox',
-            name = 'ConfigTooltipShowItemUseCost',
-            description = 'ConfigTooltipShowItemUseCostDesc',
-            default = true,
-        },
-        {
-            key = 'b_HideConditionChargeLabels',
-            renderer = 'checkbox',
-            name = 'HideConditionChargeLabels',
-            description = 'HideConditionChargeLabelsDesc',
-            default = true,
-        }
     },
 }
 
 I.Settings.registerGroup {
     key = 'Settings/InventoryExtender/4_ModIntegration',
-    page = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    page = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigCategoryModIntegration',
     permanentStorage = true,
     settings = {
@@ -381,8 +253,8 @@ I.Settings.registerGroup {
 
 I.Settings.registerGroup {
     key = 'Settings/InventoryExtender/5_Misc',
-    page = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    page = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigCategoryMisc',
     permanentStorage = true,
     settings = {

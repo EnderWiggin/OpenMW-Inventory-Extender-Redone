@@ -1,4 +1,4 @@
-ConfigTitle: Inventory Extender
+ConfigTitle: Inventory Extender Redone
 ConfigSummary: |-
   A Lua replacement for the inventory window with a modernized list-based interface.
   --- v%{version} ---
@@ -40,26 +40,11 @@ TableRowHeightMultDesc: |-
 TableScrollStep: Table scroll step
 TableScrollStepDesc: |-
   Adjust the scroll step of the table view, in number of rows.
-TextSizeOverride: Text size override
-TextSizeOverrideDesc: |-
-  Override the default text size used in the inventory window. 
-  Set to 0 to use the game's default size.
 IconPack: Icon pack
 IconPackDesc: |-
   Choose which Inventory Extender icon pack to use.
-InventoryWindowPinned: Inventory pinned
-InventoryWindowDimensions: Inventory window
-InventoryContainerWindowDimensions: Inventory (container)
-InventoryBarterWindowDimensions: Inventory (barter)
-InventoryCompanionWindowDimensions: Inventory (companion)
-ContainerWindowDimensions: Container window
-BarterWindowDimensions: Barter window
-CompanionWindowDimensions: Companion window
 
 ConfigCategoryTweaks: Tweaks
-CondensedWeightValue: Condensed weight/value
-CondensedWeightValueDesc: |-
-  Condense weight and value information in item tooltips.
 InvertCategorySwitching: Invert category switching
 InvertCategorySwitchingDesc: |-
   By default, when you switch categories, any other windows will switch to the same category unless you hold Shift.
@@ -90,24 +75,6 @@ EnchantedIndicatorMode_Both: Both
 FilledGemsAppearEnchanted: Filled gems appear enchanted
 FilledGemsAppearEnchantedDesc: |-
   Show filled soul gems as enchanted items to distinguish them more easily.
-EnchantCapacityInTooltips: Enchant capacity in tooltips
-EnchantCapacityInTooltipsDesc: |-
-  Show the enchant capacity of items in their tooltips.
-EnchantCapacityInTooltips_Never: Never
-EnchantCapacityInTooltips_Always: Always
-EnchantCapacityInTooltips_UnenchantedOnly: Unenchanted only
-SoulGemCapacityInTooltips: Soul gem capacity in tooltips
-SoulGemCapacityInTooltipsDesc: |-
-  Show the capacity of empty soul gems in their tooltips.
-SoulGemCapacityInTooltips_Never: Never
-SoulGemCapacityInTooltips_Always: Always
-SoulGemCapacityInTooltips_EmptyOnly: Empty only
-SoulGemValueInTooltips: Soul gem value in tooltips
-SoulGemValueInTooltipsDesc: |-
-  Show the soul value of filled soul gems in their tooltips.
-HideConditionChargeLabels: Hide condition/charge labels
-HideConditionChargeLabelsDesc: |-
-  Hide the labels next to the "Condition" and "Charge" bars in item tooltips for a more centered look.
 
 ConfigCategoryModIntegration: Mod Integrations
 InterfaceReimagined: Interface Reimagined support
@@ -246,11 +213,6 @@ UI_EnchantCapacity: Enchant Capacity
 UI_SoulCapacity: Soul Capacity
 UI_SoulValue: Soul Value
 
-ConfigNumberSeparators: Show thousand separators
-ConfigNumberSeparators_None: None
-ConfigNumberSeparators_Comma: Comma
-ConfigNumberSeparators_Space: Space
-
 ConfigCompareItemsMode: Compare equipped item
 ConfigCompareItemsModeDesc: Will show tooltips of equipped items near current item tooltip.
 ConfigCompareItemsMode_Never: Never
@@ -259,9 +221,6 @@ ConfigCompareItemsMode_Always: Always
 
 ConfigSortingBarterReverseEquipped: When bartering, sort equipped items last
 ConfigSortingBarterReverseFavorite: When bartering, sort favorite items last
-
-ConfigTooltipShowItemUseCost: Show item use cost
-ConfigTooltipShowItemUseCostDesc: Show the charges cost per cast for magic items.
 
 Hint_Use: Use
 Hint_Pickup: Pickup

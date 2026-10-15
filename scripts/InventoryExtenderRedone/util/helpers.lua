@@ -251,28 +251,6 @@ Helpers.getCountString = function(count)
     end
 end
 
-Helpers.addSeparators = function(number)
-    local mode = Helpers.getWindowSettings():get(C.OPT_KEYS.SeparatorsMode)
-    local separator
-    
-    if mode == C.SEPARATOR_OPTS.Comma then
-        separator = ','
-    elseif mode == C.SEPARATOR_OPTS.Space then
-        separator = ' '
-    end
-    if separator == nil then return tostring(number) end
-    
-    local _, _, minus, int, fraction = tostring(number):find('([-]?)(%d+)([.]?%d*)')
-    
-    -- reverse the int-string and append a comma to all blocks of 3 digits
-    int = int:reverse():gsub("(%d%d%d)", "%1" .. separator)
-    
-    -- reverse the int-string back remove an optional comma and put the 
-    -- optional minus and fractional part back
-    return minus .. int:reverse():gsub("^" .. separator, "") .. fraction
-end
-
-
 Helpers.getEquippedName = function(actor)
     local name = C.Strings.HAND_TO_HAND
     local selected = actor.type.getEquipment(actor, types.Actor.EQUIPMENT_SLOT.CarriedRight)
