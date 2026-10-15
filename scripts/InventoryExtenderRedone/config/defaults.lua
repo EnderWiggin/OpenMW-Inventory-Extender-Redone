@@ -11,6 +11,12 @@ local M = {
     Version = '0.0.1',
     API = 1,
     Section = {
+        Keybinds    = section 'Keybinds',
+        Window      = section 'Window',
+        Tweaks      = section 'Tweaks',
+        Integration = section 'Integration',
+        Misc        = section 'Misc',
+        Gameplay    = section 'Gameplay',
     },
 }
 

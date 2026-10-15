@@ -12,6 +12,7 @@ local util = require('openmw.util')
 local API = I.InventoryExtenderRedone
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local constants = require("scripts.InventoryExtenderRedone.util.constants")
 local helpers = require("scripts.InventoryExtenderRedone.util.helpers")
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
@@ -42,7 +43,7 @@ local function init()
                 function(arg) API.hide(windowName, arg) end)
         end
     elseif configPlayer.misc.b_ShowControllerWarning then
-        storage.playerSection('Settings/InventoryExtender/5_Misc'):set('b_ShowControllerWarning', false)
+        storage.playerSection(D.Section.Misc):set('b_ShowControllerWarning', false)
         local msg =
         'NOTICE:\nInventory Extender is not compatible with controller menus.\nThis message will only appear once.'
         if I.UI.showInteractiveMessage then -- OpenMW 0.50+

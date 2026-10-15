@@ -1,10 +1,12 @@
 ---@omw-context global
 local I = require('openmw.interfaces')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 I.Settings.registerGroup {
-    key = 'Settings/InventoryExtender/6_Gameplay',
-    page = 'InventoryExtender',
-    l10n = 'InventoryExtender',
+    key = D.Section.Gameplay,
+    order = 6,
+    page = D.PageKey,
+    l10n = D.L10N,
     name = 'ConfigCategoryGameplay',
     permanentStorage = true,
     settings = {

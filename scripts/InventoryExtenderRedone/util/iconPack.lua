@@ -1,10 +1,11 @@
 ---@omw-context player|menu
 local storage = require('openmw.storage')
 local vfs = require('openmw.vfs')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local hasUi, ui = pcall(require, 'openmw.ui')
 
-local windowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
+local windowSettings = storage.playerSection(D.Section.Window)
 
 local IconPack = {}
 

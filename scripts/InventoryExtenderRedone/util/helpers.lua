@@ -9,6 +9,7 @@ local _, debug = pcall(require, 'openmw.debug')
 local _, ui = pcall(require, 'openmw.ui')
 
 local C = require('scripts.InventoryExtenderRedone.util.constants')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local configGlobal = require('scripts.InventoryExtenderRedone.config.global')
 local storage = require('openmw.storage')
@@ -62,7 +63,7 @@ local clothingSlotMap = {
 local windowSettings = nil
 Helpers.getWindowSettings = function()
     if windowSettings == nil then
-        windowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
+        windowSettings = storage.playerSection(D.Section.Window)
     end
     return windowSettings
 end

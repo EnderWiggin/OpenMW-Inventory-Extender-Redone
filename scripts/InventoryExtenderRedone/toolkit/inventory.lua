@@ -23,6 +23,7 @@ local NPC       = types.NPC
 
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
@@ -48,7 +49,7 @@ local Components     = Toolkit.Components
 local T              = Toolkit.Templates
 
 
-local playerWindowSettings = storage.playerSection('Settings/InventoryExtender/2_WindowOptions')
+local playerWindowSettings = storage.playerSection(D.Section.Window)
 local windowOptionsSection = storage.playerSection('InventoryExtender')
 local columnVisibilityKey  = 'ColumnVisibility'
 

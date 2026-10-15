@@ -21,7 +21,8 @@ I.Settings.registerPage {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/InventoryExtender/1_Keybinds',
+    key = D.Section.Keybinds,
+    order = 1,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryKeybinds',
@@ -52,7 +53,8 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/InventoryExtender/2_WindowOptions',
+    key = D.Section.Window,
+    order = 2,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryWindowOptions',
@@ -154,7 +156,8 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/InventoryExtender/3_Tweaks',
+    key = D.Section.Tweaks,
+    order = 3,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryTweaks',
@@ -228,7 +231,8 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/InventoryExtender/4_ModIntegration',
+    key = D.Section.Integration,
+    order = 4,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryModIntegration',
@@ -252,7 +256,8 @@ I.Settings.registerGroup {
 }
 
 I.Settings.registerGroup {
-    key = 'Settings/InventoryExtender/5_Misc',
+    key = D.Section.Misc,
+    order = 5,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryMisc',
