@@ -4,7 +4,6 @@ local core = require('openmw.core')
 local self = require('openmw.self')
 local types = require('openmw.types')
 local I = require('openmw.interfaces')
-local auxUi = require('openmw_aux.ui')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
@@ -51,7 +50,7 @@ local function checkCrimeLevel()
     if lastCrimeLevel and crimeLevel < lastCrimeLevel then
         core.sendGlobalEvent('IER_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
     end
-    
+
     lastCrimeLevel = crimeLevel
 end
 
@@ -115,7 +114,7 @@ function API.unregisterCategory(key)
 end
 
 --- Register a function to override the equipped status of items in the inventory.
---- Handlers are called in reverse order of registration until one returns a non-nil value, at which point that value is used as the result. 
+--- Handlers are called in reverse order of registration until one returns a non-nil value, at which point that value is used as the result.
 --- If no handlers return a non-nil value, the default value is used.
 --- @param id string A unique identifier for the override
 --- @param handler fun(item: GameObject, actor: Actor):boolean|nil The override function
@@ -175,13 +174,15 @@ end
 local eventHandlers = {
     UiModeChanged = function(data)
         windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
-        core.sendGlobalEvent('IER_UIModeChanged', { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
+        core.sendGlobalEvent('IER_UIModeChanged',
+            { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
     end,
     IER_StoleItem = function(props)
         windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
         local id = props.victim.recordId or props.victim.factionId
         if id then
-            windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) + props.count 
+            windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) +
+            props.count
         end
     end,
     IER_ItemsConfiscated = function(props)

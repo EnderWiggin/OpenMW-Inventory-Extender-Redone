@@ -174,7 +174,8 @@ local function autoEquipArmor(slots)
         local newArmorType = item.type.record(item).type
         if oldArmorType == newArmorType then
             if actorIsNpc then
-                return (I.Combat.getEffectiveArmorRating(item, self) or 0) > (I.Combat.getEffectiveArmorRating(oldItem, self) or 0)
+                return (I.Combat.getEffectiveArmorRating(item, self) or 0) >
+                    (I.Combat.getEffectiveArmorRating(oldItem, self) or 0)
             end
             return getItemCondition(item) > getItemCondition(oldItem)
         end
@@ -227,7 +228,7 @@ local function autoEquipArmor(slots)
 end
 
 local function autoEquip(player)
-    local slots = types.Actor.getEquipment(self)
+    local slots = types.Actor.getEquipment(self) --[[@as openmw.types.EquipmentTable]]
     autoEquipWeapon(slots)
     autoEquipArmor(slots)
     types.Actor.setEquipment(self, slots)

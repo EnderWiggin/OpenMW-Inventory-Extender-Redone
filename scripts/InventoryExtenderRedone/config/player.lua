@@ -12,15 +12,15 @@ local misc = storage.playerSection('Settings/InventoryExtender/5_Misc')
 local configPlayer = {}
 
 local function updateConfig()
-	configPlayer.keybinds = keybinds:asTable()
-	configPlayer.window = window:asTable()
-	configPlayer.tweaks = tweaks:asTable()
-	configPlayer.modIntegration = modIntegration:asTable()
-	configPlayer.misc = misc:asTable()
+    configPlayer.keybinds = keybinds:asTable()
+    configPlayer.window = window:asTable()
+    configPlayer.tweaks = tweaks:asTable()
+    configPlayer.modIntegration = modIntegration:asTable()
+    configPlayer.misc = misc:asTable()
 
-	for _, fn in ipairs(updateFns) do
-		fn()
-	end
+    for _, fn in ipairs(updateFns) do
+        fn()
+    end
 end
 
 updateConfig()
@@ -31,7 +31,7 @@ modIntegration:subscribe(async:callback(updateConfig))
 misc:subscribe(async:callback(updateConfig))
 
 configPlayer.onUpdate = function(fn)
-	table.insert(updateFns, fn)
+    table.insert(updateFns, fn)
 end
 
 return configPlayer

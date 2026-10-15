@@ -6,7 +6,7 @@ local gameplay = storage.globalSection('Settings/InventoryExtender/6_Gameplay')
 local configGlobal = {}
 
 local function updateConfig()
-	configGlobal.gameplay = gameplay:asTable()
+    configGlobal.gameplay = gameplay:asTable()
 end
 
 updateConfig()

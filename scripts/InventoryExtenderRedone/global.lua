@@ -137,10 +137,10 @@ local function moveInto(props)
         [string "scripts/inventoryextender/global.lua"]:233: in function <[string "scripts/inventoryextender/global.lua"]:118>
     ]]
     if not obj:isValid() then
-        error('[WARN] trying to move invalid object: '..tostring(obj))
+        error('[WARN] trying to move invalid object: ' .. tostring(obj))
         return
     elseif not obj.count or obj.count <= 0 then
-        error('[WARN] trying to move empty object: '..tostring(obj) ..', count: '.. tostring(obj.count))
+        error('[WARN] trying to move empty object: ' .. tostring(obj) .. ', count: ' .. tostring(obj.count))
         return
     end
 
@@ -213,7 +213,8 @@ local function moveInto(props)
             local scriptRecord = core.mwscripts.records[mwscript]
             if scriptRecord and scriptRecord.text:lower():find('onactivate') then
                 world._runStandardActivationAction(obj, props.player)
-                core.sendGlobalEvent('IER_ScriptedDragStart', { player = props.player, obj = obj, resultingObj = resultingObj, target = destination })
+                core.sendGlobalEvent('IER_ScriptedDragStart',
+                    { player = props.player, obj = obj, resultingObj = resultingObj, target = destination })
                 return
             end
         end
@@ -259,7 +260,7 @@ local function moveInto(props)
     end
 
     obj:moveInto(destination)
-    
+
     if props.dragStart and helpers.isGold(obj) then
         local foundGold = destinationInv:find('gold_001')
         if foundGold then
@@ -282,7 +283,7 @@ local function moveInto(props)
     else
         props.player:sendEvent('IER_Update')
     end
-    
+
     return obj
 end
 
@@ -310,7 +311,11 @@ local function moveAll(props)
         if types.Item.isCarriable(item) then
             if victimInfo then
                 if not helpers.isGold(item) then
-                    props.player:sendEvent('IER_StoleItem', { recordId = item.recordId, count = item.count, victim = victimInfo })
+                    props.player:sendEvent('IER_StoleItem', {
+                        recordId = item.recordId,
+                        count = item.count,
+                        victim = victimInfo
+                    })
                 end
                 totalCrimeValue = totalCrimeValue + (helpers.getItemValue(item) * item.count)
             end
@@ -339,11 +344,21 @@ local function onItemActivated(item, actor)
     if victim and not helpers.isGold(item) then
         if types.Book.objectIsInstance(item) then
             checkStolenBooks[actor.id] = checkStolenBooks[actor.id] or {}
-            table.insert(checkStolenBooks[actor.id], { actor = actor, item = item, victim = victim, prevCount = actor.type.inventory(actor):countOf(item.recordId) })
+            table.insert(checkStolenBooks[actor.id], {
+                actor = actor,
+                item = item,
+                victim = victim,
+                prevCount = actor.type.inventory(actor):countOf(item.recordId)
+            })
         else
             checkStolenNextNextUpdate = checkStolenNextNextUpdate or {}
             checkStolenNextNextUpdate[actor.id] = checkStolenNextNextUpdate[actor.id] or {}
-            table.insert(checkStolenNextNextUpdate[actor.id], { actor = actor, item = item, victim = victim, prevCount = actor.type.inventory(actor):countOf(item.recordId) })
+            table.insert(checkStolenNextNextUpdate[actor.id], {
+                actor = actor,
+                item = item,
+                victim = victim,
+                prevCount = actor.type.inventory(actor):countOf(item.recordId)
+            })
         end
     end
 end
@@ -374,7 +389,7 @@ local function onUpdate(dt)
     if core.isWorldPaused() then
         return
     end
-    
+
     if checkStolenNextUpdate and next(checkStolenNextUpdate) ~= nil then
         for actorId, entries in pairs(checkStolenNextUpdate) do
             for i = #entries, 1, -1 do
@@ -444,7 +459,11 @@ local function onUiModeChanged(data)
                 local currentCount = data.actor.type.inventory(data.actor):countOf(item.recordId)
                 if currentCount > prevCount then
                     local stolenCount = currentCount - prevCount
-                    data.actor:sendEvent('IER_StoleItem', { recordId = item.recordId, count = stolenCount, victim = victim })
+                    data.actor:sendEvent('IER_StoleItem', {
+                        recordId = item.recordId,
+                        count = stolenCount,
+                        victim = victim
+                    })
                 end
                 table.remove(entries, i)
             end
@@ -564,17 +583,18 @@ local function confiscateStolenItems(data)
 end
 
 local function confiscateToOwner(data)
-    if not data.stolenMap[data.item.recordId] then
-        return
-    end
+    local stolen = data.stolenMap[data.item.recordId]
+    if not stolen then return end
 
-    local toRemove = math.min(data.count, data.stolenMap[data.item.recordId][data.victim.recordId] or 0)
-    data.stolenMap[data.item.recordId][data.victim.recordId] = (data.stolenMap[data.item.recordId][data.victim.recordId] or 0) - toRemove
-    if data.stolenMap[data.item.recordId][data.victim.recordId] <= 0 then
-        data.stolenMap[data.item.recordId][data.victim.recordId] = nil
+    local victim = data.victim.recordId
+    local victimCount = stolen[victim] or 0
+    local toRemove = math.min(data.count, victimCount)
+    stolen[victim] = victimCount - toRemove
+    if stolen[victim] <= 0 then
+        stolen[victim] = nil
     end
-    if not next(data.stolenMap[data.item.recordId]) then
-        data.stolenMap[data.item.recordId] = nil
+    if not next(stolen) then
+        stolen = nil
     end
 
     I.Crimes.commitCrime(data.player, {
@@ -604,7 +624,7 @@ local function finalizeBarter(props)
     local function transferItems(entries, destination, restock)
         for _, entry in pairs(entries) do
             local remainingCount = entry.count
-            
+
             if entry.count > 0 then
                 if entry.stacks then
                     for _, stackItem in ipairs(entry.stacks) do
@@ -636,22 +656,24 @@ local function finalizeBarter(props)
             end
         end
     end
-    
-    transferItems(props.barterState.selling, props.merchant, false)
-    transferItems(props.barterState.buying, props.player, true)
-    
-    if props.barterState.currentBalance ~= 0 then
-        if props.barterState.currentBalance < 0 then
+
+    local merchant = props.merchant
+    local barterState = props.barterState
+    local currentBalance = barterState.currentBalance
+    transferItems(barterState.selling, merchant, false)
+    transferItems(barterState.buying, props.player, true)
+
+    if currentBalance ~= 0 then
+        if currentBalance < 0 then
             local gold = types.Actor.inventory(props.player):find('gold_001')
             if gold then
-                gold:remove(-props.barterState.currentBalance)
+                gold:remove(-currentBalance)
             end
-            types.NPC.setBarterGold(props.merchant, types.NPC.getBarterGold(props.merchant) + -props.barterState.currentBalance)
         else
-            local gold = world.createObject('gold_001', props.barterState.currentBalance)
+            local gold = world.createObject('gold_001', currentBalance)
             gold:moveInto(types.Actor.inventory(props.player))
-            types.NPC.setBarterGold(props.merchant, types.NPC.getBarterGold(props.merchant) - props.barterState.currentBalance)
         end
+        types.NPC.setBarterGold(merchant, types.NPC.getBarterGold(merchant) - currentBalance)
     end
     props.player:sendEvent('IER_BarterFinalized', {
         skillGain = props.skillGain,
@@ -691,7 +713,11 @@ local eventHandlers = {
             if props.recordId == lastItemPickedUp.recordId and props.owner then
                 local victim = isStealing(lastItemPickedUp.player, props.owner, props.globalVariable)
                 if victim and not helpers.isGold(props.recordId) then
-                    lastItemPickedUp.player:sendEvent('IER_StoleItem', { recordId = props.recordId, count = lastItemPickedUp.count, victim = victim })
+                    lastItemPickedUp.player:sendEvent('IER_StoleItem', {
+                        recordId = props.recordId,
+                        count = lastItemPickedUp.count,
+                        victim = victim
+                    })
                     lastItemPickedUp.player:sendEvent('IER_Update')
                 end
             end
@@ -727,19 +753,6 @@ local eventHandlers = {
         end, 2)
     end,
 }
--- deprecated event names
-eventHandlers.MI_TryConfiscate = eventHandlers.IER_TryConfiscate
-eventHandlers.MI_ConfiscateToOwner = eventHandlers.IER_ConfiscateToOwner
-eventHandlers.MI_CommitPickpocket = eventHandlers.IER_CommitPickpocket
-eventHandlers.MI_Teleport = eventHandlers.IER_Teleport
-eventHandlers.MI_ScriptedDragStart = eventHandlers.IER_ScriptedDragStart
-eventHandlers.MI_MoveInto = eventHandlers.IER_MoveInto
-eventHandlers.MI_MoveAll = eventHandlers.IER_MoveAll
-eventHandlers.MI_FinalizeBarter = eventHandlers.IER_FinalizeBarter
-eventHandlers.MI_UIModeChanged = eventHandlers.IER_UIModeChanged
-eventHandlers.MI_StolenChestInactive = eventHandlers.IER_StolenChestInactive
-eventHandlers.MI_DisposeOfCorpse = eventHandlers.IER_DisposeOfCorpse
-eventHandlers.MI_ModDisposition = eventHandlers.IER_ModDisposition
 
 return {
     engineHandlers = {
