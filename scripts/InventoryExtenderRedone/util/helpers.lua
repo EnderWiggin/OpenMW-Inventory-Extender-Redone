@@ -7,6 +7,7 @@ local types = require('openmw.types')
 local isPlayer, self = pcall(require, 'openmw.self')
 local _, debug = pcall(require, 'openmw.debug')
 local _, ui = pcall(require, 'openmw.ui')
+local hasNearby, nearby = pcall(require, 'openmw.nearby')
 
 local C = require('scripts.InventoryExtenderRedone.util.constants')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
@@ -690,8 +691,8 @@ Helpers.getMerchantItems = function(npc)
     for i = 1, #carried do
         table.insert(unmerged, carried[i])
     end
-    local success, nearby = pcall(require, 'openmw.nearby')
-    if success then
+
+    if hasNearby then
         local items = nearby.items
         for i = 1, #items do
             local item = items[i]
