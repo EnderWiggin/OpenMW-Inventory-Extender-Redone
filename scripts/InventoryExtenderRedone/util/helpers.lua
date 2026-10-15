@@ -15,6 +15,29 @@ local configGlobal = require('scripts.InventoryExtenderRedone.config.global')
 local l10n = core.l10n(D.L10N)
 local il10n = core.l10n('Interface')
 
+local Weapon = types.Weapon
+local Armor = types.Armor
+local Clothing = types.Clothing
+local Apparatus = types.Apparatus
+local Book = types.Book
+local Potion = types.Potion
+local Ingredient = types.Ingredient
+local Lockpick = types.Lockpick
+local Probe = types.Probe
+local Light = types.Light
+local Repair = types.Repair
+local Miscellaneous = types.Miscellaneous
+local Item = types.Item
+local Container = types.Container
+local Actor = types.Actor
+local Creature = types.Creature
+
+local WeaponType = Weapon.TYPE
+local ArmorType = Armor.TYPE
+local ClothingType = Clothing.TYPE
+local ApparatusType = Apparatus.TYPE
+local EQUIPMENT_SLOT = Actor.EQUIPMENT_SLOT
+
 local Helpers = {}
 
 local function reverseLookup(enumTable)
@@ -25,38 +48,38 @@ local function reverseLookup(enumTable)
     return lookup
 end
 
-local weaponTypeNames = reverseLookup(types.Weapon.TYPE)
-local armorTypeNames = reverseLookup(types.Armor.TYPE)
-local clothingTypeNames = reverseLookup(types.Clothing.TYPE)
-local apparatusTypeNames = reverseLookup(types.Apparatus.TYPE)
+local weaponTypeNames = reverseLookup(WeaponType)
+local armorTypeNames = reverseLookup(ArmorType)
+local clothingTypeNames = reverseLookup(ClothingType)
+local apparatusTypeNames = reverseLookup(ApparatusType)
 
 local armorSlotMap = {
-    [types.Armor.TYPE.Helmet] = { types.Actor.EQUIPMENT_SLOT.Helmet },
-    [types.Armor.TYPE.Cuirass] = { types.Actor.EQUIPMENT_SLOT.Cuirass },
-    [types.Armor.TYPE.Greaves] = { types.Actor.EQUIPMENT_SLOT.Greaves },
-    [types.Armor.TYPE.Boots] = { types.Actor.EQUIPMENT_SLOT.Boots },
-    [types.Armor.TYPE.LPauldron] = { types.Actor.EQUIPMENT_SLOT.LeftPauldron },
-    [types.Armor.TYPE.RPauldron] = { types.Actor.EQUIPMENT_SLOT.RightPauldron },
-    [types.Armor.TYPE.LGauntlet] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
-    [types.Armor.TYPE.RGauntlet] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
-    [types.Armor.TYPE.LBracer] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
-    [types.Armor.TYPE.RBracer] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
-    [types.Armor.TYPE.Shield] = { types.Actor.EQUIPMENT_SLOT.CarriedLeft },
+    [ArmorType.Helmet] = { EQUIPMENT_SLOT.Helmet },
+    [ArmorType.Cuirass] = { EQUIPMENT_SLOT.Cuirass },
+    [ArmorType.Greaves] = { EQUIPMENT_SLOT.Greaves },
+    [ArmorType.Boots] = { EQUIPMENT_SLOT.Boots },
+    [ArmorType.LPauldron] = { EQUIPMENT_SLOT.LeftPauldron },
+    [ArmorType.RPauldron] = { EQUIPMENT_SLOT.RightPauldron },
+    [ArmorType.LGauntlet] = { EQUIPMENT_SLOT.LeftGauntlet },
+    [ArmorType.RGauntlet] = { EQUIPMENT_SLOT.RightGauntlet },
+    [ArmorType.LBracer] = { EQUIPMENT_SLOT.LeftGauntlet },
+    [ArmorType.RBracer] = { EQUIPMENT_SLOT.RightGauntlet },
+    [ArmorType.Shield] = { EQUIPMENT_SLOT.CarriedLeft },
 }
 
 local clothingSlotMap = {
-    [types.Clothing.TYPE.Shirt] = { types.Actor.EQUIPMENT_SLOT.Shirt },
-    [types.Clothing.TYPE.Pants] = { types.Actor.EQUIPMENT_SLOT.Pants },
-    [types.Clothing.TYPE.Skirt] = { types.Actor.EQUIPMENT_SLOT.Skirt },
-    [types.Clothing.TYPE.Robe] = { types.Actor.EQUIPMENT_SLOT.Robe },
-    [types.Clothing.TYPE.Shoes] = { types.Actor.EQUIPMENT_SLOT.Boots },
-    [types.Clothing.TYPE.Belt] = { types.Actor.EQUIPMENT_SLOT.Belt },
-    [types.Clothing.TYPE.Amulet] = { types.Actor.EQUIPMENT_SLOT.Amulet },
-    [types.Clothing.TYPE.LGlove] = { types.Actor.EQUIPMENT_SLOT.LeftGauntlet },
-    [types.Clothing.TYPE.RGlove] = { types.Actor.EQUIPMENT_SLOT.RightGauntlet },
-    [types.Clothing.TYPE.Ring] = {
-        types.Actor.EQUIPMENT_SLOT.LeftRing,
-        types.Actor.EQUIPMENT_SLOT.RightRing,
+    [ClothingType.Shirt] = { EQUIPMENT_SLOT.Shirt },
+    [ClothingType.Pants] = { EQUIPMENT_SLOT.Pants },
+    [ClothingType.Skirt] = { EQUIPMENT_SLOT.Skirt },
+    [ClothingType.Robe] = { EQUIPMENT_SLOT.Robe },
+    [ClothingType.Shoes] = { EQUIPMENT_SLOT.Boots },
+    [ClothingType.Belt] = { EQUIPMENT_SLOT.Belt },
+    [ClothingType.Amulet] = { EQUIPMENT_SLOT.Amulet },
+    [ClothingType.LGlove] = { EQUIPMENT_SLOT.LeftGauntlet },
+    [ClothingType.RGlove] = { EQUIPMENT_SLOT.RightGauntlet },
+    [ClothingType.Ring] = {
+        EQUIPMENT_SLOT.LeftRing,
+        EQUIPMENT_SLOT.RightRing,
     },
 }
 
@@ -254,7 +277,7 @@ end
 
 Helpers.getEquippedName = function(actor)
     local name = C.Strings.HAND_TO_HAND
-    local selected = actor.type.getEquipment(actor, types.Actor.EQUIPMENT_SLOT.CarriedRight)
+    local selected = actor.type.getEquipment(actor, EQUIPMENT_SLOT.CarriedRight)
     if selected then
         name = selected.type.record(selected).name
     end
@@ -278,20 +301,20 @@ end
 
 Helpers.getEquipmentSlots = function(item)
     --TODO: add support for Bardcraft instruments?
-    if types.Armor.objectIsInstance(item) then
+    if Armor.objectIsInstance(item) then
         return armorSlotMap[item.type.record(item).type]
     end
 
-    if types.Clothing.objectIsInstance(item) then
+    if Clothing.objectIsInstance(item) then
         return clothingSlotMap[item.type.record(item).type]
     end
 
-    if types.Weapon.objectIsInstance(item) then
+    if Weapon.objectIsInstance(item) then
         local weaponType = item.type.record(item).type
-        if weaponType == types.Weapon.TYPE.Arrow or weaponType == types.Weapon.TYPE.Bolt then
-            return { types.Actor.EQUIPMENT_SLOT.Ammunition }
+        if weaponType == WeaponType.Arrow or weaponType == WeaponType.Bolt then
+            return { EQUIPMENT_SLOT.Ammunition }
         end
-        return { types.Actor.EQUIPMENT_SLOT.CarriedRight }
+        return { EQUIPMENT_SLOT.CarriedRight }
     end
 
     return nil
@@ -300,7 +323,7 @@ end
 Helpers.getEquippedItem = function(slot, actor, overrides)
     --TODO: add support for custom slots for Bardcraft instruments and maybe backpacks?
     if not slot then return nil end
-    return types.Actor.getEquipment(actor, slot)
+    return Actor.getEquipment(actor, slot)
 end
 
 Helpers.getEquippedItems = function(slots, actor, overrides)
@@ -314,86 +337,85 @@ Helpers.getEquippedItems = function(slots, actor, overrides)
 end
 
 Helpers.getWeaponInfo = function(item)
-    if not types.Weapon.objectIsInstance(item) then
+    if not Weapon.objectIsInstance(item) then
         return nil
     end
-    local record = types.Weapon.records[item.recordId]
+    local record = Weapon.records[item.recordId]
     assert(record)
-    local TYPE = types.Weapon.TYPE
-    if record.type == TYPE.Arrow or record.type == TYPE.Bolt then
+    if record.type == WeaponType.Arrow or record.type == WeaponType.Bolt then
         return {
             skill = 'marksman',
             soundId = 'ammo',
             class = C.WeaponClass.Ammo,
         }
-    elseif record.type == TYPE.MarksmanBow then
+    elseif record.type == WeaponType.MarksmanBow then
         return {
             skill = 'marksman',
             soundId = 'weapon bow',
             class = C.WeaponClass.Ranged,
         }
-    elseif record.type == TYPE.MarksmanCrossbow then
+    elseif record.type == WeaponType.MarksmanCrossbow then
         return {
             skill = 'marksman',
             soundId = 'weapon crossbow',
             class = C.WeaponClass.Ranged,
         }
-    elseif record.type == TYPE.MarksmanThrown then
+    elseif record.type == WeaponType.MarksmanThrown then
         return {
             skill = 'marksman',
             soundId = 'weapon blunt',
             class = C.WeaponClass.Thrown,
         }
-    elseif record.type == TYPE.AxeOneHand then
+    elseif record.type == WeaponType.AxeOneHand then
         return {
             skill = 'axe',
             soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-    elseif record.type == TYPE.AxeTwoHand then
+    elseif record.type == WeaponType.AxeTwoHand then
         return {
             skill = 'axe',
             soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-    elseif record.type == TYPE.BluntOneHand then
+    elseif record.type == WeaponType.BluntOneHand then
         return {
             skill = 'bluntweapon',
             soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-    elseif record.type == TYPE.BluntTwoClose or record.type == TYPE.BluntTwoWide then
+    elseif record.type == WeaponType.BluntTwoClose or record.type == WeaponType.BluntTwoWide then
         return {
             skill = 'bluntweapon',
             soundId = 'weapon blunt',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-    elseif record.type == TYPE.LongBladeOneHand then
+    elseif record.type == WeaponType.LongBladeOneHand then
         return {
             skill = 'longblade',
             soundId = 'weapon longblade',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-    elseif record.type == TYPE.LongBladeTwoHand then
+    elseif record.type == WeaponType.LongBladeTwoHand then
         return {
             skill = 'longblade',
             soundId = 'weapon longblade',
             class = C.WeaponClass.Melee,
             isTwoHanded = true,
         }
-    elseif record.type == TYPE.ShortBladeOneHand then
+    elseif record.type == WeaponType.ShortBladeOneHand then
         return {
             skill = 'shortblade',
             soundId = 'weapon shortblade',
             class = C.WeaponClass.Melee,
             isTwoHanded = false,
         }
-    elseif record.type == TYPE.SpearTwoWide then
+    elseif record.type == WeaponType.SpearTwoWide then
         return {
             skill = 'spear',
             soundId = 'weapon spear',
@@ -404,7 +426,7 @@ Helpers.getWeaponInfo = function(item)
 end
 
 Helpers.getWeaponDamage = function(item)
-    if not types.Weapon.objectIsInstance(item) then
+    if not Weapon.objectIsInstance(item) then
         return nil
     end
 
@@ -413,7 +435,7 @@ Helpers.getWeaponDamage = function(item)
 end
 
 Helpers.getWeaponTypeLabel = function(item)
-    if not types.Weapon.objectIsInstance(item) then
+    if not Weapon.objectIsInstance(item) then
         return nil
     end
 
@@ -422,7 +444,7 @@ Helpers.getWeaponTypeLabel = function(item)
 end
 
 Helpers.getArmorSlotLabel = function(item)
-    if not types.Armor.objectIsInstance(item) then
+    if not Armor.objectIsInstance(item) then
         return nil
     end
 
@@ -431,7 +453,7 @@ Helpers.getArmorSlotLabel = function(item)
 end
 
 Helpers.getClothingTypeLabel = function(item)
-    if not types.Clothing.objectIsInstance(item) then
+    if not Clothing.objectIsInstance(item) then
         return nil
     end
 
@@ -440,7 +462,7 @@ Helpers.getClothingTypeLabel = function(item)
 end
 
 Helpers.getApparatusTypeLabel = function(item)
-    if not types.Apparatus.objectIsInstance(item) then
+    if not Apparatus.objectIsInstance(item) then
         return nil
     end
 
@@ -457,24 +479,24 @@ Helpers.getItemTypeLabel = function(item)
         return specificType
     end
 
-    if types.Book.objectIsInstance(item) then
+    if Book.objectIsInstance(item) then
         if item.type.record(item).enchant then
             return l10n('Type_Scroll')
         end
         return l10n('Type_Book')
-    elseif types.Potion.objectIsInstance(item) then
+    elseif Potion.objectIsInstance(item) then
         return l10n('Type_Consumable')
-    elseif types.Ingredient.objectIsInstance(item) then
+    elseif Ingredient.objectIsInstance(item) then
         return l10n('Type_Ingredient')
-    elseif types.Lockpick.objectIsInstance(item) then
+    elseif Lockpick.objectIsInstance(item) then
         return l10n('Type_Lockpick')
-    elseif types.Probe.objectIsInstance(item) then
+    elseif Probe.objectIsInstance(item) then
         return l10n('Type_Probe')
-    elseif types.Light.objectIsInstance(item) then
+    elseif Light.objectIsInstance(item) then
         return l10n('Type_Light')
-    elseif types.Repair.objectIsInstance(item) then
+    elseif Repair.objectIsInstance(item) then
         return l10n('Type_RepairTool')
-    elseif types.Miscellaneous.objectIsInstance(item) then
+    elseif Miscellaneous.objectIsInstance(item) then
         if item.type.record(item).isKey then
             return l10n('Type_Key')
         end
@@ -485,7 +507,7 @@ Helpers.getItemTypeLabel = function(item)
 end
 
 Helpers.getArmorClassLabel = function(item)
-    if not types.Armor.objectIsInstance(item) then
+    if not Armor.objectIsInstance(item) then
         return nil
     end
 
@@ -502,7 +524,7 @@ Helpers.getArmorClassLabel = function(item)
 end
 
 Helpers.getArmorRating = function(item, actor)
-    if not types.Armor.objectIsInstance(item) then
+    if not Armor.objectIsInstance(item) then
         return nil
     end
 
@@ -515,11 +537,11 @@ Helpers.getArmorRating = function(item, actor)
 end
 
 Helpers.getConditionPercent = function(item)
-    if not types.Item.objectIsInstance(item) then
+    if not Item.objectIsInstance(item) then
         return nil
     end
 
-    local itemData = types.Item.itemData(item)
+    local itemData = Item.itemData(item)
     local condition = itemData.condition
     if condition == nil or condition == -1 then
         return nil
@@ -554,7 +576,7 @@ Helpers.getItemName = function(item)
     local soul = item.type.itemData(item).soul
     local baseName = item.type.record(item).name
     if soul then
-        local soulRecord = types.Creature.records[soul]
+        local soulRecord = Creature.records[soul]
         if soulRecord then
             return baseName .. ' (' .. soulRecord.name .. ')'
         end
@@ -575,7 +597,7 @@ Helpers.getItemValue = function(item)
     local baseValue = item.type.record(item).value
     if not soul then return baseValue end
 
-    local soulRecord = types.Creature.records[soul]
+    local soulRecord = Creature.records[soul]
     local soulValue = soulRecord and soulRecord.soulValue or 0
     if configGlobal.gameplay.b_SoulGemValueRebalance then
         soulValue = 0.0001 * (soulValue ^ 3) + 2 * soulValue
@@ -591,7 +613,7 @@ Helpers.getItemValue = function(item)
 end
 
 Helpers.isSoulGem = function(item)
-    return types.Miscellaneous.objectIsInstance(item) and item.recordId:lower():find('^misc_soulgem')
+    return Miscellaneous.objectIsInstance(item) and item.recordId:lower():find('^misc_soulgem')
 end
 
 Helpers.getSoulGemCapacity = function(item)
@@ -604,10 +626,10 @@ Helpers.getSoulGemCapacity = function(item)
 end
 
 Helpers.getWeaponRangeInFeet = function(item)
-    if not types.Weapon.objectIsInstance(item) then
+    if not Weapon.objectIsInstance(item) then
         return 0
     end
-    local record = types.Weapon.records[item.recordId]
+    local record = Weapon.records[item.recordId]
     local reach = record.reach or 0
     local unitsPerFoot = 21.33333333
     return core.getGMST('fCombatDistance') * reach / unitsPerFoot
@@ -615,22 +637,22 @@ end
 
 Helpers.doesItemFit = function(item, container, count)
     if configGlobal.gameplay.b_IgnoreChestCapacity then return true end
-    if not container or not types.Container.objectIsInstance(container) then
+    if not container or not Container.objectIsInstance(container) then
         return true
     end
     local itemWeight = item.type.record(item).weight * (count or item.count)
-    local contEncumbrance = types.Container.getEncumbrance(container)
-    local contCapacity = types.Container.getCapacity(container)
+    local contEncumbrance = Container.getEncumbrance(container)
+    local contCapacity = Container.getCapacity(container)
     return (contEncumbrance + itemWeight) <= contCapacity
 end
 
 Helpers.itemDataEquals = function(a, b)
-    if not types.Item.objectIsInstance(a) or not types.Item.objectIsInstance(b) then
+    if not Item.objectIsInstance(a) or not Item.objectIsInstance(b) then
         return false
     end
 
-    local itemDataA = types.Item.itemData(a)
-    local itemDataB = types.Item.itemData(b)
+    local itemDataA = Item.itemData(a)
+    local itemDataB = Item.itemData(b)
 
     local fieldsToCheck = {
         'condition',
@@ -741,7 +763,7 @@ end
 Helpers.getItemSound = function(item, upOrDown)
     local itemRecord = item.type.record(item)
     local itemStr
-    if types.Armor.objectIsInstance(item) then
+    if Armor.objectIsInstance(item) then
         local skill = I.Combat.getArmorSkill(item)
         if skill == 'lightarmor' then
             itemStr = 'armor light'
@@ -750,27 +772,27 @@ Helpers.getItemSound = function(item, upOrDown)
         else
             itemStr = 'armor heavy'
         end
-    elseif types.Miscellaneous.objectIsInstance(item) then
+    elseif Miscellaneous.objectIsInstance(item) then
         itemStr = Helpers.isGold(item) and 'gold' or 'misc'
-    elseif types.Apparatus.objectIsInstance(item) then
+    elseif Apparatus.objectIsInstance(item) then
         itemStr = 'apparatus'
-    elseif types.Book.objectIsInstance(item) then
+    elseif Book.objectIsInstance(item) then
         itemStr = 'book'
-    elseif types.Clothing.objectIsInstance(item) then
-        itemStr = itemRecord.type == types.Clothing.TYPE.Ring and 'ring' or 'clothes'
-    elseif types.Ingredient.objectIsInstance(item) then
+    elseif Clothing.objectIsInstance(item) then
+        itemStr = itemRecord.type == ClothingType.Ring and 'ring' or 'clothes'
+    elseif Ingredient.objectIsInstance(item) then
         itemStr = 'ingredient'
-    elseif types.Light.objectIsInstance(item) then
+    elseif Light.objectIsInstance(item) then
         itemStr = 'misc'
-    elseif types.Lockpick.objectIsInstance(item) then
+    elseif Lockpick.objectIsInstance(item) then
         itemStr = 'lockpick'
-    elseif types.Potion.objectIsInstance(item) then
+    elseif Potion.objectIsInstance(item) then
         itemStr = 'potion'
-    elseif types.Probe.objectIsInstance(item) then
+    elseif Probe.objectIsInstance(item) then
         itemStr = 'probe'
-    elseif types.Repair.objectIsInstance(item) then
+    elseif Repair.objectIsInstance(item) then
         itemStr = 'repair'
-    elseif types.Weapon.objectIsInstance(item) then
+    elseif Weapon.objectIsInstance(item) then
         local weaponInfo = Helpers.getWeaponInfo(item)
         itemStr = weaponInfo and weaponInfo.soundId
     end
@@ -1135,7 +1157,7 @@ if isPlayer then
         local alchemy = self.type.stats.skills.alchemy(self).modified
         local threshold = core.getGMST('fWortChanceValue')
         local visibleEffectCount = math.floor(alchemy / threshold)
-        if types.Potion.objectIsInstance(item) then
+        if Potion.objectIsInstance(item) then
             visibleEffectCount = visibleEffectCount * 2
         end
         return visibleEffectCount
@@ -1160,7 +1182,7 @@ if isPlayer then
                         enchantment.type == core.magic.ENCHANTMENT_TYPE.ConstantEffect),
                 })
             end
-        elseif types.Potion.objectIsInstance(item) or types.Ingredient.objectIsInstance(item) then
+        elseif Potion.objectIsInstance(item) or Ingredient.objectIsInstance(item) then
             local visibleEffectCount = getKnownAlchemyEffectCount(item)
             for i = 1, #itemRecord.effects do
                 local effect = itemRecord.effects[i]
@@ -1168,7 +1190,7 @@ if isPlayer then
                     local isVisible = i <= visibleEffectCount
                     local effectText = nil
                     if isVisible then
-                        if types.Potion.objectIsInstance(item) then
+                        if Potion.objectIsInstance(item) then
                             effectText = Helpers.createSpellEffectString(effect, false, true)
                         else
                             effectText = Helpers.getMagicEffectString(effect)
