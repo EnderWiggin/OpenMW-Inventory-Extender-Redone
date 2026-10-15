@@ -24,19 +24,23 @@ local function normalizeRelativePath(path)
 end
 
 function IconPack.getAvailablePacks()
+    local default = DEFAULT_PACK:lower()
     local packs = {}
     local seen = {}
 
     for path in vfs.pathsWithPrefix(ICON_ROOT) do
         local relativePath = path:sub(#ICON_ROOT + 2)
         local packName = relativePath:match('([^/\\]+)')
-        if packName and not seen[packName] then
-            seen[packName] = true
-            table.insert(packs, capitalize(packName))
+        if packName then
+            packName = packName:lower()
+            if not seen[packName] then
+                seen[packName] = true
+                table.insert(packs, capitalize(packName))
+            end
         end
     end
 
-    if not seen[DEFAULT_PACK] then
+    if not seen[default] then
         table.insert(packs, 1, DEFAULT_PACK)
     end
 
