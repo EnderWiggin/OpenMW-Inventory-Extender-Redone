@@ -13,6 +13,9 @@ local aux_util  = require 'openmw_aux.util'
 
 local I         = require 'openmw.interfaces'
 local v2        = util.vector2
+local cfgUtil   = require 'scripts.UIToolkit.config.utils'
+local D         = require 'scripts.InventoryExtenderRedone.config.defaults'
+local BINDING   = D.Binds
 local KEY       = input.KEY
 local BUTTON    = input.CONTROLLER_BUTTON
 
@@ -835,6 +838,7 @@ function Inventory:onOpened(wnd, data, saved)
 
         I.InventoryExtenderRedone.forEachOpenWindow(function(handler)
             handler.table:setShowGrid(showGrid)
+            handler:updateInputHints()
             if handler ~= self then
                 handler.categoryFilter.updateViewModeButton()
             end
@@ -1110,33 +1114,7 @@ function Inventory:onOpened(wnd, data, saved)
     self:updateTitle()
     self.categoryFilter.updateCategories()
 
-    local swap = configPlayer.keybinds.b_SwapUsePickup
-    ---@type UIToolkit.Controller.HintList
-    local hints
-    if I.UI.getMode() == 'Barter' then
-        hints = {
-            { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, { id = BUTTON.X } } },
-            'separator',
-            { text = l10n 'Hint_Category',    input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
-            { text = l10n 'Hint_Select',      input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
-            'separator',
-            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
-        }
-    else
-        hints = {
-            { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
-            { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = { id = BUTTON.X } },
-            'separator',
-            { text = l10n 'Hint_Category', input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } }, },
-            { text = l10n 'Hint_Select',   input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
-            'separator',
-            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
-        }
-    end
-    if self.target == omwself then
-        table.insert(hints, 1, { text = l10n 'Hint_Favorite', input = { id = BUTTON.Y } })
-    end
-    wnd:setControllerHints(hints)
+    self:updateInputHints()
 end
 
 function Inventory:onClosed()
@@ -1172,24 +1150,62 @@ function Inventory:getTopBarHeight()
     return self.categoryFilter:getSize().y
 end
 
-function Inventory:onKeyboardButtonPress(key)
+function Inventory:updateInputHints()
+    local swap = configPlayer.keybinds.b_SwapUsePickup
+    ---@type UIToolkit.Controller.HintList
+    local hints
+    local binds = configPlayer.keybinds
+    local find = cfgUtil.getFirstControllerInput
+    local select = self.table.showGrid
+        and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
+        or { find(binds.c_SelUp), find(binds.c_SelDown) }
+
+    if I.UI.getMode() == 'Barter' then
+        hints = {
+            { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, find(binds.c_Activate) } },
+            'separator',
+            { text = l10n 'Hint_Category',    input = select, },
+            { text = l10n 'Hint_Select',      input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+        }
+    else
+        hints = {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
+            'separator',
+            { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            { text = l10n 'Hint_Select',   input = select, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+        }
+    end
+    if self.target == omwself then
+        table.insert(hints, 1, { text = l10n 'Hint_Favorite', input = find(binds.c_Favorite) })
+    end
+    self.wnd:setControllerHints(hints)
+end
+
+---@param bind string?
+function Inventory:onInput(bind)
     if I.UI.getMode() == nil then return end
-    --TODO: add bindings for these
-    if key == KEY.Z then
+    --TODO: add binds to toggle view mode (select?)
+    --TODO: add binds to open column config popup (R-Stick?) (and add binds to popup itself)
+    if bind == BINDING.Category_Prev then
         self.categoryFilter:cycleCategory(-1)
-    elseif key == KEY.C then
+    elseif bind == BINDING.Category_Next then
         self.categoryFilter:cycleCategory(1)
-    elseif key == KEY.W then
-        self.table:shiftHoveredItem(v2(0, -1)) --TODO: consider diagonals
-    elseif key == KEY.S then
+    elseif bind == BINDING.Select_Up then
+        self.table:shiftHoveredItem(v2(0, -1)) --TODO: consider diagonals?
+    elseif bind == BINDING.Select_Down then
         self.table:shiftHoveredItem(v2(0, 1))
-    elseif key == KEY.A then
+    elseif bind == BINDING.Select_Left then
         self.table:shiftHoveredItem(v2(-1, 0))
-    elseif key == KEY.D then
+    elseif bind == BINDING.Select_Right then
         self.table:shiftHoveredItem(v2(1, 0))
-    elseif key == (configPlayer.keybinds.k_ToggleFavorite or input.KEY.F) then
+    elseif bind == BINDING.Favorite then
         self:toggleFavorite()
-    elseif key == configPlayer.keybinds.k_UseItem then
+    elseif bind == BINDING.Activate then
         local ctx = self.ctx
         local row = self.table:getHovered()
         if configPlayer.keybinds.b_SwapUsePickup then
@@ -1204,62 +1220,44 @@ function Inventory:onKeyboardButtonPress(key)
     end
 end
 
-function Inventory:onKeyboardButtonRepeat(key)
-    --TODO: add bindings for these
-    if key == KEY.W or key == KEY.S or key == KEY.A or key == KEY.D then
-        self:onKeyboardButtonPress(key)
+function Inventory:onInputRepeat(bind)
+    if bind == BINDING.Select_Up or bind == BINDING.Select_Down
+        or bind == BINDING.Select_Left or bind == BINDING.Select_Right
+    then
+        self:onInput(bind)
     end
+end
+
+function Inventory:onKeyboardButtonPress(key)
+    self:onInput(cfgUtil.findMatchingKeyboard(key, configPlayer.keybinds))
+end
+
+function Inventory:onKeyboardButtonRepeat(key)
+    self:onInputRepeat(cfgUtil.findMatchingKeyboard(key, configPlayer.keybinds))
 end
 
 function Inventory:onControllerButtonPress(button)
-    if I.UI.getMode() == nil then return end
-    --TODO: add bindings for these
-    local ctx = self.ctx
-    if button == BUTTON.LeftShoulder then
-        self.categoryFilter:cycleCategory(-1)
-    elseif button == BUTTON.RightShoulder then
-        self.categoryFilter:cycleCategory(1)
-    elseif button == BUTTON.DPadUp then --TODO: consider diagonals
-        self.table:shiftHoveredItem(v2(0, -1))
-    elseif button == BUTTON.DPadDown then
-        self.table:shiftHoveredItem(v2(0, 1))
-    elseif button == BUTTON.DPadLeft then
-        self.table:shiftHoveredItem(v2(-1, 0))
-    elseif button == BUTTON.DPadRight then
-        self.table:shiftHoveredItem(v2(1, 0))
-    elseif button == BUTTON.Y then
-        self:toggleFavorite()
-    elseif button == BUTTON.X then
-        local row = self.table:getHovered()
-        if configPlayer.keybinds.b_SwapUsePickup then
-            if ctx.dragAndDrop.draggingObject then
-                ctx.dragAndDrop:stopDrag(self.target)
+    if button == input.CONTROLLER_BUTTON.A then
+        local focused = I.UIToolkit.getCtx().focusedScrollable
+        if focused ~= self.table:currentScrollable() then
+            local row = self.table:getHovered()
+            if not configPlayer.keybinds.b_SwapUsePickup then
+                local ctx = self.ctx
+                if ctx.dragAndDrop.draggingObject then
+                    ctx.dragAndDrop:stopDrag(self.target)
+                elseif row then
+                    self:onRowUse(row, true, false)
+                end
             elseif row then
-                self:onRowUse(row, true, false)
+                self:onRowPickup(row, self.type, false)
             end
-        elseif row then
-            self:onRowPickup(row, self.type, false)
-        end
-    elseif button == BUTTON.A and I.UIToolkit.getCtx().focusedScrollable ~= self.table:currentScrollable() then
-        local row = self.table:getHovered()
-        if not configPlayer.keybinds.b_SwapUsePickup then
-            if ctx.dragAndDrop.draggingObject then
-                ctx.dragAndDrop:stopDrag(self.target)
-            elseif row then
-                self:onRowUse(row, true, false)
-            end
-        elseif row then
-            self:onRowPickup(row, self.type, false)
         end
     end
+    self:onInput(cfgUtil.findMatchingController(button, configPlayer.keybinds))
 end
 
 function Inventory:onControllerButtonRepeat(button)
-    --TODO: add bindings for these
-    if button == BUTTON.DPadDown or button == BUTTON.DPadUp
-        or button == BUTTON.DPadLeft or button == BUTTON.DPadRight then
-        self:onControllerButtonPress(button)
-    end
+    self:onInputRepeat(cfgUtil.findMatchingController(button, configPlayer.keybinds))
 end
 
 function Inventory:getStorageSuffix()
@@ -1913,7 +1911,9 @@ function Inventory:initInfoBar()
                 if configPlayer.keybinds.b_SwapUsePickup then
                     return l10n('UI_Tooltip_UseButton_Swapped')
                 end
-                return l10n('UI_Tooltip_UseButton', { key = input.getKeyName(configPlayer.keybinds.k_UseItem) })
+                local key = cfgUtil.getFirstKeyboardInput(configPlayer.keybinds.c_Activate).id
+                if not key then return nil end
+                return l10n('UI_Tooltip_UseButton', { key = input.getKeyName(key) })
             end,
         }
 

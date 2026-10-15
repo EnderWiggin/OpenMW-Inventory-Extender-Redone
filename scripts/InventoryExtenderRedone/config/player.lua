@@ -4,9 +4,15 @@ local storage = require('openmw.storage')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 ---@class IER.Config.Player.Keybinds
----@field k_UseItem number
----@field k_ToggleFavorite number
 ---@field b_SwapUsePickup boolean
+---@field c_Activate UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_Favorite UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_CatPrev UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_CatNext UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_SelUp UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_SelDown UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_SelLeft UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_SelRight UIToolkit.SettingRenderer.CustomBind[]?
 
 ---@class IER.Config.Player.Window
 ---@field b_EnableMod boolean

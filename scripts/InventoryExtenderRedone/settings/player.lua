@@ -4,6 +4,10 @@ local I = require('openmw.interfaces')
 local input = require('openmw.input')
 
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local H = require 'scripts.UIToolkit.helpers'
+local Device = require 'scripts.UIToolkit.config.defaults'.Device
+local KEY = input.KEY
+local BUTTON = input.CONTROLLER_BUTTON
 local l10n = core.l10n(D.L10N)
 
 local renderers = require('scripts.InventoryExtenderRedone.ui.renderers')
@@ -22,19 +26,12 @@ I.Settings.registerPage {
 
 I.Settings.registerGroup {
     key = D.Section.Keybinds,
-    order = 1,
+    order = 5,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryKeybinds',
     permanentStorage = true,
     settings = {
-        {
-            key = 'k_UseItem',
-            renderer = 'InventoryExtender/inputKeySelection',
-            name = 'KeybindUseItem',
-            description = 'KeybindUseItemDesc',
-            default = input.KEY.R
-        },
         {
             key = 'b_SwapUsePickup',
             renderer = 'checkbox',
@@ -43,18 +40,85 @@ I.Settings.registerGroup {
             default = false,
         },
         {
-            key = 'k_ToggleFavorite',
-            renderer = 'InventoryExtender/inputKeySelection',
+            key = 'c_Activate',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindUseItem',
+            description = 'KeybindUseItemDesc',
+            default = {
+                { device = Device.Controller, code = BUTTON.X },
+                { device = Device.Keyboard,   code = KEY.R },
+            },
+        },
+        {
+            key = 'c_Favorite',
+            renderer = 'UIToolkit/BindCustom',
             name = 'KeybindToggleFavorite',
             description = 'KeybindToggleFavoriteDesc',
-            default = input.KEY.F,
+            default = {
+                { device = Device.Controller, code = BUTTON.Y },
+                { device = Device.Keyboard,   code = KEY.F },
+            },
+        },
+        {
+            key = 'c_CatPrev',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindCatPrev',
+            default = {
+                { device = Device.Controller, code = BUTTON.LeftShoulder },
+                { device = Device.Keyboard,   code = KEY.Z },
+            },
+        },
+        {
+            key = 'c_CatNext',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindCatNext',
+            default = {
+                { device = Device.Controller, code = BUTTON.RightShoulder },
+                { device = Device.Keyboard,   code = KEY.C },
+            },
+        },
+        {
+            key = 'c_SelUp',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindSelUp',
+            default = {
+                { device = Device.Controller, code = BUTTON.DPadUp },
+                { device = Device.Keyboard,   code = KEY.W },
+            },
+        },
+        {
+            key = 'c_SelDown',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindSelDown',
+            default = {
+                { device = Device.Controller, code = BUTTON.DPadDown },
+                { device = Device.Keyboard,   code = KEY.S },
+            },
+        },
+        {
+            key = 'c_SelLeft',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindSelLeft',
+            default = {
+                { device = Device.Controller, code = BUTTON.DPadLeft },
+                { device = Device.Keyboard,   code = KEY.A },
+            },
+        },
+        {
+            key = 'c_SelRight',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindSelRight',
+            default = {
+                { device = Device.Controller, code = BUTTON.DPadRight },
+                { device = Device.Keyboard,   code = KEY.D },
+            },
         },
     }
 }
 
 I.Settings.registerGroup {
     key = D.Section.Window,
-    order = 2,
+    order = 1,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryWindowOptions',
@@ -157,7 +221,7 @@ I.Settings.registerGroup {
 
 I.Settings.registerGroup {
     key = D.Section.Tweaks,
-    order = 3,
+    order = 2,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryTweaks',
@@ -257,7 +321,7 @@ I.Settings.registerGroup {
 
 I.Settings.registerGroup {
     key = D.Section.Misc,
-    order = 5,
+    order = 6,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryMisc',

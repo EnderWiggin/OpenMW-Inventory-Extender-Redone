@@ -18,6 +18,16 @@ local M = {
         Misc        = section 'Misc',
         Gameplay    = section 'Gameplay',
     },
+    Binds = {
+        Activate      = 'c_Activate',
+        Favorite      = 'c_Favorite',
+        Category_Prev = 'c_CatPrev',
+        Category_Next = 'c_CatNext',
+        Select_Up     = 'c_SelUp',
+        Select_Down   = 'c_SelDown',
+        Select_Left   = 'c_SelLeft',
+        Select_Right  = 'c_SelRight',
+    },
 }
 
 return M

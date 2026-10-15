@@ -4,7 +4,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 I.Settings.registerGroup {
     key = D.Section.Gameplay,
-    order = 6,
+    order = 3,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'ConfigCategoryGameplay',
