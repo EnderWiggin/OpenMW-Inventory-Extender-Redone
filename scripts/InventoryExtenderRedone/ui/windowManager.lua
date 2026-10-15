@@ -46,6 +46,7 @@ local validDragModes = {
 
 local WindowManager = {}
 
+---@type InventoryExtenderRedone.Context
 WindowManager.ctx = {
     overrides = {
         equipped = {},
@@ -53,6 +54,9 @@ WindowManager.ctx = {
     handlers = {
         onRowUse = {},
         onRowPickup = {},
+    },
+    modifiers = {
+        data = {},
     },
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
@@ -164,6 +168,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         buying = {},
         currentMerchantOffer = 0,
         currentBalance = 0,
+        totalBalance = 0,
     }
 
     if newMode == nil and oldMode == 'Container' and self.ctx.windowArgs.Container then

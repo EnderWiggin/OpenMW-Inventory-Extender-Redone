@@ -1599,6 +1599,7 @@ function Inventory:createData()
     end
 
     local ctx = self.ctx
+    local modifiers = ctx.modifiers.data
 
     ---@param item openmw.Object|{stacks:openmw.Object[], totalCount:number}
     ---@param isBartered boolean
@@ -1702,6 +1703,10 @@ function Inventory:createData()
             rowData.isActive = function() return true end
         end
         ]]
+
+        for i = #modifiers, 1, -1 do
+            modifiers[i].modifier(rowData, ctx, self.type)
+        end
 
         return rowData
     end

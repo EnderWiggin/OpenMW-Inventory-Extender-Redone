@@ -159,6 +159,23 @@ function API.registerRowPickupHandler(id, handler)
     table.insert(windowManager.ctx.handlers.onRowPickup, { id = id, handler = handler })
 end
 
+--- Register a function to modify row data
+--- Handlers are called in reverse order of registration.
+--- @param id string A unique identifier for the handler
+--- @param modifier InventoryExtenderRedone.RowDataModifier The modifier function
+function API.registerRowDataModifier(id, modifier)
+    local modifiers = windowManager.ctx.modifiers.data
+    id = id:lower()
+    for i = 1, #modifiers do
+        local existing = modifiers[i]
+        if existing.id == id then
+            existing.modifier = modifier
+            return
+        end
+    end
+    table.insert(modifiers, { id = id, modifier = modifier })
+end
+
 ---@param itemOrId string|openmw.Object
 function API.isFavorite(itemOrId)
     if not itemOrId then return false end

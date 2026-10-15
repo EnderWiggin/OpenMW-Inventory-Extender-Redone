@@ -20,12 +20,14 @@
 ---@field unregisterCategory fun(key:string)
 ---@field isFavorite fun(itemOrId:string|openmw.Object):boolean
 ---@field registerEquippedOverride fun(id:string, handler:fun(item:openmw.Object, actor:openmw.Object):boolean?) called in reverse registration order until one returns non-nil
+---@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier) called in reverse registration order
 ---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
 ---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
 
 
 ---@class InventoryExtenderRedone.Context
 ---@field handlers InventoryExtenderRedone.Handlers registered row action handlers, called in reverse registration order
+---@field modifiers InventoryExtenderRedone.Modifiers registered row data modifiers, called in reverse registration order
 ---@field overrides InventoryExtenderRedone.Overrides equipped-status overrides, called in reverse order until one returns non-nil
 ---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
 ---@field windowArgs table<string,openmw.Object?> key is one of InventoryExtenderRedone.WindowType; value is the arg passed to show (target NPC/container/merchant)
@@ -124,6 +126,16 @@
 ---@class InventoryExtenderRedone.RowHandlerEntry
 ---@field id string
 ---@field handler fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?
+
+
+---@class InventoryExtenderRedone.Modifiers
+---@field data InventoryExtenderRedone.RowDataModifierEntry[]
+
+---@class InventoryExtenderRedone.RowDataModifierEntry
+---@field id string
+---@field modifier InventoryExtenderRedone.RowDataModifier The modifier function
+
+---@alias InventoryExtenderRedone.RowDataModifier fun(row: InventoryExtenderRedone.RowData, ctx: InventoryExtenderRedone.Context, windowType: string)
 
 
 ---@class InventoryExtenderRedone.Overrides
