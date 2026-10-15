@@ -17,22 +17,24 @@ local function queueDelayedJob(func, frameDelay)
     table.insert(delayedJobs, { func = func, frameDelay = frameDelay })
 end
 
----@param actor any
+---@param player any
 ---@param ownerInfo any
 ---@param globalVariable string?
-local function isStealing(actor, ownerInfo, globalVariable)
+local function isStealing(player, ownerInfo, globalVariable)
     if not ownerInfo then
         return false
     end
     if globalVariable then
-        local globals = world.mwscript.getGlobalVariables(actor)
+        local globals = world.mwscript.getGlobalVariables(player)
         local value = globals[globalVariable]
         if value and value ~= 0 then return false end
     end
     local victim = {}
-    if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
+    if ownerInfo.recordId and ownerInfo.recordId ~= player.recordId then
         local isDead = disposedBodies[ownerInfo.recordId] or false
-        for _, actor in ipairs(world.activeActors) do
+        local activeActors = world.activeActors
+        for i = 1, #activeActors do
+            local actor = activeActors[i]
             if actor.recordId == ownerInfo.recordId and types.Actor.isDead(actor) then
                 isDead = true
                 break
@@ -46,7 +48,7 @@ local function isStealing(actor, ownerInfo, globalVariable)
 
     if ownerInfo.factionId then
         local reqRank = ownerInfo.factionRank or 1
-        if types.NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
+        if types.NPC.getFactionRank(player, ownerInfo.factionId) < reqRank then
             victim.factionId = ownerInfo.factionId
         end
     end
