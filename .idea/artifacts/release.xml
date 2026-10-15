@@ -1,0 +1,24 @@
+<component name="ArtifactManager">
+  <artifact name="release">
+    <output-path>$PROJECT_DIR$/artifacts</output-path>
+    <root id="root">
+      <element id="archive" name="InventoryExtenderTweaks.zip">
+        <element id="directory" name="InventoryExtenderTweaks">
+          <element id="directory" name="scripts">
+            <element id="dir-copy" path="$PROJECT_DIR$/scripts" />
+          </element>
+          <element id="directory" name="icons">
+            <element id="dir-copy" path="$PROJECT_DIR$/icons" />
+          </element>
+          <element id="directory" name="l10n">
+            <element id="dir-copy" path="$PROJECT_DIR$/l10n" />
+          </element>
+          <element id="file-copy" path="$PROJECT_DIR$/LICENSE" />
+          <element id="file-copy" path="$PROJECT_DIR$/credits.txt" />
+          <element id="file-copy" path="$PROJECT_DIR$/CHANGELOG" />
+          <element id="file-copy" path="$PROJECT_DIR$/InventoryExtenderRedone.omwscripts" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
