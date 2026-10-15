@@ -183,7 +183,7 @@ local eventHandlers = {
         local id = props.victim.recordId or props.victim.factionId
         if id then
             windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) +
-            props.count
+                props.count
         end
     end,
     IER_ItemsConfiscated = function(props)
@@ -233,19 +233,25 @@ return {
     interface = API,
     engineHandlers = {
         onSave = function()
+            local ctx = windowManager.ctx
             return {
-                stolenItems = windowManager.ctx.stolenItems,
-                favoriteItems = windowManager.ctx.favoriteItems,
-                favoriteRevision = windowManager.ctx.favoriteRevision,
-                companionProfit = windowManager.ctx.companionProfit,
+                stolenItems = ctx.stolenItems,
+                favoriteItems = ctx.favoriteItems,
+                favoriteRevision = ctx.favoriteRevision,
+                companionProfit = ctx.companionProfit,
+                imported_ie_api = ctx.imported_ie_api,
             }
         end,
         onLoad = function(data)
             if data then
-                windowManager.ctx.stolenItems = data.stolenItems or {}
-                windowManager.ctx.favoriteItems = data.favoriteItems or {}
-                windowManager.ctx.favoriteRevision = data.favoriteRevision or 0
-                windowManager.ctx.companionProfit = data.companionProfit or {}
+                local ctx = windowManager.ctx
+                ctx.stolenItems = data.stolenItems or {}
+                ctx.favoriteItems = data.favoriteItems or {}
+                ctx.favoriteRevision = data.favoriteRevision or 0
+                ctx.companionProfit = data.companionProfit or {}
+                if data.imported_ie_api then
+                    ctx.imported_ie_api = true
+                end
             end
             windowManager:init()
         end,

@@ -9,6 +9,7 @@ local CellUtils = require('scripts.InventoryExtenderRedone.util.cell')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 
+local imported_ie_global
 local disposedBodies = {}
 
 ---@type {func: function, frameDelay: number}[]
@@ -754,6 +755,12 @@ local eventHandlers = {
             props.actor:sendEvent('IER_Update')
         end, 2)
     end,
+    IER_IMPORT_IE_GLOBAL = function(data)
+        if imported_ie_global then return end
+        imported_ie_global = true
+        containerMemory = data.containerMemory or containerMemory
+        disposedBodies = data.disposedBodies or disposedBodies
+    end,
 }
 
 return {
@@ -763,6 +770,7 @@ return {
             return {
                 containerMemory = containerMemory,
                 disposedBodies = disposedBodies,
+                imported_ie_global = imported_ie_global,
             }
         end,
         onLoad = function(data)
@@ -770,6 +778,7 @@ return {
             if data then
                 containerMemory = data.containerMemory or {}
                 disposedBodies = data.disposedBodies or {}
+                imported_ie_global = data.imported_ie_global
             end
         end,
         onUpdate = onUpdate,

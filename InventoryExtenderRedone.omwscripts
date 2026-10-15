@@ -6,3 +6,7 @@ PLAYER: scripts/InventoryExtenderRedone/player.lua
 CUSTOM: scripts/InventoryExtenderRedone/autoEquip.lua
 CONTAINER: scripts/InventoryExtenderRedone/container.lua
 ARMOR, BOOK, CLOTHING, INGREDIENT, LIGHT, MISC_ITEM, POTION, WEAPON, APPARATUS, LOCKPICK, PROBE, REPAIR: scripts/InventoryExtenderRedone/item.lua
+
+# These files intentionally map onto base Inventory Extender - they are used to import saved data, so mid-playthrough update is smooth
+PLAYER: scripts/InventoryExtender/api.lua
+GLOBAL: scripts/InventoryExtender/global.lua
