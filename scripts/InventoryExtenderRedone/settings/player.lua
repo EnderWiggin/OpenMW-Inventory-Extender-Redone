@@ -132,7 +132,7 @@ I.Settings.registerGroup {
         },
         {
             key = 's_ItemViewMode',
-            renderer = 'select',
+            renderer = 'UIToolkit/Dropbox',
             name = 'ItemViewMode',
             description = 'ItemViewModeDesc',
             default = 'ItemViewMode_Table',
@@ -184,7 +184,7 @@ I.Settings.registerGroup {
         },
         {
             key = 's_IconPack',
-            renderer = 'select',
+            renderer = 'UIToolkit/Dropbox',
             name = 'IconPack',
             description = 'IconPackDesc',
             default = 'Base',
@@ -195,7 +195,7 @@ I.Settings.registerGroup {
         },
         {
             key = C.OPT_KEYS.CompareItemsMode,
-            renderer = 'select',
+            renderer = 'UIToolkit/Dropbox',
             name = 'ConfigCompareItemsMode',
             description = 'ConfigCompareItemsModeDesc',
             default = C.COMPARISON_OPTS.Never,
