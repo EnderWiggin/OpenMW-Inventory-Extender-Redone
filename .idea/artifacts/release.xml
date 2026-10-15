@@ -2,8 +2,8 @@
   <artifact name="release">
     <output-path>$PROJECT_DIR$/artifacts</output-path>
     <root id="root">
-      <element id="archive" name="InventoryExtenderTweaks.zip">
-        <element id="directory" name="InventoryExtenderTweaks">
+      <element id="archive" name="InventoryExtenderRedone.zip">
+        <element id="directory" name="InventoryExtenderRedone">
           <element id="directory" name="scripts">
             <element id="dir-copy" path="$PROJECT_DIR$/scripts" />
           </element>
