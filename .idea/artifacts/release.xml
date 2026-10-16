@@ -14,7 +14,7 @@
             <element id="dir-copy" path="$PROJECT_DIR$/l10n" />
           </element>
           <element id="file-copy" path="$PROJECT_DIR$/LICENSE" />
-          <element id="file-copy" path="$PROJECT_DIR$/credits.txt" />
+          <element id="file-copy" path="$PROJECT_DIR$/CREDITS.md" />
           <element id="file-copy" path="$PROJECT_DIR$/CHANGELOG" />
           <element id="file-copy" path="$PROJECT_DIR$/InventoryExtenderRedone.omwscripts" />
         </element>
