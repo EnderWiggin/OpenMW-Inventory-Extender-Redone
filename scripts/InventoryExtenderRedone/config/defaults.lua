@@ -7,7 +7,7 @@ end
 ---@class IER.Config.Defaults
 local M = {
     PageKey = MOD,
-    L10N = 'InventoryExtender',
+    L10N = 'InventoryExtenderRedone',
     Version = '0.0.1',
     API = 1,
     Section = {
