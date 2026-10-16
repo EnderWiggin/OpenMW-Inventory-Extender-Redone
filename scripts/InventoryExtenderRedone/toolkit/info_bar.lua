@@ -30,6 +30,7 @@ end
 function InfoBar:init(opts)
     local maxHeight = opts.maxHeight or 32
     self.providers = {}
+    self.cleanup = {}
     local gap = C.API.GAP and Toolkit.getTheme().Sizes.standardGap or nil
 
     Component.init(self, ui.create {
@@ -48,10 +49,19 @@ function InfoBar:init(opts)
     })
 end
 
+function InfoBar:beforeElementDestroy()
+    for i = 1, #self.cleanup do
+        local cleanup = self.cleanup[i]
+        cleanup()
+    end
+end
+
 ---@param provider InventoryExtenderRedone.InfoBar.Provider
-function InfoBar:addProvider(provider)
+---@param cleanup? fun()
+function InfoBar:addProvider(provider, cleanup)
     if not provider then return end
     self.providers[#self.providers + 1] = provider
+    if cleanup then self.cleanup[#self.cleanup + 1] = cleanup end
     local layout = provider(I.InventoryExtenderRedone.getContext())
     if not layout then return end
     if not C.API.GAP then --TODO: remove when 0.52 is released
