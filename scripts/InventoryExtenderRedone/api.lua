@@ -45,6 +45,10 @@ function API.getContext()
     return windowManager.ctx
 end
 
+function API.getDraggingObject()
+    return windowManager.ctx.dragAndDrop.draggingObject
+end
+
 local lastCrimeLevel
 local function checkCrimeLevel()
     local crimeLevel = types.Player.getCrimeLevel(self)

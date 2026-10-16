@@ -16,6 +16,7 @@
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
 ---@field getCategories fun():InventoryExtenderRedone.Category[]
 ---@field getCategory fun(key:string):InventoryExtenderRedone.Category?
+---@field getDraggingObject fun():openmw.Object? returns dragged object or nil if not dragging
 ---@field registerCategory fun(category:InventoryExtenderRedone.Category)
 ---@field unregisterCategory fun(key:string)
 ---@field isFavorite fun(itemOrId:string|openmw.Object):boolean
