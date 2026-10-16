@@ -1077,6 +1077,7 @@ function Inventory:onOpened(wnd, data, saved)
         horizontalGrid = false, --TODO: read from settings
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = rowHeight,
+        scrollStep = configPlayer.window.i_TableScrollStep,
         noBorder = true,
         onListClicked = function(button)
             if button ~= 1 then return end

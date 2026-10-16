@@ -45,9 +45,9 @@ TableRowHeightMult: Table row height multiplier
 TableRowHeightMultDesc: |-
   Adjust the height of rows in the table view, as a multiplier of text size.
   Range [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], default is {color_header}{default}{color_normal}.
-TableScrollStep: Table scroll step
+TableScrollStep: Scroll step
 TableScrollStepDesc: |-
-  Adjust the scroll step of the table view, in number of rows.
+  Scroll step when clicking arrows or using mouse wheel - rows in table mode, icons in grid mode.
   Range [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], default is {color_header}{default}{color_normal}.
 IconPack: Icon pack
 IconPackDesc: |-

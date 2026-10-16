@@ -45,9 +45,9 @@ TableRowHeightMult: "Множитель высоты строк таблицы"
 TableRowHeightMultDesc: |-
   Регулировка высоты строк в режиме таблицы как множителя размера текста.
   Диапазон [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], по умолчанию {color_header}{default}{color_normal}.
-TableScrollStep: "Шаг прокрутки таблицы"
+TableScrollStep: "Шаг прокрутки"
 TableScrollStepDesc: |-
-  Регулировка шага прокрутки в режиме таблицы (в количестве строк).
+  Регулировка шага прокрутки - количестве строк в режиме таблицы, количестве иконок в режиме сетки. 
   Диапазон [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], по умолчанию {color_header}{default}{color_normal}.
 IconPack: "Пакет иконок"
 IconPackDesc: |-

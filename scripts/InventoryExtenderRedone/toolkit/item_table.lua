@@ -108,6 +108,8 @@ function ItemTable:init(opts)
         scrollWidth = opts.scrollWidth,
         slimScroll = opts.slimScroll,
         noBorder = opts.noBorder,
+        -- rows per arrow click; library default is 2, nil keeps it
+        scrollStep = opts.scrollStep,
     }
 
     self.gridProvider = GridIconProvider:new()
@@ -126,6 +128,8 @@ function ItemTable:init(opts)
         scrollWidth = opts.scrollWidth,
         slimScroll = opts.slimScroll,
         noBorder = opts.noBorder,
+        -- same setting as the list, but counted in icons here
+        scrollStep = opts.scrollStep,
     }
     self.grid:setVisible(self.showGrid)
 
