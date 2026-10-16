@@ -130,7 +130,13 @@ function WindowManager:show(windowName, arg)
     --TODO: or maybe invent mode switching for inventory?
     local windowId = getWindowId(windowName)
     Manager.close(windowId, true)
-    Manager.open(windowId, arg)
+    local _, handler = Manager.open(windowId, arg)
+    ---@cast handler IER.Inventory
+    omwself:sendEvent('IER_Window_Opened', {
+        id = windowId,
+        type = handler.type,
+        mode = handler.mode,
+    })
 end
 
 function WindowManager:hide(windowName, arg, force)
