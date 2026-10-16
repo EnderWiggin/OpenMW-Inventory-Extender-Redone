@@ -9,14 +9,12 @@ local util      = require 'openmw.util'
 local storage   = require 'openmw.storage'
 local types     = require 'openmw.types'
 local omwself   = require 'openmw.self'
-local aux_util  = require 'openmw_aux.util'
 
 local I         = require 'openmw.interfaces'
 local v2        = util.vector2
 local cfgUtil   = require 'scripts.UIToolkit.config.utils'
 local D         = require 'scripts.InventoryExtenderRedone.config.defaults'
 local BINDING   = D.Binds
-local KEY       = input.KEY
 local BUTTON    = input.CONTROLLER_BUTTON
 
 local Actor     = types.Actor
@@ -26,7 +24,6 @@ local NPC       = types.NPC
 
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
-local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
