@@ -37,16 +37,18 @@ ItemViewMode_Grid: Grid
 GridIconScale: Scale grid icons
 GridIconScaleDesc: |-
   Changes size icons in Grid mode to be smaller or larger.
-  Range [0.2 - 5], default is 1.
+  Range [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], default is {color_header}{default}{color_normal}.
 ShowViewModeButton: Show view mode button
 ShowViewModeButtonDesc: |-
   Show a button in the top bar to toggle between table and grid view.
 TableRowHeightMult: Table row height multiplier
 TableRowHeightMultDesc: |-
   Adjust the height of rows in the table view, as a multiplier of text size.
+  Range [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], default is {color_header}{default}{color_normal}.
 TableScrollStep: Table scroll step
 TableScrollStepDesc: |-
   Adjust the scroll step of the table view, in number of rows.
+  Range [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], default is {color_header}{default}{color_normal}.
 IconPack: Icon pack
 IconPackDesc: |-
   Choose which Inventory Extender icon pack to use.

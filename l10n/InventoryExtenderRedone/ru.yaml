@@ -37,16 +37,18 @@ ItemViewMode_Grid: "Сетка"
 GridIconScale: Масштаб иконок Сетки
 GridIconScaleDesc: |-
   Меняет размер иконок в режиме Сетки.
-  Диапазон [0.2 - 5], по умолчанию 1.
+  Диапазон [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], по умолчанию {color_header}{default}{color_normal}.
 ShowViewModeButton: "Показывать кнопку режима"
 ShowViewModeButtonDesc: |-
   Показывать кнопку в верхней панели для переключения между таблицей и сеткой.
 TableRowHeightMult: "Множитель высоты строк таблицы"
 TableRowHeightMultDesc: |-
   Регулировка высоты строк в режиме таблицы как множителя размера текста.
+  Диапазон [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], по умолчанию {color_header}{default}{color_normal}.
 TableScrollStep: "Шаг прокрутки таблицы"
 TableScrollStepDesc: |-
   Регулировка шага прокрутки в режиме таблицы (в количестве строк).
+  Диапазон [{color_header}{min}{color_normal} - {color_header}{max}{color_normal}], по умолчанию {color_header}{default}{color_normal}.
 IconPack: "Пакет иконок"
 IconPackDesc: |-
   Выберите, какой пакет иконок Inventory Extender использовать.

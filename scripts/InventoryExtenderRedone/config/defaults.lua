@@ -18,6 +18,10 @@ local M = {
         Misc        = section 'Misc',
         Gameplay    = section 'Gameplay',
     },
+    -- bounds feed renderer argument, storage defaults and descriptions
+    GridIconScale = { default = 1, min = 0.5, max = 2 },
+    TableRowHeightMult = { default = 1, min = 1, max = 2 },
+    TableScrollStep = { default = 2, min = 1, max = 10 },
     Binds = {
         Activate      = 'c_Activate',
         Favorite      = 'c_Favorite',

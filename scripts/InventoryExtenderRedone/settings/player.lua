@@ -146,13 +146,17 @@ I.Settings.registerGroup {
         },
         {
             key = 'n_GridIconScale',
-            renderer = 'number',
+            renderer = 'UIToolkit/Slider',
             name = 'GridIconScale',
-            description = 'GridIconScaleDesc',
-            default = 1,
+            description = l10n('GridIconScaleDesc', H.mergeTables(H.TextColorParams, D.GridIconScale)),
+            default = D.GridIconScale.default,
+            ---@type UIToolkit.SettingRenderer.Slider
             argument = {
-                min = 0.2,
-                max = 5,
+                min = D.GridIconScale.min,
+                max = D.GridIconScale.max,
+                default = D.GridIconScale.default,
+                step = 0.05,
+                roundToStep = true,
             }
         },
         {
@@ -164,22 +168,32 @@ I.Settings.registerGroup {
         },
         {
             key = 'f_TableRowHeightMult',
-            renderer = 'number',
+            renderer = 'UIToolkit/Slider',
             name = 'TableRowHeightMult',
-            description = 'TableRowHeightMultDesc',
-            default = 1,
+            description = l10n('TableRowHeightMultDesc', H.mergeTables(H.TextColorParams, D.TableRowHeightMult)),
+            default = D.TableRowHeightMult.default,
+            ---@type UIToolkit.SettingRenderer.Slider
             argument = {
-                min = 0.1,
+                min = D.TableRowHeightMult.min,
+                max = D.TableRowHeightMult.max,
+                default = D.TableRowHeightMult.default,
+                step = 0.05,
+                roundToStep = true,
             }
         },
         {
             key = 'i_TableScrollStep',
-            renderer = 'number',
+            renderer = 'UIToolkit/Slider',
             name = 'TableScrollStep',
-            description = 'TableScrollStepDesc',
-            default = 2,
+            description = l10n('TableScrollStepDesc', H.mergeTables(H.TextColorParams, D.TableScrollStep)),
+            default = D.TableScrollStep.default,
+            ---@type UIToolkit.SettingRenderer.Slider
             argument = {
-                min = 0.1,
+                min = D.TableScrollStep.min,
+                max = D.TableScrollStep.max,
+                default = D.TableScrollStep.default,
+                integer = true,
+                step = 1,
             }
         },
         {
