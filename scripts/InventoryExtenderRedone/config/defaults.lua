@@ -8,7 +8,7 @@ end
 local M = {
     PageKey = MOD,
     L10N = 'InventoryExtenderRedone',
-    Version = '0.0.1',
+    Version = '0.0.2',
     API = 1,
     Section = {
         Keybinds    = section 'Keybinds',
