@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact name="CF button">
+    <output-path>$PROJECT_DIR$/artifacts</output-path>
+    <root id="root">
+      <element id="archive" name="IER_CF_button.zip">
+        <element id="directory" name="IER_CF_button">
+          <element id="dir-copy" path="$PROJECT_DIR$/extra/crafting_framework_button" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
