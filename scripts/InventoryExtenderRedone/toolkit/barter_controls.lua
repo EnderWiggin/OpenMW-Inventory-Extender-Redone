@@ -57,7 +57,7 @@ function BarterControls:init(wnd)
 
     local txtAmount = Toolkit.Components.textEdit {
         width = 80,
-        default = ctx.barterState.currentBalance,
+        default = function() return math.abs(ctx.barterState.currentMerchantOffer) end,
         validate = validate,
         onValueChanged = function(num)
             local previousBalance = ctx.barterState.currentBalance
@@ -72,9 +72,6 @@ function BarterControls:init(wnd)
     self.txtAmount = txtAmount
 
     local function modifyBalance(barterState, delta)
-        if barterState.totalBalance == 0 then
-            barterState.currentBalance = 0
-        end
         if barterState.currentBalance < 0 then
             barterState.currentBalance = barterState.currentBalance - delta
         else
@@ -119,9 +116,6 @@ function BarterControls:init(wnd)
         onClick = function()
             local state = ctx.barterState
             local target = wnd.target
-            if state.totalBalance == 0 then
-                state.currentBalance = 0
-            end
 
             if not next(state.selling) and not next(state.buying) then
                 ui.showMessage(constants.Strings.BARTER_NO_ITEMS)

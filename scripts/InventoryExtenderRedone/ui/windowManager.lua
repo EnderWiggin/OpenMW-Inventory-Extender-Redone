@@ -70,7 +70,6 @@ WindowManager.ctx = {
         buying = {},
         currentMerchantOffer = 0,
         currentBalance = 0,
-        totalBalance = 0,
     },
     companionProfit = {},
     pickpocket = nil,
@@ -174,7 +173,6 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         buying = {},
         currentMerchantOffer = 0,
         currentBalance = 0,
-        totalBalance = 0,
     }
 
     if newMode == nil and oldMode == 'Container' and self.ctx.windowArgs.Container then

@@ -152,7 +152,6 @@
 ---@field buying table<string,InventoryExtenderRedone.BarterEntry?> keyed by item.id
 ---@field currentMerchantOffer number
 ---@field currentBalance number
----@field totalBalance number
 ---@field success boolean?
 
 ---@class InventoryExtenderRedone.BarterEntry
