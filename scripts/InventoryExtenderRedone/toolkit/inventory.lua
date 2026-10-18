@@ -1711,7 +1711,7 @@ function Inventory:createData()
         end
         ]]
 
-        for i = #modifiers, 1, -1 do
+        for i = 1, #modifiers do
             modifiers[i].modifier(rowData, ctx, self.type)
         end
 

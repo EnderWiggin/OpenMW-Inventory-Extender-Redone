@@ -164,7 +164,6 @@ function API.registerRowPickupHandler(id, handler)
 end
 
 --- Register a function to modify row data
---- Handlers are called in reverse order of registration.
 --- @param id string A unique identifier for the handler
 --- @param modifier InventoryExtenderRedone.RowDataModifier The modifier function
 function API.registerRowDataModifier(id, modifier)
