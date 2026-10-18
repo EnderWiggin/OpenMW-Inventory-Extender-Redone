@@ -23,8 +23,8 @@
 ---@field registerEquippedOverride fun(id:string, handler:fun(item:openmw.Object, actor:openmw.Object):boolean?) called in reverse registration order until one returns non-nil
 ---@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier)
 ---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
----@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
----@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
+---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false; handlers of the use/equip action (default: R, c_Activate, InfoBar "Use" button)
+---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false; handlers of the pick-up action (default: left-click)
 
 
 ---@class InventoryExtenderRedone.Context
@@ -122,8 +122,8 @@
 
 
 ---@class InventoryExtenderRedone.Handlers
----@field onRowUse InventoryExtenderRedone.RowHandlerEntry[]
----@field onRowPickup InventoryExtenderRedone.RowHandlerEntry[]
+---@field onRowUse InventoryExtenderRedone.RowHandlerEntry[] handlers run by Inventory:onRowUse (use/equip action)
+---@field onRowPickup InventoryExtenderRedone.RowHandlerEntry[] handlers run by Inventory:onRowPickup (pick-up action)
 
 ---@class InventoryExtenderRedone.RowHandlerEntry
 ---@field id string

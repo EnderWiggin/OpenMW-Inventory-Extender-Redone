@@ -460,7 +460,7 @@ local function getStorageSuffix(type)
     return nil
 end
 
-local function canPickupItem(row, windowType, allowOutsideInterface)
+local function canUseItem(row, windowType, allowOutsideInterface)
     local mode = I.UI.getMode()
     if mode == 'Interface' then
         return true
@@ -1114,7 +1114,7 @@ function Inventory:onOpened(wnd, data, saved)
             ctx.dragAndDrop:stopDrag(self.target)
         end,
         onItemClicked = function(row)
-            self:onRowUse(row, false, false)
+            self:onRowPickup(row, false, false)
         end
     }
     local column = saved and saved.sortingColumn or 'Icon'
@@ -1242,10 +1242,10 @@ function Inventory:onInput(bind)
             if ctx.dragAndDrop.draggingObject then
                 ctx.dragAndDrop:stopDrag(self.target)
             elseif row then
-                self:onRowUse(row, true, false)
+                self:onRowPickup(row, true, false)
             end
         elseif row then
-            self:onRowPickup(row, self.type, false)
+            self:onRowUse(row, self.type, false)
         end
     end
 end
@@ -1276,10 +1276,10 @@ function Inventory:onControllerButtonPress(button)
                 if ctx.dragAndDrop.draggingObject then
                     ctx.dragAndDrop:stopDrag(self.target)
                 elseif row then
-                    self:onRowUse(row, true, false)
+                    self:onRowPickup(row, true, false)
                 end
             elseif row then
-                self:onRowPickup(row, self.type, false)
+                self:onRowUse(row, self.type, false)
             end
         end
     end
@@ -1381,19 +1381,19 @@ end
 ---@param row InventoryExtenderRedone.RowData
 ---@param windowType string
 ---@param allowOutsideInterface boolean
-function Inventory:onRowPickup(row, windowType, allowOutsideInterface)
+function Inventory:onRowUse(row, windowType, allowOutsideInterface)
     if I.UI.getMode() == 'Barter' then
-        return self:onRowUse(row, true, true)
+        return self:onRowPickup(row, true, true)
     end
     local ctx = self.ctx
-    for i = #ctx.handlers.onRowPickup, 1, -1 do
-        local handler = ctx.handlers.onRowPickup[i]
+    for i = #ctx.handlers.onRowUse, 1, -1 do
+        local handler = ctx.handlers.onRowUse[i]
         if handler.handler(row, ctx, self.type) == false then
             return false
         end
     end
 
-    if not canPickupItem(row, windowType, allowOutsideInterface) then
+    if not canUseItem(row, windowType, allowOutsideInterface) then
         return false
     end
 
@@ -1411,7 +1411,10 @@ function Inventory:onRowPickup(row, windowType, allowOutsideInterface)
     end
 end
 
-function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
+---@param row InventoryExtenderRedone.RowData
+---@param fromKBMKeybind boolean? true when the action came from a keyboard/controller bind
+---@param forceBarterAction boolean? set when delegated from the use action; keeps the delegation one-way
+function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     local ctx = self.ctx
     if ctx.dragAndDrop.draggingObject then
         if fromKBMKeybind then
@@ -1421,11 +1424,11 @@ function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
     end
 
     if configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
-        return self:onRowPickup(row, self.type, true)
+        return self:onRowUse(row, self.type, true)
     end
 
-    for i = #ctx.handlers.onRowUse, 1, -1 do
-        local handler = ctx.handlers.onRowUse[i]
+    for i = #ctx.handlers.onRowPickup, 1, -1 do
+        local handler = ctx.handlers.onRowPickup[i]
         if handler.handler(row, ctx, self.type) == false then
             return false
         end
@@ -1456,7 +1459,7 @@ function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
     local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
 
     if takeAll and takeOne and not forceBarterAction then
-        self:onRowPickup(row, self.type, false)
+        self:onRowUse(row, self.type, false)
         return
     end
 
@@ -1922,7 +1925,7 @@ function Inventory:initInfoBar()
                 local draggedItem = ctx.dragAndDrop.draggingObject
                 if not draggedItem then return end
                 local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
-                local result = self:onRowPickup(createDraggedActivationRow(ctx, draggedItem),
+                local result = self:onRowUse(createDraggedActivationRow(ctx, draggedItem),
                     activationContext.windowType, true)
                 if result ~= false then
                     ctx.dragAndDrop:stopDrag()

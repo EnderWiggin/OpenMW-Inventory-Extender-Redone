@@ -133,9 +133,9 @@ function API.registerEquippedOverride(id, handler)
     table.insert(windowManager.ctx.overrides.equipped, { id = id, handler = handler })
 end
 
---- Register a function to handle use actions (left-click, unless swapped) on item rows in the inventory.
---- By default, this equips or uses the item. In barter, it adds/removes the item from the current barter offer.
---- Handlers are called in reverse order of registration until one returns false, at which point the click is not processed further. If all handlers return true, the default click behavior is executed.
+--- Register a function to handle use actions (default: R, or left-click if swapped) on item rows in the inventory.
+--- By default, this equips or uses the item. In barter, the use action is routed to the pick-up handler.
+--- Handlers are called in reverse order of registration until one returns false, at which point the activation is not processed further. If all handlers return true, the default activation behavior is executed.
 --- @param id string A unique identifier for the handler
 --- @param handler fun(row: table, ctx: table, windowType: string):boolean? The handler function
 function API.registerRowUseHandler(id, handler)
@@ -148,9 +148,9 @@ function API.registerRowUseHandler(id, handler)
     table.insert(windowManager.ctx.handlers.onRowUse, { id = id, handler = handler })
 end
 
---- Register a function to handle pick-up actions (default: R, or left-click if swapped) on item rows in the inventory.
---- By default, this picks up the item or drops/transfers it if Alt is held. In barter, it is routed to the "use" handler.
---- Handlers are called in reverse order of registration until one returns false, at which point the activation is not processed further. If all handlers return true, the default activation behavior is executed.
+--- Register a function to handle pick-up actions (left-click, unless swapped) on item rows in the inventory.
+--- By default, this picks up the item or drops/transfers it if Alt is held. In barter, it adds/removes the item from the current barter offer.
+--- Handlers are called in reverse order of registration until one returns false, at which point the click is not processed further. If all handlers return true, the default click behavior is executed.
 --- @param id string A unique identifier for the handler
 --- @param handler fun(row: table, ctx: table, windowType: string):boolean? The handler function
 function API.registerRowPickupHandler(id, handler)
