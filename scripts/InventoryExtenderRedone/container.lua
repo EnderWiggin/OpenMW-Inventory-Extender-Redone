@@ -8,8 +8,6 @@ local eventHandlers = {
         anim.playBlended(self, 'containerclose', { priority = anim.PRIORITY.Scripted })
     end,
 }
--- deprecated
-eventHandlers.MI_ContainerClosed = eventHandlers.IER_ContainerClosed
 
 return {
     engineHandlers = {
