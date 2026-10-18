@@ -163,7 +163,7 @@ end
 
 ---@param name string
 ---@param path string
----@param color openmw.util.Color
+---@param color openmw.util.Color?
 ---@param idx integer
 ---@param n integer
 local function makeBadge(name, path, color, idx, n)
@@ -210,6 +210,19 @@ function GridIcon:getBadgeLayouts(data, existing)
             #layouts, n)
         if not was['stolen'] then changed = true end
         was['stolen'] = nil
+    end
+
+    local ctx = I.InventoryExtenderRedone.getContext()
+    local custom = ctx.modifiers.badge
+    for i = 1, #custom do
+        local badge = custom[i]
+        local name = badge.id
+        local icon, color = badge.provider(data, ctx)
+        if icon then
+            layouts[#layouts + 1] = makeBadge(name, icon, color, #layouts, n)
+            if not was[name] then changed = true end
+            was[name] = nil
+        end
     end
 
     if not changed and next(was) then

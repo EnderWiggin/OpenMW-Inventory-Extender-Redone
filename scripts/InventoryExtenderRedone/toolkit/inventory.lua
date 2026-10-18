@@ -925,7 +925,7 @@ function Inventory:onOpened(wnd, data, saved)
 
     ---@param name string
     ---@param path string
-    ---@param color openmw.util.Color
+    ---@param color openmw.util.Color?
     ---@param sz number
     ---@param idx integer
     local function makeBadge(name, path, color, sz, idx)
@@ -979,6 +979,17 @@ function Inventory:onOpened(wnd, data, saved)
             was['stolen'] = nil
         end
 
+        local custom = ctx.modifiers.badge
+        for i = 1, #custom do
+            local badge = custom[i]
+            local name = badge.id
+            local icon, color = badge.provider(row, ctx)
+            if icon then
+                layouts[#layouts + 1] = makeBadge(name, icon, color, sz, #layouts)
+                if not was[name] then changed = true end
+                was[name] = nil
+            end
+        end
 
         if not changed and next(was) then
             changed = true

@@ -22,6 +22,7 @@
 ---@field isFavorite fun(itemOrId:string|openmw.Object):boolean
 ---@field registerEquippedOverride fun(id:string, handler:fun(item:openmw.Object, actor:openmw.Object):boolean?) called in reverse registration order until one returns non-nil
 ---@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier) called in reverse registration order
+---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
 ---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
 ---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
 
@@ -131,12 +132,19 @@
 
 ---@class InventoryExtenderRedone.Modifiers
 ---@field data InventoryExtenderRedone.RowDataModifierEntry[]
+---@field badge InventoryExtenderRedone.RowBadgeModifierEntry[]
 
 ---@class InventoryExtenderRedone.RowDataModifierEntry
 ---@field id string
 ---@field modifier InventoryExtenderRedone.RowDataModifier The modifier function
 
 ---@alias InventoryExtenderRedone.RowDataModifier fun(row: InventoryExtenderRedone.RowData, ctx: InventoryExtenderRedone.Context, windowType: string)
+
+---@class InventoryExtenderRedone.RowBadgeModifierEntry
+---@field id string
+---@field provider InventoryExtenderRedone.RowBadgeProvider The provider function. Must return icon path with optional color, or nil if no need for a badge.
+
+---@alias InventoryExtenderRedone.RowBadgeProvider fun(row: InventoryExtenderRedone.RowData, ctx: InventoryExtenderRedone.Context):string|nil, openmw.util.Color?
 
 
 ---@class InventoryExtenderRedone.Overrides

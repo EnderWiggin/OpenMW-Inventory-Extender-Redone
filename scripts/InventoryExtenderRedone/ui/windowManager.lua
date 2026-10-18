@@ -57,6 +57,7 @@ WindowManager.ctx = {
     },
     modifiers = {
         data = {},
+        badge = {},
     },
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,

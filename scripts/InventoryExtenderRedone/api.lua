@@ -180,6 +180,22 @@ function API.registerRowDataModifier(id, modifier)
     table.insert(modifiers, { id = id, modifier = modifier })
 end
 
+--- Register a function to provide row badges
+--- @param id string A unique identifier for the handler
+--- @param provider InventoryExtenderRedone.RowBadgeProvider The provider function. Must return icon path with optional color, or nil if no need for a badge.
+function API.registerRowBadge(id, provider)
+    local badges = windowManager.ctx.modifiers.badge
+    id = id:lower()
+    for i = 1, #badges do
+        local existing = badges[i]
+        if existing.id == id then
+            existing.provider = provider
+            return
+        end
+    end
+    table.insert(badges, { id = id, provider = provider })
+end
+
 ---@param itemOrId string|openmw.Object
 function API.isFavorite(itemOrId)
     if not itemOrId then return false end
