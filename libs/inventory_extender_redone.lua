@@ -21,7 +21,7 @@
 ---@field unregisterCategory fun(key:string)
 ---@field isFavorite fun(itemOrId:string|openmw.Object):boolean
 ---@field registerEquippedOverride fun(id:string, handler:fun(item:openmw.Object, actor:openmw.Object):boolean?) called in reverse registration order until one returns non-nil
----@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier) called in reverse registration order
+---@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier)
 ---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
 ---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
 ---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false
@@ -29,7 +29,7 @@
 
 ---@class InventoryExtenderRedone.Context
 ---@field handlers InventoryExtenderRedone.Handlers registered row action handlers, called in reverse registration order
----@field modifiers InventoryExtenderRedone.Modifiers registered row data modifiers, called in reverse registration order
+---@field modifiers InventoryExtenderRedone.Modifiers registered modifiers
 ---@field overrides InventoryExtenderRedone.Overrides equipped-status overrides, called in reverse order until one returns non-nil
 ---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
 ---@field windowArgs table<string,openmw.Object?> key is one of InventoryExtenderRedone.WindowType; value is the arg passed to show (target NPC/container/merchant)

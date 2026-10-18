@@ -12,11 +12,24 @@ local helpers    = require 'scripts.UIToolkit.tooltips.utils'
 
 local Weapon   = types.Weapon
 local Tooltips = I.UTKTooltips
+local IER      = I.InventoryExtenderRedone
 local NAME     = 'toxicology-poisons'
 local ICON     = 'icons/Toxicology/poison_badge.dds'
 local COLOR    = util.color.rgb(110 / 255, 148 / 255, 87 / 255)
 local BUILDERS = Tooltips.builders
 
+
+IER.registerRowBadge('toxicology-coatings', function(row)
+    ---@cast row InventoryExtenderRedone.RowData
+    local object = row.item
+    if not object then return end
+
+    if not Weapon.objectIsInstance(object) then return end
+    local data = toxicology.getActivePoisons(object)
+    if not data then return end
+
+    return ICON
+end)
 
 Tooltips.registerBuilder(NAME, function(item)
     local layers = item.layers --[[@as {name:string, charges:number}[] ]]
@@ -59,8 +72,9 @@ Tooltips.addPreCreateTooltipHandler(function(recipe, tooltip)
     local object = tooltip.object
     if not object then return end
 
+    if not Weapon.objectIsInstance(object) then return end
     local data = toxicology.getActivePoisons(object)
-    if not data or not Weapon.objectIsInstance(object) then return end
+    if not data then return end
 
     local items = recipe.items
     local found, index = helpers.findByName(items, Tooltips.CONTENT.Footer)
