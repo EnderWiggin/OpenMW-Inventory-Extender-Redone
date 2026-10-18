@@ -487,6 +487,27 @@ local function canPickupItem(row, windowType, allowOutsideInterface)
     return false
 end
 
+-- Tries to unequip item. Returns true if it was unequipped
+-- The engine resets the OnPCEquip script var only when an item leaves an equipment slot,
+-- so an equipped item has to be unequipped before it is dragged or used, not just moved.
+---@param item openmw.Object
+---@return boolean equippedItem true if the item was equipped and got unequipped
+local function tryUnequipping(item)
+    local equipment = omwself.type.getEquipment(omwself)
+    for slot, equippedItem in pairs(equipment) do
+        if equippedItem == item then
+            equipment[slot] = nil
+            omwself.type.setEquipment(omwself, equipment)
+            local sound = helpers.getItemSound(item, 'down')
+            if sound then
+                ambient.playSound(sound)
+            end
+            return true
+        end
+    end
+    return false
+end
+
 ---@class IER.Inventory: UIToolkit.WindowHandler
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
@@ -1376,19 +1397,9 @@ function Inventory:onRowPickup(row, windowType, allowOutsideInterface)
         return false
     end
 
-    if omwself.type.hasEquipped and omwself.type.hasEquipped(omwself, row.item) then
-        local equipment = omwself.type.getEquipment(omwself)
-        for slot, equippedItem in pairs(equipment) do
-            if equippedItem == row.item then
-                equipment[slot] = nil
-                omwself.type.setEquipment(omwself, equipment)
-                local sound = helpers.getItemSound(row.item, 'down')
-                if sound then
-                    ambient.playSound(sound)
-                end
-                omwself:sendEvent('IER_Update')
-                break
-            end
+    if helpers.isItemEquipped(row.item, omwself) then
+        if tryUnequipping(row.item) then
+            omwself:sendEvent('IER_Update')
         end
     else
         core.sendGlobalEvent('IER_UseItem', {
@@ -1525,6 +1536,9 @@ function Inventory:onRowUse(row, fromKBMKeybind, forceBarterAction)
                 end
             end
         else
+            if helpers.isItemEquipped(row.item, omwself) then
+                tryUnequipping(row.item)
+            end
             ctx.dragAndDrop:startDrag(
                 row.item,
                 self.target,
