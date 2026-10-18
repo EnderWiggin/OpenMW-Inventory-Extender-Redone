@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact name="Katars">
+    <output-path>$PROJECT_DIR$/artifacts</output-path>
+    <root id="root">
+      <element id="archive" name="IER_Katars_Type.zip">
+        <element id="directory" name="IER_Katars_Type">
+          <element id="dir-copy" path="$PROJECT_DIR$/extra/katars" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
