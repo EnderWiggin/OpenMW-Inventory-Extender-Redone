@@ -1,41 +1,24 @@
-1.3.2 (14.10.26)
-- improved fix for the pickup/put down error
+0.0.4 (2026-10-19)
+- fixed OnPCEquip not resetting on drop/transfer when holding ALT
+- added option to show grid with horizontal scroll (on by default)
+- API: added method to get window handler
+- toxicology mod: update inventory when poison is applied
+- crafting framework mod: added craft quality to tooltips
 
-1.3.1 (13.10.26)
-- added support for new cursor API
-- fixed rare errors when picking up objects (eventHandler[IE_MoveInto] failed. Lua error: Can't remove 8 of 0 items)
+0.0.3 (2026-10-18)
+- fixed merchants refusing to sell
+- ported OnPCEquip fix from base IE
+- added example mini-mod that changes weapon type for katars and knuckledusters
+- API: added registerRowBadge - registers providers for custom badges
+- API: registered data modifiers are now called in registration order, not reversed
+- API: swapped names of the onPickup/onUse as their usage is actually swapped from naming semantics
+- added toxicology interop mod - shows poison badge and coating in tooltip
 
-1.3.0 (02.10.26)
-- removed 2nd positioning teleport for dropped items, this fixes on item placed interactions:
-  - mwscript's `onpcdrop` (for example `Paradox Scale` from `The Popular Plague` mod)
-  - lua's `onItemActive` handlers (for example OAAB's mannequins)
-- persistent corpse detection: if 0.52's `isPersistent` property is available - use it
-- added OAAB's mannequins to persistent corpse list
-- enabled auto equip for corpses on item transfer - fixes mannequins not equipping items
+0.0.2 (2026-10-17)
+- API: IER_Window_Opened event with window details
+- API: added getDraggingObject
+- added example mini-mod that adds Crafting Framework's button to IER
 
-1.2.0 (16.09.26) Most of these changes were released way earlier as unversioned tweaks
-- fixed errors happening if controller shoulder button is pressed while inventory is not open
-- distinguish left and right apparel in type column
-- new API to disable all windows (requested by Quick Loot mod to facilitate activation of scripted containers)
-- added setting to scale icons in grid mode
-- made modified alchemy determine known effects, like in vanilla
-- fixed some TR Data ingredients not displaying all their effects because they have gaps in effects
-- do not send mercantile skillUsed if skillGain is 0 - same as vanilla
-- scale effect, value, weight and armor class icons with text size
-- fixed wrong Mercantile skill gains
-- fixed merchants not selling not-equipped items that have same item record as the ones they have equipped
-- show proper message when trying to sell/buy/store summoned items
-- added option for tooltips to show stolen item details
-- fixed no stolen indicator for items in owned containers
-- added option to ignore container capacity (in Gameplay section)
-- send skill use when successfully pickpocketing item
-- vanilla parity: do not consider items and containers being owned it they have global variable and that variable has non 0 value
 
-1.1.0 (6/4/26)
-- Added Russian localization by Sergey Rudyi
-
-1.0.1 (6/3/26)
-- Fixed error spam when pressing category cycle buttons without a focused item
-
-1.0.0 (6/2/26)
-- Initial release
+0.0.1 (2026-10-16)
+- first public release 
