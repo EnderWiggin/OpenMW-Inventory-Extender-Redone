@@ -21,6 +21,7 @@ local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
+local Player = types.Player
 local l10n = core.l10n(D.L10N)
 
 if not ui.layers.indexOf('DragBlocker') then
@@ -79,9 +80,27 @@ function DragAndDrop:getHoveredGameObject(position)
     end)
 end
 
+-- Tries to unequip item from player. Returns true if it was unequipped.
+function DragAndDrop:tryUnequipping(item)
+    local equipment = Player.getEquipment(omwself) --[[@as openmw.types.EquipmentTable]]
+    for slot, equippedItem in pairs(equipment) do
+        if equippedItem == item then
+            equipment[slot] = nil
+            Player.setEquipment(omwself, equipment)
+            local sound = helpers.getItemSound(item, 'down')
+            if sound then
+                ambient.playSound(sound)
+            end
+            return true
+        end
+    end
+    return false
+end
+
 function DragAndDrop:startDrag(item, source, count, pickpocket, activationContext)
     self.draggingCount = util.clamp(count or item.count, 1, item.count)
     self.draggingActivationContext = activationContext
+    self:tryUnequipping(item)
 
     core.sendGlobalEvent('IER_MoveInto', {
         obj = item,
@@ -212,6 +231,7 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
             end
         end
 
+        self:tryUnequipping(object)
         core.sendGlobalEvent('IER_MoveInto', {
             obj = object,
             count = self.draggingCount or object.count,
@@ -234,6 +254,9 @@ function DragAndDrop:moveAll(source, destination, items)
             ambient.playSound(upSound)
         end
     end
+    -- for now this is only used to transfer items to the player
+    -- TODO: in case it will be used to transfer from the player - ensure all items unequipped first
+    -- unless issue #9411 is fixed
     core.sendGlobalEvent('IER_MoveAll', {
         source = source,
         destination = destination,
@@ -292,6 +315,7 @@ function DragAndDrop:dropAt(object, count, position)
         ambient.playSound(downSound)
     end
 
+    self:tryUnequipping(object)
     core.sendGlobalEvent('IER_Teleport', {
         obj = object,
         count = count or object.count,
