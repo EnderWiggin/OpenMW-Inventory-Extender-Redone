@@ -22,6 +22,7 @@ local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local Player = types.Player
+local playerInventory = Player.inventory(omwself)
 local l10n = core.l10n(D.L10N)
 
 if not ui.layers.indexOf('DragBlocker') then
@@ -491,7 +492,7 @@ function DragAndDrop:_onPress()
     if not configPlayer.misc.b_TooltipCompatibilityMode then return end
 
     self._lastInvState = {}
-    local inventory = types.Player.inventory(omwself):getAll()
+    local inventory = playerInventory:getAll()
     for i = 1, #inventory do
         local item = inventory[i]
         self._lastInvState[item.id] = { recordId = item.recordId, count = item.count }
@@ -509,7 +510,7 @@ function DragAndDrop:_onRelease()
     end
 
     local instant = input.isAltPressed()
-    local inventory = types.Player.inventory(omwself):getAll()
+    local inventory = playerInventory:getAll()
     for i = 1, #inventory do
         local item = inventory[i]
         local lastState = self._lastInvState[item.id]
