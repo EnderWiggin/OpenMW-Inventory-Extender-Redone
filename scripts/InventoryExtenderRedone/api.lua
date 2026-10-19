@@ -38,6 +38,12 @@ function API.hide(windowName, arg, force)
     windowManager:hide(windowName, arg, force)
 end
 
+---@param windowName InventoryExtenderRedone.WindowType
+---@return IER.Inventory? handler the window's handler, nil if the window is not open
+function API.getWindow(windowName)
+    return windowManager:getWindow(windowName)
+end
+
 ---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
 function API.forEachOpenWindow(apply)
     return windowManager:forEachOpenWindow(apply)

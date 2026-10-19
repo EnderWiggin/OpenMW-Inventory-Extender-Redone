@@ -12,6 +12,7 @@
 ---@field disableAllWindows fun(value:boolean) temporarily suppress IE windows; does NOT restore vanilla windows - nothing is shown
 ---@field show fun(windowName:string, arg:any?) windowName is one of InventoryExtenderRedone.WindowType; arg is the target NPC/container/merchant
 ---@field hide fun(windowName:string, arg:any?, force:boolean?)
+---@field getWindow fun(windowName:InventoryExtenderRedone.WindowType):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
 ---@field getCategories fun():InventoryExtenderRedone.Category[]

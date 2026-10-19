@@ -143,6 +143,12 @@ function WindowManager:hide(windowName, arg, force)
     Manager.close(getWindowId(windowName))
 end
 
+---@param windowName InventoryExtenderRedone.WindowType
+---@return IER.Inventory? handler the window's handler, nil if the window is not open
+function WindowManager:getWindow(windowName)
+    return Manager.getWindow(getWindowId(windowName)) --[[@as  IER.Inventory?]]
+end
+
 ---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
 function WindowManager:forEachOpenWindow(apply)
     for i = 1, #WINDOW_TYPES do
