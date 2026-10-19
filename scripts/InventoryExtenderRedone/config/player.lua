@@ -21,6 +21,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 ---@field f_TableRowHeightMult number
 ---@field i_TableScrollStep number
 ---@field b_ShowViewModeButton boolean
+---@field b_HorizontalGrid boolean
 ---@field s_IconPack string
 ---@field s_CompareItemsMode string
 ---@field b_SortingBarterReverseEquipped boolean

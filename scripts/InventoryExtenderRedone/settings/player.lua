@@ -167,6 +167,13 @@ I.Settings.registerGroup {
             default = true,
         },
         {
+            key = 'b_HorizontalGrid',
+            renderer = 'checkbox',
+            name = 'HorizontalGrid',
+            description = 'HorizontalGridDesc',
+            default = true,
+        },
+        {
             key = 'f_TableRowHeightMult',
             renderer = 'UIToolkit/Slider',
             name = 'TableRowHeightMult',

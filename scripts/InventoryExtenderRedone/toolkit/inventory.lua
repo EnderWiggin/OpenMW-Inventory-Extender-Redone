@@ -1082,7 +1082,7 @@ function Inventory:onOpened(wnd, data, saved)
         defaultColumn = 'Icon',
         showGrid = getItemViewMode() == 'ItemViewMode_Grid',
         getBadges = getItemBadgeState,
-        horizontalGrid = false, --TODO: read from settings
+        horizontalGrid = configPlayer.window.b_HorizontalGrid,
         size = v2(inner.x, inner.y - topBarHeight - infoHeight - 4),
         rowHeight = rowHeight,
         scrollStep = configPlayer.window.i_TableScrollStep,
