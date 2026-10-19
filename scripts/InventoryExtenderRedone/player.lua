@@ -17,6 +17,19 @@ local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
 
 local l10n = core.l10n(D.L10N)
 
+local Weapon = types.Weapon
+local Armor = types.Armor
+local Clothing = types.Clothing
+local Potion = types.Potion
+local Ingredient = types.Ingredient
+local Book = types.Book
+local Miscellaneous = types.Miscellaneous
+local Lockpick = types.Lockpick
+local Probe = types.Probe
+local Light = types.Light
+local Apparatus = types.Apparatus
+local Repair = types.Repair
+
 local function isFavorited(item)
     local ctx = API.getContext and API.getContext()
     if not ctx or not ctx.favoriteItems or not item then
@@ -83,7 +96,7 @@ local defaultCategories = {
     },
     {
         key = 'Weapon',
-        filter = types.Weapon.objectIsInstance,
+        filter = Weapon.objectIsInstance,
         hiddenColumns = {
             Class = true,
             AR = true,
@@ -92,7 +105,7 @@ local defaultCategories = {
     },
     {
         key = 'Armor',
-        filter = types.Armor.objectIsInstance,
+        filter = Armor.objectIsInstance,
         hiddenColumns = {
             Damage = true,
             Quality = true,
@@ -100,24 +113,24 @@ local defaultCategories = {
     },
     {
         key = 'Clothing',
-        filter = types.Clothing.objectIsInstance,
+        filter = Clothing.objectIsInstance,
         hiddenColumns = generalHiddenColumns,
     },
     {
         key = 'Potion',
-        filter = types.Potion.objectIsInstance,
+        filter = Potion.objectIsInstance,
         hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Ingredient',
-        filter = types.Ingredient.objectIsInstance,
+        filter = Ingredient.objectIsInstance,
         hiddenColumns = noTypeHiddenColumns,
     },
     {
         key = 'Scroll',
         filter = function(item)
-            if types.Book.objectIsInstance(item) then
-                local record = types.Book.records[item.recordId]
+            if Book.objectIsInstance(item) then
+                local record = Book.records[item.recordId]
                 return record and record.enchant
             end
         end,
@@ -126,8 +139,8 @@ local defaultCategories = {
     {
         key = 'Book',
         filter = function(item)
-            if types.Book.objectIsInstance(item) then
-                local record = types.Book.records[item.recordId]
+            if Book.objectIsInstance(item) then
+                local record = Book.records[item.recordId]
                 return record and not record.enchant
             end
         end,
@@ -136,8 +149,8 @@ local defaultCategories = {
     {
         key = 'Key',
         filter = function(item)
-            if types.Miscellaneous.objectIsInstance(item) then
-                local record = types.Miscellaneous.records[item.recordId]
+            if Miscellaneous.objectIsInstance(item) then
+                local record = Miscellaneous.records[item.recordId]
                 return record and record.isKey
             end
         end,
@@ -146,11 +159,11 @@ local defaultCategories = {
     {
         key = 'Tool',
         filter = function(item)
-            return types.Lockpick.objectIsInstance(item) or
-                types.Probe.objectIsInstance(item) or
-                types.Light.objectIsInstance(item) or
-                types.Apparatus.objectIsInstance(item) or
-                types.Repair.objectIsInstance(item)
+            return Lockpick.objectIsInstance(item) or
+                Probe.objectIsInstance(item) or
+                Light.objectIsInstance(item) or
+                Apparatus.objectIsInstance(item) or
+                Repair.objectIsInstance(item)
         end,
         hiddenColumns = {
             Class = true,
@@ -161,7 +174,7 @@ local defaultCategories = {
     {
         key = 'Misc',
         filter = function(item)
-            return types.Miscellaneous.objectIsInstance(item) and not types.Miscellaneous.records[item.recordId].isKey
+            return Miscellaneous.objectIsInstance(item) and not Miscellaneous.records[item.recordId].isKey
         end,
         hiddenColumns = noTypeHiddenColumns,
     }

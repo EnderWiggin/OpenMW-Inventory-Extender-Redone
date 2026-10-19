@@ -4,18 +4,22 @@ local types = require('openmw.types')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 
+local NPC = types.NPC
+local Actor = types.Actor
+local Item = types.Item
+
 local Pickpocket = {}
 
 local function getSneak(actor)
-    return types.NPC.stats.skills.sneak(actor).modified
+    return NPC.stats.skills.sneak(actor).modified
 end
 
 local function getAgility(actor)
-    return types.Actor.stats.attributes.agility(actor).modified
+    return Actor.stats.attributes.agility(actor).modified
 end
 
 local function getLuck(actor)
-    return types.Actor.stats.attributes.luck(actor).modified
+    return Actor.stats.attributes.luck(actor).modified
 end
 
 local function getChance(player, target, valueTerm)
@@ -33,7 +37,7 @@ local function getChance(player, target, valueTerm)
 end
 
 function Pickpocket.isTarget(target)
-    return target ~= nil and types.NPC.objectIsInstance(target) and not types.Actor.isDead(target)
+    return target ~= nil and NPC.objectIsInstance(target) and not Actor.isDead(target)
 end
 
 function Pickpocket.createSession(player, target)
@@ -41,7 +45,7 @@ function Pickpocket.createSession(player, target)
     local pcSneak = getSneak(player)
 
     for _, item in ipairs(target.type.inventory(target):getAll()) do
-        if types.Item.isCarriable(item) and not target.type.hasEquipped(target, item) and math.random(100) <= pcSneak then
+        if Item.isCarriable(item) and not target.type.hasEquipped(target, item) and math.random(100) <= pcSneak then
             visibleItems[item.id] = true
         end
     end

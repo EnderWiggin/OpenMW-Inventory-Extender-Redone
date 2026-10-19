@@ -19,6 +19,9 @@ local Component   = require 'scripts.UIToolkit.components.component'
 local constants   = require('scripts.InventoryExtenderRedone.util.constants')
 local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 
+local Actor       = types.Actor
+local NPC         = types.NPC
+
 
 local LBL_SPEND = l10n('UI_Barter_Spend')
 local LBL_GAIN  = l10n('UI_Barter_Gain')
@@ -103,7 +106,7 @@ function BarterControls:init(wnd)
         text = BTN_MAX,
         style = 'thin',
         onClick = function()
-            local barterGold = types.Actor.getBarterGold(wnd.target)
+            local barterGold = Actor.getBarterGold(wnd.target)
             ctx.barterState.currentBalance = barterGold
             txtAmount:setValue(barterGold)
         end,
@@ -153,7 +156,7 @@ function BarterControls:init(wnd)
             end
 
             local offerAccepted, skillGain = barterUtils.haggle(target, state.currentBalance, state.currentMerchantOffer)
-            if types.NPC.objectIsInstance(target) then
+            if NPC.objectIsInstance(target) then
                 core.sendGlobalEvent('IER_ModDisposition', {
                     target = target,
                     player = omwself,

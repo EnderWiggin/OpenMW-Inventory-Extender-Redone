@@ -5,6 +5,8 @@ local types = require('openmw.types')
 
 local PrisonMarkers = require('scripts.InventoryExtenderRedone.util.prisonMarkers')
 
+local Door = types.Door
+
 local validMarkers = {}
 
 for contentFile, markers in pairs(PrisonMarkers) do
@@ -148,13 +150,13 @@ function CellUtils.getClosestMarker(object)
                 end
 
                 -- Check doors
-                for _, door in ipairs(cell:getAll(types.Door)) do
-                    if types.Door.isTeleport(door) then
-                        local destCell = types.Door.destCell(door)
+                for _, door in ipairs(cell:getAll(Door)) do
+                    if Door.isTeleport(door) then
+                        local destCell = Door.destCell(door)
                         if destCell then
                             if destCell.isExterior then
                                 -- If we found an exit to exterior, calculate closest marker from there
-                                local pos = types.Door.destPosition(door)
+                                local pos = Door.destPosition(door)
                                 return getClosestMarkerFromExteriorPosition(pos)
                             elseif not checkedCells[destCell.id] and not currentCells[destCell] then
                                 checkedCells[destCell.id] = true

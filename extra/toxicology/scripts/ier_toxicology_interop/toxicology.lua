@@ -3,6 +3,11 @@
 local storage = require 'openmw.storage'
 local types   = require 'openmw.types'
 
+local Weapon  = types.Weapon
+local Potion  = types.Potion
+
+local WeaponType = Weapon.TYPE
+
 
 local M = {}
 
@@ -43,12 +48,12 @@ local NAMESPACE_KEY = '__activeNamespace'
 ---@param item openmw.Object
 ---@return string? storage key without the load namespace
 local function poisonStorageKey(item)
-    if not types.Weapon.objectIsInstance(item) then return nil end
-    local rec = types.Weapon.record(item)
+    if not Weapon.objectIsInstance(item) then return nil end
+    local rec = Weapon.record(item)
     if not rec then return nil end
     -- Thrown weapons are keyed by record id: the thrown object leaves the inventory before the
     -- projectile lands, so an object-id key would be gone by the time the hit resolves.
-    if rec.type == types.Weapon.TYPE.MarksmanThrown then
+    if rec.type == WeaponType.MarksmanThrown then
         return THROWN_POISON_PREFIX .. tostring(item.recordId)
     end
     return item.id
@@ -89,7 +94,7 @@ local LAYER_KEYS = {
 ---@param poisonId string
 ---@return string?
 local function poisonName(raw, poisonId)
-    local record = types.Potion.records[poisonId]
+    local record = Potion.records[poisonId]
     if record then return record.name end
     if not raw then return nil end
     local snapshot = raw.snapshot and raw.snapshot[poisonId]

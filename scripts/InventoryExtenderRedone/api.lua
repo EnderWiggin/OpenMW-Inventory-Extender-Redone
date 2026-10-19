@@ -11,6 +11,8 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
 
+local Player = types.Player
+
 local API = {}
 
 API.VERSION = D.API
@@ -51,7 +53,7 @@ end
 
 local lastCrimeLevel
 local function checkCrimeLevel()
-    local crimeLevel = types.Player.getCrimeLevel(self)
+    local crimeLevel = Player.getCrimeLevel(self)
     if lastCrimeLevel and crimeLevel < lastCrimeLevel then
         core.sendGlobalEvent('IER_TryConfiscate', { player = self, stolenMap = windowManager.ctx.stolenItems })
     end

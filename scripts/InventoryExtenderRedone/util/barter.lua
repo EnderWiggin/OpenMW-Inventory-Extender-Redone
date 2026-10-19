@@ -6,6 +6,14 @@ local core = require('openmw.core')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 
+local Weapon = types.Weapon
+local Armor = types.Armor
+local Lockpick = types.Lockpick
+local Probe = types.Probe
+local Repair = types.Repair
+local Creature = types.Creature
+local NPC = types.NPC
+
 local function getEffectiveValue(item, count)
     local basePrice = item.type.record(item).value
 
@@ -13,14 +21,14 @@ local function getEffectiveValue(item, count)
     local itemRecord = item.type.record(item)
 
     local x
-    if types.Weapon.objectIsInstance(item) or types.Armor.objectIsInstance(item) then
+    if Weapon.objectIsInstance(item) or Armor.objectIsInstance(item) then
         local condition = itemData.condition
         if condition then
             x = basePrice * (condition / itemRecord.health)
         else
             x = basePrice
         end
-    elseif types.Lockpick.objectIsInstance(item) or types.Probe.objectIsInstance(item) or types.Repair.objectIsInstance(item) then
+    elseif Lockpick.objectIsInstance(item) or Probe.objectIsInstance(item) or Repair.objectIsInstance(item) then
         local uses = itemData.condition or 0
         local maxUses = itemRecord.maxCondition
         x = basePrice * (uses / maxUses)
@@ -37,7 +45,7 @@ local function haggle(npc, playerOffer, merchantOffer)
         return true
     end
 
-    if types.Creature.objectIsInstance(npc) then
+    if Creature.objectIsInstance(npc) then
         return false
     end
 
@@ -83,7 +91,7 @@ local function getBarterOffer(merchant, basePrice, buying)
     if basePrice == 0 then
         return basePrice
     end
-    if types.Creature.objectIsInstance(merchant) then
+    if Creature.objectIsInstance(merchant) then
         return math.max(1, math.modf(basePrice))
     end
 
@@ -121,7 +129,7 @@ local function updateOffer(ctx)
         local basePrice = getEffectiveValue(sellingData.item, sellingData.count)
         local cap = math.modf(math.max(1, 0.75 * basePrice))
         local sellingPrice = getBarterOffer(merchant, basePrice, false)
-        merchantOffer = merchantOffer + (types.NPC.objectIsInstance(merchant) and math.min(cap, sellingPrice) or sellingPrice)
+        merchantOffer = merchantOffer + (NPC.objectIsInstance(merchant) and math.min(cap, sellingPrice) or sellingPrice)
     end
 
     local diff = merchantOffer - (state.currentMerchantOffer or 0)

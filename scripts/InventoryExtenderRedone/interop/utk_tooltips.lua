@@ -13,6 +13,7 @@ local Toolkit   = I.UIToolkit
 local T         = Toolkit.Templates
 local cfgPlayer = require 'scripts.InventoryExtenderRedone.config.player'
 local constants = require 'scripts.InventoryExtenderRedone.util.constants'
+local NPC       = types.NPC
 
 
 -- Stolen from info
@@ -93,7 +94,7 @@ Interface.addPreCreateTooltipHandler(function(recipe, tooltip)
 
     local stolenRecords = {}
     for victim, count in pairs(stolen) do
-        local record = types.NPC.records[victim]
+        local record = NPC.records[victim]
         if not record then
             record = core.factions.records[victim]
         end

@@ -9,6 +9,16 @@ local CellUtils = require('scripts.InventoryExtenderRedone.util.cell')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 
+local Actor = types.Actor
+local Book = types.Book
+local Container = types.Container
+local Item = types.Item
+local Lockable = types.Lockable
+local NPC = types.NPC
+local Player = types.Player
+
+local OFFENSE_TYPE = Player.OFFENSE_TYPE
+
 local imported_ie_global
 local disposedBodies = {}
 
@@ -36,7 +46,7 @@ local function isStealing(player, ownerInfo, globalVariable)
         local activeActors = world.activeActors
         for i = 1, #activeActors do
             local actor = activeActors[i]
-            if actor.recordId == ownerInfo.recordId and types.Actor.isDead(actor) then
+            if actor.recordId == ownerInfo.recordId and Actor.isDead(actor) then
                 isDead = true
                 break
             end
@@ -49,7 +59,7 @@ local function isStealing(player, ownerInfo, globalVariable)
 
     if ownerInfo.factionId then
         local reqRank = ownerInfo.factionRank or 1
-        if types.NPC.getFactionRank(player, ownerInfo.factionId) < reqRank then
+        if NPC.getFactionRank(player, ownerInfo.factionId) < reqRank then
             victim.factionId = ownerInfo.factionId
         end
     end
@@ -102,7 +112,7 @@ local function commitPickpocket(props)
     if not props.player or not props.target then return end
 
     I.Crimes.commitCrime(props.player, {
-        type = types.Player.OFFENSE_TYPE.Pickpocket,
+        type = OFFENSE_TYPE.Pickpocket,
         victim = props.target,
         victimAware = props.victimAware,
     })
@@ -151,7 +161,7 @@ local function moveInto(props)
     local destinationInv = destination.type.inventory(destination)
 
     local isEquipped = false
-    if props.source and types.Actor.objectIsInstance(props.source) then
+    if props.source and Actor.objectIsInstance(props.source) then
         isEquipped = props.source.type.hasEquipped(props.source, obj)
     end
 
@@ -180,7 +190,7 @@ local function moveInto(props)
         }
     elseif sourceIsCompanion then
         ownerInfo = nil
-    elseif props.source and types.Container.objectIsInstance(props.source) then
+    elseif props.source and Container.objectIsInstance(props.source) then
         ownerInfo = props.source.owner
         globalVariable = props.source.globalVariable
     else
@@ -203,7 +213,7 @@ local function moveInto(props)
         end
     end
 
-    if types.Player.objectIsInstance(props.destination) and props.source ~= props.destination then
+    if Player.objectIsInstance(props.destination) and props.source ~= props.destination then
         local mwscript = world.mwscript.getLocalScript(obj)
         if mwscript and mwscript.variables.onpcadd then
             mwscript.variables.onpcadd = 1
@@ -225,7 +235,7 @@ local function moveInto(props)
 
     if victimInfo and not props.pickpocket then
         I.Crimes.commitCrime(props.player, {
-            type = types.Player.OFFENSE_TYPE.Theft,
+            type = OFFENSE_TYPE.Theft,
             arg = helpers.getItemValue(obj) * moveCount,
             faction = victimInfo.factionId,
             victim = victimActor,
@@ -278,7 +288,7 @@ local function moveInto(props)
         })
     end
 
-    if props.autoEquip and types.NPC.objectIsInstance(props.autoEquip) then
+    if props.autoEquip and NPC.objectIsInstance(props.autoEquip) then
         queueDelayedJob(function()
             props.autoEquip:addScript('scripts/InventoryExtenderRedone/autoEquip.lua', { player = props.player })
             props.autoEquip:removeScript('scripts/InventoryExtenderRedone/autoEquip.lua')
@@ -311,7 +321,7 @@ local function moveAll(props)
 
     local totalCrimeValue = 0
     for _, item in ipairs(items) do
-        if types.Item.isCarriable(item) then
+        if Item.isCarriable(item) then
             if victimInfo then
                 if not helpers.isGold(item) then
                     props.player:sendEvent('IER_StoleItem', {
@@ -328,7 +338,7 @@ local function moveAll(props)
 
     if victimInfo then
         I.Crimes.commitCrime(props.player, {
-            type = types.Player.OFFENSE_TYPE.Theft,
+            type = OFFENSE_TYPE.Theft,
             arg = totalCrimeValue,
             faction = victimInfo.factionId,
             victim = victimActor,
@@ -342,10 +352,10 @@ local checkStolenNextUpdate = {}
 local checkStolenNextNextUpdate = {}
 local checkStolenBooks = {}
 local function onItemActivated(item, actor)
-    if not types.Item.isCarriable(item) then return true end
+    if not Item.isCarriable(item) then return true end
     local victim = isStealing(actor, item.owner, item.globalVariable)
     if victim and not helpers.isGold(item) then
-        if types.Book.objectIsInstance(item) then
+        if Book.objectIsInstance(item) then
             checkStolenBooks[actor.id] = checkStolenBooks[actor.id] or {}
             table.insert(checkStolenBooks[actor.id], {
                 actor = actor,
@@ -367,7 +377,7 @@ local function onItemActivated(item, actor)
 end
 
 local function onContainerActivated(container, actor)
-    if not types.Player.objectIsInstance(actor) then return true end
+    if not Player.objectIsInstance(actor) then return true end
 
     local globalVariable = container.globalVariable
     if not globalVariable then return true end
@@ -432,8 +442,8 @@ local function updateChestMemory(chest)
     for _, item in ipairs(chest.type.inventory(chest):getAll()) do
         containerMemory[cellId][item.recordId] = (containerMemory[cellId][item.recordId] or 0) + item.count
     end
-    if types.Lockable.getLockLevel(chest) == VANILLA_LOCK_LEVEL then
-        types.Lockable.lock(chest, IE_LOCK_LEVEL)
+    if Lockable.getLockLevel(chest) == VANILLA_LOCK_LEVEL then
+        Lockable.lock(chest, IE_LOCK_LEVEL)
     end
 end
 
@@ -478,22 +488,22 @@ local function onUiModeChanged(data)
 end
 
 for _, type in pairs(types) do
-    if type.baseType == types.Item then
+    if type.baseType == Item then
         I.Activation.addHandlerForType(type, onItemActivated)
     end
 end
 
-I.Activation.addHandlerForType(types.Container, onContainerActivated)
+I.Activation.addHandlerForType(Container, onContainerActivated)
 
 local function initChestLocks()
     local prisonCells = CellUtils.getPrisonCells()
     for id in pairs(prisonCells) do
         local success, cell = pcall(world.getCellById, id)
         if success and cell then
-            for _, container in ipairs(cell:getAll(types.Container)) do
+            for _, container in ipairs(cell:getAll(Container)) do
                 if container.recordId == 'stolen_goods' then
-                    if types.Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
-                        types.Lockable.lock(container, IE_LOCK_LEVEL)
+                    if Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
+                        Lockable.lock(container, IE_LOCK_LEVEL)
                     end
                     break
                 end
@@ -515,9 +525,9 @@ local function confiscateStolenItems(data)
 
     data.stolenMap = data.stolenMap or {}
 
-    for _, container in ipairs(cell:getAll(types.Container)) do
+    for _, container in ipairs(cell:getAll(Container)) do
         if container.recordId == 'stolen_goods' then
-            if types.Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
+            if Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
                 --print("Confiscating goods to", container)
 
                 -- compare with memory
@@ -576,7 +586,7 @@ local function confiscateStolenItems(data)
 
                 containerMemory[cellId] = current
 
-                types.Lockable.lock(container, IE_LOCK_LEVEL)
+                Lockable.lock(container, IE_LOCK_LEVEL)
                 data.player:sendEvent('IER_ItemsConfiscated', { stolenMap = data.stolenMap })
                 return
             end
@@ -601,17 +611,17 @@ local function confiscateToOwner(data)
     end
 
     I.Crimes.commitCrime(data.player, {
-        type = types.Player.OFFENSE_TYPE.Theft,
+        type = OFFENSE_TYPE.Theft,
         arg = helpers.getItemValue(data.item) * toRemove,
         victim = data.victim,
         victimAware = true,
     })
-    data.item:split(toRemove):moveInto(types.Actor.inventory(data.victim))
+    data.item:split(toRemove):moveInto(Actor.inventory(data.victim))
     data.player:sendEvent('IER_ItemsConfiscated', { stolenMap = data.stolenMap })
 end
 
 local function setItemData(item, data)
-    local itemData = types.Item.itemData(item)
+    local itemData = Item.itemData(item)
     if data.condition then
         itemData.condition = data.condition
     end
@@ -636,7 +646,7 @@ local function finalizeBarter(props)
                         local takeCount = math.min(stackItem.count, remainingCount)
                         local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
 
-                        if restock and stackItem.parentContainer and types.Item.isRestocking(stackItem) then
+                        if restock and stackItem.parentContainer and Item.isRestocking(stackItem) then
                             local newItem = world.createObject(stackItem.recordId, takeCount)
                             setItemData(newItem, stackItem.type.itemData(stackItem))
                             newItem:moveInto(destination)
@@ -648,7 +658,7 @@ local function finalizeBarter(props)
                 else
                     local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
 
-                    if restock and entry.item.parentContainer and types.Item.isRestocking(entry.item) then
+                    if restock and entry.item.parentContainer and Item.isRestocking(entry.item) then
                         local newItem = world.createObject(entry.item.recordId, entry.count)
                         setItemData(newItem, entry.item.type.itemData(entry.item))
                         newItem:moveInto(destination)
@@ -668,15 +678,15 @@ local function finalizeBarter(props)
 
     if currentBalance ~= 0 then
         if currentBalance < 0 then
-            local gold = types.Actor.inventory(props.player):find('gold_001')
+            local gold = Actor.inventory(props.player):find('gold_001')
             if gold then
                 gold:remove(-currentBalance)
             end
         else
             local gold = world.createObject('gold_001', currentBalance)
-            gold:moveInto(types.Actor.inventory(props.player))
+            gold:moveInto(Actor.inventory(props.player))
         end
-        types.NPC.setBarterGold(merchant, types.NPC.getBarterGold(merchant) - currentBalance)
+        NPC.setBarterGold(merchant, NPC.getBarterGold(merchant) - currentBalance)
     end
     props.player:sendEvent('IER_BarterFinalized', {
         skillGain = props.skillGain,
@@ -699,7 +709,7 @@ local eventHandlers = {
         props.target:remove()
     end,
     IER_ModDisposition = function(props)
-        types.NPC.modifyBaseDisposition(props.target, props.player, props.amount)
+        NPC.modifyBaseDisposition(props.target, props.player, props.amount)
     end,
     IER_ItemPickedUp = function(props)
         lastItemPickedUp = {
