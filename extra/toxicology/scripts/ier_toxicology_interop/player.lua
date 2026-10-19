@@ -83,7 +83,3 @@ Tooltips.addPreCreateTooltipHandler(function(recipe, tooltip)
     table.insert(items, index, { type = NAME, layers = data })
     table.insert(items, index, { type = 'gap', size = 4 })
 end)
-
-return {
-    engineHandlers = {},
-}

@@ -1,1 +1,2 @@
 PLAYER: scripts/ier_toxicology_interop/player.lua
+GLOBAL: scripts/ier_toxicology_interop/global.lua
