@@ -1610,6 +1610,14 @@ function Inventory:createData()
 
     local ctx = self.ctx
     local modifiers = ctx.modifiers.data
+    --context data for the tooltip
+    --[[
+    local IER = {
+        window = self.type,
+        mode = self.mode,
+        arg = self.arg,
+    }
+    ]]
 
     ---@param item openmw.Object|{stacks:openmw.Object[], totalCount:number}
     ---@param isBartered boolean
@@ -1634,8 +1642,13 @@ function Inventory:createData()
             end
         end
 
+        local baseTip = {
+            object = itemStack,
+            observer = omwself,
+            owned = isOwned,
+            --IER = IER,
+        }
         local function tooltip()
-            local baseTip = { object = itemStack, observer = omwself, owned = isOwned }
             local comparison = getEquippedItemsForComparison(itemStack, ctx)
             if not comparison or #comparison <= 0 then return baseTip end
             local tips = { Tooltips.createTooltipLayout(baseTip) }
