@@ -1,11 +1,13 @@
 ---@omw-context player
 
+local core  = require 'openmw.core'
 local I     = require 'openmw.interfaces'
 local types = require 'openmw.types'
 local ui    = require 'openmw.ui'
 local util  = require 'openmw.util'
 
 
+local l10n       = core.l10n 'ier_toxicology_interop'
 local toxicology = require 'scripts.ier_toxicology_interop.toxicology'
 local helpers    = require 'scripts.UIToolkit.tooltips.utils'
 
@@ -35,7 +37,7 @@ Tooltips.registerBuilder(NAME, function(item)
     local layers = item.layers --[[@as {name:string, charges:number}[] ]]
     local innerContent = ui.content {}
 
-    innerContent:add(BUILDERS.value { value = 'Poison coatings:', image = ICON, name = 'title' })
+    innerContent:add(BUILDERS.value { value = l10n('Coatings'), image = ICON, name = 'title' })
 
     local layerContent = ui.content {}
     for i = 1, #layers do
