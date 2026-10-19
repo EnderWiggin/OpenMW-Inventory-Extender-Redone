@@ -21,7 +21,17 @@ local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
-local Player = types.Player
+
+local Actor     = types.Actor
+local Armor     = types.Armor
+local Clothing  = types.Clothing
+local Container = types.Container
+local Item      = types.Item
+local NPC       = types.NPC
+local Player    = types.Player
+local Weapon    = types.Weapon
+
+
 local playerInventory = Player.inventory(omwself)
 local l10n = core.l10n(D.L10N)
 
@@ -35,7 +45,7 @@ local DragAndDrop = {}
 
 local function getViewportRaycastDistance(ctx)
     local dist = core.getGMST("iMaxActivateDist") + camera.getThirdPersonDistance()
-    local telekinesis = types.Actor.activeEffects(omwself):getEffect(core.magic.EFFECT_TYPE.Telekinesis)
+    local telekinesis = Actor.activeEffects(omwself):getEffect(core.magic.EFFECT_TYPE.Telekinesis)
     if telekinesis then
         dist = dist + (telekinesis.magnitude * 22)
     end
@@ -194,7 +204,7 @@ function DragAndDrop:setDraggingObject(object)
 end
 
 function DragAndDrop:transferInto(object, destination, source, count, pickpocket)
-    if types.Container.objectIsInstance(destination) then
+    if Container.objectIsInstance(destination) then
         local destRecord = destination.type.record(destination)
         if destRecord.isOrganic then
             ui.showMessage(constants.Strings.CONTAINER_ORGANIC)
@@ -223,11 +233,11 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
     if destination then
         local uiMode = I.UI.getMode()
         local autoEquip
-        if uiMode == 'Companion' and (types.Armor.objectIsInstance(object) or types.Clothing.objectIsInstance(object) or types.Weapon.objectIsInstance(object)) then
+        if uiMode == 'Companion' and (Armor.objectIsInstance(object) or Clothing.objectIsInstance(object) or Weapon.objectIsInstance(object)) then
             autoEquip = self.ctx.windowArgs['Companion']
         elseif uiMode == 'Container' then
             local target = self.ctx.windowArgs['Container']
-            if types.NPC.objectIsInstance(target) then
+            if NPC.objectIsInstance(target) then
                 autoEquip = target
             end
         end
@@ -300,7 +310,7 @@ end
 -- so no anchor/position math here. The console line tooltip keeps `object` so clearTooltipIfFor
 -- can still match it by identity.
 local function createObjectTooltip(hitObject, ctx)
-    if types.Item.isCarriable(hitObject) then
+    if Item.isCarriable(hitObject) then
         I.UTKTooltips.setTooltip({ object = hitObject, observer = omwself })
     elseif ctx.isConsoleOpen then
         I.UTKTooltips.setTooltip({
@@ -473,7 +483,7 @@ function DragAndDrop:init(ctx)
                 self.wrapper:update()
             elseif self.hoveredObject then
                 if not self.ctx.isConsoleOpen then
-                    if types.Item.isCarriable(self.hoveredObject) then
+                    if Item.isCarriable(self.hoveredObject) then
                         self:startDrag(self.hoveredObject, nil)
                         if input.isAltPressed() then
                             instantPickup = true
