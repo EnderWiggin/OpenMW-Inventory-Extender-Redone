@@ -226,7 +226,7 @@ end
 local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
     local theme = Toolkit.getTheme()
     local textSize = theme.Sizes.textNormal
-    local lineHeight = textSize + 2
+    local rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult)
     local fontRatio = textSize / 16
     local w = 60 * fontRatio
 
@@ -234,7 +234,7 @@ local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
     return {
         {
             id = 'Icon',
-            width = lineHeight * 1.5 + 8,
+            width = rowHeight + 8,
             sort = defaultSort,
             render = iconRenderer,
             update = iconUpdater,
