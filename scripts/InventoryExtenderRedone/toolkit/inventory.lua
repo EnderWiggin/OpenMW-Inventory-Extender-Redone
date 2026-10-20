@@ -55,6 +55,10 @@ local windowOptionsSection = storage.playerSection('InventoryExtender')
 local columnVisibilityKey  = 'ColumnVisibility'
 
 
+---@type table<string, string>
+local openedCategory = {}
+
+
 ---@class IER.Inventory.SaveData
 ---@field sortingColumn string?
 ---@field sortingDirection boolean?
@@ -842,6 +846,14 @@ function Inventory:onOpened(wnd, data, saved)
         end)
     end
 
+    local function getOpenedCategoryKey()
+        --TODO: check trader services?
+        if self.type == 'Container' then
+            if ctx.pickpocket and ctx.pickpocket.active then return 'pickpocket' end
+        end
+        return self.mode
+    end
+
     self.categoryFilter = CategoryFilter.create({
             maxHeight = 72,
             compact = configPlayer.tweaks.b_CompactCategoryFilter,
@@ -893,6 +905,7 @@ function Inventory:onOpened(wnd, data, saved)
 
             self:updateTitle()
 
+            openedCategory[getOpenedCategoryKey()] = category.key
             trySyncedCategorySwitch(category.key)
         end, function(text)
             searchText = text and text:lower()
@@ -1101,7 +1114,11 @@ function Inventory:onOpened(wnd, data, saved)
     if column then self.table.header:toggleColumn(column, sortDir ~= false) end
     self.table:updateProps { position = v2(0, topBarHeight + 2) }
     self.table:setFilter(self.filter --[[@as UIToolkit.SortedList.Filter]])
-    local categoryKey = self.categoryFilter:getCategory()
+    local categoryKey = openedCategory[getOpenedCategoryKey()]
+    if categoryKey then
+        self.categoryFilter:setCategory(categoryKey)
+    end
+    categoryKey = self.categoryFilter:getCategory()
     local category = categoryKey and IE.getCategory(categoryKey)
     if category then updateHiddenColumns(category) end
     self.table:setItems(self:createData())
