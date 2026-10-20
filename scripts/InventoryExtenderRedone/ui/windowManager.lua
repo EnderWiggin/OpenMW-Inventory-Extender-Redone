@@ -126,17 +126,21 @@ function WindowManager:show(windowName, arg)
 
     self.ctx.windowArgs[windowName] = arg or self.ctx.windowArgs[windowName]
 
-    --TODO: do not close if not Inventory or same mode?
-    --TODO: or maybe invent mode switching for inventory?
     local windowId = getWindowId(windowName)
-    Manager.close(windowId, true)
-    local _, handler = Manager.open(windowId, arg)
-    ---@cast handler IER.Inventory
-    omwself:sendEvent('IER_Window_Opened', {
-        id = windowId,
-        type = handler.type,
-        mode = handler.mode,
-    })
+    local handler = Manager.getHandler(windowId) --[[@as IER.Inventory?]]
+    if handler and windowName == 'Inventory' and handler.mode ~= I.UI.getMode() then
+        Manager.close(windowId, true)
+        handler = nil
+    end
+    if not handler then
+        _, handler = Manager.open(windowId, arg) --[[@as any]]
+        ---@cast handler IER.Inventory
+        omwself:sendEvent('IER_Window_Opened', {
+            id = windowId,
+            type = handler.type,
+            mode = handler.mode,
+        })
+    end
 end
 
 function WindowManager:hide(windowName, arg, force)
