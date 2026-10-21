@@ -53,7 +53,7 @@ function GridIcon:makeComponent(data)
         content = ui.content(badges),
     }
 
-    local count = data.getCount()
+    local count = data.getNonDraggedCount()
     base.content:add({
         name = 'count',
         type = ui.TYPE.Text,
@@ -136,7 +136,7 @@ function GridIcon:refreshDirty(component, data)
         badges.content = ui.content(layouts)
     end
 
-    local count = data.getCount()
+    local count = data.getNonDraggedCount()
     local text = helpers.getCountString(count)
     local visible = count and count > 1
     props = H.props(content['count'])

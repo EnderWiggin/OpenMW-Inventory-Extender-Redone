@@ -95,6 +95,7 @@
 ---@field showAsEnchanted fun():boolean
 ---@field itemRecord {id:string, name:string, icon:string}
 ---@field getCount fun():number
+---@field getNonDraggedCount fun():number
 ---@field sortCache table?
 
 

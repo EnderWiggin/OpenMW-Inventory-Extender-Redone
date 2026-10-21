@@ -167,7 +167,8 @@ end
 
 ---@param row InventoryExtenderRedone.RowData
 ---@param type string
-local function getNonDraggedCount(row, type)
+---@param mode string
+local function getNonDraggedCount(row, type, mode)
     local nonDraggedCount = row.getCount()
     local ctx = I.InventoryExtenderRedone.getContext()
 
@@ -176,28 +177,28 @@ local function getNonDraggedCount(row, type)
         nonDraggedCount = nonDraggedCount - drag.draggingCount
     end
 
-    if I.UI.getMode() == 'Barter' then
-        local buying = ctx.barterState.buying
-        local selling = ctx.barterState.selling
-        if row.isBartered then
-            if type == 'Inventory' then
-                local buy = buying[row.item.id]
-                nonDraggedCount = buy and buy.count or 0
-            else
-                local sell = selling[row.item.id]
-                nonDraggedCount = sell and sell.count or 0
-            end
+    if mode ~= 'Barter' then return nonDraggedCount end
+
+    local buying = ctx.barterState.buying
+    local selling = ctx.barterState.selling
+    if row.isBartered then
+        if type == 'Inventory' then
+            local buy = buying[row.item.id]
+            nonDraggedCount = buy and buy.count or 0
         else
-            if type == 'Inventory' then
-                local sell = selling[row.item.id]
-                if sell then
-                    nonDraggedCount = nonDraggedCount - (sell.count or 0)
-                end
-            elseif type == 'Trade' then
-                local buy = buying[row.item.id]
-                if buy then
-                    nonDraggedCount = nonDraggedCount - (buy.count or 0)
-                end
+            local sell = selling[row.item.id]
+            nonDraggedCount = sell and sell.count or 0
+        end
+    else
+        if type == 'Inventory' then
+            local sell = selling[row.item.id]
+            if sell then
+                nonDraggedCount = nonDraggedCount - (sell.count or 0)
+            end
+        elseif type == 'Trade' then
+            local buy = buying[row.item.id]
+            if buy then
+                nonDraggedCount = nonDraggedCount - (buy.count or 0)
             end
         end
     end
@@ -1688,7 +1689,8 @@ function Inventory:createData()
         end
 
         ---@type InventoryExtenderRedone.RowData
-        local rowData = {
+        local rowData
+        rowData = {
             id = itemStack.id,
             Name = helpers.getItemName(itemStack),
             Type = function()
@@ -1716,6 +1718,9 @@ function Inventory:createData()
             isBartered = isBartered,
             virtualStacks = isVirtual and item.stacks or nil,
             getCount = getItemCount,
+            getNonDraggedCount = function()
+                return getNonDraggedCount(rowData, self.type, self.mode)
+            end,
             tooltip = tooltip,
             showAsEnchanted = function()
                 if record.enchant then
