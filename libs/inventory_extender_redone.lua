@@ -221,7 +221,7 @@
 
 ---@class InventoryExtenderRedone.Mode.Action
 ---@field enabled fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
----@field do fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? default effect; false stops the chain. NOTE: `do` is reserved - call sites must index it as ["do"]
+---@field perform fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? default effect; false stops the chain
 ---@field transfer fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context)? the Alt-held variant
 
 ---@class InventoryExtenderRedone.Mode.Actions
