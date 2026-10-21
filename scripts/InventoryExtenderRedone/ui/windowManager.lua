@@ -59,6 +59,10 @@ WindowManager.ctx = {
         data = {},
         badge = {},
     },
+    -- custom modes and id-keyed patches registered by other mods; built-in specs
+    -- live in toolkit/mode.lua Mode.Builtins and are never stored here
+    modes = {},
+    modePatches = {},
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     windowArgs = {},
@@ -147,7 +151,7 @@ function WindowManager:hide(windowName, arg, force)
     Manager.close(getWindowId(windowName))
 end
 
----@param windowName InventoryExtenderRedone.WindowType
+---@param windowName InventoryExtenderRedone.Role
 ---@return IER.Inventory? handler the window's handler, nil if the window is not open
 function WindowManager:getWindow(windowName)
     return Manager.getWindow(getWindowId(windowName)) --[[@as  IER.Inventory?]]

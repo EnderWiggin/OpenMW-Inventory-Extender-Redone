@@ -8,11 +8,13 @@
 ---@field VERSION number
 ---@field Constants table? util/constants module (C.Colors, C.Strings, C.OPT_KEYS, …)
 ---@field Helpers table? util/helpers module (getItem*, isItemEquipped, doesItemFit, …)
+---@field Roles table<string,InventoryExtenderRedone.Role> built-in window roles; the same table as config.defaults D.Roles, not a copy
+---@field Modes table<string,InventoryExtenderRedone.ModeKey> built-in mode keys; the same table as config.defaults D.Modes, not a copy. Custom mode keys are mod-namespaced strings, never enum members
 ---@field allWindowsDisabled boolean live flag set by disableAllWindows; while true, show() is a no-op
 ---@field disableAllWindows fun(value:boolean) temporarily suppress IE windows; does NOT restore vanilla windows - nothing is shown
----@field show fun(windowName:string, arg:any?) windowName is one of InventoryExtenderRedone.WindowType; arg is the target NPC/container/merchant
+---@field show fun(windowName:string, arg:any?) windowName is one of InventoryExtenderRedone.Role; arg is the target NPC/container/merchant
 ---@field hide fun(windowName:string, arg:any?, force:boolean?)
----@field getWindow fun(windowName:InventoryExtenderRedone.WindowType):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
+---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
 ---@field getCategories fun():InventoryExtenderRedone.Category[]
@@ -24,16 +26,18 @@
 ---@field registerEquippedOverride fun(id:string, handler:fun(item:openmw.Object, actor:openmw.Object):boolean?) called in reverse registration order until one returns non-nil
 ---@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier)
 ---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
----@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false; handlers of the use/equip action (default: R, c_Activate, InfoBar "Use" button)
----@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false; handlers of the pick-up action (default: left-click)
+---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?) called in reverse registration order until one returns false; handlers of the use/equip action (default: R, c_Activate, InfoBar "Use" button)
+---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?) called in reverse registration order until one returns false; handlers of the pick-up action (default: left-click)
 
 
 ---@class InventoryExtenderRedone.Context
 ---@field handlers InventoryExtenderRedone.Handlers registered row action handlers, called in reverse registration order
 ---@field modifiers InventoryExtenderRedone.Modifiers registered modifiers
 ---@field overrides InventoryExtenderRedone.Overrides equipped-status overrides, called in reverse order until one returns non-nil
+---@field modes table<string,InventoryExtenderRedone.Mode> custom mode specs registered through API.registerMode, keyed by mode key; built-in specs are not stored here, they live in toolkit/mode.lua Mode.Builtins
+---@field modePatches table<string,InventoryExtenderRedone.ModePatch[]> registered mode patches per mode key, applied in reverse registration order
 ---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
----@field windowArgs table<string,openmw.Object?> key is one of InventoryExtenderRedone.WindowType; value is the arg passed to show (target NPC/container/merchant)
+---@field windowArgs table<string,openmw.Object?> key is one of InventoryExtenderRedone.Role; value is the arg passed to show (target NPC/container/merchant)
 ---@field lastUiMode string? last known UI mode (nil = interface)
 ---@field stolenItems table<string,table<string,number>> recordId -> (victim recordId or factionId -> count)
 ---@field favoriteItems table<string,boolean> item.id -> favorited (saved; blocks transfers outside Interface mode)
@@ -58,7 +62,7 @@
 ---@field hitPos openmw.util.Vector3? eligible world drop position from the last raycast (flat-enough surface)
 ---@field draggingObject openmw.Object? item currently dragged, nil when not dragging
 ---@field draggingCount number? number of units being dragged
----@field draggingActivationContext table? {windowType, isBartered} where the drag was started
+---@field draggingActivationContext table? {role:InventoryExtenderRedone.Role, isBartered:boolean, modeKey:InventoryExtenderRedone.ModeKey} where the drag was started; modeKey is set once mode resolution is wired in
 ---@field source openmw.Object? actor/container the dragged item came from
 ---@field resolveViewportDropTarget fun(self:InventoryExtenderRedone.DragAndDrop, position:openmw.util.Vector2, callback:fun(result, hitPos)) async raycast from viewport position; callback gets the raw hit and an eligible drop position (nil if surface too steep)
 ---@field getHoveredGameObject fun(self:InventoryExtenderRedone.DragAndDrop, position:openmw.util.Vector2) sets hoveredObject/hitPos from a viewport raycast
@@ -120,7 +124,137 @@
 
 
 ---@alias InventoryExtenderRedone.InfoBar.Provider fun(ctx:table):openmw.ui.LayoutOrElement?
----@alias InventoryExtenderRedone.WindowType 'Inventory'|'Container'|'Trade'|'Companion'
+---@alias InventoryExtenderRedone.Role 'Inventory'|'Container'|'Trade'|'Companion'
+---@alias InventoryExtenderRedone.ModeKey 'Interface'|'Container'|'Pickpocket'|'Barter'|'Companion'|string
+
+
+-- Mode specs are pure behavior: they never register windows, a new window role only comes
+-- through API.registerWindowRole. Slots are keyed per window role because the Inventory
+-- role appears in four modes and needs four different slot sets.
+---@class InventoryExtenderRedone.Mode
+---@field key InventoryExtenderRedone.ModeKey
+---@field base InventoryExtenderRedone.ModeKey? inherit this mode's slots, e.g. Pickpocket base = Container
+---@field title string? l10n key, or fun(handler:IER.Inventory, arg:any?):string
+---@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context):boolean? mode selection; the highest-priority applying mode wins
+---@field priority number? higher wins when several modes apply; default 0
+---@field syncCategory boolean? category switching syncs across open windows; default true
+---@field drag InventoryExtenderRedone.Mode.Drag? mode-wide: drag is a ctx singleton, not per window
+---@field lifecycle InventoryExtenderRedone.Mode.Lifecycle?
+---@field event InventoryExtenderRedone.Mode.EventData? flat summary global.lua sees in event payloads
+---@field roles table<string,InventoryExtenderRedone.Mode.RoleSpec> key is a window role
+
+---@class InventoryExtenderRedone.Mode.RoleSpec one per window role in this mode
+---@field sources InventoryExtenderRedone.Mode.Source[]? which items a window lists
+---@field filters InventoryExtenderRedone.Mode.Filter[]? which of them are visible
+---@field states InventoryExtenderRedone.Mode.State? per-row states (disabled/active/owned/badges)
+---@field actions InventoryExtenderRedone.Mode.Actions? gate + effect only; shared row mechanics stay in the handler
+---@field infoBar InventoryExtenderRedone.Mode.InfoBarSection[]? bottom strip sections, in order
+---@field categories InventoryExtenderRedone.Mode.Categories?
+---@field columns InventoryExtenderRedone.Mode.Columns?
+---@field hints InventoryExtenderRedone.Mode.Hints?
+---@field pinnable boolean? default false; only the Interface Inventory window sets true
+---@field storageSuffix string? built-ins keep the literal ':Container'/':Barter'/':Companion' - UIToolkit:WindowData keys are save identity, never derive from the mode key
+---@field defaultStorage UIToolkit.WindowSaveData?
+
+---@class InventoryExtenderRedone.Mode.Drag
+---@field allowed boolean?
+---@field autoEquip fun(ctx:InventoryExtenderRedone.Context, object:openmw.Object, source:openmw.Object?, destination:openmw.Object?):openmw.Object?
+
+---@class InventoryExtenderRedone.Mode.Lifecycle
+---@field onOpened fun(handler:IER.Inventory, arg:any?, saved:table?)?
+---@field onClosing fun(handler:IER.Inventory, arg:any?)? built-in modes fire from UiModeChanged, custom modes fire from WindowHandler:onClosed
+---@field onClosed fun(handler:IER.Inventory)?
+
+---@class InventoryExtenderRedone.Mode.EventData
+---@field flags table<string,boolean> serializable summary (isBarter, isPickpocket, isCompanion, canTransfer, ...); key and role are stamped at open time
+
+---@class InventoryExtenderRedone.ModePatch same shape as InventoryExtenderRedone.Mode; list slots become InventoryExtenderRedone.Mode.PatchList
+---@field id string? required for API.unpatchMode
+---@field key InventoryExtenderRedone.ModeKey? target mode key; set by API.patchMode when omitted
+---@field title string?
+---@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context):boolean?
+---@field priority number?
+---@field syncCategory boolean?
+---@field drag InventoryExtenderRedone.Mode.Drag?
+---@field lifecycle InventoryExtenderRedone.Mode.Lifecycle?
+---@field event InventoryExtenderRedone.Mode.EventData?
+---@field roles table<string,InventoryExtenderRedone.Mode.RoleSpecPatch>? key is a window role
+---@field disable string[]? slot names to drop from the merged spec
+
+---@class InventoryExtenderRedone.Mode.RoleSpecPatch
+---@field sources InventoryExtenderRedone.Mode.PatchList?
+---@field filters InventoryExtenderRedone.Mode.PatchList?
+---@field states InventoryExtenderRedone.Mode.State?
+---@field actions InventoryExtenderRedone.Mode.Actions?
+---@field infoBar InventoryExtenderRedone.Mode.PatchList?
+---@field categories InventoryExtenderRedone.Mode.Categories?
+---@field columns InventoryExtenderRedone.Mode.Columns?
+---@field hints InventoryExtenderRedone.Mode.Hints?
+---@field pinnable boolean?
+---@field storageSuffix string?
+---@field defaultStorage UIToolkit.WindowSaveData?
+
+---@class InventoryExtenderRedone.Mode.PatchList
+---@field add any[]? appended
+---@field replace any[]? id-keyed: replaces the entry with the same id, appends when the id is new
+---@field remove string[]? ids to drop
+
+---@class InventoryExtenderRedone.Mode.Source
+---@field id string
+---@field get fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object[]? virtual sources return {stacks:openmw.Object[], totalCount:number} instead
+---@field virtual boolean?
+---@field isBartered boolean? the "other side" flag
+---@field isOwned boolean?|fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field enabled fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field filter fun(item:openmw.Object, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+
+---@class InventoryExtenderRedone.Mode.Filter
+---@field id string
+---@field fn fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field structural boolean? true for the window-level filters that stay in the handler (search/category/draggedItem)
+
+---@class InventoryExtenderRedone.Mode.State
+---@field isDisabled fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?|InventoryExtenderRedone.Mode.State[] OR-ed when a list
+---@field isActive fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field isOwned fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? tooltip ownership
+---@field badges InventoryExtenderRedone.RowBadgeProvider[]? mode-scoped sugar over API.registerRowBadge
+
+---@class InventoryExtenderRedone.Mode.Action
+---@field enabled fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field do fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? default effect; false stops the chain. NOTE: `do` is reserved - call sites must index it as ["do"]
+---@field transfer fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context)? the Alt-held variant
+
+---@class InventoryExtenderRedone.Mode.Actions
+---@field use InventoryExtenderRedone.Mode.Action?
+---@field pickup InventoryExtenderRedone.Mode.Action?
+---@field favorite InventoryExtenderRedone.Mode.Action?
+---@field takeAll InventoryExtenderRedone.Mode.Action?
+---@field dispose InventoryExtenderRedone.Mode.Action?
+---@field close InventoryExtenderRedone.Mode.Action?
+
+---@class InventoryExtenderRedone.Mode.InfoBarSection
+---@field id string encumbrance, gold, armorRating, filler, use, dispose, takeAll, profit, barterControls, close
+---@field create fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.ui.LayoutOrElement? build-once part (buttons, bars)
+---@field provider InventoryExtenderRedone.InfoBar.Provider per-frame value/visibility, returns nil to hide
+---@field cleanup fun()? runs in InfoBar:beforeElementDestroy()
+---@field before string? order before this section id
+---@field after string? order after this section id
+
+---@class InventoryExtenderRedone.Mode.Categories
+---@field available fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):InventoryExtenderRedone.Category[]? default I.InventoryExtenderRedone.getCategories()
+---@field default string?
+---@field map table<string,string>? role -> categoryKey, replaces getSyncedCategoryKey + getOpenedCategoryKey
+
+---@class InventoryExtenderRedone.Mode.Columns
+---@field hiddenColumns table<string,boolean>? columnId -> hidden, merged with user visibility
+
+---@alias InventoryExtenderRedone.Mode.Hints fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context, base:UIToolkit.Controller.HintList):UIToolkit.Controller.HintList?
+
+---@class InventoryExtenderRedone.Mode.Defaults what a mode gets when it omits a slot
+---@field priority number?
+---@field syncCategory boolean?
+---@field drag InventoryExtenderRedone.Mode.Drag?
+---@field RoleSpec InventoryExtenderRedone.Mode.RoleSpec? per-role slot defaults, applied under every RoleSpec
 
 
 ---@class InventoryExtenderRedone.Handlers
@@ -129,7 +263,7 @@
 
 ---@class InventoryExtenderRedone.RowHandlerEntry
 ---@field id string
----@field handler fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?
+---@field handler fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?
 
 
 ---@class InventoryExtenderRedone.Modifiers
@@ -140,7 +274,7 @@
 ---@field id string
 ---@field modifier InventoryExtenderRedone.RowDataModifier The modifier function
 
----@alias InventoryExtenderRedone.RowDataModifier fun(row: InventoryExtenderRedone.RowData, ctx: InventoryExtenderRedone.Context, windowType: string)
+---@alias InventoryExtenderRedone.RowDataModifier fun(row: InventoryExtenderRedone.RowData, ctx: InventoryExtenderRedone.Context, role: InventoryExtenderRedone.Role)
 
 ---@class InventoryExtenderRedone.RowBadgeModifierEntry
 ---@field id string

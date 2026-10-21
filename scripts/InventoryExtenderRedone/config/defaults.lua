@@ -9,7 +9,26 @@ local M = {
     PageKey = MOD,
     L10N = 'InventoryExtenderRedone',
     Version = '0.0.5',
-    API = 1,
+    API = 2,
+    -- window ids and UIToolkit:WindowData keys must keep the pre-rename spelling (save identity)
+    WindowIdPrefix = 'InventoryExtender:',
+    -- window roles, order = windowManager.lua WINDOW_TYPES order (registration and iteration order)
+    Roles = {
+        Inventory = 'Inventory',
+        Trade     = 'Trade',
+        Container = 'Container',
+        Companion = 'Companion',
+    },
+    -- built-in mode keys; the values must equal the engine UI mode strings, because I.UI.removeMode
+    -- and I.UI.getWindowsForMode are engine-side lookups. Pickpocket is the one exception: it is an
+    -- IER-side key and is never passed to I.UI. Custom mode keys are mod-namespaced strings.
+    Modes = {
+        Interface  = 'Interface', -- also covers I.UI.getMode() == nil
+        Container  = 'Container',
+        Pickpocket = 'Pickpocket',
+        Barter     = 'Barter',
+        Companion  = 'Companion',
+    },
     Section = {
         Keybinds    = section 'Keybinds',
         Window      = section 'Window',

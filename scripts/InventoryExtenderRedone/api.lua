@@ -19,6 +19,8 @@ API.VERSION = D.API
 
 API.Constants = constants
 API.Helpers = helpers
+API.Roles = D.Roles
+API.Modes = D.Modes
 
 API.allWindowsDisabled = false
 
@@ -38,7 +40,7 @@ function API.hide(windowName, arg, force)
     windowManager:hide(windowName, arg, force)
 end
 
----@param windowName InventoryExtenderRedone.WindowType
+---@param windowName InventoryExtenderRedone.Role
 ---@return IER.Inventory? handler the window's handler, nil if the window is not open
 function API.getWindow(windowName)
     return windowManager:getWindow(windowName)
