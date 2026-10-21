@@ -21,6 +21,12 @@ local Actor     = types.Actor
 local Container = types.Container
 local Item      = types.Item
 local NPC       = types.NPC
+-- the whole handler runs in the player script context, so omwself is always a Player actor:
+-- cache the type table rather than re-reading omwself.type at every equip/inventory call
+local Player    = types.Player
+-- the inventory object is a live handle on the player actor, not a snapshot: caching it is
+-- safe, :getAll() still re-reads the current contents
+local playerInventory = Player.inventory(omwself)
 
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
@@ -1395,12 +1401,12 @@ function Inventory:onRowUse(row, role, allowOutsideInterface)
         return false
     end
 
-    if omwself.type.hasEquipped(omwself, row.item) then
-        local equipment = omwself.type.getEquipment(omwself)
+    if Player.hasEquipped(omwself, row.item) then
+        local equipment = Player.getEquipment(omwself)
         for slot, equippedItem in pairs(equipment) do
             if equippedItem == row.item then
                 equipment[slot] = nil
-                omwself.type.setEquipment(omwself, equipment)
+                Player.setEquipment(omwself, equipment)
                 local sound = helpers.getItemSound(row.item, 'down')
                 if sound then
                     ambient.playSound(sound)
@@ -1785,7 +1791,7 @@ function Inventory:createData()
     -- Add bartered items from other inventory
     if self.mode == 'Barter' then
         if self.role == 'Trade' then
-            local ownItems = omwself.type.inventory(omwself):getAll()
+            local ownItems = playerInventory:getAll()
             for i = 1, #ownItems do
                 table.insert(data, createRowData(ownItems[i], true, false, isOwned))
             end

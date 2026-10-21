@@ -21,6 +21,11 @@ local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 
 local Actor       = types.Actor
 local NPC         = types.NPC
+-- this file is player-context glue: omwself is always a Player, so the type table and the
+-- player inventory object are cached once at load instead of re-derived per call
+local Player      = types.Player
+
+local playerInventory = Player.inventory(omwself)
 
 
 local LBL_SPEND = l10n('UI_Barter_Spend')
@@ -125,7 +130,7 @@ function BarterControls:init(wnd)
                 return
             end
 
-            local playerGold = omwself.type.inventory(omwself):countOf('gold_001')
+            local playerGold = playerInventory:countOf('gold_001')
             if state.currentBalance < 0 and playerGold < math.abs(state.currentBalance) then
                 ui.showMessage(constants.Strings.BARTER_PC_TOO_POOR)
                 return
