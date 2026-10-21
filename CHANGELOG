@@ -1,5 +1,6 @@
 0.0.5 (2026-10-21)
 - basic restore of opened category
+- fixed wrong item counts when bartering or picking up items in grid mode
 
 0.0.4 (2026-10-19)
 - fixed OnPCEquip not resetting on drop/transfer when holding ALT
