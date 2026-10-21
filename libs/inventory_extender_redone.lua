@@ -17,7 +17,7 @@
 ---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
----@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. The mode key is the value of handler.mode
+---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?, uiMode:string?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. uiMode is the engine UI mode at the moment the window opens (nil = interface) and is forwarded to applies(); the mode key is the value of handler.mode
 ---@field getCategories fun():InventoryExtenderRedone.Category[]
 ---@field getCategory fun(key:string):InventoryExtenderRedone.Category?
 ---@field getDraggingObject fun():openmw.Object? returns dragged object or nil if not dragging
@@ -97,7 +97,7 @@
 ---@field Type string|fun():string
 ---@field isBartered boolean
 ---@field showAsEnchanted fun():boolean
----@field itemRecord {id:string, name:string, icon:string}
+---@field itemRecord {id:string, name:string, icon:string, isKey:boolean?, enchant:string?}
 ---@field getCount fun():number
 ---@field getNonDraggedCount fun():number
 ---@field sortCache table?
@@ -182,7 +182,7 @@
 ---@field id string? required for API.unpatchMode
 ---@field key InventoryExtenderRedone.ModeKey? target mode key; set by API.patchMode when omitted
 ---@field title string?
----@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context):boolean?
+---@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? same call shape as Mode.applies
 ---@field priority number?
 ---@field syncCategory boolean?
 ---@field drag InventoryExtenderRedone.Mode.Drag?

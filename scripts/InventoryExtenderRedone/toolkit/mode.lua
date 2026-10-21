@@ -227,11 +227,13 @@ local function mergeList(base, op)
 
     local ordered = {}
     local byId = {}
-    for i = 1, #(base or {}) do
-        local entry = base[i]
-        if entry and entry.id and not byId[entry.id] then
-            ordered[#ordered + 1] = entry.id
-            byId[entry.id] = entry
+    if base then
+        for i = 1, #base do
+            local entry = base[i]
+            if entry and entry.id and not byId[entry.id] then
+                ordered[#ordered + 1] = entry.id
+                byId[entry.id] = entry
+            end
         end
     end
 
@@ -415,13 +417,14 @@ function Mode.statePredicate(state, field)
 end
 
 --- Selection step, before Mode.resolve: which mode governs this window role. Built-in specs match
---- through applies(), which is provided by inventory on open. 
+--- through applies(), which is handed the engine UI mode by the caller: resolveMode takes uiMode and
+--- forwards it, so specs never call I.UI themselves and the mode cannot be stale at open.
 --- Highest priority wins; equal priorities are not ordered, so a custom mode that overlaps
 --- a built-in must out-prioritize it. Selection consults registered specs, not patched ones:
 --- patchMode changes slots, never which mode applies.
 ---@param role InventoryExtenderRedone.Role
 ---@param arg any? the target NPC/container/merchant
----@param uiMode string? UI mode when window opened
+---@param uiMode string? engine UI mode when the window opened (nil = interface)
 ---@return InventoryExtenderRedone.Mode? mode fully merged
 ---@return InventoryExtenderRedone.Mode.RoleSpec? roleSpec this role's merged slots
 function Mode.resolveMode(role, arg, uiMode)
