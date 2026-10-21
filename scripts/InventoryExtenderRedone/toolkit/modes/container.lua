@@ -14,6 +14,7 @@ local Roles = D.Roles
 local Modes = D.Modes
 
 local Container = types.Container
+local NPC = types.NPC
 
 
 -- Looting a container: the player's window plus the container's own window.
@@ -29,7 +30,18 @@ return {
         end
         return role == Roles.Inventory and uiMode == Modes.Container
     end,
-    drag = { allowed = true },
+    drag = {
+        allowed = true,
+        -- an NPC container partner auto-equips what it receives: this used to read the engine's
+        -- Container mode at transfer time, the mode spec decides it now, keyed by the mode that
+        -- started the transfer
+        autoEquip = function(ctx, object, source, destination)
+            local target = ctx.windowArgs[D.Roles.Container]
+            if target and NPC.objectIsInstance(target) then
+                return target
+            end
+        end,
+    },
     -- opening anything that is not a pickpocket target ends a session: today windowManager:show
     -- cleared the flag on every Container-role show that did not create a new one
     lifecycle = {
@@ -47,6 +59,10 @@ return {
             -- getDefaultStorage: only the Inventory role gets defaults outside Interface mode
             defaultStorage = { position = v2(0.05, 0.05), size = v2(0.45, 0.85) },
             sources = { { id = 'target' } },
+            actions = {
+                use = { id = 'usePlayer' },
+                pickup = { id = 'pickupContainerInventory' },
+            },
             states = {
                 -- the player's own rows in a chest: an organic container takes everything it
                 -- is offered, otherwise only what fits
@@ -62,6 +78,10 @@ return {
         },
         [Roles.Container] = {
             sources = { { id = 'target' } },
+            actions = {
+                use = { id = 'useTarget' },
+                pickup = { id = 'pickupContainerTarget' },
+            },
             states = {
                 -- tooltip ownership: whose contents this container holds
                 isOwned = function(handler, ctx)

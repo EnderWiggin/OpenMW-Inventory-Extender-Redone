@@ -20,16 +20,13 @@ local constants = require('scripts.InventoryExtenderRedone.util.constants')
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 
 
 local Actor     = types.Actor
-local Armor     = types.Armor
-local Clothing  = types.Clothing
 local Container = types.Container
 local Item      = types.Item
-local NPC       = types.NPC
 local Player    = types.Player
-local Weapon    = types.Weapon
 
 
 local playerInventory = Player.inventory(omwself)
@@ -203,7 +200,7 @@ function DragAndDrop:setDraggingObject(object)
     })
 end
 
-function DragAndDrop:transferInto(object, destination, source, count, pickpocket)
+function DragAndDrop:transferInto(object, destination, source, count, pickpocket, modeKey)
     if Container.objectIsInstance(destination) then
         local destRecord = destination.type.record(destination)
         if destRecord.isOrganic then
@@ -231,16 +228,12 @@ function DragAndDrop:transferInto(object, destination, source, count, pickpocket
     end
 
     if destination then
-        local uiMode = I.UI.getMode()
-        local autoEquip
-        if uiMode == 'Companion' and (Armor.objectIsInstance(object) or Clothing.objectIsInstance(object) or Weapon.objectIsInstance(object)) then
-            autoEquip = self.ctx.windowArgs['Companion']
-        elseif uiMode == 'Container' then
-            local target = self.ctx.windowArgs['Container']
-            if NPC.objectIsInstance(target) then
-                autoEquip = target
-            end
-        end
+        -- autoEquip is decided by the mode that started the transfer: the modeKey travels in
+        -- the activation context set at drag start, action parts pass it explicitly
+        local activationContext = self.draggingActivationContext
+        local mode = Mode.resolve(modeKey or activationContext and activationContext.modeKey)
+        local drag = mode and mode.drag
+        local autoEquip = drag and drag.autoEquip and drag.autoEquip(self.ctx, object, self.source, destination)
 
         self:tryUnequipping(object)
         core.sendGlobalEvent('IER_MoveInto', {

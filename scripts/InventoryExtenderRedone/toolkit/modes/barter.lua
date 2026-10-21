@@ -35,6 +35,12 @@ return {
                 { id = 'merchantOfOther' },
             },
             filters = { { id = 'barterOffer' } },
+            -- use is gated by which side of the offer the row sits on; pickup only ever
+            -- adjusts the offer bookkeeping (drag is off in this mode)
+            actions = {
+                use = { id = 'useBarterInventory' },
+                pickup = { id = 'pickupBarterInventory' },
+            },
         },
         [Roles.Trade] = {
             -- the merchant's own stock, plus what the player is offering from their pockets
@@ -43,6 +49,10 @@ return {
                 { id = 'self', isBartered = true },
             },
             filters = { { id = 'barterTradeOffer' } },
+            actions = {
+                use = { id = 'useBarterTrade' },
+                pickup = { id = 'pickupBarterTrade' },
+            },
         },
     },
 }

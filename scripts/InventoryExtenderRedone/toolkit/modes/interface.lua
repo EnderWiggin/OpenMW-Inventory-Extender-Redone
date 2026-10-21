@@ -26,6 +26,12 @@ return {
             pinnable = true,
             -- the player's own inventory: for this role the target always is omwself
             sources = { { id = 'target' } },
+            -- use is always allowed for the player's own window; a plain click drags and
+            -- Alt+click drops the item in the world (favorites refuse)
+            actions = {
+                use = { id = 'usePlayer' },
+                pickup = { id = 'pickupInterface' },
+            },
         },
     },
 }

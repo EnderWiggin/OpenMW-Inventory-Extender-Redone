@@ -26,8 +26,8 @@ return {
     -- more specific one wins
     priority = 2,
     -- the engine never sees this key: pickpocket runs under the engine's Container mode, so
-    -- drag stays allowed and nothing here may call I.UI with it
-    drag = { allowed = true },
+    -- drag stays allowed and nothing here may call I.UI with it. The drag slot is inherited
+    -- from Container outright, autoEquip included: the same NPC-partner rule applies here.
     -- the session used to be created in windowManager:show before the window opened; it lives
     -- here now, keyed by the target so reopening either window of this mode does not re-roll
     -- which items the sneak check left visible
@@ -45,6 +45,12 @@ return {
         [Roles.Container] = {
             -- list-slot op: this spec inherits Container's Container-role filters and adds one
             filters = { add = { { id = 'pickpocketVisibility' } } },
+            -- the take roll runs before either effect lands; use carries the session the roll
+            -- belongs to into the IER_UseItem payload
+            actions = {
+                use = { id = 'useTargetPickpocket' },
+                pickup = { id = 'pickpocketTake' },
+            },
             -- everything in an NPC's pockets is owned by that NPC, not by the player: the tooltip
             -- says "yours" for the duration of the session
             states = {

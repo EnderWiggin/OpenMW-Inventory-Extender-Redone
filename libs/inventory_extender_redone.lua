@@ -62,14 +62,14 @@
 ---@field hitPos openmw.util.Vector3? eligible world drop position from the last raycast (flat-enough surface)
 ---@field draggingObject openmw.Object? item currently dragged, nil when not dragging
 ---@field draggingCount number? number of units being dragged
----@field draggingActivationContext table? {role:InventoryExtenderRedone.Role, isBartered:boolean, modeKey:InventoryExtenderRedone.ModeKey} where the drag was started; modeKey is set once mode resolution is wired in
+---@field draggingActivationContext table? {role:InventoryExtenderRedone.Role, isBartered:boolean, modeKey:InventoryExtenderRedone.ModeKey} where the drag was started; modeKey is the IER mode that started it, read back by transferInto for autoEquip
 ---@field source openmw.Object? actor/container the dragged item came from
 ---@field resolveViewportDropTarget fun(self:InventoryExtenderRedone.DragAndDrop, position:openmw.util.Vector2, callback:fun(result, hitPos)) async raycast from viewport position; callback gets the raw hit and an eligible drop position (nil if surface too steep)
 ---@field getHoveredGameObject fun(self:InventoryExtenderRedone.DragAndDrop, position:openmw.util.Vector2) sets hoveredObject/hitPos from a viewport raycast
 ---@field startDrag fun(self:InventoryExtenderRedone.DragAndDrop, item:openmw.Object, source:openmw.Object?, count:number?, pickpocket:table?, activationContext:table?) sends IER_MoveInto with dragStart; lands as setDraggingObject via the IE_SetDraggingObject player event
 ---@field setDraggingObject fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object) enters drag state and creates ctx.cursorAttachedIcon (unless instantPickup)
 ---@field updatePosition fun(self:InventoryExtenderRedone.DragAndDrop) moves ctx.cursorAttachedIcon to the current cursor position
----@field transferInto fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, destination:openmw.Object?, source:openmw.Object?, count:number?, pickpocket:table?):boolean sends IER_MoveInto; false if item doesn't fit or container is organic
+---@field transferInto fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, destination:openmw.Object?, source:openmw.Object?, count:number?, pickpocket:InventoryExtenderRedone.Mode.PickpocketPayload?, modeKey:InventoryExtenderRedone.ModeKey?):boolean sends IER_MoveInto; autoEquip comes from that mode's drag slot, modeKey falls back to draggingActivationContext.modeKey; false if item doesn't fit or container is organic
 ---@field moveAll fun(self:InventoryExtenderRedone.DragAndDrop, source:openmw.Object, destination:openmw.Object, items:openmw.Object[]?) sends IER_MoveAll (Take All / dispose)
 ---@field stopDrag fun(self:InventoryExtenderRedone.DragAndDrop, target:openmw.Object?):boolean? transfers into target if given, then clears drag state and cursor icon; false if the transfer failed
 ---@field dropAt fun(self:InventoryExtenderRedone.DragAndDrop, object:openmw.Object, count:number?, position:openmw.util.Vector3) sends IER_Teleport to drop the item in the world at position
@@ -230,10 +230,15 @@
 ---@field isOwned? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? tooltip ownership
 ---@field badges InventoryExtenderRedone.RowBadgeProvider[]? mode-scoped sugar over API.registerRowBadge
 
+---@class InventoryExtenderRedone.Mode.PickpocketPayload
+---@field target openmw.Object the session the roll belongs to
+
 ---@class InventoryExtenderRedone.Mode.Action
 ---@field enabled? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
----@field perform? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? default effect; false stops the chain
----@field transfer fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context)? the Alt-held variant
+---@field perform? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context, count:number?):boolean? default effect; false stops the chain
+---@field transfer? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context, count:number?):boolean? the Alt-held variant
+---@field source? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? IER_UseItem payload: which inventory the item moves from first
+---@field pickpocket? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):InventoryExtenderRedone.Mode.PickpocketPayload? IER_UseItem payload: the session the roll belongs to
 
 ---@class InventoryExtenderRedone.Mode.Actions
 ---@field use InventoryExtenderRedone.Mode.Action?

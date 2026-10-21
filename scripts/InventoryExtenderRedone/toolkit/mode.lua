@@ -2,15 +2,26 @@
 
 local I = require('openmw.interfaces')
 
+local ambient    = require('openmw.ambient')
+local core       = require('openmw.core')
+local ui         = require('openmw.ui')
 
 local types      = require('openmw.types')
 local omwself    = require('openmw.self')
+local util       = require('openmw.util')
+local v2         = util.vector2
 
 local D          = require('scripts.InventoryExtenderRedone.config.defaults')
 local helpers    = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants  = require('scripts.InventoryExtenderRedone.util.constants')
 local pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
+local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
+local l10n       = core.l10n(D.L10N)
 
+local Armor   = types.Armor
+local Clothing = types.Clothing
+local NPC     = types.NPC
+local Weapon  = types.Weapon
 local Player = types.Player
 -- the player inventory is a live handle on omwself, not a snapshot: :getAll() re-reads contents
 local playerInventory = Player.inventory(omwself)
@@ -29,6 +40,7 @@ local playerInventory = Player.inventory(omwself)
 ---@field resolve fun(key:string, role:InventoryExtenderRedone.Role?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
 ---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?, uiMode:string?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
 ---@field resolveParts fun(library:table<string,any>, entries:any[]?):any[]
+---@field resolvePart fun(library:table<string,any>, entry:any?):any
 ---@field statePredicate fun(state:InventoryExtenderRedone.Mode.State?, field:string):(fun(...):boolean)?
 ---@field merge fun(base:InventoryExtenderRedone.Mode?, patch:InventoryExtenderRedone.ModePatch|InventoryExtenderRedone.Mode):InventoryExtenderRedone.Mode
 local Mode = {}
@@ -168,7 +180,206 @@ Mode.Filters = {
         end,
     },
 }
-Mode.Actions = {}
+-- Built-in row actions: gate + effect only. The shared row mechanics (bound-item and favorite
+-- guards, Alt/Shift/Ctrl modifiers, the stack-count popup) stay in the handler and call these
+-- parts with (row, handler, ctx, count); perform is the default effect, transfer the Alt-held
+-- variant. use parts also carry the IER_UseItem payload providers: which inventory the item
+-- moves from first and, during a pickpocket session, whose session the roll belongs to.
+local function useSourceSelf(row, handler, ctx)
+    return row.item.parentContainer or omwself
+end
+
+local function useSourceTarget(row, handler, ctx)
+    return row.item.parentContainer or handler.target
+end
+
+local function usePickpocketSession(row, handler, ctx)
+    local session = ctx.pickpocket
+    if session and session.active then
+        return { target = handler.target }
+    end
+    return nil
+end
+
+-- the shared drag start: every mode that allows dragging lands here; the activation context
+-- carries modeKey so the dragAndDrop singleton can find this spec back for autoEquip
+local function dragStart(row, handler, ctx, count, pickpocketCtx)
+    ctx.dragAndDrop:startDrag(
+        row.item,
+        handler.target,
+        count,
+        pickpocketCtx,
+        {
+            role = handler.role,
+            isBartered = row.isBartered,
+            modeKey = handler.mode,
+        }
+    )
+end
+
+local function performDrag(row, handler, ctx, count)
+    return dragStart(row, handler, ctx, count, nil)
+end
+
+local function performPickpocketDrag(row, handler, ctx, count)
+    local session = ctx.pickpocket
+    return dragStart(row, handler, ctx, count,
+        session and session.active and { target = handler.target } or nil)
+end
+
+-- Alt+click from the player's window hands the row to the mode's other window
+local function transferIntoWindow(role, modeKey)
+    return function(row, handler, ctx, count)
+        local target = ctx.windowArgs[role]
+        if target then
+            ctx.dragAndDrop:transferInto(row.item, target, omwself, count, nil, modeKey)
+        end
+    end
+end
+
+-- Alt+click from a target window hands the row to the player
+local function transferToPlayer(modeKey)
+    return function(row, handler, ctx, count)
+        ctx.dragAndDrop:transferInto(row.item, omwself, handler.target, count, nil, modeKey)
+    end
+end
+
+local function transferPickpocketToPlayer(row, handler, ctx, count)
+    local session = ctx.pickpocket
+    ctx.dragAndDrop:transferInto(row.item, omwself, handler.target, count,
+        session and session.active and { target = handler.target } or nil,
+        D.Modes.Pickpocket)
+end
+
+-- the pickpocket take roll runs before either pickup effect: a failed roll resolves the
+-- session, alerts the victim and closes the window, and stops the action
+local function rollPickpocketTake(row, handler, ctx)
+    local session = ctx.pickpocket
+    if session and session.active then
+        local success = pickpocket.rollTake(omwself, handler.target, row.item, row.getCount())
+        if not success then
+            session.resolved = true
+            core.sendGlobalEvent('IER_CommitPickpocket', {
+                player = omwself,
+                target = handler.target,
+                victimAware = true,
+            })
+            I.UI.removeMode(D.Modes.Container)
+            return false
+        end
+    end
+    return true
+end
+
+-- Barter offer bookkeeping: decrementTable is where a bartered row's units come back from,
+-- incrementTable is where a fresh offer is recorded; the two role parts differ only in which
+-- side of the offer they sit on
+local function barterOfferEffect(decrementTable, incrementTable)
+    return function(row, handler, ctx, count)
+        if row.isBartered then
+            local offer = ctx.barterState[decrementTable]
+            local entry = offer[row.item.id]
+            if entry then
+                entry.count = entry.count - count
+                if entry.count <= 0 then
+                    offer[row.item.id] = nil
+                end
+            end
+        else
+            local offer = ctx.barterState[incrementTable]
+            local entry = offer[row.item.id]
+            if not entry then
+                entry = { item = row.item, stacks = row.virtualStacks, count = 0 }
+                offer[row.item.id] = entry
+            end
+            entry.count = math.min(entry.count + count, row.getCount())
+        end
+        local sound = helpers.getItemSound(row.item, 'down')
+        if sound then
+            ambient.playSound(sound)
+        end
+        barterUtils.updateOffer(ctx)
+        omwself:sendEvent('IER_Update')
+    end
+end
+
+-- Interface world drop: favorite items refuse to leave the pockets
+local function worldDrop(row, handler, ctx, count)
+    if not handler:isFavorite(row.item) then
+        ctx.dragAndDrop:dropAtViewportPosition(row.item, count, v2(0.5, 0.5), true)
+    else
+        ui.showMessage(l10n('UI_Msg_FavoriteItem'))
+    end
+end
+
+Mode.Actions = {
+    -- use gate + payload for windows whose target is the actor themselves
+    usePlayer = {
+        enabled = function() return true end,
+        source = useSourceSelf,
+    },
+    -- use gate + payload for target windows: the item must move to the window's owner first
+    useTarget = {
+        enabled = function() return true end,
+        source = useSourceTarget,
+    },
+    -- the pickpocket Container role: same use as a target window, plus the session the roll
+    -- belongs to, carried into the IER_UseItem payload
+    useTargetPickpocket = {
+        enabled = function() return true end,
+        source = useSourceTarget,
+        pickpocket = usePickpocketSession,
+    },
+    -- Barter: the player's window may use only what they are not offering; the merchant's
+    -- only what they have already bought
+    useBarterInventory = {
+        enabled = function(row) return not row.isBartered end,
+        source = useSourceSelf,
+    },
+    useBarterTrade = {
+        enabled = function(row) return row.isBartered == true end,
+        source = useSourceSelf,
+    },
+    -- the default drag effect is shared; the transfer variant is per mode and per role
+    pickupInterface = {
+        perform = performDrag,
+        transfer = worldDrop,
+    },
+    pickupContainerInventory = {
+        perform = performDrag,
+        transfer = transferIntoWindow(D.Roles.Container, D.Modes.Container),
+    },
+    pickupContainerTarget = {
+        perform = performDrag,
+        transfer = transferToPlayer(D.Modes.Container),
+    },
+    pickupCompanionInventory = {
+        perform = performDrag,
+        transfer = transferIntoWindow(D.Roles.Companion, D.Modes.Companion),
+    },
+    pickupCompanionTarget = {
+        perform = performDrag,
+        transfer = transferToPlayer(D.Modes.Companion),
+    },
+    -- Barter never drags (drag.allowed is false), so only the transfer effect exists
+    pickupBarterInventory = {
+        transfer = barterOfferEffect('buying', 'selling'),
+    },
+    pickupBarterTrade = {
+        transfer = barterOfferEffect('selling', 'buying'),
+    },
+    -- pickpocket takes roll the sneak check before the drag/transfer lands
+    pickpocketTake = {
+        perform = function(row, handler, ctx, count)
+            if not rollPickpocketTake(row, handler, ctx) then return false end
+            return performPickpocketDrag(row, handler, ctx, count)
+        end,
+        transfer = function(row, handler, ctx, count)
+            if not rollPickpocketTake(row, handler, ctx) then return false end
+            return transferPickpocketToPlayer(row, handler, ctx, count)
+        end,
+    },
+}
 Mode.Info = {}
 
 --- Built-in specs, keyed by mode key. Custom specs live in ctx.modes and are never stored here.
@@ -378,21 +589,26 @@ end
 --- A spec entry may name a built-in part by id or carry its own behavior; the entry's own fields
 --- win over the library part, so a mod can reuse a built-in with one field changed. Resolved once
 --- at open, like the rest of the snapshot.
----@param library table<string,any> Mode.Sources, Mode.Filters, …
+---@param library table<string,any> Mode.Sources, Mode.Filters, Mode.Actions, …
+---@param entry any?
+---@return any
+function Mode.resolvePart(library, entry)
+    if not entry then return nil end
+    local part = library[entry.id]
+    if not part then return entry end
+    local merged = {}
+    for key, value in pairs(part) do merged[key] = value end
+    for key, value in pairs(entry) do merged[key] = value end
+    return merged
+end
+
+---@param library table<string,any> Mode.Sources, Mode.Filters, Mode.Actions, …
 ---@param entries any[]?
 ---@return any[]
 function Mode.resolveParts(library, entries)
     local resolved = {}
     for _, entry in ipairs(entries or {}) do
-        local part = library[entry.id]
-        if part then
-            local merged = {}
-            for key, value in pairs(part) do merged[key] = value end
-            for key, value in pairs(entry) do merged[key] = value end
-            resolved[#resolved + 1] = merged
-        else
-            resolved[#resolved + 1] = entry
-        end
+        resolved[#resolved + 1] = Mode.resolvePart(library, entry)
     end
     return resolved
 end
