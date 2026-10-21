@@ -16,11 +16,11 @@ return {
     priority = 1,
     -- the Trade window is only ever opened by a barter, so it needs no further test; the player's
     -- window is in this mode while the engine sits in Barter
-    applies = function(role, arg, ctx)
+    applies = function(role, arg, ctx, uiMode)
         if role == Roles.Trade then
             return true
         end
-        return role == Roles.Inventory and ctx.lastUiMode == Modes.Barter
+        return role == Roles.Inventory and uiMode == Modes.Barter
     end,
     -- validDragModes has no Barter key: dragging is off for both roles, and drag is a ctx
     -- singleton, so the flag is mode-wide rather than per role

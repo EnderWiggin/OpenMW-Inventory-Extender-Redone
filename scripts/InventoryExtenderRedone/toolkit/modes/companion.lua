@@ -15,11 +15,11 @@ return {
     priority = 1,
     -- the Companion window is only ever opened by a companion transfer; the player's window is in
     -- this mode while the engine sits in Companion
-    applies = function(role, arg, ctx)
+    applies = function(role, arg, ctx, uiMode)
         if role == Roles.Companion then
             return true
         end
-        return role == Roles.Inventory and ctx.lastUiMode == Modes.Companion
+        return role == Roles.Inventory and uiMode == Modes.Companion
     end,
     drag = { allowed = true },
     roles = {

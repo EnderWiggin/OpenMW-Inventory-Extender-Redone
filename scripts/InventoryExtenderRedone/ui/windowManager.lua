@@ -57,7 +57,6 @@ WindowManager.ctx = {
     isConsoleOpen = false,
     dragAndDrop = DragAndDrop,
     windowArgs = {},
-    lastUiMode = nil,
     stolenItems = {},
     favoriteItems = {},
     favoriteRevision = 0,
@@ -166,8 +165,6 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     if not configPlayer.window.b_EnableMod then
         return
     end
-
-    self.ctx.lastUiMode = newMode
 
     if oldMode == 'Barter' and self.ctx.barterState.success then
         ui.showMessage(constants.Strings.BARTER_THANK_YOU, {

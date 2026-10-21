@@ -505,7 +505,7 @@ function Inventory:onOpened(wnd, data, saved)
 
     -- the mode and its slots are snapshotted here: a mod patching the mode later affects the next
     -- open, not this window
-    local mode, roleSpec = Mode.resolveMode(self.role, self.arg)
+    local mode, roleSpec = Mode.resolveMode(self.role, self.arg, I.UI.getMode())
     self.mode = mode and mode.key or nil
     self.slots = roleSpec
     self.sources = Mode.resolveParts(Mode.Sources, roleSpec and roleSpec.sources)

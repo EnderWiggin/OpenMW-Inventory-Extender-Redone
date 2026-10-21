@@ -39,7 +39,6 @@
 ---@field modePatches table<string,InventoryExtenderRedone.ModePatch[]> registered mode patches per mode key, applied in reverse registration order
 ---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
 ---@field windowArgs table<string,openmw.Object?> key is one of InventoryExtenderRedone.Role; value is the arg passed to show (target NPC/container/merchant)
----@field lastUiMode string? last known UI mode (nil = interface)
 ---@field stolenItems table<string,table<string,number>> recordId -> (victim recordId or factionId -> count)
 ---@field favoriteItems table<string,boolean> item.id -> favorited (saved; blocks transfers outside Interface mode)
 ---@field favoriteRevision number bumped when favorites change (saved)
@@ -146,7 +145,7 @@
 ---@field key InventoryExtenderRedone.ModeKey
 ---@field base InventoryExtenderRedone.ModeKey? inherit this mode's slots, e.g. Pickpocket base = Container
 ---@field title string? l10n key, or fun(handler:IER.Inventory, arg:any?):string
----@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context):boolean? mode selection; the highest-priority applying mode wins
+---@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? mode selection; the highest-priority applying mode wins
 ---@field priority number? higher wins when several modes apply; default 0
 ---@field syncCategory boolean? category switching syncs across open windows; default true
 ---@field drag InventoryExtenderRedone.Mode.Drag? mode-wide: drag is a ctx singleton, not per window

@@ -27,7 +27,7 @@ local playerInventory = Player.inventory(omwself)
 ---@field Info table<string,InventoryExtenderRedone.Mode.InfoBarSection>
 ---@field Builtins table<string,InventoryExtenderRedone.Mode>
 ---@field resolve fun(key:string, role:InventoryExtenderRedone.Role?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
----@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
+---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?, uiMode:string?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
 ---@field resolveParts fun(library:table<string,any>, entries:any[]?):any[]
 ---@field statePredicate fun(state:InventoryExtenderRedone.Mode.State?, field:string):(fun(...):boolean)?
 ---@field merge fun(base:InventoryExtenderRedone.Mode?, patch:InventoryExtenderRedone.ModePatch|InventoryExtenderRedone.Mode):InventoryExtenderRedone.Mode
@@ -415,22 +415,22 @@ function Mode.statePredicate(state, field)
 end
 
 --- Selection step, before Mode.resolve: which mode governs this window role. Built-in specs match
---- through applies(), which reads ctx.lastUiMode (the engine UI mode mirrored into ctx by
---- windowManager:onUiModeChanged) instead of calling I.UI itself, so the engine read stays in one
---- place. Highest priority wins; equal priorities are not ordered, so a custom mode that overlaps
+--- through applies(), which is provided by inventory on open. 
+--- Highest priority wins; equal priorities are not ordered, so a custom mode that overlaps
 --- a built-in must out-prioritize it. Selection consults registered specs, not patched ones:
 --- patchMode changes slots, never which mode applies.
 ---@param role InventoryExtenderRedone.Role
 ---@param arg any? the target NPC/container/merchant
+---@param uiMode string? UI mode when window opened
 ---@return InventoryExtenderRedone.Mode? mode fully merged
 ---@return InventoryExtenderRedone.Mode.RoleSpec? roleSpec this role's merged slots
-function Mode.resolveMode(role, arg)
+function Mode.resolveMode(role, arg, uiMode)
     local ctx = I.InventoryExtenderRedone.getContext()
 
     local bestKey
     local bestPriority
     for key, spec in pairs(Mode.Builtins) do
-        if spec.applies and spec.applies(role, arg, ctx) then
+        if spec.applies and spec.applies(role, arg, ctx, uiMode) then
             local priority = spec.priority or Mode.Defaults.priority
             if not bestKey or priority > bestPriority then
                 bestKey = key
@@ -439,7 +439,7 @@ function Mode.resolveMode(role, arg)
         end
     end
     for key, spec in pairs(ctx.modes) do
-        if spec.applies and spec.applies(role, arg, ctx) then
+        if spec.applies and spec.applies(role, arg, ctx, uiMode) then
             local priority = spec.priority or Mode.Defaults.priority
             if not bestKey or priority > bestPriority then
                 bestKey = key

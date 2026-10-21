@@ -23,11 +23,11 @@ return {
     -- beats Interface; Pickpocket beats this one when the target is a live NPC, so the Container
     -- role applies unconditionally and the NPC case is decided by the more specific spec
     priority = 1,
-    applies = function(role, arg, ctx)
+    applies = function(role, arg, ctx, uiMode)
         if role == Roles.Container then
             return true
         end
-        return role == Roles.Inventory and ctx.lastUiMode == Modes.Container
+        return role == Roles.Inventory and uiMode == Modes.Container
     end,
     drag = { allowed = true },
     -- opening anything that is not a pickpocket target ends a session: today windowManager:show

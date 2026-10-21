@@ -18,7 +18,7 @@ return {
     base = Modes.Container,
     -- beats Container when the target is a live NPC; the Container role applies unconditionally,
     -- so the NPC case is decided by this more specific spec
-    applies = function(role, arg, ctx)
+    applies = function(role, arg, ctx, uiMode)
         if role ~= Roles.Container then return false end
         return Pickpocket.isTarget(arg)
     end,
