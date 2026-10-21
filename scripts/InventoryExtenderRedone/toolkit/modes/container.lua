@@ -3,16 +3,42 @@
 local util = require('openmw.util')
 local v2 = util.vector2
 
+local I = require('openmw.interfaces')
+local types = require('openmw.types')
+local omwself = require('openmw.self')
+
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
+local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local Roles = D.Roles
 local Modes = D.Modes
+
+local Container = types.Container
 
 
 -- Looting a container: the player's window plus the container's own window.
 ---@type InventoryExtenderRedone.Mode
 return {
     key = Modes.Container,
+    -- beats Interface; Pickpocket beats this one when the target is a live NPC, so the Container
+    -- role applies unconditionally and the NPC case is decided by the more specific spec
+    priority = 1,
+    applies = function(role, arg, ctx)
+        if role == Roles.Container then
+            return true
+        end
+        return role == Roles.Inventory and ctx.lastUiMode == Modes.Container
+    end,
     drag = { allowed = true },
+    -- opening anything that is not a pickpocket target ends a session: today windowManager:show
+    -- cleared the flag on every Container-role show that did not create a new one
+    lifecycle = {
+        onOpened = function(handler, arg, saved)
+            if not Pickpocket.isTarget(arg) then
+                I.InventoryExtenderRedone.getContext().pickpocket = nil
+            end
+        end,
+    },
     roles = {
         [Roles.Inventory] = {
             -- literal, never derived from the mode key: this is the UIToolkit:WindowData key,
@@ -20,7 +46,31 @@ return {
             storageSuffix = ':Container',
             -- getDefaultStorage: only the Inventory role gets defaults outside Interface mode
             defaultStorage = { position = v2(0.05, 0.05), size = v2(0.45, 0.85) },
+            sources = { { id = 'target' } },
+            states = {
+                -- the player's own rows in a chest: an organic container takes everything it
+                -- is offered, otherwise only what fits
+                isDisabled = function(row, handler, ctx)
+                    if row.isBartered then return false end
+                    local container = handler.arg
+                    if Container.objectIsInstance(container) and Container.record(container).isOrganic then
+                        return true
+                    end
+                    return not helpers.doesItemFit(row.item, container, 1)
+                end,
+            },
         },
-        [Roles.Container] = {},
+        [Roles.Container] = {
+            sources = { { id = 'target' } },
+            states = {
+                -- tooltip ownership: whose contents this container holds
+                isOwned = function(handler, ctx)
+                    if Container.objectIsInstance(handler.target) then
+                        return helpers.isStealing(omwself, handler.target.owner, handler.target.globalVariable)
+                    end
+                    return false
+                end,
+            },
+        },
     },
 }

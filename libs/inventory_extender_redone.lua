@@ -17,6 +17,7 @@
 ---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
+---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. The mode key is the value of handler.mode
 ---@field getCategories fun():InventoryExtenderRedone.Category[]
 ---@field getCategory fun(key:string):InventoryExtenderRedone.Category?
 ---@field getDraggingObject fun():openmw.Object? returns dragged object or nil if not dragging

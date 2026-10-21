@@ -37,6 +37,7 @@ local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
 local persistentCorpses = require('scripts.InventoryExtenderRedone.util.persistentCorpses')
 local l10n = core.l10n(D.L10N)
 local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
+local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 local InfoBar = require('scripts.InventoryExtenderRedone.toolkit.info_bar')
 local BarterControls = require('scripts.InventoryExtenderRedone.toolkit.barter_controls')
 local GridIcon = require('scripts.InventoryExtenderRedone.toolkit.grid_icon_provider')
@@ -211,27 +212,6 @@ local function getNonDraggedCount(row, type, mode)
     return nonDraggedCount
 end
 
-local function isStealing(actor, ownerInfo, variable)
-    if not ownerInfo then return false end
-
-    local ctx = I.InventoryExtenderRedone.getContext()
-    if variable then
-        local value = ctx.containerVariables[variable]
-        if value and value ~= 0 then return false end
-    end
-
-    if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
-        return true
-    end
-
-    if ownerInfo.factionId then
-        local reqRank = ownerInfo.factionRank or 1
-        if NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
-            return true
-        end
-    end
-    return false
-end
 
 
 local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
@@ -503,6 +483,9 @@ end
 ---@field arg table
 ---@field wnd UIToolkit.Window
 ---@field role InventoryExtenderRedone.Role
+---@field mode InventoryExtenderRedone.ModeKey? the mode key this window snapshotted at open
+---@field slots InventoryExtenderRedone.Mode.RoleSpec? this role's slots from that mode
+---@field sources InventoryExtenderRedone.Mode.Source[] those slots' sources, parts resolved at open
 local Inventory = Class(WindowHandler)
 
 function Inventory:init(role)
@@ -519,11 +502,23 @@ function Inventory:onOpened(wnd, data, saved)
     local IE = I.InventoryExtenderRedone
     local ctx = IE.getContext()
     self.ctx = ctx
-    self.mode = I.UI.getMode()
+
+    -- the mode and its slots are snapshotted here: a mod patching the mode later affects the next
+    -- open, not this window
+    local mode, roleSpec = Mode.resolveMode(self.role, self.arg)
+    self.mode = mode and mode.key or nil
+    self.slots = roleSpec
+    self.sources = Mode.resolveParts(Mode.Sources, roleSpec and roleSpec.sources)
+    local modeFilters = Mode.resolveParts(Mode.Filters, roleSpec and roleSpec.filters)
+
+    if mode and mode.lifecycle then
+        mode.lifecycle.onOpened(self, self.arg, saved)
+    end
 
     if self.role == 'Inventory' then
         self.target = omwself
-        if self.mode == 'Interface' then
+        -- pinnable comes from the role slot: only the Interface spec names it
+        if roleSpec and roleSpec.pinnable then
             self.wnd:setPinnable(true)
         end
     else
@@ -538,61 +533,17 @@ function Inventory:onOpened(wnd, data, saved)
         return true
     end)
 
-    self.filter:add('barterFilter', function(row)
-        if I.UI.getMode() ~= 'Barter' then return not row.isBartered end
-
-        local item = row.item
-        if helpers.isGold(item) then return false end
-
-        if item.type.record(item).isKey then return false end
-
-        local barterNpc = self.arg
-        if not barterNpc then return false end
-        local services = barterNpc.type.record(barterNpc).servicesOffered
-
-        if not services.MagicItems or not row.itemRecord.enchant then
-            for serviceName, type in pairs(constants.ServiceToType) do
-                if type.objectIsInstance(item) then
-                    if not services[serviceName] then
-                        return false
-                    end
-                    break
-                end
-            end
+    -- mode-provided row filters, between the structural ones: the dragged item, the search text
+    -- and the selected category are window-level, not mode behavior
+    for i = 1, #modeFilters do
+        local filter = modeFilters[i]
+        if filter.fn then
+            local fn = filter.fn
+            self.filter:add(filter.id, function(row)
+                return fn(row, self, ctx)
+            end)
         end
-
-        local buying = ctx.barterState.buying
-        local selling = ctx.barterState.selling
-
-        if self.role == 'Inventory' then
-            if row.isBartered then
-                return buying[item.id] and buying[item.id].count > 0
-            end
-
-            local sellingCount = selling[item.id] and selling[item.id].count or 0
-            return row.getCount() > sellingCount
-        elseif self.role == 'Trade' then
-            if self.target.type.hasEquipped(self.target, item) then
-                return false
-            end
-
-            if row.isBartered then
-                return selling[item.id] and selling[item.id].count > 0
-            end
-
-            local buyingCount = buying[item.id] and buying[item.id].count or 0
-            return row.getCount() > buyingCount
-        end
-        return true
-    end)
-
-    self.filter:add('pickpocketVisibilityFilter', function(row)
-        if self.role ~= 'Container' or I.UI.getMode() ~= 'Container' then
-            return true
-        end
-
-        return Pickpocket.isVisible(ctx.pickpocket, row.item)
-    end)
+    end
 
     ---@type string|nil
     local searchText = nil
@@ -854,11 +805,11 @@ function Inventory:onOpened(wnd, data, saved)
         end)
     end
 
+    -- the key this window's opened category is remembered under. It used to be the engine UI mode
+    -- plus a hand-written 'pickpocket' special case for the Container role; the mode key already
+    -- distinguishes Pickpocket from Container, so the special case is gone.
     local function getOpenedCategoryKey()
         --TODO: check trader services?
-        if self.role == 'Container' then
-            if ctx.pickpocket and ctx.pickpocket.active then return 'pickpocket' end
-        end
         return self.mode
     end
 
@@ -913,7 +864,10 @@ function Inventory:onOpened(wnd, data, saved)
 
             self:updateTitle()
 
-            openedCategory[getOpenedCategoryKey()] = category.key
+            local rememberedMode = getOpenedCategoryKey()
+            if rememberedMode then
+                openedCategory[rememberedMode] = category.key
+            end
             trySyncedCategorySwitch(category.key)
         end, function(text)
             searchText = text and text:lower()
@@ -933,7 +887,7 @@ function Inventory:onOpened(wnd, data, saved)
                 if ctx.pickpocket and ctx.pickpocket.active then
                     stolen = true
                 elseif Container.objectIsInstance(self.target) then
-                    stolen = isStealing(omwself, self.target.owner, self.target.globalVariable)
+                    stolen = helpers.isStealing(omwself, self.target.owner, self.target.globalVariable)
                 end
             end
         end
@@ -1635,6 +1589,8 @@ function Inventory:createData()
 
     local ctx = self.ctx
     local modifiers = ctx.modifiers.data
+    -- per-row state predicates come from the mode's states slot; a list of States ORs together
+    local rowIsDisabled = Mode.statePredicate(self.slots and self.slots.states, 'isDisabled')
     --context data for the tooltip
     --[[
     local IER = {
@@ -1739,14 +1695,8 @@ function Inventory:createData()
                 return false
             end,
             isDisabled = function()
-                if not isBartered and self.role == 'Inventory' and self.mode == 'Container' then
-                    local container = self.arg
-                    if Container.objectIsInstance(container) and Container.record(container).isOrganic then
-                        return true
-                    end
-                    return not helpers.doesItemFit(itemStack, container, 1)
-                end
-                return false
+                if not rowIsDisabled then return false end
+                return rowIsDisabled(rowData, self, ctx) == true
             end,
         }
 
@@ -1765,43 +1715,36 @@ function Inventory:createData()
 
     local data = {}
 
+    -- whose contents these rows are, for the tooltip badge: the mode's states slot decides
+    local states = self.slots and self.slots.states
+    local isOwnedState = states and states.isOwned
     local isOwned = false
-    if self.role == 'Container' then
-        if ctx.pickpocket and ctx.pickpocket.active then
-            isOwned = true
-        elseif Container.objectIsInstance(self.target) then
-            isOwned = isStealing(omwself, self.target.owner, self.target.globalVariable)
-        end
+    if isOwnedState then
+        isOwned = isOwnedState(self, ctx) == true
     end
 
-    -- Add primary inventory
-    if self.role ~= 'Trade' then
-        local allItems = self.target.type.inventory(self.target):getAll()
-        for i = 1, #allItems do
-            data[#data + 1] = createRowData(allItems[i], false, false, isOwned)
-        end
-    else
-        for _, recordId in pairs(helpers.getMerchantItems(self.target)) do
-            for i = 1, #recordId do
-                table.insert(data, createRowData(recordId[i], false, true, isOwned))
+    -- rows come from the mode's sources: which inventories feed this window, in order. The
+    -- primary feed and the cross-fed barter side are no longer hand-branched here.
+    local sources = self.sources or {}
+    for i = 1, #sources do
+        local source = sources[i]
+        if not (source.enabled and not source.enabled(self, ctx)) then
+            local items = source.get and source.get(self, ctx) or {}
+            local isBartered = source.isBartered == true
+            local isVirtual = source.virtual == true
+            local owned = isOwned
+            if source.isOwned ~= nil then
+                if type(source.isOwned) == 'function' then
+                    owned = source.isOwned(self, ctx) == true
+                else
+                    owned = source.isOwned == true
+                end
             end
-        end
-    end
 
-    -- Add bartered items from other inventory
-    if self.mode == 'Barter' then
-        if self.role == 'Trade' then
-            local ownItems = playerInventory:getAll()
-            for i = 1, #ownItems do
-                table.insert(data, createRowData(ownItems[i], true, false, isOwned))
-            end
-        else
-            local barterNpc = ctx.windowArgs.Trade or self.arg --TODO: consider removing `ctx.windowArgs`
-            if barterNpc then
-                for _, recordId in pairs(helpers.getMerchantItems(barterNpc)) do
-                    for i = 1, #recordId do
-                        table.insert(data, createRowData(recordId[i], true, true, isOwned))
-                    end
+            for j = 1, #items do
+                local item = items[j]
+                if not (source.filter and not source.filter(item, self, ctx)) then
+                    data[#data + 1] = createRowData(item, isBartered, isVirtual, owned)
                 end
             end
         end

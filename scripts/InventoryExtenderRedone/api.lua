@@ -10,6 +10,7 @@ local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
+local modeApi = require('scripts.InventoryExtenderRedone.toolkit.mode')
 
 local Player = types.Player
 
@@ -21,6 +22,12 @@ API.Constants = constants
 API.Helpers = helpers
 API.Roles = D.Roles
 API.Modes = D.Modes
+
+--- Which mode governs a window role right now: applies() + priority winner, patches merged.
+--- Returns the fully merged mode and that role's slots, or nil when no registered mode applies.
+--- The mode key is the value of handler.mode; the second return is what the handler snapshots
+--- into its slots at open.
+API.resolveMode = modeApi.resolveMode
 
 API.allWindowsDisabled = false
 

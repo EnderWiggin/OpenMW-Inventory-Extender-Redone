@@ -19,6 +19,7 @@ local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local RoleRegistry = require('scripts.InventoryExtenderRedone.ui.roles')
+local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 
 local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
 
@@ -110,19 +111,20 @@ end
 ---@param role InventoryExtenderRedone.Role
 ---@param arg any? the target NPC/container/merchant
 function WindowManager:show(role, arg)
-    if role == D.Roles.Container then
-        if Pickpocket.isTarget(arg) then
-            self.ctx.pickpocket = Pickpocket.createSession(omwself, arg)
-        else
-            self.ctx.pickpocket = nil
-        end
-    end
-
     self.ctx.windowArgs[role] = arg or self.ctx.windowArgs[role]
+
+    -- which behavior set this window gets; the pickpocket session is no longer created here, it
+    -- comes from the Pickpocket spec's lifecycle.onOpened, and the Container spec clears it when
+    -- a real chest window opens
+    local mode = Mode.resolveMode(role, arg)
 
     local windowId = getWindowId(role)
     local handler = Manager.getHandler(windowId) --[[@as IER.Inventory?]]
-    if handler and role == D.Roles.Inventory and handler.mode ~= I.UI.getMode() then
+    -- only the Inventory role needs this: the engine re-shows it when the UI mode changes but
+    -- leaves it open, so its snapshot of the previous mode's slots is stale. The target windows
+    -- are opened and closed by their own mode, so an already-open one keeps its snapshot and is
+    -- never reopened from here.
+    if handler and role == D.Roles.Inventory and mode and handler.mode ~= mode.key then
         Manager.close(windowId, true)
         handler = nil
     end

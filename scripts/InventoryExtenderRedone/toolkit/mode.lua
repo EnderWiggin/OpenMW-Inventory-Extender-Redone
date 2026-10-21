@@ -3,6 +3,19 @@
 local I = require('openmw.interfaces')
 
 
+local types      = require('openmw.types')
+local omwself    = require('openmw.self')
+
+local D          = require('scripts.InventoryExtenderRedone.config.defaults')
+local helpers    = require('scripts.InventoryExtenderRedone.util.helpers')
+local constants  = require('scripts.InventoryExtenderRedone.util.constants')
+local pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
+
+local Player = types.Player
+-- the player inventory is a live handle on omwself, not a snapshot: :getAll() re-reads contents
+local playerInventory = Player.inventory(omwself)
+
+
 -- Mode specs are pure behavior: they never register windows, a new window role only comes
 -- through API.registerWindowRole. Slots are keyed per window role because the Inventory role
 -- appears in four modes and needs four different slot sets.
@@ -14,6 +27,9 @@ local I = require('openmw.interfaces')
 ---@field Info table<string,InventoryExtenderRedone.Mode.InfoBarSection>
 ---@field Builtins table<string,InventoryExtenderRedone.Mode>
 ---@field resolve fun(key:string, role:InventoryExtenderRedone.Role?):InventoryExtenderRedone.Mode,InventoryExtenderRedone.Mode.RoleSpec
+---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode,InventoryExtenderRedone.Mode.RoleSpec
+---@field resolveParts fun(library:table<string,any>, entries:any[]?):any[]
+---@field statePredicate fun(state:InventoryExtenderRedone.Mode.State?, field:string):fun(...):boolean?
 ---@field merge fun(base:InventoryExtenderRedone.Mode?, patch:InventoryExtenderRedone.ModePatch):InventoryExtenderRedone.Mode
 local Mode = {}
 
@@ -32,10 +48,126 @@ Mode.Defaults = {
 }
 
 --- Built-in part library. The namespaces are declared here so the contract resolves; the
---- phase that owns the behavior fills them: Phase 2 sources/filters/states, Phase 3 actions,
---- Phase 4 info bar. Specs reference parts by id, never by inlining behavior.
-Mode.Sources = {}
-Mode.Filters = {}
+--- phase that owns the behavior fills them: sources and filters arrived with Phase 2, actions
+--- come with Phase 3 and the info bar with Phase 4. Specs reference parts by id, never by
+--- inlining behavior, and a part never branches on handler.role - which RoleSpec names the
+--- part decides that.
+local function merchantItems(npc)
+    local merged = helpers.getMerchantItems(npc)
+    local flat = {}
+    for _, stacks in pairs(merged) do
+        for i = 1, #stacks do
+            flat[#flat + 1] = stacks[i]
+        end
+    end
+    return flat
+end
+
+--- The merchant-services gate both barter roles share: gold and keys are never offered, and an
+--- item's service must be offered by the merchant unless it is enchanted and MagicItems is.
+---@param row InventoryExtenderRedone.RowData
+---@param npc openmw.Object?
+---@return boolean
+local function isOfferedByMerchant(row, npc)
+    if not npc then return false end
+    if helpers.isGold(row.item) then return false end
+    if row.itemRecord.isKey then return false end
+
+    local services = npc.type.record(npc).servicesOffered
+    if not services.MagicItems or not row.itemRecord.enchant then
+        for serviceName, serviceType in pairs(constants.ServiceToType) do
+            if serviceType.objectIsInstance(row.item) then
+                if not services[serviceName] then
+                    return false
+                end
+                break
+            end
+        end
+    end
+    return true
+end
+
+Mode.Sources = {
+    -- the window's own target inventory: the player's for the Inventory role, the container's or
+    -- the companion's for its own role
+    target = {
+        id = 'target',
+        get = function(handler, ctx)
+            return handler.target.type.inventory(handler.target):getAll()
+        end,
+    },
+    -- always the player's own inventory, whichever window asks for the other side of a barter
+    self = {
+        id = 'self',
+        get = function(handler, ctx)
+            return playerInventory:getAll()
+        end,
+    },
+    -- merchant stock merged into virtual stacks; the two ids differ only in which NPC is asked,
+    -- and merchantOfOther keeps the ctx.windowArgs fallback because the engine may open the
+    -- player's window before the Trade window has recorded the merchant
+    --TODO: consider removing ctx.windowArgs
+    merchantOfTarget = {
+        id = 'merchantOfTarget',
+        virtual = true,
+        get = function(handler, ctx)
+            return merchantItems(handler.target)
+        end,
+    },
+    merchantOfOther = {
+        id = 'merchantOfOther',
+        virtual = true,
+        -- this side is always the far end of an offer: the rows exist to show what the other
+        -- window is holding out for
+        isBartered = true,
+        get = function(handler, ctx)
+            local barterNpc = ctx.windowArgs[D.Roles.Trade] or handler.arg
+            if not barterNpc then return {} end
+            return merchantItems(barterNpc)
+        end,
+    },
+}
+
+Mode.Filters = {
+    -- the player's window in Barter mode: what may be sold, plus what the merchant already bought
+    barterOffer = {
+        id = 'barterOffer',
+        fn = function(row, handler, ctx)
+            if not isOfferedByMerchant(row, handler.arg) then return false end
+            local item = row.item
+            local buying = ctx.barterState.buying
+            local selling = ctx.barterState.selling
+            if row.isBartered then
+                return buying[item.id] and buying[item.id].count > 0
+            end
+            local sellingCount = selling[item.id] and selling[item.id].count or 0
+            return row.getCount() > sellingCount
+        end,
+    },
+    -- the merchant's window in Barter mode: its own stock minus what it wears, plus the player's offers
+    barterTradeOffer = {
+        id = 'barterTradeOffer',
+        fn = function(row, handler, ctx)
+            if handler.target.type.hasEquipped(handler.target, row.item) then return false end
+            if not isOfferedByMerchant(row, handler.arg) then return false end
+            local item = row.item
+            local buying = ctx.barterState.buying
+            local selling = ctx.barterState.selling
+            if row.isBartered then
+                return selling[item.id] and selling[item.id].count > 0
+            end
+            local buyingCount = buying[item.id] and buying[item.id].count or 0
+            return row.getCount() > buyingCount
+        end,
+    },
+    -- only the items the sneak roll left visible; a nil session means everything is visible
+    pickpocketVisibility = {
+        id = 'pickpocketVisibility',
+        fn = function(row, handler, ctx)
+            return pickpocket.isVisible(ctx.pickpocket, row.item)
+        end,
+    },
+}
 Mode.Actions = {}
 Mode.Info = {}
 
@@ -238,6 +370,86 @@ function Mode.resolve(key, role)
     local spec = mode.roles and mode.roles[role]
     if not spec then return mode end
     return mode, applyRoleDefaults(spec)
+end
+
+
+--- A spec entry may name a built-in part by id or carry its own behavior; the entry's own fields
+--- win over the library part, so a mod can reuse a built-in with one field changed. Resolved once
+--- at open, like the rest of the snapshot.
+---@param library table<string,any> Mode.Sources, Mode.Filters, …
+---@param entries any[]?
+---@return any[]
+function Mode.resolveParts(library, entries)
+    local resolved = {}
+    for _, entry in ipairs(entries or {}) do
+        local part = library[entry.id]
+        if part then
+            local merged = {}
+            for key, value in pairs(part) do merged[key] = value end
+            for key, value in pairs(entry) do merged[key] = value end
+            resolved[#resolved + 1] = merged
+        else
+            resolved[#resolved + 1] = entry
+        end
+    end
+    return resolved
+end
+
+--- A state slot names either one predicate or a list of States whose same-named predicates are
+--- OR-ed. Returns nil when the slot does not name the field at all.
+---@param state InventoryExtenderRedone.Mode.State?
+---@param field string
+---@return fun(...):boolean?
+function Mode.statePredicate(state, field)
+    local value = state and state[field]
+    if value == nil then return nil end
+    if type(value) == 'function' then return value end
+
+    return function(row, handler, ctx)
+        for i = 1, #value do
+            local nested = value[i] and value[i][field]
+            if nested and nested(row, handler, ctx) then return true end
+        end
+        return false
+    end
+end
+
+--- Selection step, before Mode.resolve: which mode governs this window role. Built-in specs match
+--- through applies(), which reads ctx.lastUiMode (the engine UI mode mirrored into ctx by
+--- windowManager:onUiModeChanged) instead of calling I.UI itself, so the engine read stays in one
+--- place. Highest priority wins; equal priorities are not ordered, so a custom mode that overlaps
+--- a built-in must out-prioritize it. Selection consults registered specs, not patched ones:
+--- patchMode changes slots, never which mode applies.
+---@param role InventoryExtenderRedone.Role
+---@param arg any? the target NPC/container/merchant
+---@return InventoryExtenderRedone.Mode? mode fully merged
+---@return InventoryExtenderRedone.Mode.RoleSpec? roleSpec this role's merged slots
+function Mode.resolveMode(role, arg)
+    local ctx = I.InventoryExtenderRedone.getContext()
+
+    local bestKey
+    local bestPriority
+    for key, spec in pairs(Mode.Builtins) do
+        if spec.applies and spec.applies(role, arg, ctx) then
+            local priority = spec.priority or Mode.Defaults.priority
+            if not bestKey or priority > bestPriority then
+                bestKey = key
+                bestPriority = priority
+            end
+        end
+    end
+    for key, spec in pairs(ctx.modes) do
+        if spec.applies and spec.applies(role, arg, ctx) then
+            local priority = spec.priority or Mode.Defaults.priority
+            if not bestKey or priority > bestPriority then
+                bestKey = key
+                bestPriority = priority
+            end
+        end
+    end
+
+    if not bestKey then return nil end
+    return Mode.resolve(bestKey, role)
 end
 
 

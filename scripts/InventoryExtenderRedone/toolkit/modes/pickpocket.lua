@@ -1,5 +1,8 @@
 ---@omw-context player
 
+local I = require('openmw.interfaces')
+local omwself = require('openmw.self')
+
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local Roles = D.Roles
@@ -13,22 +16,42 @@ local Modes = D.Modes
 return {
     key = Modes.Pickpocket,
     base = Modes.Container,
-    -- beats Container when the target is a live NPC; the Inventory role window is in this mode
-    -- while a session is active, which today is only the ctx.pickpocket.active flag
-    -- (windowManager.lua:119-125, inventory.lua:853)
+    -- beats Container when the target is a live NPC; the Container role applies unconditionally,
+    -- so the NPC case is decided by this more specific spec
     applies = function(role, arg, ctx)
-        if role == Roles.Container then
-            return Pickpocket.isTarget(arg)
-        end
-        local session = ctx.pickpocket
-        return session ~= nil and session.active == true
+        if role ~= Roles.Container then return false end
+        return Pickpocket.isTarget(arg)
     end,
-    priority = 1,
+    -- must beat Container (priority 1) outright: a live NPC target matches both specs, and the
+    -- more specific one wins
+    priority = 2,
     -- the engine never sees this key: pickpocket runs under the engine's Container mode, so
     -- drag stays allowed and nothing here may call I.UI with it
     drag = { allowed = true },
+    -- the session used to be created in windowManager:show before the window opened; it lives
+    -- here now, keyed by the target so reopening either window of this mode does not re-roll
+    -- which items the sneak check left visible
+    lifecycle = {
+        onOpened = function(handler, arg, saved)
+            local ctx = I.InventoryExtenderRedone.getContext()
+            if Pickpocket.isTarget(arg) and (not ctx.pickpocket or ctx.pickpocket.targetId ~= arg.id) then
+                ctx.pickpocket = Pickpocket.createSession(omwself, arg)
+            end
+        end,
+    },
+    -- only the Container role is ever in this mode: the player's own window keeps Container's
+    -- slots during a pickpocket session, which is what it did before the mode existed
     roles = {
-        [Roles.Inventory] = {},
-        [Roles.Container] = {},
+        [Roles.Container] = {
+            -- list-slot op: this spec inherits Container's Container-role filters and adds one
+            filters = { add = { { id = 'pickpocketVisibility' } } },
+            -- everything in an NPC's pockets is owned by that NPC, not by the player: the tooltip
+            -- says "yours" for the duration of the session
+            states = {
+                isOwned = function(handler, ctx)
+                    return true
+                end,
+            },
+        },
     },
 }

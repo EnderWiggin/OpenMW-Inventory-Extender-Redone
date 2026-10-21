@@ -744,6 +744,34 @@ Helpers.getMerchantItems = function(npc)
     return virtualMerged
 end
 
+--- Whose contents this container holds: the vanilla ownership global first, then the owner record
+--- or the faction rank. Shared by the Container mode's tooltip ownership and the stolen-item badge.
+---@param actor openmw.Object
+---@param ownerInfo openmw.OwnerInfo?
+---@param variable string? the vanilla container ownership global name
+---@return boolean
+Helpers.isStealing = function(actor, ownerInfo, variable)
+    if not ownerInfo then return false end
+
+    if variable then
+        local ctx = I.InventoryExtenderRedone.getContext()
+        local value = ctx.containerVariables[variable]
+        if value and value ~= 0 then return false end
+    end
+
+    if ownerInfo.recordId and ownerInfo.recordId ~= actor.recordId then
+        return true
+    end
+
+    if ownerInfo.factionId then
+        local reqRank = ownerInfo.factionRank or 1
+        if types.NPC.getFactionRank(actor, ownerInfo.factionId) < reqRank then
+            return true
+        end
+    end
+    return false
+end
+
 Helpers.isGold = function(item)
     local id = type(item) == 'string' and item:lower() or item.recordId:lower()
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
