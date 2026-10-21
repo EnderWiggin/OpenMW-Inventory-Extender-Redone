@@ -12,7 +12,7 @@ local M = {
     API = 2,
     -- window ids and UIToolkit:WindowData keys must keep the pre-rename spelling (save identity)
     WindowIdPrefix = 'InventoryExtender:',
-    -- window roles, order = windowManager.lua WINDOW_TYPES order (registration and iteration order)
+    -- window roles, order = ui/roles.lua registration order (registration and iteration order)
     Roles = {
         Inventory = 'Inventory',
         Trade     = 'Trade',

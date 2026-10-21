@@ -147,7 +147,7 @@ end
 --- By default, this equips or uses the item. In barter, the use action is routed to the pick-up handler.
 --- Handlers are called in reverse order of registration until one returns false, at which point the activation is not processed further. If all handlers return true, the default activation behavior is executed.
 --- @param id string A unique identifier for the handler
---- @param handler fun(row: table, ctx: table, windowType: string):boolean? The handler function
+--- @param handler fun(row: table, ctx: table, role: string):boolean? The handler function
 function API.registerRowUseHandler(id, handler)
     for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowUse) do
         if existingHandler.id:lower() == id:lower() then
@@ -162,7 +162,7 @@ end
 --- By default, this picks up the item or drops/transfers it if Alt is held. In barter, it adds/removes the item from the current barter offer.
 --- Handlers are called in reverse order of registration until one returns false, at which point the click is not processed further. If all handlers return true, the default click behavior is executed.
 --- @param id string A unique identifier for the handler
---- @param handler fun(row: table, ctx: table, windowType: string):boolean? The handler function
+--- @param handler fun(row: table, ctx: table, role: string):boolean? The handler function
 function API.registerRowPickupHandler(id, handler)
     for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowPickup) do
         if existingHandler.id:lower() == id:lower() then

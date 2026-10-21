@@ -44,10 +44,10 @@ local function init()
     end
     if not I.GamepadControls.isControllerMenusEnabled or not I.GamepadControls.isControllerMenusEnabled() then
         local overrides = {
-            'Inventory',
-            'Trade',
-            'Container',
-            'Companion',
+            D.Roles.Inventory,
+            D.Roles.Trade,
+            D.Roles.Container,
+            D.Roles.Companion,
         }
         for _, windowName in ipairs(overrides) do
             I.UI.registerWindow(windowName, function(arg) API.show(windowName, arg) end,

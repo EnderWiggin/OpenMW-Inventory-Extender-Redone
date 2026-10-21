@@ -36,7 +36,7 @@ end)
 return {
     eventHandlers = {
         IER_Window_Opened = function(data)
-            if data.type ~= 'Inventory' or data.mode ~= 'Interface' then return end
+            if data.role ~= 'Inventory' or data.mode ~= 'Interface' then return end
 
             local handler = assert(I.UIToolkit.WindowManager.getHandler(data.id)) --[[@as  IER.Inventory]]
             local sz = handler.infoBar:getHeight()
@@ -48,7 +48,7 @@ return {
                 icon = 'icons/m/misc_hammer10.dds',
                 size = v2(1, 1) * sz,
                 onClick = function()
-                    I.InventoryExtenderRedone.hide(data.type)
+                    I.InventoryExtenderRedone.hide(data.role)
                     CF.openCraftingWindow()
                 end,
                 colorable = false,

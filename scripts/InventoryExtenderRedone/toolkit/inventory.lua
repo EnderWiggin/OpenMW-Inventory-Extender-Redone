@@ -456,8 +456,8 @@ local function combineHiddenColumns(columns, categoryHidden)
     return hidden
 end
 
-local function getStorageSuffix(type)
-    if type ~= 'Inventory' then return nil end
+local function getStorageSuffix(role)
+    if role ~= 'Inventory' then return nil end
     local mode = I.UI.getMode()
     if mode == 'Barter' or mode == 'Container' or mode == 'Companion' then
         return ':' .. mode
@@ -465,7 +465,7 @@ local function getStorageSuffix(type)
     return nil
 end
 
-local function canUseItem(row, windowType, allowOutsideInterface)
+local function canUseItem(row, role, allowOutsideInterface)
     local mode = I.UI.getMode()
     if mode == 'Interface' then
         return true
@@ -480,11 +480,11 @@ local function canUseItem(row, windowType, allowOutsideInterface)
     end
 
     if mode == 'Barter' then
-        local effectiveWindowType = windowType
-        if effectiveWindowType == 'Inventory' then
+        local effectiveRole = role
+        if effectiveRole == 'Inventory' then
             return not row.isBartered
         end
-        if effectiveWindowType == 'Trade' then
+        if effectiveRole == 'Trade' then
             return row.isBartered == true
         end
     end
@@ -496,10 +496,11 @@ end
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
 ---@field wnd UIToolkit.Window
+---@field role InventoryExtenderRedone.Role
 local Inventory = Class(WindowHandler)
 
-function Inventory:init(type)
-    self.type = type
+function Inventory:init(role)
+    self.role = role
 end
 
 ---@param wnd UIToolkit.Window
@@ -508,13 +509,13 @@ end
 function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
-    self.suffix = getStorageSuffix(self.type)
+    self.suffix = getStorageSuffix(self.role)
     local IE = I.InventoryExtenderRedone
     local ctx = IE.getContext()
     self.ctx = ctx
     self.mode = I.UI.getMode()
 
-    if self.type == 'Inventory' then
+    if self.role == 'Inventory' then
         self.target = omwself
         if self.mode == 'Interface' then
             self.wnd:setPinnable(true)
@@ -557,14 +558,14 @@ function Inventory:onOpened(wnd, data, saved)
         local buying = ctx.barterState.buying
         local selling = ctx.barterState.selling
 
-        if self.type == 'Inventory' then
+        if self.role == 'Inventory' then
             if row.isBartered then
                 return buying[item.id] and buying[item.id].count > 0
             end
 
             local sellingCount = selling[item.id] and selling[item.id].count or 0
             return row.getCount() > sellingCount
-        elseif self.type == 'Trade' then
+        elseif self.role == 'Trade' then
             if self.target.type.hasEquipped(self.target, item) then
                 return false
             end
@@ -580,7 +581,7 @@ function Inventory:onOpened(wnd, data, saved)
     end)
 
     self.filter:add('pickpocketVisibilityFilter', function(row)
-        if self.type ~= 'Container' or I.UI.getMode() ~= 'Container' then
+        if self.role ~= 'Container' or I.UI.getMode() ~= 'Container' then
             return true
         end
 
@@ -849,7 +850,7 @@ function Inventory:onOpened(wnd, data, saved)
 
     local function getOpenedCategoryKey()
         --TODO: check trader services?
-        if self.type == 'Container' then
+        if self.role == 'Container' then
             if ctx.pickpocket and ctx.pickpocket.active then return 'pickpocket' end
         end
         return self.mode
@@ -920,9 +921,9 @@ function Inventory:onOpened(wnd, data, saved)
         local stolen = false
 
         if configPlayer.tweaks.b_StolenIndicator then
-            if self.type == 'Inventory' and ctx.stolenItems then
+            if self.role == 'Inventory' and ctx.stolenItems then
                 stolen = ctx.stolenItems[row.item.recordId] ~= nil
-            elseif self.type == 'Container' then
+            elseif self.role == 'Container' then
                 if ctx.pickpocket and ctx.pickpocket.active then
                     stolen = true
                 elseif Container.objectIsInstance(self.target) then
@@ -1015,7 +1016,7 @@ function Inventory:onOpened(wnd, data, saved)
     ---@type UIToolkit.ListItem.Column.Renderer
     local function nameRenderer(row, cfg, height)
         ---@cast row InventoryExtenderRedone.RowData
-        local nonDraggedCount = getNonDraggedCount(row, self.type)
+        local nonDraggedCount = getNonDraggedCount(row, self.role)
 
         local text = helpers.getItemName(row.item) ..
             (nonDraggedCount > 1 and (' (%s)'):format(H.addSeparators(nonDraggedCount)) or '')
@@ -1063,7 +1064,7 @@ function Inventory:onOpened(wnd, data, saved)
     local function nameUpdater(part, row, cfg)
         local changed = false
         ---@cast row InventoryExtenderRedone.RowData
-        local nonDraggedCount = getNonDraggedCount(row, self.type)
+        local nonDraggedCount = getNonDraggedCount(row, self.role)
 
         local text = helpers.getItemName(row.item) ..
             (nonDraggedCount > 1 and (' (%s)'):format(H.addSeparators(nonDraggedCount)) or '')
@@ -1242,7 +1243,7 @@ function Inventory:onInput(bind)
                 self:onRowPickup(row, true, false)
             end
         elseif row then
-            self:onRowUse(row, self.type, false)
+            self:onRowUse(row, self.role, false)
         end
     end
 end
@@ -1276,7 +1277,7 @@ function Inventory:onControllerButtonPress(button)
                     self:onRowPickup(row, true, false)
                 end
             elseif row then
-                self:onRowUse(row, self.type, false)
+                self:onRowUse(row, self.role, false)
             end
         end
     end
@@ -1289,11 +1290,11 @@ end
 
 function Inventory:getStorageSuffix()
     if self.wnd then return self.suffix end
-    return getStorageSuffix(self.type)
+    return getStorageSuffix(self.role)
 end
 
 function Inventory:getDefaultStorage()
-    if self.type ~= 'Inventory' or I.UI.getMode() == 'Interface' then return nil end
+    if self.role ~= 'Inventory' or I.UI.getMode() == 'Interface' then return nil end
     return { position = v2(0.05, 0.05), size = v2(0.45, 0.85) }
 end
 
@@ -1349,48 +1350,48 @@ function Inventory:isFavoriteTransferBlocked(row)
 end
 
 ---@param row InventoryExtenderRedone.RowData
----@param windowType string
+---@param role InventoryExtenderRedone.Role
 ---@return openmw.Object
-function Inventory:getUseItemSource(row, windowType)
-    local effectiveWindowType = windowType
+function Inventory:getUseItemSource(row, role)
+    local effectiveRole = role
     if row.item.parentContainer ~= nil then
         return row.item.parentContainer
     end
-    if effectiveWindowType == 'Container' or effectiveWindowType == 'Companion' then
+    if effectiveRole == 'Container' or effectiveRole == 'Companion' then
         return self.target
     end
     return omwself
 end
 
 ---@param row InventoryExtenderRedone.RowData
----@param windowType string
+---@param role InventoryExtenderRedone.Role
 ---@return {target:openmw.Object}|nil
-function Inventory:getUseItemPickpocket(row, windowType)
-    local effectiveWindowType = windowType
+function Inventory:getUseItemPickpocket(row, role)
+    local effectiveRole = role
     local ctx = self.ctx
     local mode = I.UI.getMode()
-    if mode == 'Container' and effectiveWindowType == 'Container' and ctx.pickpocket and ctx.pickpocket.active then
+    if mode == 'Container' and effectiveRole == 'Container' and ctx.pickpocket and ctx.pickpocket.active then
         return { target = self.target }
     end
     return nil
 end
 
 ---@param row InventoryExtenderRedone.RowData
----@param windowType string
+---@param role InventoryExtenderRedone.Role
 ---@param allowOutsideInterface boolean
-function Inventory:onRowUse(row, windowType, allowOutsideInterface)
+function Inventory:onRowUse(row, role, allowOutsideInterface)
     if I.UI.getMode() == 'Barter' then
         return self:onRowPickup(row, true, true)
     end
     local ctx = self.ctx
     for i = #ctx.handlers.onRowUse, 1, -1 do
         local handler = ctx.handlers.onRowUse[i]
-        if handler.handler(row, ctx, self.type) == false then
+        if handler.handler(row, ctx, self.role) == false then
             return false
         end
     end
 
-    if not canUseItem(row, windowType, allowOutsideInterface) then
+    if not canUseItem(row, role, allowOutsideInterface) then
         return false
     end
 
@@ -1412,8 +1413,8 @@ function Inventory:onRowUse(row, windowType, allowOutsideInterface)
         core.sendGlobalEvent('IER_UseItem', {
             object = row.item,
             actor = omwself,
-            source = self:getUseItemSource(row, windowType),
-            pickpocket = self:getUseItemPickpocket(row, windowType),
+            source = self:getUseItemSource(row, role),
+            pickpocket = self:getUseItemPickpocket(row, role),
         })
     end
 end
@@ -1431,12 +1432,12 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     end
 
     if configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
-        return self:onRowUse(row, self.type, true)
+        return self:onRowUse(row, self.role, true)
     end
 
     for i = #ctx.handlers.onRowPickup, 1, -1 do
         local handler = ctx.handlers.onRowPickup[i]
-        if handler.handler(row, ctx, self.type) == false then
+        if handler.handler(row, ctx, self.role) == false then
             return false
         end
     end
@@ -1444,7 +1445,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     if helpers.isBoundItem(row.item) then
         local gmst
         if I.UI.getMode() == 'Barter' then
-            if self.type == 'Trade' then
+            if self.role == 'Trade' then
                 gmst = 'sBarterDialog10' --can't buy summoned items
             else
                 gmst = 'sBarterDialog9'  --can't sell summoned items
@@ -1466,22 +1467,22 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
 
     if takeAll and takeOne and not forceBarterAction then
-        self:onRowUse(row, self.type, false)
+        self:onRowUse(row, self.role, false)
         return
     end
 
     local itemCount = row.getCount()
     if I.UI.getMode() == 'Barter' then
         if row.isBartered then
-            if self.type == 'Inventory' then
+            if self.role == 'Inventory' then
                 itemCount = (ctx.barterState.buying[row.item.id] or {}).count or 0
             else
                 itemCount = (ctx.barterState.selling[row.item.id] or {}).count or 0
             end
         else
-            if self.type == 'Inventory' then
+            if self.role == 'Inventory' then
                 itemCount = itemCount - ((ctx.barterState.selling[row.item.id] or {}).count or 0)
-            elseif self.type == 'Trade' then
+            elseif self.role == 'Trade' then
                 itemCount = itemCount - ((ctx.barterState.buying[row.item.id] or {}).count or 0)
             end
         end
@@ -1490,7 +1491,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     local function doAction(count)
         local mode = I.UI.getMode()
         local pickpocket = ctx.pickpocket
-        local isPickpocketTake = mode == 'Container' and self.type == 'Container' and pickpocket and
+        local isPickpocketTake = mode == 'Container' and self.role == 'Container' and pickpocket and
             pickpocket.active
 
         if isPickpocketTake then
@@ -1509,7 +1510,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
 
         if transfer then
             if mode == 'Container' or mode == 'Companion' then
-                if self.type == 'Inventory' then
+                if self.role == 'Inventory' then
                     if ctx.windowArgs[mode] then
                         ctx.dragAndDrop:transferInto(row.item, ctx.windowArgs[mode], omwself, count)
                     end
@@ -1519,7 +1520,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
                 end
             elseif mode == 'Barter' then
                 if row.isBartered then
-                    local table = self.type == 'Inventory' and ctx.barterState.buying or ctx.barterState.selling
+                    local table = self.role == 'Inventory' and ctx.barterState.buying or ctx.barterState.selling
                     if table[row.item.id] then
                         table[row.item.id].count = table[row.item.id].count - count
                         if table[row.item.id].count <= 0 then
@@ -1527,7 +1528,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
                         end
                     end
                 else
-                    local table = self.type == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
+                    local table = self.role == 'Inventory' and ctx.barterState.selling or ctx.barterState.buying
                     table[row.item.id] = table[row.item.id] or
                         { item = row.item, stacks = row.virtualStacks, count = 0 }
                     table[row.item.id].count = math.min(table[row.item.id].count + count, row.getCount())
@@ -1552,7 +1553,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
                 count,
                 isPickpocketTake and { target = self.target } or nil,
                 {
-                    windowType = self.type,
+                    role = self.role,
                     isBartered = row.isBartered,
                 }
             )
@@ -1631,7 +1632,7 @@ function Inventory:createData()
     --context data for the tooltip
     --[[
     local IER = {
-        window = self.type,
+        window = self.role,
         mode = self.mode,
         arg = self.arg,
     }
@@ -1719,7 +1720,7 @@ function Inventory:createData()
             virtualStacks = isVirtual and item.stacks or nil,
             getCount = getItemCount,
             getNonDraggedCount = function()
-                return getNonDraggedCount(rowData, self.type, self.mode)
+                return getNonDraggedCount(rowData, self.role, self.mode)
             end,
             tooltip = tooltip,
             showAsEnchanted = function()
@@ -1732,7 +1733,7 @@ function Inventory:createData()
                 return false
             end,
             isDisabled = function()
-                if not isBartered and self.type == 'Inventory' and self.mode == 'Container' then
+                if not isBartered and self.role == 'Inventory' and self.mode == 'Container' then
                     local container = self.arg
                     if Container.objectIsInstance(container) and Container.record(container).isOrganic then
                         return true
@@ -1750,7 +1751,7 @@ function Inventory:createData()
         ]]
 
         for i = 1, #modifiers do
-            modifiers[i].modifier(rowData, ctx, self.type)
+            modifiers[i].modifier(rowData, ctx, self.role)
         end
 
         return rowData
@@ -1759,7 +1760,7 @@ function Inventory:createData()
     local data = {}
 
     local isOwned = false
-    if self.type == 'Container' then
+    if self.role == 'Container' then
         if ctx.pickpocket and ctx.pickpocket.active then
             isOwned = true
         elseif Container.objectIsInstance(self.target) then
@@ -1768,7 +1769,7 @@ function Inventory:createData()
     end
 
     -- Add primary inventory
-    if self.type ~= 'Trade' then
+    if self.role ~= 'Trade' then
         local allItems = self.target.type.inventory(self.target):getAll()
         for i = 1, #allItems do
             data[#data + 1] = createRowData(allItems[i], false, false, isOwned)
@@ -1783,7 +1784,7 @@ function Inventory:createData()
 
     -- Add bartered items from other inventory
     if self.mode == 'Barter' then
-        if self.type == 'Trade' then
+        if self.role == 'Trade' then
             local ownItems = omwself.type.inventory(omwself):getAll()
             for i = 1, #ownItems do
                 table.insert(data, createRowData(ownItems[i], true, false, isOwned))
@@ -1822,7 +1823,7 @@ function Inventory:initInfoBar()
     local theme = Toolkit.getTheme()
 
     --Encumbrance
-    if self.type ~= 'Trade' then
+    if self.role ~= 'Trade' then
         self.encumbranceBar = Components.progressBar {
             width = 100,
             color = theme.Colors.MAGICK,
@@ -1849,7 +1850,7 @@ function Inventory:initInfoBar()
         }
         self.infoBar:addProvider(function()
             if not self.target then return nil end
-            if self.type == 'Container' and
+            if self.role == 'Container' and
                 (Container.objectIsInstance(self.target) and Container.record(self.target).isOrganic)
                 or (ctx.pickpocket and ctx.pickpocket.active)
             then
@@ -1863,7 +1864,7 @@ function Inventory:initInfoBar()
     end
 
     --Gold
-    if self.type == 'Inventory' or self.type == 'Trade' then
+    if self.role == 'Inventory' or self.role == 'Trade' then
         local goldProps = { text = '' }
         local goldLayout = {
             name = 'gold',
@@ -1890,7 +1891,7 @@ function Inventory:initInfoBar()
         self.infoBar:addProvider(function()
             if not self.target then return nil end
             local goldAmount
-            if self.type == 'Inventory' then
+            if self.role == 'Inventory' then
                 goldAmount = self.target.type.inventory(self.target):countOf('gold_001')
             else
                 goldAmount = self.target.type.getBarterGold(self.target)
@@ -1902,7 +1903,7 @@ function Inventory:initInfoBar()
 
     local filler = { external = { grow = 1, stretch = 1 } }
 
-    if self.type == 'Inventory' then
+    if self.role == 'Inventory' then
         -- Armor rating
         local armorProps = { text = '' }
         local armorLayout = {
@@ -1947,7 +1948,7 @@ function Inventory:initInfoBar()
                 if not draggedItem then return end
                 local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
                 local result = self:onRowUse(createDraggedActivationRow(ctx, draggedItem),
-                    activationContext.windowType, true)
+                    activationContext.role, true)
                 if result ~= false then
                     ctx.dragAndDrop:stopDrag()
                     self.infoBar:update()
@@ -1972,11 +1973,11 @@ function Inventory:initInfoBar()
         --self.infoBar.layout.userData.addInfoLayout({})
     end
 
-    if self.type == 'Container' or self.type == 'Companion' then
+    if self.role == 'Container' or self.role == 'Companion' then
         --Stretching filler
         self.infoBar:addProvider(function() return filler end)
 
-        if self.type == 'Container' then
+        if self.role == 'Container' then
             --dispose
             local btnDispose = Components.textButton {
                 name = 'dispose',
@@ -2043,7 +2044,7 @@ function Inventory:initInfoBar()
         end
 
         --companion profit value
-        if self.type == 'Companion' then
+        if self.role == 'Companion' then
             local profitProps = {}
             local profitLayout = {
                 template = T.text(),
@@ -2064,7 +2065,7 @@ function Inventory:initInfoBar()
             style = theme.IntRe and 'empty' or 'thin',
             text = constants.Strings.CLOSE,
             onClick = function()
-                I.UI.removeMode(self.type)
+                I.UI.removeMode(self.role)
             end,
         }
 
@@ -2073,7 +2074,7 @@ function Inventory:initInfoBar()
         --self.infoBar.layout.userData.addInfoLayout({})
     end
 
-    if self.type == 'Trade' then
+    if self.role == 'Trade' then
         --Barter controls
         local barterControls = BarterControls:new()
         barterControls:init(self)

@@ -16,7 +16,9 @@ local Manager = Toolkit.WindowManager
 
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
+local RoleRegistry = require('scripts.InventoryExtenderRedone.ui.roles')
 
 local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
 
@@ -24,24 +26,12 @@ local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
 local InvHandler = require 'scripts.InventoryExtenderRedone.toolkit.inventory'
 
 
-local DefaultPosition = {
-    ['InventoryExtender:Inventory'] = v2(0.015, 0.54),
-    ['InventoryExtender:Container'] = v2(0.5, 0.05),
-    ['InventoryExtender:Trade'] = v2(0.5, 0.05),
-    ['InventoryExtender:Companion'] = v2(0.5, 0.05),
-}
-
-local DefaultDimensions = {
-    ['InventoryExtender:Inventory'] = v2(0.45, 0.38),
-    ['InventoryExtender:Container'] = v2(0.45, 0.85),
-    ['InventoryExtender:Trade'] = v2(0.45, 0.85),
-    ['InventoryExtender:Companion'] = v2(0.45, 0.85),
-}
-
+-- drag is only allowed in these UI modes; the table is replaced by Mode.drag.allowed
+-- specs once the mode API is wired up
 local validDragModes = {
-    Interface = true,
-    Container = true,
-    Companion = true,
+    [D.Modes.Interface] = true,
+    [D.Modes.Container] = true,
+    [D.Modes.Companion] = true,
 }
 
 local WindowManager = {}
@@ -81,46 +71,46 @@ WindowManager.ctx = {
     containerVariables = {},
 }
 
-local allToolkitWindows = {}
-
-local WINDOW_TYPES = { "Inventory", "Trade", "Container", "Companion" }
-local function getWindowId(type)
-    return 'InventoryExtender:' .. type
+---@param role InventoryExtenderRedone.Role
+---@return string windowId id in UIToolkit.WindowManager and the UIToolkit:WindowData key
+local function getWindowId(role)
+    return D.WindowIdPrefix .. role
 end
 
 function WindowManager:init()
-    for i = 1, #WINDOW_TYPES do
-        local windowName = WINDOW_TYPES[i]
+    local manager = Manager
+    for i = 1, #RoleRegistry.order do
+        local role = RoleRegistry.order[i]
+        local opts = RoleRegistry.byRole[role]
         local handler = InvHandler:new()
-        handler:init(windowName)
+        handler:init(role)
 
-        local manager = Manager
-        local windowId = getWindowId(windowName)
-        allToolkitWindows[#allToolkitWindows + 1] = windowId
-        manager.register(windowId, {
-            title = windowName,
+        manager.register(getWindowId(role), {
+            title = opts.title,
             handler = handler,
-            draggable = true,
-            resizing = true,
-            pinnable = false,
-            position = manager.toAbsolute(DefaultPosition[windowId]),
-            size = manager.toAbsolute(DefaultDimensions[windowId]),
-            minSize = v2(300, 200),
+            draggable = opts.draggable,
+            resizing = opts.resizing,
+            pinnable = opts.pinnable,
+            position = manager.toAbsolute(opts.defaultPosition),
+            size = manager.toAbsolute(opts.defaultSize),
+            minSize = opts.minSize,
         })
     end
 end
 
 function WindowManager:update()
-    for i = 1, #allToolkitWindows do
-        local handler = Manager.getHandler(allToolkitWindows[i]) --[[@as IER.Inventory]]
+    for i = 1, #RoleRegistry.order do
+        local handler = Manager.getHandler(getWindowId(RoleRegistry.order[i])) --[[@as IER.Inventory]]
         if handler then
             handler:update()
         end
     end
 end
 
-function WindowManager:show(windowName, arg)
-    if windowName == 'Container' then
+---@param role InventoryExtenderRedone.Role
+---@param arg any? the target NPC/container/merchant
+function WindowManager:show(role, arg)
+    if role == D.Roles.Container then
         if Pickpocket.isTarget(arg) then
             self.ctx.pickpocket = Pickpocket.createSession(omwself, arg)
         else
@@ -128,11 +118,11 @@ function WindowManager:show(windowName, arg)
         end
     end
 
-    self.ctx.windowArgs[windowName] = arg or self.ctx.windowArgs[windowName]
+    self.ctx.windowArgs[role] = arg or self.ctx.windowArgs[role]
 
-    local windowId = getWindowId(windowName)
+    local windowId = getWindowId(role)
     local handler = Manager.getHandler(windowId) --[[@as IER.Inventory?]]
-    if handler and windowName == 'Inventory' and handler.mode ~= I.UI.getMode() then
+    if handler and role == D.Roles.Inventory and handler.mode ~= I.UI.getMode() then
         Manager.close(windowId, true)
         handler = nil
     end
@@ -141,27 +131,27 @@ function WindowManager:show(windowName, arg)
         ---@cast handler IER.Inventory
         omwself:sendEvent('IER_Window_Opened', {
             id = windowId,
-            type = handler.type,
+            role = handler.role,
             mode = handler.mode,
         })
     end
 end
 
-function WindowManager:hide(windowName, arg, force)
-    Manager.close(getWindowId(windowName))
+---@param role InventoryExtenderRedone.Role
+function WindowManager:hide(role, arg, force)
+    Manager.close(getWindowId(role))
 end
 
----@param windowName InventoryExtenderRedone.Role
+---@param role InventoryExtenderRedone.Role
 ---@return IER.Inventory? handler the window's handler, nil if the window is not open
-function WindowManager:getWindow(windowName)
-    return Manager.getWindow(getWindowId(windowName)) --[[@as  IER.Inventory?]]
+function WindowManager:getWindow(role)
+    return Manager.getWindow(getWindowId(role)) --[[@as  IER.Inventory?]]
 end
 
 ---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
 function WindowManager:forEachOpenWindow(apply)
-    for i = 1, #WINDOW_TYPES do
-        local windowName = WINDOW_TYPES[i]
-        local windowId = getWindowId(windowName)
+    for i = 1, #RoleRegistry.order do
+        local windowId = getWindowId(RoleRegistry.order[i])
         local wnd = Manager.getWindow(windowId)
         if wnd then
             local handler = Manager.getHandler(windowId) --[[@as IER.Inventory]]

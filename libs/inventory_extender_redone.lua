@@ -12,8 +12,8 @@
 ---@field Modes table<string,InventoryExtenderRedone.ModeKey> built-in mode keys; the same table as config.defaults D.Modes, not a copy. Custom mode keys are mod-namespaced strings, never enum members
 ---@field allWindowsDisabled boolean live flag set by disableAllWindows; while true, show() is a no-op
 ---@field disableAllWindows fun(value:boolean) temporarily suppress IE windows; does NOT restore vanilla windows - nothing is shown
----@field show fun(windowName:string, arg:any?) windowName is one of InventoryExtenderRedone.Role; arg is the target NPC/container/merchant
----@field hide fun(windowName:string, arg:any?, force:boolean?)
+---@field show fun(windowName:InventoryExtenderRedone.Role, arg:any?) windowName is one of InventoryExtenderRedone.Role; arg is the target NPC/container/merchant
+---@field hide fun(windowName:InventoryExtenderRedone.Role, arg:any?, force:boolean?)
 ---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
@@ -126,6 +126,16 @@
 ---@alias InventoryExtenderRedone.InfoBar.Provider fun(ctx:table):openmw.ui.LayoutOrElement?
 ---@alias InventoryExtenderRedone.Role 'Inventory'|'Container'|'Trade'|'Companion'
 ---@alias InventoryExtenderRedone.ModeKey 'Interface'|'Container'|'Pickpocket'|'Barter'|'Companion'|string
+
+
+---@class InventoryExtenderRedone.RoleOpts window registration data for one role: identity and
+---@field title string? window title; built-ins use the role name
+---@field defaultPosition openmw.util.Vector2? layer-relative default position, converted by WindowManager.toAbsolute
+---@field defaultSize openmw.util.Vector2? layer-relative default size
+---@field minSize openmw.util.Vector2?
+---@field draggable boolean?
+---@field resizing boolean?
+---@field pinnable boolean? built-ins all false; the Interface mode sets pinning at open
 
 
 -- Mode specs are pure behavior: they never register windows, a new window role only comes
