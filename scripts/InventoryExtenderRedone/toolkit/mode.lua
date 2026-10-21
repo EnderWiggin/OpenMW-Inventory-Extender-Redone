@@ -26,11 +26,11 @@ local playerInventory = Player.inventory(omwself)
 ---@field Actions table<string,InventoryExtenderRedone.Mode.Action>
 ---@field Info table<string,InventoryExtenderRedone.Mode.InfoBarSection>
 ---@field Builtins table<string,InventoryExtenderRedone.Mode>
----@field resolve fun(key:string, role:InventoryExtenderRedone.Role?):InventoryExtenderRedone.Mode,InventoryExtenderRedone.Mode.RoleSpec
----@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode,InventoryExtenderRedone.Mode.RoleSpec
+---@field resolve fun(key:string, role:InventoryExtenderRedone.Role?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
+---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
 ---@field resolveParts fun(library:table<string,any>, entries:any[]?):any[]
----@field statePredicate fun(state:InventoryExtenderRedone.Mode.State?, field:string):fun(...):boolean?
----@field merge fun(base:InventoryExtenderRedone.Mode?, patch:InventoryExtenderRedone.ModePatch):InventoryExtenderRedone.Mode
+---@field statePredicate fun(state:InventoryExtenderRedone.Mode.State?, field:string):(fun(...):boolean)?
+---@field merge fun(base:InventoryExtenderRedone.Mode?, patch:InventoryExtenderRedone.ModePatch|InventoryExtenderRedone.Mode):InventoryExtenderRedone.Mode
 local Mode = {}
 
 
@@ -399,7 +399,7 @@ end
 --- OR-ed. Returns nil when the slot does not name the field at all.
 ---@param state InventoryExtenderRedone.Mode.State?
 ---@param field string
----@return fun(...):boolean?
+---@return (fun(...):boolean)?
 function Mode.statePredicate(state, field)
     local value = state and state[field]
     if value == nil then return nil end

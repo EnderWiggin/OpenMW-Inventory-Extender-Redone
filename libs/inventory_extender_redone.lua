@@ -17,7 +17,7 @@
 ---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
----@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. The mode key is the value of handler.mode
+---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. The mode key is the value of handler.mode
 ---@field getCategories fun():InventoryExtenderRedone.Category[]
 ---@field getCategory fun(key:string):InventoryExtenderRedone.Category?
 ---@field getDraggingObject fun():openmw.Object? returns dragged object or nil if not dragging
@@ -169,7 +169,7 @@
 
 ---@class InventoryExtenderRedone.Mode.Drag
 ---@field allowed boolean?
----@field autoEquip fun(ctx:InventoryExtenderRedone.Context, object:openmw.Object, source:openmw.Object?, destination:openmw.Object?):openmw.Object?
+---@field autoEquip? fun(ctx:InventoryExtenderRedone.Context, object:openmw.Object, source:openmw.Object?, destination:openmw.Object?):openmw.Object?
 
 ---@class InventoryExtenderRedone.Mode.Lifecycle
 ---@field onOpened fun(handler:IER.Inventory, arg:any?, saved:table?)?
@@ -204,6 +204,7 @@
 ---@field pinnable boolean?
 ---@field storageSuffix string?
 ---@field defaultStorage UIToolkit.WindowSaveData?
+---@field disable string[]? slot names to drop from the merged spec
 
 ---@class InventoryExtenderRedone.Mode.PatchList
 ---@field add any[]? appended
@@ -212,27 +213,27 @@
 
 ---@class InventoryExtenderRedone.Mode.Source
 ---@field id string
----@field get fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object[]? virtual sources return {stacks:openmw.Object[], totalCount:number} instead
+---@field get? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object[]? virtual sources return {stacks:openmw.Object[], totalCount:number} instead
 ---@field virtual boolean?
 ---@field isBartered boolean? the "other side" flag
----@field isOwned boolean?|fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
----@field enabled fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
----@field filter fun(item:openmw.Object, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field isOwned? boolean?|fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field enabled? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field filter? fun(item:openmw.Object, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
 
 ---@class InventoryExtenderRedone.Mode.Filter
 ---@field id string
----@field fn fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field fn? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
 ---@field structural boolean? true for the window-level filters that stay in the handler (search/category/draggedItem)
 
 ---@class InventoryExtenderRedone.Mode.State
----@field isDisabled fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?|InventoryExtenderRedone.Mode.State[] OR-ed when a list
----@field isActive fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
----@field isOwned fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? tooltip ownership
+---@field isDisabled? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?|InventoryExtenderRedone.Mode.State[] OR-ed when a list
+---@field isActive? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field isOwned? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? tooltip ownership
 ---@field badges InventoryExtenderRedone.RowBadgeProvider[]? mode-scoped sugar over API.registerRowBadge
 
 ---@class InventoryExtenderRedone.Mode.Action
----@field enabled fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
----@field perform fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? default effect; false stops the chain
+---@field enabled? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean?
+---@field perform? fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):boolean? default effect; false stops the chain
 ---@field transfer fun(row:InventoryExtenderRedone.RowData, handler:IER.Inventory, ctx:InventoryExtenderRedone.Context)? the Alt-held variant
 
 ---@class InventoryExtenderRedone.Mode.Actions
@@ -245,14 +246,14 @@
 
 ---@class InventoryExtenderRedone.Mode.InfoBarSection
 ---@field id string encumbrance, gold, armorRating, filler, use, dispose, takeAll, profit, barterControls, close
----@field create fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.ui.LayoutOrElement? build-once part (buttons, bars)
----@field provider InventoryExtenderRedone.InfoBar.Provider per-frame value/visibility, returns nil to hide
+---@field create? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.ui.LayoutOrElement? build-once part (buttons, bars)
+---@field provider? InventoryExtenderRedone.InfoBar.Provider per-frame value/visibility, returns nil to hide
 ---@field cleanup fun()? runs in InfoBar:beforeElementDestroy()
 ---@field before string? order before this section id
 ---@field after string? order after this section id
 
 ---@class InventoryExtenderRedone.Mode.Categories
----@field available fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):InventoryExtenderRedone.Category[]? default I.InventoryExtenderRedone.getCategories()
+---@field available? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):InventoryExtenderRedone.Category[]? default I.InventoryExtenderRedone.getCategories()
 ---@field default string?
 ---@field map table<string,string>? role -> categoryKey, replaces getSyncedCategoryKey + getOpenedCategoryKey
 
