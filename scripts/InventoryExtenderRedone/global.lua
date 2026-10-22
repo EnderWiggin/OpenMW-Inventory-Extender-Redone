@@ -668,25 +668,27 @@ local function finalizeBarter(props)
                         if remainingCount <= 0 then break end
 
                         local takeCount = math.min(stackItem.count, remainingCount)
-                        local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
-
+                        -- the restock check must run before split(): split/remove on a restocking
+                        -- (negative-count) stack shrinks the merchant's restock baseline, unlike
+                        -- the engine's barter path (ContainerItemModel::removeItem skips those stacks)
                         if restock and stackItem.parentContainer and Item.isRestocking(stackItem) then
                             local newItem = world.createObject(stackItem.recordId, takeCount)
                             setItemData(newItem, stackItem.type.itemData(stackItem))
                             newItem:moveInto(destination)
                         else
+                            local item = takeCount < stackItem.count and stackItem:split(takeCount) or stackItem
                             item:moveInto(destination)
                         end
                         remainingCount = remainingCount - takeCount
                     end
                 else
-                    local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
-
+                    -- same constraint as the stacks branch: never split a restocking stack
                     if restock and entry.item.parentContainer and Item.isRestocking(entry.item) then
                         local newItem = world.createObject(entry.item.recordId, entry.count)
                         setItemData(newItem, entry.item.type.itemData(entry.item))
                         newItem:moveInto(destination)
                     else
+                        local item = entry.count < entry.item.count and entry.item:split(entry.count) or entry.item
                         item:moveInto(destination)
                     end
                 end
