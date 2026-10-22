@@ -336,10 +336,11 @@
 ---@field visibleItems table<string,boolean>
 
 -- util/logger module: a tagged printer (get(tag)) or the bare module both expose these level
--- methods; each takes varargs and prints like print, prefixing "[tag] " when tagged.
+-- methods; each takes varargs and prints like print, prefixing "<E> "/"<W> "/"<I> "/"<D> "
+-- (the level letter) and "[tag] " when tagged.
 ---@class InventoryExtenderRedone.Printer
 ---@field error fun(...:any)
----@field warning fun(...:any)
+---@field warn fun(...:any)
 ---@field info fun(...:any)
 ---@field debug fun(...:any)
 

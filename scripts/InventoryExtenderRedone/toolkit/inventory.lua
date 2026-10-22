@@ -1503,7 +1503,7 @@ end
 ---@private
 function Inventory:createData()
     if not self.target then
-        L.warning('createData: no target', self.role, self.mode)
+        L.warn('createData: no target', self.role, self.mode)
         return {}
     end
 
