@@ -1045,6 +1045,7 @@ function Inventory:onOpened(wnd, data, saved)
             ctx.dragAndDrop:stopDrag(self.target)
         end,
         onItemClicked = function(row)
+            ---@cast row InventoryExtenderRedone.RowData
             self:onRowPickup(row, false, false)
         end
     }
@@ -1304,7 +1305,7 @@ function Inventory:onRowUse(row)
     end
 
     if Player.hasEquipped(omwself, row.item) then
-        local equipment = Player.getEquipment(omwself)
+        local equipment = Player.getEquipment(omwself) --[[@as openmw.types.EquipmentTable]]
         for slot, equippedItem in pairs(equipment) do
             if equippedItem == row.item then
                 equipment[slot] = nil
