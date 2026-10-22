@@ -261,6 +261,10 @@ function API.registerRowPickupHandler(id, handler)
     table.insert(windowManager.ctx.handlers.onRowPickup, { id = id, handler = handler })
 end
 
+--TODO: registerRowDropHandler(id, fn(row, draggedItem, ctx, role)) is a PLANNED FUTURE addition, not
+--      yet implemented. The drop/transfer action belongs on the Actions axis (Mode.Actions.pickup.transfer);
+--      design and implement it when we plan the drop handler. AGENTS.md lists it as future API.
+
 --- Register a function to modify row data
 --- @param id string A unique identifier for the handler
 --- @param modifier InventoryExtenderRedone.RowDataModifier The modifier function
