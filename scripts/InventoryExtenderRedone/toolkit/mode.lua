@@ -1,41 +1,43 @@
 ---@omw-context player
 
-local I = require('openmw.interfaces')
+local I       = require('openmw.interfaces')
+local ambient = require('openmw.ambient')
+local core    = require('openmw.core')
+local input   = require('openmw.input')
+local omwself = require('openmw.self')
+local types   = require('openmw.types')
+local ui      = require('openmw.ui')
+local util    = require('openmw.util')
 
-local ambient    = require('openmw.ambient')
-local core       = require('openmw.core')
-local input      = require('openmw.input')
-local ui         = require('openmw.ui')
 
-local types      = require('openmw.types')
-local omwself    = require('openmw.self')
-local util       = require('openmw.util')
-local v2         = util.vector2
-
-local D          = require('scripts.InventoryExtenderRedone.config.defaults')
-local helpers    = require('scripts.InventoryExtenderRedone.util.helpers')
-local constants  = require('scripts.InventoryExtenderRedone.util.constants')
-local pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
-local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
+local v2                = util.vector2
+local D                 = require('scripts.InventoryExtenderRedone.config.defaults')
+local helpers           = require('scripts.InventoryExtenderRedone.util.helpers')
+local constants         = require('scripts.InventoryExtenderRedone.util.constants')
+local pickpocket        = require('scripts.InventoryExtenderRedone.util.pickpocket')
+local barterUtils       = require('scripts.InventoryExtenderRedone.util.barter')
 local persistentCorpses = require('scripts.InventoryExtenderRedone.util.persistentCorpses')
-local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
-local l10n       = core.l10n(D.L10N)
-local L          = require('scripts.InventoryExtenderRedone.util.logger').get 'Mode'
+local configPlayer      = require('scripts.InventoryExtenderRedone.config.player')
+local l10n              = core.l10n(D.L10N)
+local L                 = require('scripts.InventoryExtenderRedone.util.logger').get 'Mode'
 
-local Toolkit    = I.UIToolkit
-local Components = Toolkit.Components
-local T          = Toolkit.Templates
-local H          = require 'scripts.UIToolkit.helpers'
-local cfgUtil    = require 'scripts.UIToolkit.config.utils'
+
+local Toolkit        = I.UIToolkit
+local Components     = Toolkit.Components
+local T              = Toolkit.Templates
+local H              = require 'scripts.UIToolkit.helpers'
+local cfgUtil        = require 'scripts.UIToolkit.config.utils'
 local BarterControls = require('scripts.InventoryExtenderRedone.toolkit.barter_controls')
 
-local Actor   = types.Actor
-local Armor   = types.Armor
-local Clothing = types.Clothing
-local Container = types.Container
-local NPC     = types.NPC
-local Weapon  = types.Weapon
-local Player = types.Player
+local Actor          = types.Actor
+local Armor          = types.Armor
+local Clothing       = types.Clothing
+local Container      = types.Container
+local NPC            = types.NPC
+local Weapon         = types.Weapon
+local Player         = types.Player
+
+
 -- the player inventory is a live handle on omwself, not a snapshot: :getAll() re-reads contents
 local playerInventory = Player.inventory(omwself)
 
@@ -68,7 +70,7 @@ Mode.Defaults = {
     syncCategory = true,
     drag = { allowed = true }, -- validDragModes today: Barter is the mode that forbids dragging
     RoleSpec = {
-        pinnable = false, -- only the Interface Inventory window is pinnable (inventory.lua:519)
+        pinnable = false,      -- only the Interface Inventory window is pinnable (inventory.lua:519)
     },
 }
 
@@ -932,7 +934,6 @@ function Mode.resolve(key, role)
     return mode, applyRoleDefaults(spec)
 end
 
-
 --- A spec entry may name a built-in part by id or carry its own behavior; the entry's own fields
 --- win over the library part, so a mod can reuse a built-in with one field changed. Resolved once
 --- at open, like the rest of the snapshot.
@@ -1023,6 +1024,5 @@ function Mode.resolveMode(role, arg, uiMode)
     L.debug('resolveMode', role, uiMode, bestKey, bestPriority)
     return Mode.resolve(bestKey, role)
 end
-
 
 return Mode
