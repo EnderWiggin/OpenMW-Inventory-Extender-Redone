@@ -199,7 +199,7 @@ end
 ---@param role InventoryExtenderRedone.Role
 ---@return IER.Inventory? handler the window's handler, nil if the window is not open
 function WindowManager:getWindow(role)
-    return Manager.getWindow(getWindowId(role)) --[[@as  IER.Inventory?]]
+    return Manager.getHandler(getWindowId(role)) --[[@as  IER.Inventory?]]
 end
 
 ---@param apply fun(handler:IER.Inventory, wnd:UIToolkit.Window)
