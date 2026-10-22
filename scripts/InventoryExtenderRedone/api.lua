@@ -11,6 +11,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
 local modeApi = require('scripts.InventoryExtenderRedone.toolkit.mode')
+local L = require('scripts.InventoryExtenderRedone.util.logger').get 'API'
 
 local Player = types.Player
 
@@ -312,23 +313,28 @@ end
 
 local eventHandlers = {
     UiModeChanged = function(data)
+        L.info('UiModeChanged', data.oldMode, data.newMode)
         windowManager:onUiModeChanged(data.oldMode, data.newMode, data.arg)
         core.sendGlobalEvent('IER_UIModeChanged',
             { actor = self, oldMode = data.oldMode, newMode = data.newMode, arg = data.arg })
     end,
     IER_StoleItem = function(props)
-        windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
         local id = props.victim.recordId or props.victim.factionId
+        L.info('IER_StoleItem', props.recordId, props.count, id)
+        windowManager.ctx.stolenItems[props.recordId] = windowManager.ctx.stolenItems[props.recordId] or {}
         if id then
             windowManager.ctx.stolenItems[props.recordId][id] = (windowManager.ctx.stolenItems[props.recordId][id] or 0) +
                 props.count
         end
     end,
     IER_ItemsConfiscated = function(props)
-        --print(helpers.deepPrint(props.stolenMap))
+        L.info('IER_ItemsConfiscated')
         windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
     end,
     IER_Update = function()
+        -- observability: the single refresh trigger for all windows; a refresh gap between
+        -- an item change and the next window update explains a stale-table probe failure
+        L.debug('IER_Update')
         windowManager:update()
     end,
     IER_CompanionProfit = function(props)
@@ -342,7 +348,11 @@ local eventHandlers = {
             if foundGold then
                 obj = foundGold
             end
+            L.debug('IER_SetDraggingObject: gold remap', props.obj.id, obj and obj.id)
         end
+        -- observability: the player-side landing of the drag chain; the matching DnD
+        -- setDraggingObject line is what the probe waits for
+        L.info('IER_SetDraggingObject', obj and obj.id, props.resetMode)
 
         windowManager.ctx.dragAndDrop:setDraggingObject(obj)
     end,
@@ -359,6 +369,7 @@ local eventHandlers = {
         })
     end,
     IER_ContainerVariable = function(data)
+        L.debug('IER_ContainerVariable', data.key, data.value)
         windowManager.ctx.containerVariables[data.key] = data.value
         self:sendEvent('IER_Update')
     end,

@@ -20,6 +20,7 @@ local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 local persistentCorpses = require('scripts.InventoryExtenderRedone.util.persistentCorpses')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local l10n       = core.l10n(D.L10N)
+local L          = require('scripts.InventoryExtenderRedone.util.logger').get 'Mode'
 
 local Toolkit    = I.UIToolkit
 local Components = Toolkit.Components
@@ -986,7 +987,13 @@ function Mode.resolveMode(role, arg, uiMode)
         end
     end
 
-    if not bestKey then return nil end
+    if not bestKey then
+        L.debug('resolveMode: no mode applies', role, uiMode)
+        return nil
+    end
+    -- observability: which spec won selection and at what priority; a probe forcing a
+    -- custom mode that loses priority shows up here as the built-in key
+    L.debug('resolveMode', role, uiMode, bestKey, bestPriority)
     return Mode.resolve(bestKey, role)
 end
 

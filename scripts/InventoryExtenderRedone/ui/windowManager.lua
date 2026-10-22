@@ -14,6 +14,7 @@ local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local RoleRegistry = require('scripts.InventoryExtenderRedone.ui.roles')
 local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
+local L = require('scripts.InventoryExtenderRedone.util.logger').get 'WM'
 
 local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
 
@@ -141,8 +142,10 @@ end
 
 function WindowManager:update()
     for i = 1, #RoleRegistry.order do
-        local handler = Manager.getHandler(getWindowId(RoleRegistry.order[i])) --[[@as IER.Inventory]]
+        local windowId = getWindowId(RoleRegistry.order[i])
+        local handler = Manager.getHandler(windowId) --[[@as IER.Inventory]]
         if handler then
+            L.debug('update', windowId)
             handler:update()
         end
     end
@@ -157,6 +160,7 @@ function WindowManager:show(role, arg)
     -- comes from the Pickpocket spec's lifecycle.onOpened, and the Container spec clears it when
     -- a real chest window opens
     local mode = Mode.resolveMode(role, arg)
+    L.info('show', role, mode and mode.key)
 
     local windowId = getWindowId(role)
     local handler = Manager.getHandler(windowId) --[[@as IER.Inventory?]]
@@ -165,12 +169,14 @@ function WindowManager:show(role, arg)
     -- are opened and closed by their own mode, so an already-open one keeps its snapshot and is
     -- never reopened from here.
     if handler and role == D.Roles.Inventory and mode and handler.mode ~= mode.key then
+        L.info('show: reopen for mode change', role, handler.mode, mode.key)
         Manager.close(windowId, true)
         handler = nil
     end
     if not handler then
         _, handler = Manager.open(windowId, arg) --[[@as any]]
         ---@cast handler IER.Inventory
+        L.info('opened', windowId, handler.role, handler.mode)
         -- flags is the mode's serializable summary (Mode.EventData.flags); built-ins define
         -- none, so it is nil there. Resolve by the opened window's actual mode key, not the
         -- role-forced mode resolved above (which is Interface for the Inventory role).
@@ -186,6 +192,7 @@ end
 
 ---@param role InventoryExtenderRedone.Role
 function WindowManager:hide(role, arg, force)
+    L.info('hide', role)
     Manager.close(getWindowId(role))
 end
 
@@ -211,6 +218,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     if not configPlayer.window.b_EnableMod then
         return
     end
+    L.info('onUiModeChanged', oldMode, newMode)
 
     -- built-in lifecycle.onClosing fires from the mode change (decision 11): the transition
     -- decides which spec closes, and a pickpocket session closing under the engine's Container

@@ -21,6 +21,7 @@ local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
+local L = require('scripts.InventoryExtenderRedone.util.logger').get 'DnD'
 
 
 local Actor     = types.Actor
@@ -110,6 +111,9 @@ function DragAndDrop:startDrag(item, source, count, pickpocket, activationContex
     self.draggingActivationContext = activationContext
     self:tryUnequipping(item)
 
+    -- observability: the click chain's first hop; the probe waits for the matching
+    -- setDraggingObject line below, so a startDrag with no follow-up names the global side
+    L.info('startDrag', item.id, self.draggingCount, source and source.id, pickpocket and true or false)
     core.sendGlobalEvent('IER_MoveInto', {
         obj = item,
         count = self.draggingCount,
@@ -136,6 +140,8 @@ function DragAndDrop:updatePosition()
 end
 
 function DragAndDrop:setDraggingObject(object)
+    -- observability: the terminal state the row-click probe waits on
+    L.info('setDraggingObject', object and object.id)
     self.draggingObject = object
 
     local upSound = helpers.getItemSound(object, 'up')
@@ -149,6 +155,8 @@ function DragAndDrop:setDraggingObject(object)
     end
 
     if instantPickup then
+        -- observability: this swallow leaves draggingObject nil — looks like a hang to probes
+        L.debug('setDraggingObject: instantPickup swallows the drag')
         self.draggingObject = nil
         instantPickup = false
         return
@@ -261,6 +269,8 @@ function DragAndDrop:moveAll(source, destination, items)
     -- for now this is only used to transfer items to the player
     -- TODO: in case it will be used to transfer from the player - ensure all items unequipped first
     -- unless issue #9411 is fixed
+    -- observability: the Take All / dispose path
+    L.info('moveAll', source and source.id, destination and destination.id, items and #items)
     core.sendGlobalEvent('IER_MoveAll', {
         source = source,
         destination = destination,
@@ -280,6 +290,8 @@ local function clearTooltipIfFor(hitObject)
 end
 
 function DragAndDrop:stopDrag(target)
+    -- observability: cleanup path; the probe's cleanup calls this and expects the drag gone
+    L.info('stopDrag', self.draggingObject and self.draggingObject.id, target and target.id)
     if target and self.draggingObject then
         if not self:transferInto(self.draggingObject, target) then
             return false

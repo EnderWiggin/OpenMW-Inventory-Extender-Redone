@@ -489,6 +489,9 @@ function Inventory:onOpened(wnd, data, saved)
         use = Mode.resolvePart(Mode.Actions, actions.use),
         pickup = Mode.resolvePart(Mode.Actions, actions.pickup),
     } or nil
+    -- observability: the whole open-time snapshot the probes' readiness waits hinge on
+    L.debug('slots', self.role, self.mode, self.suffix, self.drag and self.drag.allowed,
+        self.sources and #self.sources or 0, #modeFilters)
 
     -- a lifecycle table may name only some hooks (Barter has onClosing but no onOpened), so
     -- guard the field itself, not just the table
@@ -1102,6 +1105,7 @@ function Inventory:onClosed()
     self.wnd = nil
     self.arg = nil
     local column, asc = self.table.header:getActiveColumn()
+    L.info('onClosed', self.role, self.mode, column, asc)
     ---@type IER.Inventory.SaveData
     return {
         sortingColumn = column,
@@ -1112,8 +1116,11 @@ end
 function Inventory:onResized(inner)
     local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self:getTopBarHeight()
-
-    self.table:setSize(inner - v2(0, topBarHeight + infoHeight + 4))
+    local tableSize = inner - v2(0, topBarHeight + infoHeight + 4)
+    -- observability: the resize probes assert table.size.x == wnd inner width; this line
+    -- shows the arithmetic that produced it
+    L.debug('onResized', self.role, self.mode, inner, infoHeight, topBarHeight, tableSize)
+    self.table:setSize(tableSize)
 end
 
 function Inventory:getTopBarHeight()
@@ -1246,6 +1253,9 @@ function Inventory:update()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
+    -- observability: rows built vs rows the filters let through; an empty filtered count is
+    -- the "window opened but table empty" probe stall
+    L.debug('refresh', self.role, self.mode, #data, #self.table.filteredItems)
 end
 
 function Inventory:isFavorite(item)
@@ -1337,25 +1347,32 @@ end
 ---@param forceBarterAction boolean? set when delegated from the use action; keeps the delegation one-way
 function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     local ctx = self.ctx
+    -- observability: the click entry point; every early return below is a silent no-op that
+    -- leaves the probe waiting for a drag that never starts
+    L.info('onRowPickup', self.role, self.mode, row.id, row.getCount())
     if ctx.dragAndDrop.draggingObject then
         if fromKBMKeybind then
             ctx.dragAndDrop:stopDrag(self.target)
         end
+        L.debug('pickup: already dragging', self.role, self.mode, ctx.dragAndDrop.draggingObject.id)
         return true
     end
 
     if configPlayer.keybinds.b_SwapUsePickup and not fromKBMKeybind then
+        L.debug('pickup: swapped to use action', self.role, self.mode)
         return self:onRowUse(row)
     end
 
     for i = #ctx.handlers.onRowPickup, 1, -1 do
         local handler = ctx.handlers.onRowPickup[i]
         if handler.handler(row, ctx, self.role) == false then
+            L.debug('pickup: stopped by registered handler', self.role, self.mode, handler.id)
             return false
         end
     end
 
     if helpers.isBoundItem(row.item) then
+        L.debug('pickup: bound item', self.role, self.mode, row.item.recordId)
         local gmst
         if self.mode == D.Modes.Barter then
             if self.role == 'Trade' then
@@ -1371,6 +1388,7 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     end
 
     if self:isFavoriteTransferBlocked(row) then
+        L.debug('pickup: favorite transfer blocked', self.role, self.mode, row.item.id)
         ui.showMessage(l10n('UI_Msg_FavoriteItem'))
         return false
     end
@@ -1406,13 +1424,21 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     -- live inside the parts, not here
     local function doAction(count)
         local pickup = self.actions and self.actions.pickup
-        if not pickup then return false end
+        if not pickup then
+            L.debug('doAction: mode names no pickup part', self.role, self.mode)
+            return false
+        end
         local action = transfer and pickup.transfer or pickup.perform
-        if not action then return false end
+        if not action then
+            L.debug('doAction: pickup part names no action', self.role, self.mode, transfer)
+            return false
+        end
+        L.debug('doAction', self.role, self.mode, transfer and 'transfer' or 'perform', count)
         return action(row, self, ctx, count)
     end
 
     if itemCount > 1 and not takeAll and not takeOne then
+        L.debug('pickup: stack popup', self.role, self.mode, itemCount)
         self._closeItemStackPopup = ItemStackModal.show({
             itemName = row.itemRecord.name,
             maxCount = itemCount,
@@ -1477,6 +1503,7 @@ end
 ---@private
 function Inventory:createData()
     if not self.target then
+        L.warning('createData: no target', self.role, self.mode)
         return {}
     end
 

@@ -11,6 +11,7 @@ local Class = require('scripts.UIToolkit.class')
 local Component = require('scripts.UIToolkit.components.component')
 local ColumnItemProvider = require('scripts.UIToolkit.components.list_items.column_item')
 local GridIconProvider = require('scripts.InventoryExtenderRedone.toolkit.grid_icon_provider')
+local L = require('scripts.InventoryExtenderRedone.util.logger').get 'IT'
 
 ---@class InventoryExtenderRedone.ItemTable : UIToolkit.Component
 ---@field new fun(self:InventoryExtenderRedone.ItemTable):InventoryExtenderRedone.ItemTable
@@ -244,6 +245,9 @@ end
 function ItemTable:setItems(items)
     self.allItems = items
     self:filter()
+    -- observability: rows in vs rows the window filters let through, and the view mode the
+    -- storage write produced (the probe asserts showGrid matches s_ItemViewMode)
+    L.debug('setItems', #items, #self.filteredItems, self.showGrid)
 end
 
 ---@param size openmw.util.Vector2
@@ -255,6 +259,9 @@ function ItemTable:setSize(size)
     else
         self.list:setSize(self:getListSize())
     end
+    -- observability: the resize probes assert table.size.x == wnd inner width; this shows
+    -- the grid/list geometry the table settled on
+    L.debug('setSize', size, self:getListSize())
 
     self.header:updateProps { size = self:getHeaderSize() }
     I.UIToolkit.queueUpdate(self.header.element)
