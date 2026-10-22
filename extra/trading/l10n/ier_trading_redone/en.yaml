@@ -1,0 +1,7 @@
+Invest: Invest
+InvestTipFirst: Invest into a trader so they have more money to barter with.
+InvestTipMore: |-
+  Invest into a trader so they have more money to barter with.
+  Already invested: {amount}
+InvestmentLine: 'Investment size:'
+InvestmentLimitReached: Can't invest more. Increase Mercantile skill.
