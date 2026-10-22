@@ -1,0 +1,424 @@
+# Public API — Inventory Extender Redone
+
+Inventory Extender Redone is a UI + logic mod: it replaces OpenMW's `Inventory`, `Container`,
+`Trade` (barter) and `Companion` windows with sortable, filterable, searchable item tables, plus
+game-logic fixes around them. It ships no ESM and no records — everything is Lua.
+
+Other mods consume it through one interface:
+
+```lua
+local IER = I.InventoryExtenderRedone
+```
+
+The authoritative shape of every public type lives in `libs/inventory_extender_redone.lua` (a
+LuaLS `---@meta` file, not shipped); this document is its human-facing companion.
+
+## Overview and quick start
+
+This reference describes API version 2 (`IER.VERSION`). A mod that uses this surface should check
+the version first, then extend the mod through the registration points below: `patchMode` to
+change an existing mode, `registerMode` for a new behavior set, `registerWindowRole` for a new
+window, `openMode` to open a custom mode's windows.
+
+```lua
+local IER = I.InventoryExtenderRedone
+
+if IER.VERSION < 2 then
+    return   -- this reference describes API version 2
+end
+
+-- Hide gold rows in the player's window
+IER.patchMode(IER.Modes.Interface, {
+    id = 'myMod_noGold',
+    roles = {
+        Inventory = {
+            filters = { add = { {
+                id = 'myMod_noGold',
+                fn = function(row) return not IER.Helpers.isGold(row.item) end,
+            } } },
+        },
+    },
+})
+```
+
+## Concepts: windows (roles) and modes
+
+Two concepts describe every window:
+
+| Concept | Question it answers | How a mod changes it |
+| --- | --- | --- |
+| **Role** | *which window* is this? (`Inventory`, `Trade`, `Container`, `Companion`, or one you add) | `IER.registerWindowRole` |
+| **Mode** | *which behavior set* governs it? (`Interface`, `Container`, `Pickpocket`, `Barter`, `Companion`, or one you add or patch) | `IER.patchMode` / `IER.registerMode` |
+
+Both are decided when the window opens; they are not read from the engine while the window runs.
+A mode spec is pure behavior — it never registers a window, and a new window role only comes
+through `IER.registerWindowRole`. This is why a mode's slots are keyed per window role: the
+`Inventory` role appears in four modes and needs a different slot set in each.
+
+At open, `IER.resolveMode` picks the highest-priority mode whose `applies()` matches, merges its
+`base` chain and any registered patches, and returns `(mode, roleSpec)`. The window handler
+snapshots the result into `handler.mode` (the mode key) and `handler.slots` (that role's merged
+`RoleSpec`). After that, read the snapshot: `handler.mode` tells you which behavior set the open
+window is using. `I.UI.getMode()` can disagree — a pinned `Interface` window stays open while the
+engine mode is `nil`, and during a pickpocket session the engine sits in `Container` mode while
+`handler.mode` is `'Pickpocket'`.
+
+Built-in mode keys equal the engine UI mode strings, so `I.UI.removeMode(IER.Modes.Container)`
+works. `Pickpocket` and custom keys are IER-side only and are never passed to `I.UI`.
+
+### Anatomy of a mode spec
+
+A mode is an `InventoryExtenderRedone.Mode` table:
+
+| Slot | Meaning |
+| --- | --- |
+| `key` | mode key; custom keys should be namespaced by your mod |
+| `base` | inherit another mode's slots (e.g. `Pickpocket` inherits `Container`) |
+| `applies(role, arg, ctx, uiMode)` | mode selection: which windows this mode governs |
+| `priority` | higher wins when several modes apply (default 0). Equal priorities are unordered, so a custom mode that overlaps a built-in must out-prioritize it |
+| `syncCategory` | category switching syncs across open windows (default true) |
+| `drag` | `{ allowed, autoEquip }` — whether dragging is allowed in this mode |
+| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)`, `onClosed(handler?)` |
+| `event` | `{ flags }` — serializable summary other mods see in event payloads |
+| `title` | l10n key, or `fun(handler, arg): string` |
+| `roles` | `table<role, RoleSpec>` — one slot-set per window role |
+
+A `Mode.RoleSpec` is the per-window behavior:
+
+| Slot | Type | Meaning |
+| --- | --- | --- |
+| `sources` | `Mode.Source[]` | which items a window lists |
+| `filters` | `Mode.Filter[]` | which of them are visible |
+| `states` | `Mode.State` | per-row states (`isDisabled`, `isActive`, `isOwned`, `badges`) |
+| `actions` | `Mode.Actions` | gates and effects for row actions (`use`/`pickup`/`favorite`/`takeAll`/`dispose`/`close`) |
+| `infoBar` | `Mode.InfoBarSection[]` | bottom-strip sections, in order |
+| `categories` | `Mode.Categories` | `{ available, default, map }` |
+| `columns` | `Mode.Columns` | `{ hiddenColumns }` |
+| `hints` | `Mode.Hints` | controller hints |
+| `pinnable` | boolean | only the `Interface` Inventory window sets true |
+| `storageSuffix` | string | suffix of this window's saved data (see Notes) |
+| `defaultStorage` | `UIToolkit.WindowSaveData` | saved-state fallbacks |
+
+**List slots vs overwrite slots.** The list slots `sources`, `filters` and `infoBar` merge by id;
+every other slot is a whole-slot overwrite. A spec that wants part of a list slot uses the patch
+list ops (`{ add, replace, remove }`); a plain array replaces the whole slot.
+
+**Specs name built-in parts by id.** A slot entry can name a built-in part by `id` or carry its
+own behavior; when it does both, the entry's own fields win, so you can reuse a built-in part with
+one field changed. The part library is reachable by a side-effect require:
+
+```lua
+local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
+-- Mode.Sources  : target, self, merchantOfTarget, merchantOfOther
+-- Mode.Filters  : barterAllowed, barterOffered, barterInventoryForeign,
+--                 barterTraderForeign, barterTradeEquipped, pickpocketVisibility
+-- Mode.Actions  : usePlayer, useTarget, useTargetPickpocket, useBarterInventory, useBarterTrade,
+--                 pickupInterface, pickupContainerInventory, pickupContainerTarget,
+--                 pickupCompanionInventory, pickupCompanionTarget, pickupBarterInventory,
+--                 pickupBarterTrade, pickpocketTake
+-- Mode.Info     : encumbrance, gold, armorRating, filler, use, dispose, takeAll, profit,
+--                 barterControls, close
+```
+
+## Changing window behavior
+
+There are three registration points, and they compose at open time.
+
+### Patch a mode — `IER.patchMode` (preferred)
+
+```lua
+---@param key InventoryExtenderRedone.ModeKey  built-in or custom mode key
+---@param patch InventoryExtenderRedone.ModePatch  same shape as Mode
+IER.patchMode(key, patch)
+```
+
+The patch merges into the spec at resolve time, in reverse registration order (the most recently
+registered patch wins). A patch registered mid-session takes effect from the next open; it does not
+change an already-open window's snapshot. Patches change slots, never which mode applies. The
+patch's `id` is required if you want to remove it later with `unpatchMode`.
+
+In a list slot, a plain array replaces the whole slot; a table with `add`/`replace`/`remove`
+applies operations (`InventoryExtenderRedone.Mode.PatchList`):
+
+- `add` — append entries. An entry can carry `before`/`after` to position itself against an
+  existing id. Ordering matters for `infoBar`, whose `filler` stretch gap lays out the strip.
+- `replace` — id-keyed: replaces the entry with the same id, appends when the id is new.
+- `remove` — ids to drop.
+- `disable` — on a patch or a role patch: whole slot names to drop from the merged spec.
+
+Example: add a Crafting Framework button to the bottom strip of the player's window. `create`
+builds the part once per open and returns the per-frame provider; the provider returns `nil` to
+hide the section; `cleanup` runs when the info bar is destroyed.
+
+```lua
+IER.patchMode(IER.Modes.Interface, {
+    id = 'myMod_cf_button',                       -- id is required for unpatchMode
+    roles = {
+        Inventory = {
+            infoBar = { add = { {                 -- list-slot op: append a section
+                id = 'ier_cf',
+                create = function(handler, ctx)
+                    btn = I.UIToolkit.Components.imageButton {
+                        name = 'open_cf', icon = 'icons/m/misc_hammer10.dds',
+                        onClick = function() IER.hide(IER.Roles.Inventory); CF.openCraftingWindow() end,
+                    }
+                    return function()
+                        if not btn then return nil end
+                        if IER.getDraggingObject() then return nil end   -- provider returns nil to hide
+                        return btn.element
+                    end
+                end,
+                cleanup = function()
+                    if not btn then return end
+                    I.UIToolkit.queueDestroy(btn.element); btn = nil
+                end,
+            } } },
+        },
+    },
+})
+```
+
+A patch can also replace a built-in part with its own behavior and add lifecycle callbacks:
+
+```lua
+IER.patchMode(IER.Modes.Barter, {
+    id = 'ier-trade-redone',
+    lifecycle = { onOpened = function(handler, trader) ... end, onClosed = function() ... end },
+    roles = {
+        Trade = {
+            filters = { replace = { { id = 'barterOffered', fn = function(row, handler, ctx)
+                return mercantile.base >= ALL_ITEMS_SKILL or barterOffered(row, handler, ctx)
+            end } } },
+            infoBar = { add = { { id = 'ier_trade_invest', before = 'offer', create = ..., cleanup = ... } } },
+        },
+    },
+})
+```
+
+Remove a patch by the id passed to `patchMode`:
+
+```lua
+IER.unpatchMode(IER.Modes.Interface, 'myMod_cf_button')
+```
+
+### Register a whole custom mode — `IER.registerMode`
+
+A custom mode is a new behavior set with its own `applies()` and `priority`. If it overlaps a
+built-in, it must out-prioritize it. Its windows open through `IER.openMode`; the engine UI mode
+is not touched.
+
+```lua
+---@param mode InventoryExtenderRedone.Mode  must carry a key; a key colliding with a built-in is rejected
+IER.registerMode(mode)
+IER.unregisterMode(key)
+```
+
+```lua
+local spec = {
+    key = 'MyMod_Stash',
+    -- base = ... optional: inherit another mode's slots
+    applies = function(role, arg, ctx, uiMode)
+        return role == 'Stash'                    -- governs the new role
+    end,
+    priority = 1,
+    roles = {
+        Stash = {
+            sources = { { id = 'target' } },      -- reuse a built-in source part
+            filters = { add = { { id = 'myNoGold', fn = function(row, handler, ctx)
+                return not IER.Helpers.isGold(row.item) end } } },   -- inline behavior
+            infoBar = { { id = 'encumbrance' }, { id = 'filler' }, { id = 'close' } },
+        },
+    },
+}
+IER.registerMode(spec)
+```
+
+Open and close a custom mode's windows purely IER-side, through the window manager of the UI
+library:
+
+```lua
+IER.openMode('MyMod_Stash', targetContainer)   -- no-op while allWindowsDisabled
+IER.closeMode('MyMod_Stash', targetContainer)
+```
+
+### Register a new window role — `IER.registerWindowRole`
+
+```lua
+---@param role string
+---@param opts InventoryExtenderRedone.RoleOpts  geometry: title, defaultPosition, defaultSize,
+---          minSize, draggable, resizing, pinnable
+IER.registerWindowRole(role, opts)
+```
+
+Default geometry is layer-relative and converted to absolute pixels by the UI library; a player's
+saved position/size wins over these fallbacks. The window id is always `InventoryExtender:<Role>`.
+
+```lua
+local util = require 'openmw.util'
+IER.registerWindowRole('Stash', {
+    title = 'Stash',
+    defaultPosition = util.v2(0.5, 0.5),
+    defaultSize     = util.v2(0.4, 0.4),
+    minSize         = util.v2(300, 200),
+    draggable = true,
+    resizing  = true,
+    pinnable  = false,
+})
+```
+
+A new role has no behavior until a mode spec names it in its `roles[<Role>]` slot — see above.
+
+## How a mode is resolved when a window opens
+
+```lua
+---@param role InventoryExtenderRedone.Role
+---@param arg any?  the target NPC/container/merchant
+---@param uiMode string?  engine UI mode at the moment the window opens (nil = interface)
+---@return InventoryExtenderRedone.Mode?  fully merged mode, nil when nothing applies
+---@return InventoryExtenderRedone.Mode.RoleSpec?  this role's merged slots
+local mode, roleSpec = IER.resolveMode(IER.Roles.Inventory, arg, I.UI.getMode())
+```
+
+The resolution has four steps:
+
+1. **Selection** — every registered mode (built-in and custom) is asked
+   `applies(role, arg, ctx, uiMode)`; the highest-`priority` match wins. Equal priorities are
+   unordered, so a custom mode that overlaps a built-in must out-prioritize it.
+2. **Spec merge** — the mode's `base` chain first (own slots win over the base's), then the
+   patches registered for the mode key, applied in reverse registration order.
+3. **Role defaults** — the role's slot set is filled in with defaults for anything it does not
+   name.
+4. **Part resolution** — each `sources`/`filters`/`actions`/`infoBar` entry is resolved against
+   the part library; the entry's own fields win over the library part. This happens once at open.
+
+`IER.getMode(key)` returns the spec as registered (built-in or custom), not the merged one.
+`IER.getModes()` returns all registered specs.
+
+## Row hooks
+
+These hooks wrap the default row behavior for every window, regardless of mode. They are global
+registration lists, called in reverse registration order. Re-registering the same `id` replaces
+the existing entry (`id`s are case-insensitive).
+
+| Function | Handler signature | Default behavior | Chain stops when a handler returns |
+| --- | --- | --- | --- |
+| `IER.registerRowUseHandler(id, fn)` | `fn(row, ctx, role): boolean?` | equip/use the item (R, or left-click when swapped) | `false` |
+| `IER.registerRowPickupHandler(id, fn)` | `fn(row, ctx, role): boolean?` | pick up the item (Alt transfers; in barter, add/remove from the offer) | `false` |
+| `IER.registerRowDataModifier(id, fn)` | `fn(row, ctx, role)` | mutate `RowData` fields (e.g. `row.Type`) | — |
+| `IER.registerRowBadge(id, fn)` | `fn(row, ctx): string?, color?` | draw a row badge; return an icon path (+ optional color) or `nil` | — |
+| `IER.registerEquippedOverride(id, fn)` | `fn(item, actor): boolean?` | override equipped status | first non-`nil` return wins |
+
+```lua
+-- katars: re-types hand-to-hand weapon rows
+IER.registerRowDataModifier('katars', function(row)
+    local hybrid = H2H.getHybridDefForRecordId(row.itemRecord.id)
+    if hybrid and hybrid.primarySkill == 'handtohand' then
+        row.Type = l10n 'Type_Katar'
+    end
+end)
+
+-- toxicology: a poison badge on coated weapons
+IER.registerRowBadge('toxicology-coatings', function(row)
+    if Weapon.objectIsInstance(row.item) and toxicology.getActivePoisons(row.item) then
+        return 'icons/Toxicology/poison_badge.dds'
+    end
+end)
+```
+
+About `RowData` rows:
+
+- A field value may be a plain value or a function; every consumer must handle both
+  (`type(v) == 'function' and v() or v`).
+- `row.id` is the item-object id (stack identity); `row.itemRecord.id` is the record id. Do not
+  mix them.
+
+## Categories
+
+Twelve built-in categories exist: `Favorites`, `All`, `Weapon`, `Armor`, `Clothing`, `Potion`,
+`Ingredient`, `Scroll`, `Book`, `Key`, `Tool`, `Misc`. Mods may add or remove them.
+
+```lua
+IER.getCategories()             -- InventoryExtenderRedone.Category[]
+IER.getCategory(key)            -- case-insensitive lookup -> Category?
+IER.registerCategory(category)  -- replaces an existing category with the same key; prepend puts it first
+IER.unregisterCategory(key)     -- case-insensitive
+```
+
+A `Category` is `{ key, name, icon | iconPackRelativePath, filter, hiddenColumns, prepend,
+defaultSelected }`. `iconPackRelativePath` resolves against the active icon pack (preferred);
+`icon` is an absolute path. `Favorites` has no filter and applies only to the player's own
+window; in other windows it behaves like `All`.
+
+## Windows and context
+
+```lua
+IER.show(role, arg)                 -- open a role's window (arg = target NPC/container/merchant)
+IER.hide(role, arg, force)          -- close it
+IER.getWindow(role)                 -- the open window's handler (IER.Inventory), or nil
+IER.forEachOpenWindow(apply)        -- apply(handler, wnd) over every open window
+IER.getContext()                    -- the shared mutable context table
+IER.getDraggingObject()             -- the object being dragged, or nil
+IER.isFavorite(itemOrId)            -- string id or object -> boolean
+IER.disableAllWindows(value)        -- temporarily suppress the mod's windows; does NOT restore vanilla windows
+IER.allWindowsDisabled              -- live flag; while true, show() and openMode() do nothing
+```
+
+`getWindow(role)` looks the window up by its id in the UI library's window manager. Handlers
+expose `infoBar` and `table` as public fields for external consumers
+(`handler.infoBar:getHeight()`, `handler.table.size`).
+
+### Shared context (`IER.getContext()`)
+
+One mutable table shared with the mod's own code. Read it fresh each frame; do not cache its
+fields across frames without invalidation.
+
+| Field | Meaning |
+| --- | --- |
+| `stolenItems[recordId][victimId or factionId]` | stolen-item counts: badges, confiscation, "that's mine" barter interruption |
+| `favoriteItems[item.id]`, `favoriteRevision` | favorites; favorites refuse transfers outside Interface mode |
+| `barterState` | `{ selling, buying, currentMerchantOffer, currentBalance, success }`, entries `{ item, stacks, count }` keyed by `item.id` |
+| `pickpocket` | the current pickpocket session, or `nil` |
+| `companionProfit[actorId]` | profit a companion gained from the player |
+| `containerVariables[name]` | vanilla-parity ownership globals |
+| `windowArgs[role]` | the `arg` last passed to `show` for that role (the current target) |
+| `modes[modeKey]` | custom mode specs registered through `registerMode` |
+| `modePatches[modeKey]` | registered patches per mode key |
+| `dragAndDrop` | drag state: `draggingObject`, `draggingCount`, `draggingActivationContext` (carries `role` and `modeKey` of the mode that started the drag) |
+
+## Events
+
+Events are named `IER_*`; `MI_*` aliases are still accepted, so mods listening to the old names
+keep working.
+
+What external mods typically interact with:
+
+- **`IER_Window_Opened`** — fired on every window open with payload `{ id, role, mode, flags }`
+  (`role` is the window role, `mode` the mode key, `flags` the mode's `event.flags`, `nil` for
+  built-ins). Prefer `IER.patchMode` over listening to this event: a patch is id-keyed, removable,
+  and runs at the right phase.
+- **`IER_Update`** — the single refresh trigger for all windows. After changing inventory, send
+  `omwself:sendEvent('IER_Update')` so the open tables refresh.
+
+## Constants and helpers
+
+```lua
+IER.VERSION       -- API version (currently 2)
+IER.Constants     -- shared constants: C.Colors, C.Strings (GMST-backed), C.OPT_KEYS,
+                    C.ServiceToType, C.BoundItemIDs
+IER.Helpers       -- item inspection helpers: getItem*, isItemEquipped, doesItemFit, isGold,
+                    isStealing, ...
+IER.Roles         -- built-in window roles: Inventory, Trade, Container, Companion
+IER.Modes         -- built-in mode keys: Interface, Container, Pickpocket, Barter, Companion
+```
+
+## Notes for mod authors
+
+- **Window ids and storage keys are fixed.** Window ids and `UIToolkit:WindowData` keys are
+  spelled `InventoryExtender:<Role>`, and saved window data uses the literal `:Container`/
+  `:Barter`/`:Companion` suffixes. These spellings are save identity: they do not follow the mod's
+  name, and mods should not rely on renaming them or deriving them from a mode key.
+- **Popup quirk:** while a popup is open in interface mode, the UI library's `Popups.show` sets
+  the engine UI mode to `'Interface'` (`I.UI.getMode()` returns `'Interface'`, not `nil`). The
+  handler's mode snapshot is unaffected — read `handler.mode` rather than re-resolving.
+- **`I.UIToolkit`** is a separate installed library mod. `I.UIToolkit` exists in both MENU and
+  PLAYER contexts, but `I.UIToolkit.WindowManager` and `I.UIToolkit.Popups` are player-only.
