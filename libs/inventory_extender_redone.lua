@@ -29,6 +29,15 @@
 ---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
 ---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?) called in reverse registration order until one returns false; handlers of the use/equip action (default: R, c_Activate, InfoBar "Use" button)
 ---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?) called in reverse registration order until one returns false; handlers of the pick-up action (default: left-click)
+---@field registerMode fun(mode:InventoryExtenderRedone.Mode) register a custom mode spec into ctx.modes; a key colliding with a built-in is rejected (use patchMode to change a built-in)
+---@field unregisterMode fun(key:InventoryExtenderRedone.ModeKey) drop a registered custom mode
+---@field getMode fun(key:InventoryExtenderRedone.ModeKey):InventoryExtenderRedone.Mode? the spec as registered (built-in or custom), not the merged one
+---@field getModes fun():InventoryExtenderRedone.Mode[] all registered specs, built-in and custom
+---@field patchMode fun(key:InventoryExtenderRedone.ModeKey, patch:InventoryExtenderRedone.ModePatch) id-keyed patch merged into a built-in or custom mode at resolve time; list slots (sources/filters/infoBar) merge by id, other slots overwrite
+---@field unpatchMode fun(key:InventoryExtenderRedone.ModeKey, id:string) remove a registered patch by the id passed to patchMode
+---@field registerWindowRole fun(role:string, opts:InventoryExtenderRedone.RoleOpts) the only way to get a new window id (decision 1): registers role geometry and opens the window through UIToolkit; mode specs never register windows
+---@field openMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) open the mode's role windows through UIToolkit.WindowManager.open only, never I.UI.setMode/addMode (decision 10); no-op while allWindowsDisabled
+---@field closeMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) close the mode's role windows through UIToolkit; custom modes never call I.UI.removeMode
 
 
 ---@class InventoryExtenderRedone.Context
@@ -182,7 +191,7 @@
 ---@field id string? required for API.unpatchMode
 ---@field key InventoryExtenderRedone.ModeKey? target mode key; set by API.patchMode when omitted
 ---@field title string?
----@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? same call shape as Mode.applies
+---@field applies? fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? same call shape as Mode.applies; selection consults registered specs, so a patch normally omits it
 ---@field priority number?
 ---@field syncCategory boolean?
 ---@field drag InventoryExtenderRedone.Mode.Drag?

@@ -33,40 +33,48 @@ Tooltips.addPreCreateTooltipHandler(function(recipe, tooltip)
         { text = string.format(l10n('Quality'), util.round(100 * quality)), name = 'CFQuality' })
 end)
 
-return {
-    eventHandlers = {
-        IER_Window_Opened = function(data)
-            if data.role ~= 'Inventory' or data.mode ~= 'Interface' then return end
+local IER = I.InventoryExtenderRedone
 
-            local handler = assert(I.UIToolkit.WindowManager.getHandler(data.id)) --[[@as  IER.Inventory]]
-            local sz = handler.infoBar:getHeight()
-
-            ---@type UIToolkit.ImageButton?
-            local btn = I.UIToolkit.Components.imageButton {
-                name = 'open_cf',
-                style = 'empty',
-                icon = 'icons/m/misc_hammer10.dds',
-                size = v2(1, 1) * sz,
-                onClick = function()
-                    I.InventoryExtenderRedone.hide(data.role)
-                    CF.openCraftingWindow()
+-- The Crafting Framework button is a patch on the Interface mode's info bar, not an event
+-- listener: create builds the button once per open, the returned provider hides it while
+-- dragging, cleanup destroys it when the bar is destroyed. Slots are keyed per window role,
+-- so the patch names the Inventory role's infoBar; patchMode merges the section by id into
+-- that role's strip in order.
+local btn
+IER.patchMode(IER.Modes.Interface, {
+    roles = {
+        Inventory = {
+            infoBar = { add = { {
+                id = 'ier_cf',
+                create = function(handler, ctx)
+                    local sz = handler.infoBar:getHeight()
+                    btn = I.UIToolkit.Components.imageButton {
+                        name = 'open_cf',
+                        style = 'empty',
+                        icon = 'icons/m/misc_hammer10.dds',
+                        size = v2(1, 1) * sz,
+                        onClick = function()
+                            IER.hide(IER.Roles.Inventory)
+                            CF.openCraftingWindow()
+                        end,
+                        colorable = false,
+                        highlight = true,
+                        tooltip = 'Crafting', --TODO: add L10N
+                    }
+                    return function()
+                        if not btn then return nil end
+                        if IER.getDraggingObject() then return nil end
+                        return btn.element
+                    end
                 end,
-                colorable = false,
-                highlight = true,
-                tooltip = 'Crafting', --TODO: add L10N
-            }
-
-            handler.infoBar:addProvider(
-                function()
-                    if not btn then return nil end
-                    if I.InventoryExtenderRedone.getDraggingObject() then return nil end
-                    return btn.element
-                end,
-                function()
+                cleanup = function()
                     if not btn then return end
                     I.UIToolkit.queueDestroy(btn.element)
                     btn = nil
-                end)
-        end,
+                end,
+            } } },
+        },
     },
-}
+})
+
+return {}

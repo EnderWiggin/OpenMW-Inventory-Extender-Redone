@@ -78,24 +78,64 @@ local function dragAllowed()
     return false
 end
 
-function WindowManager:init()
-    local manager = Manager
-    for i = 1, #RoleRegistry.order do
-        local role = RoleRegistry.order[i]
-        local opts = RoleRegistry.byRole[role]
-        local handler = InvHandler:new()
-        handler:init(role)
+-- a role's window is registered at most once: init() runs at onLoad and onInit, and
+-- registerWindowRole may add a role after init already ran, so dedupe by role
+local windowRegistered = {}
 
-        manager.register(getWindowId(role), {
-            title = opts.title,
-            handler = handler,
-            draggable = opts.draggable,
-            resizing = opts.resizing,
-            pinnable = opts.pinnable,
-            position = manager.toAbsolute(opts.defaultPosition),
-            size = manager.toAbsolute(opts.defaultSize),
-            minSize = opts.minSize,
-        })
+local function registerWindow(role)
+    if windowRegistered[role] then return end
+    local opts = RoleRegistry.byRole[role]
+    if not opts then return end
+    windowRegistered[role] = true
+
+    local handler = InvHandler:new()
+    handler:init(role)
+    Manager.register(getWindowId(role), {
+        title = opts.title,
+        handler = handler,
+        draggable = opts.draggable,
+        resizing = opts.resizing,
+        pinnable = opts.pinnable,
+        position = Manager.toAbsolute(opts.defaultPosition),
+        size = Manager.toAbsolute(opts.defaultSize),
+        minSize = opts.minSize,
+    })
+end
+
+function WindowManager:init()
+    for i = 1, #RoleRegistry.order do
+        registerWindow(RoleRegistry.order[i])
+    end
+end
+
+--- The only way to get a new window id (decision 1): geometry into the role registry, the
+--- window itself through UIToolkit. A mode spec never registers a window.
+---@param role string
+---@param opts InventoryExtenderRedone.RoleOpts
+function WindowManager:registerWindowRole(role, opts)
+    RoleRegistry.register(role, opts)
+    registerWindow(role)
+end
+
+--- Purely IER-side (decision 10): open the mode's role windows through UIToolkit only. The
+--- mode governs each window through its applies(); openMode forces the open, not the mode.
+---@param key InventoryExtenderRedone.ModeKey
+---@param arg any?
+function WindowManager:openMode(key, arg)
+    local mode = Mode.resolve(key)
+    if not mode then return end
+    for role in pairs(mode.roles or {}) do
+        WindowManager:show(role, arg)
+    end
+end
+
+---@param key InventoryExtenderRedone.ModeKey
+---@param arg any?
+function WindowManager:closeMode(key, arg)
+    local mode = Mode.resolve(key)
+    if not mode then return end
+    for role in pairs(mode.roles or {}) do
+        WindowManager:hide(role, arg)
     end
 end
 
@@ -131,10 +171,15 @@ function WindowManager:show(role, arg)
     if not handler then
         _, handler = Manager.open(windowId, arg) --[[@as any]]
         ---@cast handler IER.Inventory
+        -- flags is the mode's serializable summary (Mode.EventData.flags); built-ins define
+        -- none, so it is nil there. Resolve by the opened window's actual mode key, not the
+        -- role-forced mode resolved above (which is Interface for the Inventory role).
+        local openedMode = Mode.resolve(handler.mode)
         omwself:sendEvent('IER_Window_Opened', {
             id = windowId,
             role = handler.role,
             mode = handler.mode,
+            flags = openedMode and openedMode.event and openedMode.event.flags,
         })
     end
 end

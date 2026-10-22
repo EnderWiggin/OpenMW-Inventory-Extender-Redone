@@ -29,6 +29,87 @@ API.Modes = D.Modes
 --- into its slots at open.
 API.resolveMode = modeApi.resolveMode
 
+--- Mode registry: the public surface over ctx.modes / ctx.modePatches. Built-in specs live
+--- in toolkit/mode.lua Mode.Builtins and are never stored in ctx; a custom mode registers a
+--- spec, a patch merges into a built-in or custom spec at resolve time.
+function API.registerMode(mode)
+    if not mode or not mode.key then return end
+    -- a key that collides with a built-in must go through patchMode, not replace the spec
+    if D.Modes[mode.key] then return end
+    windowManager.ctx.modes[mode.key] = mode
+end
+
+function API.unregisterMode(key)
+    windowManager.ctx.modes[key] = nil
+end
+
+---@param key InventoryExtenderRedone.ModeKey
+---@return InventoryExtenderRedone.Mode? the spec as registered (built-in or custom), not the merged one
+function API.getMode(key)
+    return modeApi.Builtins[key] or windowManager.ctx.modes[key]
+end
+
+---@return InventoryExtenderRedone.Mode[] built-in and custom specs
+function API.getModes()
+    local list = {}
+    for _, spec in pairs(modeApi.Builtins) do list[#list + 1] = spec end
+    for _, spec in pairs(windowManager.ctx.modes) do list[#list + 1] = spec end
+    return list
+end
+
+--- Patch a built-in or custom mode. The patch has the same shape as Mode; list slots
+--- (sources/filters/infoBar) merge by id, every other slot overwrites. Patches apply at
+--- resolve time in reverse registration order, so a mid-session patch affects the next open,
+--- not an already-open window's snapshot.
+---@param key InventoryExtenderRedone.ModeKey
+---@param patch InventoryExtenderRedone.ModePatch
+function API.patchMode(key, patch)
+    if not key or not patch then return end
+    local patches = windowManager.ctx.modePatches[key]
+    if not patches then
+        patches = {}
+        windowManager.ctx.modePatches[key] = patches
+    end
+    patches[#patches + 1] = patch
+end
+
+---@param key InventoryExtenderRedone.ModeKey
+---@param id string the patch's id given at patchMode
+function API.unpatchMode(key, id)
+    local patches = windowManager.ctx.modePatches[key]
+    if not patches then return end
+    for i = #patches, 1, -1 do
+        if patches[i].id == id then
+            table.remove(patches, i)
+            return
+        end
+    end
+end
+
+--- The only way to get a new window id (decision 1): mode specs stay pure behavior and never
+--- register windows, so a new role comes through here with its geometry.
+---@param role string
+---@param opts InventoryExtenderRedone.RoleOpts
+function API.registerWindowRole(role, opts)
+    windowManager:registerWindowRole(role, opts)
+end
+
+--- Purely IER-side (decision 10): opens the mode's role windows through UIToolkit only, never
+--- I.UI.setMode/addMode. The mode governs each window through its applies(); openMode forces the
+--- open, not the mode onto a window whose applies does not match the arg. No-op while disabled.
+---@param key InventoryExtenderRedone.ModeKey
+---@param arg any?
+function API.openMode(key, arg)
+    if API.allWindowsDisabled then return end
+    windowManager:openMode(key, arg)
+end
+
+---@param key InventoryExtenderRedone.ModeKey
+---@param arg any?
+function API.closeMode(key, arg)
+    windowManager:closeMode(key, arg)
+end
+
 API.allWindowsDisabled = false
 
 ---Set to true to temporarily disable IE windows
