@@ -88,15 +88,24 @@ local function merchantItems(npc)
     return flat
 end
 
---- The merchant-services gate both barter roles share: gold and keys are never offered, and an
---- item's service must be offered by the merchant unless it is enchanted and MagicItems is.
+--- Do not allow trading gold and keys
+---@param row InventoryExtenderRedone.RowData
+---@param npc openmw.Object?
+---@return boolean
+local function isAllowedToTrade(row, npc)
+    if not npc then return false end
+    if helpers.isGold(row.item) then return false end
+    if row.itemRecord.isKey then return false end
+
+    return true
+end
+
+--- item's service must be offered by the merchant unless it is enchanted and MagicItems is offered.
 ---@param row InventoryExtenderRedone.RowData
 ---@param npc openmw.Object?
 ---@return boolean
 local function isOfferedByMerchant(row, npc)
     if not npc then return false end
-    if helpers.isGold(row.item) then return false end
-    if row.itemRecord.isKey then return false end
 
     local services = npc.type.record(npc).servicesOffered
     if not services.MagicItems or not row.itemRecord.enchant then
@@ -154,11 +163,24 @@ Mode.Sources = {
 }
 
 Mode.Filters = {
-    -- the player's window in Barter mode: what may be sold, plus what the merchant already bought
-    barterOffer = {
-        id = 'barterOffer',
+    -- disallow gold and keys
+    barterAllowed = {
+        id = 'barterAllowed',
         fn = function(row, handler, ctx)
-            if not isOfferedByMerchant(row, handler.arg) then return false end
+            return isAllowedToTrade(row, handler.arg)
+        end,
+    },
+    -- allow only items in merchant's service list
+    barterOffered = {
+        id = 'barterOffered',
+        fn = function(row, handler, ctx)
+            return isOfferedByMerchant(row, handler.arg)
+        end,
+    },
+    -- show merchant's items in inventory when buying
+    barterInventoryForeign = {
+        id = 'barterInventoryForeign',
+        fn = function(row, handler, ctx)
             local item = row.item
             local buying = ctx.barterState.buying
             local selling = ctx.barterState.selling
@@ -169,12 +191,10 @@ Mode.Filters = {
             return row.getCount() > sellingCount
         end,
     },
-    -- the merchant's window in Barter mode: its own stock minus what it wears, plus the player's offers
-    barterTradeOffer = {
-        id = 'barterTradeOffer',
+    -- show player's items in trade when selling
+    barterTraderForeign = {
+        id = 'barterTraderForeign',
         fn = function(row, handler, ctx)
-            if handler.target.type.hasEquipped(handler.target, row.item) then return false end
-            if not isOfferedByMerchant(row, handler.arg) then return false end
             local item = row.item
             local buying = ctx.barterState.buying
             local selling = ctx.barterState.selling
@@ -183,6 +203,13 @@ Mode.Filters = {
             end
             local buyingCount = buying[item.id] and buying[item.id].count or 0
             return row.getCount() > buyingCount
+        end,
+    },
+    -- hide merchant's equipped items
+    barterTradeEquipped = {
+        id = 'barterTradeEquipped',
+        fn = function(row, handler, ctx)
+            return not handler.target.type.hasEquipped(handler.target, row.item)
         end,
     },
     -- only the items the sneak roll left visible; a nil session means everything is visible

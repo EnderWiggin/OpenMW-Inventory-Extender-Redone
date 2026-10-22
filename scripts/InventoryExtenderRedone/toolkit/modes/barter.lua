@@ -81,7 +81,7 @@ return {
                 { id = 'target' },
                 { id = 'merchantOfOther' },
             },
-            filters = { { id = 'barterOffer' } },
+            filters = { { id = 'barterAllowed' }, { id = 'barterOffered' }, { id = 'barterInventoryForeign' } },
             -- use is gated by which side of the offer the row sits on; pickup only ever
             -- adjusts the offer bookkeeping (drag is off in this mode)
             actions = {
@@ -104,7 +104,7 @@ return {
                 { id = 'merchantOfTarget' },
                 { id = 'self', isBartered = true },
             },
-            filters = { { id = 'barterTradeOffer' } },
+            filters = { { id = 'barterAllowed' }, { id = 'barterTradeEquipped' }, { id = 'barterOffered' }, { id = 'barterTraderForeign' } },
             actions = {
                 use = { id = 'useBarterTrade' },
                 pickup = { id = 'pickupBarterTrade' },
