@@ -30,11 +30,7 @@ local cfgUtil        = require 'scripts.UIToolkit.config.utils'
 local BarterControls = require('scripts.InventoryExtenderRedone.toolkit.barter_controls')
 
 local Actor          = types.Actor
-local Armor          = types.Armor
-local Clothing       = types.Clothing
 local Container      = types.Container
-local NPC            = types.NPC
-local Weapon         = types.Weapon
 local Player         = types.Player
 
 
@@ -128,14 +124,14 @@ Mode.Sources = {
     -- the companion's for its own role
     target = {
         id = 'target',
-        get = function(handler, ctx)
+        get = function(handler, _)
             return handler.target.type.inventory(handler.target):getAll()
         end,
     },
     -- always the player's own inventory, whichever window asks for the other side of a barter
     self = {
         id = 'self',
-        get = function(handler, ctx)
+        get = function(_, _)
             return playerInventory:getAll()
         end,
     },
@@ -146,7 +142,7 @@ Mode.Sources = {
     merchantOfTarget = {
         id = 'merchantOfTarget',
         virtual = true,
-        get = function(handler, ctx)
+        get = function(handler, _)
             return merchantItems(handler.target)
         end,
     },
@@ -168,21 +164,21 @@ Mode.Filters = {
     -- disallow gold and keys
     barterAllowed = {
         id = 'barterAllowed',
-        fn = function(row, handler, ctx)
+        fn = function(row, handler, _)
             return isAllowedToTrade(row, handler.arg)
         end,
     },
     -- allow only items in merchant's service list
     barterOffered = {
         id = 'barterOffered',
-        fn = function(row, handler, ctx)
+        fn = function(row, handler, _)
             return isOfferedByMerchant(row, handler.arg)
         end,
     },
     -- show merchant's items in inventory when buying
     barterInventoryForeign = {
         id = 'barterInventoryForeign',
-        fn = function(row, handler, ctx)
+        fn = function(row, _, ctx)
             local item = row.item
             local buying = ctx.barterState.buying
             local selling = ctx.barterState.selling
@@ -196,7 +192,7 @@ Mode.Filters = {
     -- show player's items in trade when selling
     barterTraderForeign = {
         id = 'barterTraderForeign',
-        fn = function(row, handler, ctx)
+        fn = function(row, _, ctx)
             local item = row.item
             local buying = ctx.barterState.buying
             local selling = ctx.barterState.selling
@@ -210,14 +206,14 @@ Mode.Filters = {
     -- hide merchant's equipped items
     barterTradeEquipped = {
         id = 'barterTradeEquipped',
-        fn = function(row, handler, ctx)
+        fn = function(row, handler, _)
             return not handler.target.type.hasEquipped(handler.target, row.item)
         end,
     },
     -- only the items the sneak roll left visible; a nil session means everything is visible
     pickpocketVisibility = {
         id = 'pickpocketVisibility',
-        fn = function(row, handler, ctx)
+        fn = function(row, _, ctx)
             return pickpocket.isVisible(ctx.pickpocket, row.item)
         end,
     },
@@ -227,15 +223,15 @@ Mode.Filters = {
 -- parts with (row, handler, ctx, count); perform is the default effect, transfer the Alt-held
 -- variant. use parts also carry the IER_UseItem payload providers: which inventory the item
 -- moves from first and, during a pickpocket session, whose session the roll belongs to.
-local function useSourceSelf(row, handler, ctx)
+local function useSourceSelf(row, _, _)
     return row.item.parentContainer or omwself
 end
 
-local function useSourceTarget(row, handler, ctx)
+local function useSourceTarget(row, handler, _)
     return row.item.parentContainer or handler.target
 end
 
-local function usePickpocketSession(row, handler, ctx)
+local function usePickpocketSession(_, handler, ctx)
     local session = ctx.pickpocket
     if session and session.active then
         return { target = handler.target }
@@ -271,7 +267,7 @@ end
 
 -- Alt+click from the player's window hands the row to the mode's other window
 local function transferIntoWindow(role, modeKey)
-    return function(row, handler, ctx, count)
+    return function(row, _, ctx, count)
         local target = ctx.windowArgs[role]
         if target then
             ctx.dragAndDrop:transferInto(row.item, target, omwself, count, nil, modeKey)
@@ -317,7 +313,7 @@ end
 -- incrementTable is where a fresh offer is recorded; the two role parts differ only in which
 -- side of the offer they sit on
 local function barterOfferEffect(decrementTable, incrementTable)
-    return function(row, handler, ctx, count)
+    return function(row, _, ctx, count)
         if row.isBartered then
             local offer = ctx.barterState[decrementTable]
             local entry = offer[row.item.id]
@@ -442,7 +438,7 @@ Mode.Info = {
     -- weight bar: hidden for organic containers and during a pickpocket session
     encumbrance = {
         id = 'encumbrance',
-        create = function(handler, ctx)
+        create = function(handler, _)
             local theme = Toolkit.getTheme()
             local bar = Components.progressBar {
                 width = 100,
@@ -487,7 +483,7 @@ Mode.Info = {
     -- remaining offer for Trade
     gold = {
         id = 'gold',
-        create = function(handler, ctx)
+        create = function(handler, _)
             local theme = Toolkit.getTheme()
             local props = { text = '' }
             local layout = {
@@ -512,7 +508,7 @@ Mode.Info = {
                     }
                 }
             }
-            return function(c)
+            return function(_)
                 if not handler.target then return nil end
                 local goldAmount
                 if handler.role == D.Roles.Inventory then
@@ -528,7 +524,7 @@ Mode.Info = {
     -- worn armor rating, the player's own window only
     armorRating = {
         id = 'armorRating',
-        create = function(handler, ctx)
+        create = function(handler, _)
             local theme = Toolkit.getTheme()
             local props = { text = '' }
             local layout = {
@@ -553,7 +549,7 @@ Mode.Info = {
                     }
                 }
             }
-            return function(c)
+            return function(_)
                 if not handler.target then return nil end
                 props.text = H.addSeparators(math.floor(I.Combat.getArmorRating(handler.target)))
                 return layout
@@ -563,7 +559,7 @@ Mode.Info = {
     -- stretching gap; its position in the slot list is what lays the strip out
     filler = {
         id = 'filler',
-        provider = function(c)
+        provider = function(_)
             return { external = { grow = 1, stretch = 1 } }
         end,
     },
@@ -684,7 +680,7 @@ Mode.Info = {
     -- what a companion has gained from the player, only on its window
     profit = {
         id = 'profit',
-        create = function(handler, ctx)
+        create = function(handler, _)
             local props = {}
             local layout = {
                 template = T.text(),
@@ -702,7 +698,7 @@ Mode.Info = {
     -- close arrives with API.closeMode (Phase 5)
     close = {
         id = 'close',
-        create = function(handler, ctx)
+        create = function(handler, _)
             local theme = Toolkit.getTheme()
             local btnClose = Components.textButton {
                 name = 'close',
@@ -712,7 +708,7 @@ Mode.Info = {
                     I.UI.removeMode(handler.role)
                 end,
             }
-            return function(c)
+            return function(_)
                 return btnClose.element
             end
         end,
@@ -720,7 +716,7 @@ Mode.Info = {
     -- the offer panel: −, amount, +, Max, Offer, Cancel
     barterControls = {
         id = 'barterControls',
-        create = function(handler, ctx)
+        create = function(handler, _)
             local barterControls = BarterControls:new()
             barterControls:init(handler)
             return function(c)
