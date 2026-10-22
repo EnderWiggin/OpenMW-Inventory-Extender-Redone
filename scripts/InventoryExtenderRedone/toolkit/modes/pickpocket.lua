@@ -1,6 +1,7 @@
 ---@omw-context player
 
 local I = require('openmw.interfaces')
+local core = require('openmw.core')
 local omwself = require('openmw.self')
 
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
@@ -37,6 +38,27 @@ return {
             if Pickpocket.isTarget(arg) and (not ctx.pickpocket or ctx.pickpocket.targetId ~= arg.id) then
                 ctx.pickpocket = Pickpocket.createSession(omwself, arg)
             end
+        end,
+        -- leaving the session without resolving it rolls the close sneak check: failing alerts
+        -- the victim; either way the flag clears and the body plays its close animation
+        -- (windowManager dispatches this spec while a session is active, decision 11)
+        onClosing = function(handler, arg, newMode)
+            if newMode ~= nil or not arg then return end
+            local ctx = I.InventoryExtenderRedone.getContext()
+            if ctx.pickpocket and ctx.pickpocket.active and not ctx.pickpocket.resolved and
+                Pickpocket.isTarget(arg)
+            then
+                local success = Pickpocket.rollClose(omwself, arg)
+                if not success then
+                    core.sendGlobalEvent('IER_CommitPickpocket', {
+                        player = omwself,
+                        target = arg,
+                        victimAware = true,
+                    })
+                end
+            end
+            ctx.pickpocket = nil
+            arg:sendEvent('IER_ContainerClosed')
         end,
     },
     -- only the Container role is ever in this mode: the player's own window keeps Container's

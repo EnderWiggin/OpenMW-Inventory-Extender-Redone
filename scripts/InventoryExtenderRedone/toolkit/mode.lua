@@ -4,6 +4,7 @@ local I = require('openmw.interfaces')
 
 local ambient    = require('openmw.ambient')
 local core       = require('openmw.core')
+local input      = require('openmw.input')
 local ui         = require('openmw.ui')
 
 local types      = require('openmw.types')
@@ -16,10 +17,21 @@ local helpers    = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants  = require('scripts.InventoryExtenderRedone.util.constants')
 local pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
+local persistentCorpses = require('scripts.InventoryExtenderRedone.util.persistentCorpses')
+local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local l10n       = core.l10n(D.L10N)
 
+local Toolkit    = I.UIToolkit
+local Components = Toolkit.Components
+local T          = Toolkit.Templates
+local H          = require 'scripts.UIToolkit.helpers'
+local cfgUtil    = require 'scripts.UIToolkit.config.utils'
+local BarterControls = require('scripts.InventoryExtenderRedone.toolkit.barter_controls')
+
+local Actor   = types.Actor
 local Armor   = types.Armor
 local Clothing = types.Clothing
+local Container = types.Container
 local NPC     = types.NPC
 local Weapon  = types.Weapon
 local Player = types.Player
@@ -380,7 +392,314 @@ Mode.Actions = {
         end,
     },
 }
-Mode.Info = {}
+-- InfoBar sections: `create` builds the once-per-open part (buttons, bars, layouts) and hands
+-- back the per-frame provider; `provider` alone is a stateless section. The handler feeds both
+-- to InfoBar:addProvider in slot order, so the filler (stretch) position stays load-bearing.
+local function createDraggedActivationRow(ctx, item)
+    local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
+    return {
+        id = item.id,
+        item = item,
+        itemRecord = item.type.record(item),
+        isBartered = activationContext.isBartered,
+        getCount = function()
+            return ctx.dragAndDrop.draggingCount or item.count
+        end,
+    }
+end
+
+Mode.Info = {
+    -- weight bar: hidden for organic containers and during a pickpocket session
+    encumbrance = {
+        id = 'encumbrance',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local bar = Components.progressBar {
+                width = 100,
+                color = theme.Colors.MAGICK,
+                clamp = false,
+            }
+            local layout = {
+                name = 'encumbrance',
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content {
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = Toolkit.texture 'icons/weight.dds',
+                            size = v2(1, 1) * theme.Sizes.textNormal,
+                        }
+                    },
+                    T.intervalH(4),
+                    bar.element,
+                }
+            }
+            return function(c)
+                if not handler.target then return nil end
+                if handler.role == D.Roles.Container and
+                    (Container.objectIsInstance(handler.target) and Container.record(handler.target).isOrganic)
+                    or (c.pickpocket and c.pickpocket.active)
+                then
+                    return nil
+                end
+                local targetType = handler.target.type
+                bar:setMax(util.round(targetType.getCapacity(handler.target)))
+                bar:setValue(util.round(targetType.getEncumbrance(handler.target)))
+                return layout
+            end
+        end,
+    },
+    -- gold the window's actor carries: pocket gold for the Inventory role, the merchant's
+    -- remaining offer for Trade
+    gold = {
+        id = 'gold',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local props = { text = '' }
+            local layout = {
+                name = 'gold',
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content {
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = 'icons/gold.dds' },
+                            size = v2(1, 1) * theme.Sizes.textNormal,
+                        }
+                    },
+                    T.intervalH(4),
+                    {
+                        template = T.text(),
+                        props = props,
+                    }
+                }
+            }
+            return function(c)
+                if not handler.target then return nil end
+                local goldAmount
+                if handler.role == D.Roles.Inventory then
+                    goldAmount = handler.target.type.inventory(handler.target):countOf('gold_001')
+                else
+                    goldAmount = handler.target.type.getBarterGold(handler.target)
+                end
+                props.text = H.addSeparators(goldAmount)
+                return layout
+            end
+        end,
+    },
+    -- worn armor rating, the player's own window only
+    armorRating = {
+        id = 'armorRating',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local props = { text = '' }
+            local layout = {
+                name = 'armorRating',
+                type = ui.TYPE.Flex,
+                props = {
+                    horizontal = true,
+                    arrange = ui.ALIGNMENT.Center,
+                },
+                content = ui.content {
+                    {
+                        type = ui.TYPE.Image,
+                        props = {
+                            resource = ui.texture { path = 'icons/a/a_cuirass_ebon.dds' },
+                            size = v2(1, 1) * theme.Sizes.textNormal,
+                        }
+                    },
+                    T.intervalH(4),
+                    {
+                        template = T.text(),
+                        props = props,
+                    }
+                }
+            }
+            return function(c)
+                if not handler.target then return nil end
+                props.text = H.addSeparators(math.floor(I.Combat.getArmorRating(handler.target)))
+                return layout
+            end
+        end,
+    },
+    -- stretching gap; its position in the slot list is what lays the strip out
+    filler = {
+        id = 'filler',
+        provider = function(c)
+            return { external = { grow = 1, stretch = 1 } }
+        end,
+    },
+    -- use the dragged item: the button only shows while a drag is active
+    use = {
+        id = 'use',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local btnUse = Components.textButton {
+                name = 'use',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = core.getGMST('sUse'),
+                onClick = function()
+                    local draggedItem = ctx.dragAndDrop.draggingObject
+                    if not draggedItem then return end
+                    local result = handler:onRowUse(createDraggedActivationRow(ctx, draggedItem))
+                    if result ~= false then
+                        ctx.dragAndDrop:stopDrag()
+                        handler.infoBar:update()
+                        --handler:refresh()
+                    end
+                end,
+                tooltip = function()
+                    if configPlayer.keybinds.b_SwapUsePickup then
+                        return l10n('UI_Tooltip_UseButton_Swapped')
+                    end
+                    local key = cfgUtil.getFirstKeyboardInput(configPlayer.keybinds.c_Activate).id
+                    if not key then return nil end
+                    return l10n('UI_Tooltip_UseButton', { key = input.getKeyName(key) })
+                end,
+            }
+            return function(c)
+                btnUse:setVisible(c.dragAndDrop.draggingObject ~= nil)
+                return btnUse.element
+            end
+        end,
+    },
+    -- loot a dead body and end the encounter: the button only shows on dead actors
+    dispose = {
+        id = 'dispose',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local btnDispose = Components.textButton {
+                name = 'dispose',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = constants.Strings.DISPOSE_OF_CORPSE,
+                onClick = function()
+                    -- the window's own snapshot decides: during a pickpocket session the
+                    -- engine sits in Container mode but the mode key is Pickpocket
+                    local mode = handler.mode
+                    if mode ~= D.Modes.Container and mode ~= D.Modes.Pickpocket then return end
+                    if not ctx.windowArgs[D.Roles.Container] then return end
+                    ctx.dragAndDrop:moveAll(handler.target, omwself)
+                    if persistentCorpses(handler.target) then
+                        ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
+                    else
+                        core.sendGlobalEvent('IER_DisposeOfCorpse', {
+                            target = ctx.windowArgs[D.Roles.Container],
+                        })
+                    end
+                    I.UI.removeMode(D.Modes.Container)
+                end,
+            }
+            return function(c)
+                local visible = false
+                if c.windowArgs[D.Roles.Container] then
+                    visible = Actor.objectIsInstance(c.windowArgs[D.Roles.Container])
+                        and Actor.isDead(c.windowArgs[D.Roles.Container])
+                end
+                btnDispose:setVisible(visible)
+                return btnDispose.element
+            end
+        end,
+    },
+    -- take everything: Shift takes only what the filters left visible and keeps the window open
+    takeAll = {
+        id = 'takeAll',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local btnTakeAll = Components.textButton {
+                name = 'takeAll',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = constants.Strings.TAKE_ALL,
+                onClick = function()
+                    local mode = handler.mode
+                    if mode ~= D.Modes.Container and mode ~= D.Modes.Pickpocket then return end
+                    if not ctx.windowArgs[D.Roles.Container] then return end
+                    local visibleOnly = input.isShiftPressed()
+                    local items = nil
+
+                    if visibleOnly then
+                        local visibleItems = handler.table.filteredItems
+                        items = {}
+                        for i = 1, #visibleItems do
+                            local row = visibleItems[i]
+                            if row and row.item then
+                                items[#items + 1] = row.item
+                            end
+                        end
+                    end
+
+                    if not items or #items > 0 then
+                        ctx.dragAndDrop:moveAll(handler.target, omwself, items)
+                    end
+
+                    if not visibleOnly then
+                        I.UI.removeMode(D.Modes.Container)
+                    end
+                end,
+                tooltip = l10n('UI_Tooltip_TakeAllButton_Shift'),
+            }
+            return function(c)
+                btnTakeAll:setVisible(not (c.pickpocket and c.pickpocket.active))
+                return btnTakeAll.element
+            end
+        end,
+    },
+    -- what a companion has gained from the player, only on its window
+    profit = {
+        id = 'profit',
+        create = function(handler, ctx)
+            local props = {}
+            local layout = {
+                template = T.text(),
+                props = props,
+            }
+            return function(c)
+                if handler.target == nil then return nil end
+                local profit = c.companionProfit[handler.target.id] or 0
+                props.text = constants.Strings.PROFIT_VALUE .. ': ' .. H.addSeparators(profit)
+                return layout
+            end
+        end,
+    },
+    -- close the target window: built-in roles close through the engine mode; a custom role's
+    -- close arrives with API.closeMode (Phase 5)
+    close = {
+        id = 'close',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local btnClose = Components.textButton {
+                name = 'close',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = constants.Strings.CLOSE,
+                onClick = function()
+                    I.UI.removeMode(handler.role)
+                end,
+            }
+            return function(c)
+                return btnClose.element
+            end
+        end,
+    },
+    -- the offer panel: −, amount, +, Max, Offer, Cancel
+    barterControls = {
+        id = 'barterControls',
+        create = function(handler, ctx)
+            local barterControls = BarterControls:new()
+            barterControls:init(handler)
+            return function(c)
+                barterControls:update(c)
+                return barterControls.element
+            end
+        end,
+    },
+}
 
 --- Built-in specs, keyed by mode key. Custom specs live in ctx.modes and are never stored here.
 Mode.Builtins = {

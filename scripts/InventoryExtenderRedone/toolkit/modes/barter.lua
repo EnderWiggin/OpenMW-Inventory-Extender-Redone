@@ -2,10 +2,43 @@
 
 local util = require('openmw.util')
 local v2 = util.vector2
+local core = require('openmw.core')
+local ui = require('openmw.ui')
+local input = require('openmw.input')
+local I = require('openmw.interfaces')
 
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local constants = require('scripts.InventoryExtenderRedone.util.constants')
+local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local cfgUtil = require 'scripts.UIToolkit.config.utils'
+local l10n = core.l10n(D.L10N)
 local Roles = D.Roles
 local Modes = D.Modes
+
+local BUTTON = input.CONTROLLER_BUTTON
+
+
+-- controller hints replace the base list: Activate offers instead of picking up, and B
+-- closes the deal
+---@param handler IER.Inventory
+---@param ctx InventoryExtenderRedone.Context
+---@param base UIToolkit.Controller.HintList
+---@return UIToolkit.Controller.HintList
+local function barterHints(handler, ctx, base)
+    local binds = configPlayer.keybinds
+    local find = cfgUtil.getFirstControllerInput
+    local select = handler.table.showGrid
+        and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
+        or { find(binds.c_SelUp), find(binds.c_SelDown) }
+    return {
+        { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, find(binds.c_Activate) } },
+        'separator',
+        { text = l10n 'Hint_Category', input = select, },
+        { text = l10n 'Hint_Select', input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+        'separator',
+        { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+    }
+end
 
 
 -- Bartering with an NPC: the player's window plus the merchant's window. Both sides see each
@@ -25,6 +58,20 @@ return {
     -- validDragModes has no Barter key: dragging is off for both roles, and drag is a ctx
     -- singleton, so the flag is mode-wide rather than per role
     drag = { allowed = false },
+    -- leaving a successful barter says thanks, once, before windowManager resets barterState
+    -- (built-in lifecycle.onClosing fires from UiModeChanged, decision 11)
+    lifecycle = {
+        onClosing = function(handler, arg, newMode)
+            local ctx = I.InventoryExtenderRedone.getContext()
+            if ctx.barterState.success then
+                ui.showMessage(constants.Strings.BARTER_THANK_YOU, {
+                    showInDialogue = true,
+                })
+            end
+        end,
+    },
+    -- controller hints replace the base list: Activate offers instead of picking up, and B
+    -- closes the deal
     roles = {
         [Roles.Inventory] = {
             storageSuffix = ':Barter',
@@ -41,6 +88,15 @@ return {
                 use = { id = 'useBarterInventory' },
                 pickup = { id = 'pickupBarterInventory' },
             },
+            -- bottom strip: same as the player's interface window
+            infoBar = {
+                { id = 'encumbrance' },
+                { id = 'gold' },
+                { id = 'armorRating' },
+                { id = 'filler' },
+                { id = 'use' },
+            },
+            hints = barterHints,
         },
         [Roles.Trade] = {
             -- the merchant's own stock, plus what the player is offering from their pockets
@@ -53,6 +109,12 @@ return {
                 use = { id = 'useBarterTrade' },
                 pickup = { id = 'pickupBarterTrade' },
             },
+            -- the merchant's strip: its gold plus the offer panel
+            infoBar = {
+                { id = 'gold' },
+                { id = 'barterControls' },
+            },
+            hints = barterHints,
         },
     },
 }

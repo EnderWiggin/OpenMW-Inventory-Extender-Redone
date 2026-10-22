@@ -2,6 +2,7 @@
 
 local util = require('openmw.util')
 local v2 = util.vector2
+local core = require('openmw.core')
 
 local I = require('openmw.interfaces')
 local types = require('openmw.types')
@@ -50,6 +51,13 @@ return {
                 I.InventoryExtenderRedone.getContext().pickpocket = nil
             end
         end,
+        -- the engine popped the Container mode: the session flag is cleared and the body plays
+        -- its close animation (fires from UiModeChanged for built-ins, decision 11)
+        onClosing = function(handler, arg, newMode)
+            if newMode ~= nil or not arg then return end
+            I.InventoryExtenderRedone.getContext().pickpocket = nil
+            arg:sendEvent('IER_ContainerClosed')
+        end,
     },
     roles = {
         [Roles.Inventory] = {
@@ -62,6 +70,14 @@ return {
             actions = {
                 use = { id = 'usePlayer' },
                 pickup = { id = 'pickupContainerInventory' },
+            },
+            -- the player's window during a container encounter: same strip as the interface
+            infoBar = {
+                { id = 'encumbrance' },
+                { id = 'gold' },
+                { id = 'armorRating' },
+                { id = 'filler' },
+                { id = 'use' },
             },
             states = {
                 -- the player's own rows in a chest: an organic container takes everything it
@@ -81,6 +97,15 @@ return {
             actions = {
                 use = { id = 'useTarget' },
                 pickup = { id = 'pickupContainerTarget' },
+            },
+            -- the container's own strip: weight, the gap, dispose, take all, close (no gold:
+            -- the original added gold only for the Inventory and Trade roles)
+            infoBar = {
+                { id = 'encumbrance' },
+                { id = 'filler' },
+                { id = 'dispose' },
+                { id = 'takeAll' },
+                { id = 'close' },
             },
             states = {
                 -- tooltip ownership: whose contents this container holds

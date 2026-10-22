@@ -17,7 +17,6 @@ local D         = require 'scripts.InventoryExtenderRedone.config.defaults'
 local BINDING   = D.Binds
 local BUTTON    = input.CONTROLLER_BUTTON
 
-local Actor     = types.Actor
 local Container = types.Container
 local Item      = types.Item
 local NPC       = types.NPC
@@ -33,11 +32,9 @@ local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
-local persistentCorpses = require('scripts.InventoryExtenderRedone.util.persistentCorpses')
 local l10n = core.l10n(D.L10N)
 local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 local InfoBar = require('scripts.InventoryExtenderRedone.toolkit.info_bar')
-local BarterControls = require('scripts.InventoryExtenderRedone.toolkit.barter_controls')
 local GridIcon = require('scripts.InventoryExtenderRedone.toolkit.grid_icon_provider')
 local ItemTable = require('scripts.InventoryExtenderRedone.toolkit.item_table')
 local ItemStackModal = require('scripts.InventoryExtenderRedone.toolkit.item_stack_modal')
@@ -440,15 +437,6 @@ local function combineHiddenColumns(columns, categoryHidden)
     return hidden
 end
 
-local function getStorageSuffix(role)
-    if role ~= 'Inventory' then return nil end
-    local mode = I.UI.getMode()
-    if mode == 'Barter' or mode == 'Container' or mode == 'Companion' then
-        return ':' .. mode
-    end
-    return nil
-end
-
 ---@class IER.Inventory: UIToolkit.WindowHandler
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
@@ -458,6 +446,9 @@ end
 ---@field slots InventoryExtenderRedone.Mode.RoleSpec? this role's slots from that mode
 ---@field actions InventoryExtenderRedone.Mode.Actions? use/pickup parts resolved from that role's slots
 ---@field sources InventoryExtenderRedone.Mode.Source[] those slots' sources, parts resolved at open
+---@field infoBarSections InventoryExtenderRedone.Mode.InfoBarSection[]? info bar sections, parts resolved at open, in slot order
+---@field drag InventoryExtenderRedone.Mode.Drag? the mode's drag snapshot at open (mode-wide, not per role)
+---@field suffix string? the UIToolkit:WindowData suffix snapshotted from that role's slots at open
 local Inventory = Class(WindowHandler)
 
 function Inventory:init(role)
@@ -470,7 +461,6 @@ end
 function Inventory:onOpened(wnd, data, saved)
     self.arg = data
     self.wnd = wnd
-    self.suffix = getStorageSuffix(self.role)
     local IE = I.InventoryExtenderRedone
     local ctx = IE.getContext()
     self.ctx = ctx
@@ -480,6 +470,12 @@ function Inventory:onOpened(wnd, data, saved)
     local mode, roleSpec = Mode.resolveMode(self.role, self.arg, I.UI.getMode())
     self.mode = mode and mode.key or nil
     self.slots = roleSpec
+    -- snapshotted from the resolved slots: getStorageSuffix/getDefaultStorage answer from these
+    -- while the window is open, and windowManager's dragAllowed() reads drag off the open
+    -- windows, not the engine mode
+    self.suffix = roleSpec and roleSpec.storageSuffix or nil
+    self.drag = mode and mode.drag or nil
+    self.infoBarSections = roleSpec and Mode.resolveParts(Mode.Info, roleSpec.infoBar) or nil
     self.sources = Mode.resolveParts(Mode.Sources, roleSpec and roleSpec.sources)
     local modeFilters = Mode.resolveParts(Mode.Filters, roleSpec and roleSpec.filters)
     -- the actions slot is a whole overwrite per role: resolve the entry ids against the parts
@@ -490,7 +486,9 @@ function Inventory:onOpened(wnd, data, saved)
         pickup = Mode.resolvePart(Mode.Actions, actions.pickup),
     } or nil
 
-    if mode and mode.lifecycle then
+    -- a lifecycle table may name only some hooks (Barter has onClosing but no onOpened), so
+    -- guard the field itself, not just the table
+    if mode and mode.lifecycle and mode.lifecycle.onOpened then
         mode.lifecycle.onOpened(self, self.arg, saved)
     end
 
@@ -1118,35 +1116,30 @@ function Inventory:getTopBarHeight()
 end
 
 function Inventory:updateInputHints()
-    local swap = configPlayer.keybinds.b_SwapUsePickup
-    ---@type UIToolkit.Controller.HintList
-    local hints
     local binds = configPlayer.keybinds
     local find = cfgUtil.getFirstControllerInput
     local select = self.table.showGrid
         and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
         or { find(binds.c_SelUp), find(binds.c_SelDown) }
+    local swap = configPlayer.keybinds.b_SwapUsePickup
 
-    if I.UI.getMode() == 'Barter' then
-        hints = {
-            { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, find(binds.c_Activate) } },
-            'separator',
-            { text = l10n 'Hint_Category',    input = select, },
-            { text = l10n 'Hint_Select',      input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
-            'separator',
-            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
-        }
-    else
-        hints = {
-            { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
-            { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
-            'separator',
-            { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
-            { text = l10n 'Hint_Select',   input = select, },
-            'separator',
-            { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
-        }
+    -- the base list is the interface default; the hints slot is a whole-overwrite role slot, so
+    -- a mode (Barter names it for both roles) replaces it wholesale and returns nil to keep this
+    local hints = {
+        { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
+        { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
+        'separator',
+        { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+        { text = l10n 'Hint_Select',   input = select, },
+        'separator',
+        { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+    }
+    local hintsFn = self.slots and self.slots.hints
+    if hintsFn then
+        hints = hintsFn(self, self.ctx, hints) or hints
     end
+    -- the favorite hint is a shared row mechanic, not mode behavior: it prefixes whichever list
+    -- the mode left in place, for the player's own window
     if self.target == omwself then
         table.insert(hints, 1, { text = l10n 'Hint_Favorite', input = find(binds.c_Favorite) })
     end
@@ -1229,12 +1222,16 @@ end
 
 function Inventory:getStorageSuffix()
     if self.wnd then return self.suffix end
-    return getStorageSuffix(self.role)
+    -- not open yet: UIToolkit asks before onOpened, so resolve against the engine mode the
+    -- window is about to open in (the same read onOpened makes)
+    local _, roleSpec = Mode.resolveMode(self.role, nil, I.UI.getMode())
+    return roleSpec and roleSpec.storageSuffix
 end
 
 function Inventory:getDefaultStorage()
-    if self.role ~= 'Inventory' or I.UI.getMode() == 'Interface' then return nil end
-    return { position = v2(0.05, 0.05), size = v2(0.45, 0.85) }
+    if self.wnd then return self.slots and self.slots.defaultStorage end
+    local _, roleSpec = Mode.resolveMode(self.role, nil, I.UI.getMode())
+    return roleSpec and roleSpec.defaultStorage
 end
 
 function Inventory:update()
@@ -1426,7 +1423,9 @@ end
 ---@private
 function Inventory:updateTitle()
     local title
-    if I.UI.getMode() == 'Interface' then
+    -- the window's own mode snapshot decides: a pinned Interface window keeps this title while
+    -- the engine mode stack is empty (decision 14: reading the engine mode misclassifies it)
+    if self.mode == D.Modes.Interface then
         title = helpers.getEquippedName(omwself)
     else
         local target = self.target or omwself
@@ -1642,285 +1641,21 @@ function Inventory:createData()
     return data
 end
 
-local function createDraggedActivationRow(ctx, item)
-    local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
-    return {
-        id = item.id,
-        item = item,
-        itemRecord = item.type.record(item),
-        isBartered = activationContext.isBartered,
-        getCount = function()
-            return ctx.dragAndDrop.draggingCount or item.count
-        end,
-    }
-end
-
 ---@private
 function Inventory:initInfoBar()
+    local sections = self.infoBarSections
+    if not sections then return end
     local ctx = self.ctx
-    local theme = Toolkit.getTheme()
-
-    --Encumbrance
-    if self.role ~= 'Trade' then
-        self.encumbranceBar = Components.progressBar {
-            width = 100,
-            color = theme.Colors.MAGICK,
-            clamp = false,
-        }
-        local encumbranceLayout = {
-            name = 'encumbrance',
-            type = ui.TYPE.Flex,
-            props = {
-                horizontal = true,
-                arrange = ui.ALIGNMENT.Center,
-            },
-            content = ui.content {
-                {
-                    type = ui.TYPE.Image,
-                    props = {
-                        resource = Toolkit.texture 'icons/weight.dds',
-                        size = v2(1, 1) * theme.Sizes.textNormal,
-                    }
-                },
-                T.intervalH(4),
-                self.encumbranceBar.element,
-            }
-        }
-        self.infoBar:addProvider(function()
-            if not self.target then return nil end
-            if self.role == 'Container' and
-                (Container.objectIsInstance(self.target) and Container.record(self.target).isOrganic)
-                or (ctx.pickpocket and ctx.pickpocket.active)
-            then
-                return nil
-            end
-            local type = self.target.type
-            self.encumbranceBar:setMax(util.round(type.getCapacity(self.target)))
-            self.encumbranceBar:setValue(util.round(type.getEncumbrance(self.target)))
-            return encumbranceLayout
-        end)
-    end
-
-    --Gold
-    if self.role == 'Inventory' or self.role == 'Trade' then
-        local goldProps = { text = '' }
-        local goldLayout = {
-            name = 'gold',
-            type = ui.TYPE.Flex,
-            props = {
-                horizontal = true,
-                arrange = ui.ALIGNMENT.Center,
-            },
-            content = ui.content {
-                {
-                    type = ui.TYPE.Image,
-                    props = {
-                        resource = ui.texture { path = 'icons/gold.dds' },
-                        size = v2(1, 1) * theme.Sizes.textNormal,
-                    }
-                },
-                T.intervalH(4),
-                {
-                    template = T.text(),
-                    props = goldProps,
-                }
-            }
-        }
-        self.infoBar:addProvider(function()
-            if not self.target then return nil end
-            local goldAmount
-            if self.role == 'Inventory' then
-                goldAmount = self.target.type.inventory(self.target):countOf('gold_001')
-            else
-                goldAmount = self.target.type.getBarterGold(self.target)
-            end
-            goldProps.text = H.addSeparators(goldAmount)
-            return goldLayout
-        end)
-    end
-
-    local filler = { external = { grow = 1, stretch = 1 } }
-
-    if self.role == 'Inventory' then
-        -- Armor rating
-        local armorProps = { text = '' }
-        local armorLayout = {
-            name = 'armorRating',
-            type = ui.TYPE.Flex,
-            props = {
-                horizontal = true,
-                arrange = ui.ALIGNMENT.Center,
-            },
-            content = ui.content {
-                {
-                    type = ui.TYPE.Image,
-                    props = {
-                        resource = ui.texture { path = 'icons/a/a_cuirass_ebon.dds' },
-                        size = v2(1, 1) * theme.Sizes.textNormal,
-                    }
-                },
-                T.intervalH(4),
-                {
-                    template = T.text(),
-                    props = armorProps,
-                }
-            }
-        }
-
-        self.infoBar:addProvider(function()
-            if not self.target then return nil end
-            armorProps.text = H.addSeparators(math.floor(I.Combat.getArmorRating(self.target)))
-            return armorLayout
-        end)
-
-        --Stretching filler
-        self.infoBar:addProvider(function() return filler end)
-
-        --use item
-        local btnUse = Components.textButton {
-            name = 'use',
-            style = theme.IntRe and 'empty' or 'thin',
-            text = core.getGMST('sUse'),
-            onClick = function()
-                local draggedItem = ctx.dragAndDrop.draggingObject
-                if not draggedItem then return end
-                local result = self:onRowUse(createDraggedActivationRow(ctx, draggedItem))
-                if result ~= false then
-                    ctx.dragAndDrop:stopDrag()
-                    self.infoBar:update()
-                    --self:refresh()
-                end
-            end,
-            tooltip = function()
-                if configPlayer.keybinds.b_SwapUsePickup then
-                    return l10n('UI_Tooltip_UseButton_Swapped')
-                end
-                local key = cfgUtil.getFirstKeyboardInput(configPlayer.keybinds.c_Activate).id
-                if not key then return nil end
-                return l10n('UI_Tooltip_UseButton', { key = input.getKeyName(key) })
-            end,
-        }
-
-        self.infoBar:addProvider(function()
-            btnUse:setVisible(ctx.dragAndDrop.draggingObject ~= nil)
-            return btnUse.element
-        end)
-
-        --self.infoBar.layout.userData.addInfoLayout({})
-    end
-
-    if self.role == 'Container' or self.role == 'Companion' then
-        --Stretching filler
-        self.infoBar:addProvider(function() return filler end)
-
-        if self.role == 'Container' then
-            --dispose
-            local btnDispose = Components.textButton {
-                name = 'dispose',
-                style = theme.IntRe and 'empty' or 'thin',
-                text = constants.Strings.DISPOSE_OF_CORPSE,
-                onClick = function()
-                    if I.UI.getMode() ~= 'Container' or not ctx.windowArgs.Container then return end
-                    ctx.dragAndDrop:moveAll(self.target, omwself)
-
-                    if persistentCorpses(self.target) then
-                        ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
-                    else
-                        core.sendGlobalEvent('IER_DisposeOfCorpse', { target = ctx.windowArgs.Container })
-                    end
-                    I.UI.removeMode('Container')
-                end,
-            }
-
-            self.infoBar:addProvider(function()
-                local visible = false
-                if ctx.windowArgs.Container then
-                    visible = Actor.objectIsInstance(ctx.windowArgs.Container)
-                        and Actor.isDead(ctx.windowArgs.Container)
-                end
-                btnDispose:setVisible(visible)
-                return btnDispose.element
-            end)
-
-            --Take All
-            local btnTakeAll = Components.textButton {
-                name = 'takeAll',
-                style = theme.IntRe and 'empty' or 'thin',
-                text = constants.Strings.TAKE_ALL,
-                onClick = function()
-                    if I.UI.getMode() ~= 'Container' or not ctx.windowArgs.Container then return end
-                    local visibleOnly = input.isShiftPressed()
-                    local items = nil
-
-                    if visibleOnly then
-                        local visibleItems = self.table.filteredItems
-                        items = {}
-                        for i = 1, #visibleItems do
-                            local row = visibleItems[i]
-                            if row and row.item then
-                                table.insert(items, row.item)
-                            end
-                        end
-                    end
-
-                    if not items or #items > 0 then
-                        ctx.dragAndDrop:moveAll(self.target, omwself, items)
-                    end
-
-                    if not visibleOnly then
-                        I.UI.removeMode('Container')
-                    end
-                end,
-                tooltip = l10n('UI_Tooltip_TakeAllButton_Shift'),
-            }
-            self.infoBar:addProvider(function()
-                btnTakeAll:setVisible(not (ctx.pickpocket and ctx.pickpocket.active))
-                return btnTakeAll.element
-            end)
+    -- the sections are this role's infoBar slot resolved against Mode.Info, in slot order: create
+    -- builds the once-per-open part (buttons, bars) and hands back the per-frame provider, a
+    -- provider-only section is stateless; cleanup runs in InfoBar:beforeElementDestroy()
+    for i = 1, #sections do
+        local section = sections[i]
+        local provider = section.provider
+        if section.create then
+            provider = section.create(self, ctx)
         end
-
-        --companion profit value
-        if self.role == 'Companion' then
-            local profitProps = {}
-            local profitLayout = {
-                template = T.text(),
-                props = profitProps,
-            }
-
-            self.infoBar:addProvider(function()
-                if self.target == nil then return nil end
-                local profit = ctx.companionProfit[self.target.id] or 0
-                profitProps.text = constants.Strings.PROFIT_VALUE .. ': ' .. H.addSeparators(profit)
-                return profitLayout
-            end)
-        end
-
-        ---close
-        local btnClose = Components.textButton {
-            name = 'close',
-            style = theme.IntRe and 'empty' or 'thin',
-            text = constants.Strings.CLOSE,
-            onClick = function()
-                I.UI.removeMode(self.role)
-            end,
-        }
-
-        self.infoBar:addProvider(function() return btnClose.element end)
-
-        --self.infoBar.layout.userData.addInfoLayout({})
-    end
-
-    if self.role == 'Trade' then
-        --Barter controls
-        local barterControls = BarterControls:new()
-        barterControls:init(self)
-
-        self.infoBar:addProvider(function()
-            barterControls:update(ctx)
-            return barterControls.element
-        end)
-
-        --self.infoBar.layout.userData.addInfoLayout({})
+        self.infoBar:addProvider(provider --[[@as InventoryExtenderRedone.InfoBar.Provider]], section.cleanup)
     end
 end
 

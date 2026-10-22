@@ -1,23 +1,17 @@
 ---@omw-context player
 
-local core = require('openmw.core')
-local ui = require('openmw.ui')
 local I = require('openmw.interfaces')
-local util = require('openmw.util')
 local async = require('openmw.async')
 local input = require('openmw.input')
 local omwself = require('openmw.self')
-local v2 = util.vector2
 
 
 local Toolkit = I.UIToolkit
 local Manager = Toolkit.WindowManager
 
 
-local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
-local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local RoleRegistry = require('scripts.InventoryExtenderRedone.ui.roles')
 local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 
@@ -26,14 +20,6 @@ local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
 
 local InvHandler = require 'scripts.InventoryExtenderRedone.toolkit.inventory'
 
-
--- drag is only allowed in these UI modes; the table is replaced by Mode.drag.allowed
--- specs once the mode API is wired up
-local validDragModes = {
-    [D.Modes.Interface] = true,
-    [D.Modes.Container] = true,
-    [D.Modes.Companion] = true,
-}
 
 local WindowManager = {}
 
@@ -75,6 +61,21 @@ WindowManager.ctx = {
 ---@return string windowId id in UIToolkit.WindowManager and the UIToolkit:WindowData key
 local function getWindowId(role)
     return D.WindowIdPrefix .. role
+end
+
+-- drag gating reads the open windows' mode snapshots, not the engine mode: a pinned Interface
+-- window keeps drag alive while the engine mode stack is empty, and a Barter window kills it
+local function dragAllowed()
+    for i = 1, #RoleRegistry.order do
+        local windowId = getWindowId(RoleRegistry.order[i])
+        if Manager.getWindow(windowId) then
+            local handler = Manager.getHandler(windowId) --[[@as IER.Inventory]]
+            if handler and handler.drag and handler.drag.allowed then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 function WindowManager:init()
@@ -166,10 +167,26 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         return
     end
 
-    if oldMode == 'Barter' and self.ctx.barterState.success then
-        ui.showMessage(constants.Strings.BARTER_THANK_YOU, {
-            showInDialogue = true,
-        })
+    -- built-in lifecycle.onClosing fires from the mode change (decision 11): the transition
+    -- decides which spec closes, and a pickpocket session closing under the engine's Container
+    -- mode belongs to the Pickpocket spec, which overrides Container's onClosing. The arg is
+    -- what the closing mode's target role was showing; built-in modes have one target role each.
+    if oldMode then
+        local closingMode
+        if oldMode == D.Modes.Container and self.ctx.pickpocket then
+            closingMode = Mode.resolve(D.Modes.Pickpocket)
+        else
+            closingMode = Mode.resolve(oldMode)
+        end
+        if closingMode and closingMode.lifecycle and closingMode.lifecycle.onClosing then
+            local closingArg
+            for role in pairs(closingMode.roles or {}) do
+                if role ~= D.Roles.Inventory then
+                    closingArg = self.ctx.windowArgs[role]
+                end
+            end
+            closingMode.lifecycle.onClosing(nil, closingArg, newMode)
+        end
     end
 
     self.ctx.barterState = {
@@ -179,25 +196,9 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         currentBalance = 0,
     }
 
-    if newMode == nil and oldMode == 'Container' and self.ctx.windowArgs.Container then
-        if self.ctx.pickpocket and self.ctx.pickpocket.active and not self.ctx.pickpocket.resolved and
-            Pickpocket.isTarget(self.ctx.windowArgs.Container) then
-            local success = Pickpocket.rollClose(omwself, self.ctx.windowArgs.Container)
-            if not success then
-                core.sendGlobalEvent('IER_CommitPickpocket', {
-                    player = omwself,
-                    target = self.ctx.windowArgs.Container,
-                    victimAware = true,
-                })
-            end
-        end
-        self.ctx.pickpocket = nil
-        self.ctx.windowArgs.Container:sendEvent('IER_ContainerClosed')
-    end
-
     if self.ctx.dragAndDrop.wrapper then
         self.ctx.dragAndDrop:setWrapperEnabled(not configPlayer.misc.b_TooltipCompatibilityMode and
-            validDragModes[newMode])
+            dragAllowed())
         self.ctx.dragAndDrop.lastHoveredObject = nil
     end
     self.ctx.dragAndDrop:stopDrag()
@@ -217,7 +218,7 @@ end
 function WindowManager:onControllerButtonPress(id)
     if not configPlayer.window.b_EnableMod then return end
 
-    if validDragModes[I.UI.getMode() or ''] then
+    if dragAllowed() then
         WindowManager.ctx.dragAndDrop:onControllerButtonPress(id)
     end
 end
@@ -225,7 +226,7 @@ end
 function WindowManager:onControllerButtonRelease(id)
     if not configPlayer.window.b_EnableMod then return end
 
-    if validDragModes[I.UI.getMode() or ''] then
+    if dragAllowed() then
         WindowManager.ctx.dragAndDrop:onControllerButtonRelease(id)
     end
 end
@@ -233,7 +234,7 @@ end
 function WindowManager:onMouseButtonPress(button)
     if not configPlayer.window.b_EnableMod then return end
 
-    if validDragModes[I.UI.getMode() or ''] then
+    if dragAllowed() then
         WindowManager.ctx.dragAndDrop:onMouseButtonPress(button)
     end
 end
@@ -241,7 +242,7 @@ end
 function WindowManager:onMouseButtonRelease(button)
     if not configPlayer.window.b_EnableMod then return end
 
-    if validDragModes[I.UI.getMode() or ''] then
+    if dragAllowed() then
         WindowManager.ctx.dragAndDrop:onMouseButtonRelease(button)
     end
 end
@@ -256,7 +257,7 @@ input.registerTriggerHandler('Activate', async:callback(function()
     end
 
     local mode = I.UI.getMode()
-    if mode == 'Container' or mode == 'Barter' or mode == 'Companion' then
+    if mode and (mode == D.Modes.Container or mode == D.Modes.Barter or mode == D.Modes.Companion) then
         I.UI.removeMode(mode)
         return false
     end

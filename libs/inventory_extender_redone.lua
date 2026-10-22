@@ -172,7 +172,7 @@
 
 ---@class InventoryExtenderRedone.Mode.Lifecycle
 ---@field onOpened fun(handler:IER.Inventory, arg:any?, saved:table?)?
----@field onClosing fun(handler:IER.Inventory, arg:any?)? built-in modes fire from UiModeChanged, custom modes fire from WindowHandler:onClosed
+---@field onClosing fun(handler:IER.Inventory?, arg:any?, newMode:string?)? built-in modes fire from UiModeChanged (the window is already closed, so handler is nil), custom modes fire from WindowHandler:onClosed; newMode is the engine UI mode after the change (nil = mode stack empty)
 ---@field onClosed fun(handler:IER.Inventory)?
 
 ---@class InventoryExtenderRedone.Mode.EventData
@@ -250,8 +250,8 @@
 
 ---@class InventoryExtenderRedone.Mode.InfoBarSection
 ---@field id string encumbrance, gold, armorRating, filler, use, dispose, takeAll, profit, barterControls, close
----@field create? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.ui.LayoutOrElement? build-once part (buttons, bars)
----@field provider? InventoryExtenderRedone.InfoBar.Provider per-frame value/visibility, returns nil to hide
+---@field create? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):InventoryExtenderRedone.InfoBar.Provider build-once part (buttons, bars); returns the per-frame provider
+---@field provider? InventoryExtenderRedone.InfoBar.Provider per-frame value/visibility, returns nil to hide (stateless sections use this directly)
 ---@field cleanup fun()? runs in InfoBar:beforeElementDestroy()
 ---@field before string? order before this section id
 ---@field after string? order after this section id

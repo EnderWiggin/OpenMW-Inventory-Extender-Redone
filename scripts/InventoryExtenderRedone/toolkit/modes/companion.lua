@@ -46,12 +46,28 @@ return {
                 use = { id = 'usePlayer' },
                 pickup = { id = 'pickupCompanionInventory' },
             },
+            -- the player's window during a companion transfer: same strip as the interface
+            infoBar = {
+                { id = 'encumbrance' },
+                { id = 'gold' },
+                { id = 'armorRating' },
+                { id = 'filler' },
+                { id = 'use' },
+            },
         },
         [Roles.Companion] = {
             sources = { { id = 'target' } },
             actions = {
                 use = { id = 'useTarget' },
                 pickup = { id = 'pickupCompanionTarget' },
+            },
+            -- the companion's strip: weight, the gap, what it gained from the player, close (no gold:
+            -- the original added gold only for the Inventory and Trade roles)
+            infoBar = {
+                { id = 'encumbrance' },
+                { id = 'filler' },
+                { id = 'profit' },
+                { id = 'close' },
             },
         },
     },

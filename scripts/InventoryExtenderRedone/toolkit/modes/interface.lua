@@ -32,6 +32,14 @@ return {
                 use = { id = 'usePlayer' },
                 pickup = { id = 'pickupInterface' },
             },
+            -- bottom strip: weight, gold, armor rating, the gap, the Use button
+            infoBar = {
+                { id = 'encumbrance' },
+                { id = 'gold' },
+                { id = 'armorRating' },
+                { id = 'filler' },
+                { id = 'use' },
+            },
         },
     },
 }
