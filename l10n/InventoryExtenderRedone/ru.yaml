@@ -242,3 +242,14 @@ Hint_Favorite: "Избранное"
 Hint_Count: "Количество"
 
 Popup_BTN_Defaults: "По умолчанию"
+
+# Отладка
+ConfigCategoryDebug: "Отладка"
+ConfigLogLevel: "Уровень логирования"
+ConfigLogLevelDesc: |-
+  Детализация журнала отладки мода. Выводятся только сообщения на выбранном уровне или ниже.
+  Ошибки отображаются всегда; уровень Отладка выводит все сообщения.
+LogLevel_Error: "Ошибка"
+LogLevel_Warning: "Предупреждение"
+LogLevel_Info: "Инфо"
+LogLevel_Debug: "Отладка"

@@ -36,7 +36,18 @@ local M = {
         Integration = section 'Integration',
         Misc        = section 'Misc',
         Gameplay    = section 'Gameplay',
+        Debug       = section 'Debug',
     },
+    -- log verbosity threshold stored as an integer (n_LogLevel); rank <= threshold prints.
+    -- error is the least verbose (rank 1), debug the most (rank 4). Dropdown labels come from
+    -- l10n keys (LogLevel_*); the stored id is the integer rank itself.
+    LogLevels = {
+        Error   = 1,
+        Warning = 2,
+        Info    = 3,
+        Debug   = 4,
+    },
+    LogLevelDefault = 1, -- D.LogLevels.Error
     -- bounds feed renderer argument, storage defaults and descriptions
     GridIconScale = { default = 1, min = 0.5, max = 2 },
     TableRowHeightMult = { default = 1, min = 1, max = 2 },

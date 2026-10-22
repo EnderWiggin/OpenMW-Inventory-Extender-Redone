@@ -334,3 +334,14 @@
 ---@field resolved boolean
 ---@field targetId string
 ---@field visibleItems table<string,boolean>
+
+-- util/logger module: a tagged printer (get(tag)) or the bare module both expose these level
+-- methods; each takes varargs and prints like print, prefixing "[tag] " when tagged.
+---@class InventoryExtenderRedone.Printer
+---@field error fun(...:any)
+---@field warning fun(...:any)
+---@field info fun(...:any)
+---@field debug fun(...:any)
+
+---@class InventoryExtenderRedone.Logger : InventoryExtenderRedone.Printer
+---@field get fun(tag:string):InventoryExtenderRedone.Printer

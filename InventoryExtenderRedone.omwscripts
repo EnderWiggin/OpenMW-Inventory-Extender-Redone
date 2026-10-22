@@ -1,5 +1,6 @@
 MENU: scripts/InventoryExtenderRedone/settings/player.lua
 GLOBAL: scripts/InventoryExtenderRedone/settings/global.lua
+GLOBAL: scripts/InventoryExtenderRedone/settings/debug.lua
 GLOBAL: scripts/InventoryExtenderRedone/global.lua
 PLAYER: scripts/InventoryExtenderRedone/api.lua
 PLAYER: scripts/InventoryExtenderRedone/player.lua

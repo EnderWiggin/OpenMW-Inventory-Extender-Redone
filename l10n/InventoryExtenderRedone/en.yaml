@@ -242,3 +242,14 @@ Hint_Favorite: Favorite
 Hint_Count: Count
 
 Popup_BTN_Defaults: Defaults
+
+# Debug
+ConfigCategoryDebug: Debug
+ConfigLogLevel: Log level
+ConfigLogLevelDesc: |-
+  Verbosity of the mod's debug log. Only messages at or below the selected level are printed.
+  Errors are always shown; Debug prints everything.
+LogLevel_Error: Error
+LogLevel_Warning: Warning
+LogLevel_Info: Info
+LogLevel_Debug: Debug
