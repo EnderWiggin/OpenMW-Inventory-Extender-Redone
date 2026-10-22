@@ -14,6 +14,7 @@ local I         = require 'openmw.interfaces'
 local v2        = util.vector2
 local cfgUtil   = require 'scripts.UIToolkit.config.utils'
 local D         = require 'scripts.InventoryExtenderRedone.config.defaults'
+local L         = require 'scripts.InventoryExtenderRedone.util.logger'.get 'INV'
 local BINDING   = D.Binds
 local BUTTON    = input.CONTROLLER_BUTTON
 
@@ -23,6 +24,8 @@ local NPC       = types.NPC
 -- the whole handler runs in the player script context, so omwself is always a Player actor:
 -- cache the type table rather than re-reading omwself.type at every equip/inventory call
 local Player    = types.Player
+
+
 -- the inventory object is a live handle on the player actor, not a snapshot: caching it is
 -- safe, :getAll() still re-reads the current contents
 local playerInventory = Player.inventory(omwself)
@@ -469,6 +472,7 @@ function Inventory:onOpened(wnd, data, saved)
     -- open, not this window
     local mode, roleSpec = Mode.resolveMode(self.role, self.arg, I.UI.getMode())
     self.mode = mode and mode.key or nil
+    L.info('onOpened', self.role, self.mode)
     self.slots = roleSpec
     -- snapshotted from the resolved slots: getStorageSuffix/getDefaultStorage answer from these
     -- while the window is open, and windowManager's dragAllowed() reads drag off the open
