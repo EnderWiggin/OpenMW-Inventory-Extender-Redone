@@ -713,6 +713,23 @@ Mode.Info = {
             end
         end,
     },
+    barterCancel = {
+        id = 'barterCancel',
+        create = function(_, _)
+            local theme = Toolkit.getTheme()
+            local btn = Components.textButton {
+                name = 'close',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = constants.Strings.CANCEL,
+                onClick = function()
+                    I.UI.removeMode('Barter')
+                end,
+            }
+            return function(_)
+                return btn.element
+            end
+        end,
+    },
     -- the offer panel: −, amount, +, Max, Offer, Cancel
     barterControls = {
         id = 'barterControls',

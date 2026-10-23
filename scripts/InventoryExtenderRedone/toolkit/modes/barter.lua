@@ -113,6 +113,7 @@ return {
             infoBar = {
                 { id = 'gold' },
                 { id = 'barterControls' },
+                { id = 'barterCancel' },
             },
             hints = barterHints,
         },

@@ -189,15 +189,6 @@ function BarterControls:init(wnd)
         end,
     }
 
-    local btnClose = Toolkit.Components.textButton {
-        name = 'btn-close',
-        text = constants.Strings.CANCEL,
-        style = 'thin',
-        onClick = function()
-            I.UI.removeMode('Barter')
-        end,
-    }
-
     Component.init(self, ui.create {
         name = 'barterControls',
         type = ui.TYPE.Flex,
@@ -221,8 +212,6 @@ function BarterControls:init(wnd)
             btnMax.element,
             { external = { grow = 1, stretch = 1 } },
             btnOffer.element,
-            T.intervalH(8),
-            btnClose.element,
         }
     })
 end
