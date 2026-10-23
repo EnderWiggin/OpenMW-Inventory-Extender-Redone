@@ -757,7 +757,7 @@ Mode.Builtins = {
 -- List slots merge through id-keyed ops; everything else is a whole-slot overwrite. A plain
 -- array in a patch replaces the whole slot, a { add/remove/replace } table applies ops.
 local LIST_SLOTS = { 'sources', 'filters', 'infoBar' }
-local ROLE_SLOTS = { 'states', 'actions', 'categories', 'columns', 'tooltipObserver', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
+local ROLE_SLOTS = { 'states', 'actions', 'categories', 'columns', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
 local MODE_SLOTS = { 'title', 'applies', 'priority', 'syncCategory', 'drag', 'lifecycle', 'event' }
 
 

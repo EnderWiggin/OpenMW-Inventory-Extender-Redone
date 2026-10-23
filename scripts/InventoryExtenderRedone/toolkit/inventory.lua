@@ -1526,7 +1526,7 @@ function Inventory:createData()
     local slots = self.slots
     if slots then
         rowIsDisabled = Mode.statePredicate(slots.states, 'isDisabled')
-        local observerFn = slots.tooltipObserver
+        local observerFn = slots.observer
         observer = observerFn and observerFn(self, ctx) or observer
     end
     --context data for the tooltip
@@ -1604,7 +1604,7 @@ function Inventory:createData()
                 return helpers.getArmorClassLabel(itemStack)
             end,
             AR = function()
-                return helpers.getArmorRating(itemStack, omwself)
+                return helpers.getArmorRating(itemStack, observer)
             end,
             Condition = function()
                 return helpers.getConditionPercentLabel(itemStack)
