@@ -18,6 +18,7 @@
           <element id="file-copy" path="$PROJECT_DIR$/CHANGELOG" />
           <element id="file-copy" path="$PROJECT_DIR$/InventoryExtenderRedone.omwscripts" />
           <element id="file-copy" path="$PROJECT_DIR$/README.md" />
+          <element id="file-copy" path="$PROJECT_DIR$/API.md" />
         </element>
       </element>
     </root>

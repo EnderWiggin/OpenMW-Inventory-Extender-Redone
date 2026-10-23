@@ -1,3 +1,13 @@
+0.0.6 (2026-10-23)
+- fixed WindowManager:getWindow returning window control instead of handler
+- fixed restocking stacks decreasing if not bough-out fully
+- added steal chance column while pickpocketing (can be disabled)
+- added button that shows companion stats
+- show armor rating on companion inventory
+- API version bumped to 2
+- Major API update to allow modifying parts of the windows - read API.md for details
+- added logger, by default logs errors only4
+
 0.0.5 (2026-10-21)
 - basic restore of opened category
 - fixed wrong item counts when bartering or picking up items in grid mode
@@ -22,7 +32,6 @@
 - API: IER_Window_Opened event with window details
 - API: added getDraggingObject
 - added example mini-mod that adds Crafting Framework's button to IER
-
 
 0.0.1 (2026-10-16)
 - first public release 
