@@ -176,6 +176,7 @@ return {
             -- the original added gold only for the Inventory and Trade roles)
             infoBar = {
                 { id = 'encumbrance' },
+                { id = 'armorRating' },
                 { id = 'filler' },
                 { id = 'profit' },
                 -- relevant companion stats
