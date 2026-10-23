@@ -201,6 +201,7 @@ return {
                 },
                 { id = 'close' },
             },
+            tooltipObserver = function(handler, _) return handler.target end,
         },
     },
 }
