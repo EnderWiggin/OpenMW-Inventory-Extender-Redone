@@ -6,10 +6,13 @@ local core    = require 'openmw.core'
 local player  = require 'openmw.self'
 local ui      = require 'openmw.ui'
 local util    = require 'openmw.util'
+local async   = require 'openmw.async'
+local storage = require 'openmw.storage'
 
 
 local H          = require('scripts.UIToolkit.helpers')
 local Mode       = require('scripts.InventoryExtenderRedone.toolkit.mode')
+local D          = require('scripts.ier_trading_redone.config.defaults')
 local L          = require 'scripts.InventoryExtenderRedone.util.logger'.get 'TradeRedone'
 local l10n       = core.l10n 'ier_trading_redone'
 local v2         = util.vector2
@@ -20,8 +23,19 @@ local Components = Toolkit.Components
 
 
 local barterOffered = assert(Mode.Filters.barterOffered.fn)
-local INVEST_SKILL = 25    --TODO: add setting?
-local ALL_ITEMS_SKILL = 90 --TODO: add setting?
+
+-- live-subscribed mirrors of the settings section: sliders can change while windows are open,
+-- so every consumer reads settings.* at call time, never a snapshot taken at load
+local settingsSection = storage.playerSection(D.Section)
+local settings = {
+    investSkill = settingsSection:get('i_InvestSkillRequirement') or D.InvestSkill.default,
+    allItemsSkill = settingsSection:get('i_AllItemsSkillRequirement') or D.AllItemsSkill.default,
+}
+settingsSection:subscribe(async:callback(function()
+    local stored = settingsSection:asTable()
+    settings.investSkill = stored.i_InvestSkillRequirement or D.InvestSkill.default
+    settings.allItemsSkill = stored.i_AllItemsSkillRequirement or D.AllItemsSkill.default
+end))
 
 ---@type openmw.types.SkillStat
 local mercantile = player.type.stats.skills.mercantile(player)
@@ -181,7 +195,7 @@ IER.patchMode(IER.Modes.Barter, {
                 replace = { {
                     id = 'barterOffered',
                     fn = function(row, handler, ctx)
-                        return mercantile.base >= ALL_ITEMS_SKILL or barterOffered(row, handler, ctx)
+                        return mercantile.base >= settings.allItemsSkill or barterOffered(row, handler, ctx)
                     end
                 } },
             },
@@ -190,7 +204,7 @@ IER.patchMode(IER.Modes.Barter, {
                     id = 'ier_trade_invest',
                     before = 'barterCancel',
                     create = function(handler)
-                        if mercantile.base < INVEST_SKILL then return nil end
+                        if mercantile.base < settings.investSkill then return nil end
                         L.info('create invest button')
                         local theme = Toolkit.getTheme()
                         local sz = handler.infoBar:getHeight()

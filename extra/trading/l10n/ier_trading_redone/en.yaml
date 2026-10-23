@@ -6,3 +6,15 @@ InvestTipMore: |-
 InvestmentLine: 'Investment size:'
 InvestmentLimitReached: Can't invest more. Increase Mercantile skill.
 InvestmentLimitGold: You have no gold to invest.
+PageName: Trading Tweaks
+PageDesc: |-
+  Invest gold into merchants so they have more money to barter with.
+SettingsName: Mercantile
+SettingsDesc: |-
+  Mercantile skill required for the trading tweaks features.
+InvestSkillName: Invest Button Requirement
+InvestSkillDesc: |-
+  Minimum Mercantile skill to see the "Invest" button in the barter window.
+AllItemsSkillName: All Items Requirement
+AllItemsSkillDesc: |-
+  Mercantile skill at which the barter window lists all of the merchant's items, not just the ones they offer.

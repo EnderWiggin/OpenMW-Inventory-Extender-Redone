@@ -1,2 +1,3 @@
 PLAYER: scripts/ier_trading_redone/player.lua
 GLOBAL: scripts/ier_trading_redone/global.lua
+MENU: scripts/ier_trading_redone/settings.lua
