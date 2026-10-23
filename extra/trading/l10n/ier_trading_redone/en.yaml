@@ -5,3 +5,4 @@ InvestTipMore: |-
   Already invested: {amount}
 InvestmentLine: 'Investment size:'
 InvestmentLimitReached: Can't invest more. Increase Mercantile skill.
+InvestmentLimitGold: You have no gold to invest.

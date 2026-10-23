@@ -25,6 +25,7 @@ local ALL_ITEMS_SKILL = 90 --TODO: add setting?
 
 ---@type openmw.types.SkillStat
 local mercantile = player.type.stats.skills.mercantile(player)
+local inventory = player.type.inventory(player) --[[@as openmw.core.Inventory]]
 local REFRESH_DELAY = (core.getGMST('fBarterGoldResetDelay') or 24) * 3600
 local HANDLE_SIZE = 32
 local SLIDER_LENGTH = 400
@@ -51,8 +52,12 @@ local function showInvestPopup(trader)
         ui.showMessage(l10n 'InvestmentLimitReached')
         return
     end
-    maxInvestment = maxInvestment - invested
-    --TODO: limit by player coins
+    local gold = inventory:find('gold_001')
+    if not gold or gold.count <= 0 then
+        ui.showMessage(l10n 'InvestmentLimitGold')
+        return
+    end
+    maxInvestment = math.min(maxInvestment - invested, gold.count)
 
     local increase = maxInvestment
 
@@ -134,10 +139,7 @@ local function showInvestPopup(trader)
         end,
         buttons = { { text = l10n 'Invest', onClicked = function()
             L.info('make investment', invested, increase)
-            investments[id] = invested + increase
-            applied[id] = core.getGameTime()
-            ambient.playSound('item gold up')
-            core.sendGlobalEvent('IER_Trading_ApplyInvestment', {
+            core.sendGlobalEvent('IER_Trading_Invest', {
                 trader = trader,
                 player = player,
                 investment = increase
@@ -236,6 +238,24 @@ local function refreshInfoBar()
     handler.infoBar:update()
 end
 
+local function investSuccess(props)
+    L.info('invest success: increasing investment')
+    local id = props.id
+    investments[id] = (investments[id] or 0) + props.increase
+    applied[id] = core.getGameTime()
+    ambient.playSound('item gold up')
+
+    local handler = IER.getWindow('Inventory')
+    if handler then
+        handler.infoBar:update()
+    end
+
+    handler = IER.getWindow('Trade')
+    if handler then
+        handler.infoBar:update()
+    end
+end
+
 local function onLoad(save)
     if not save then return end
     investments = save.investments or investments
@@ -258,5 +278,6 @@ return {
     },
     eventHandlers = {
         IER_Trading_RefreshInfoBar = refreshInfoBar,
+        IER_Trading_Invest_Success = investSuccess,
     },
 }
