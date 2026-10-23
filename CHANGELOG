@@ -6,7 +6,7 @@
 - show armor rating on companion inventory
 - API version bumped to 2
 - Major API update to allow modifying parts of the windows - read API.md for details
-- added logger, by default logs errors only4
+- added logger, by default logs errors only
 
 0.0.5 (2026-10-21)
 - basic restore of opened category
