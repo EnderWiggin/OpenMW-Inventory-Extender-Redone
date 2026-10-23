@@ -218,7 +218,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     if not configPlayer.window.b_EnableMod then
         return
     end
-    L.info('onUiModeChanged', oldMode, newMode)
+    L.debug('onUiModeChanged', oldMode, newMode)
 
     -- built-in lifecycle.onClosing fires from the mode change (decision 11): the transition
     -- decides which spec closes, and a pickpocket session closing under the engine's Container
