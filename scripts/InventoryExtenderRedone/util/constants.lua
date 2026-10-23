@@ -130,6 +130,7 @@ C.Strings = {
     TAKE_ALL = 'sTakeAll',
     CANCEL = 'sCancel',
     CLOSE = 'sClose',
+    STATS = 'sStats',
     DISPOSE_OF_CORPSE = 'sDisposeOfCorpse',
     DISPOSE_CORPSE_FAIL = 'sDisposeCorpseFail',
     OFFER = 'sBarterDialog8',

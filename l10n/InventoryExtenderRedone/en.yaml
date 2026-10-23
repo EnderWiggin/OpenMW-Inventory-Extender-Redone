@@ -13,7 +13,7 @@ KeybindToggleFavorite: Toggle favorite
 KeybindToggleFavoriteDesc: |-
   Toggle favorite status for the hovered inventory item.
   
-  Favorite items cannot be sold, dropped, or transfered to other inventories, and are marked with a star icon in the inventory list.
+  Favorite items cannot be sold, dropped, or transferred to other inventories, and are marked with a star icon in the inventory list.
 KeybindCatPrev: Previous Category
 KeybindCatNext: Next Category
 KeybindSelUp: Select Up
@@ -43,7 +43,7 @@ ShowViewModeButtonDesc: |-
   Show a button in the top bar to toggle between table and grid view.
 HorizontalGrid: Horizontal Grid
 HorizontalGridDesc: |-
-    When enabled, grid view uses horizontal scroll bar, like vanilla. Disable to use vertical scroll bar.
+  When enabled, grid view uses horizontal scroll bar, like vanilla. Disable to use vertical scroll bar.
 TableRowHeightMult: Table row height multiplier
 TableRowHeightMultDesc: |-
   Adjust the height of rows in the table view, as a multiplier of text size.
@@ -141,6 +141,7 @@ Category_Book: Books
 Category_Key: Keys
 Category_Tool: Tools
 Category_Misc: Misc.
+Category_Magic: Magic
 
 # Armor
 Type_Boots: Boots
@@ -221,6 +222,7 @@ UI_Tooltip_GridView: Switch to grid view
 UI_Tooltip_UseButton: Or press {key} on item
 UI_Tooltip_UseButton_Swapped: Or click on item
 UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.
+UI_Tooltip_Companion_Stats: Show companion stats.
 
 UI_EnchantCapacity: Enchant Capacity
 UI_SoulCapacity: Soul Capacity

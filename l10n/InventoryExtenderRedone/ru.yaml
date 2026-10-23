@@ -41,9 +41,9 @@ GridIconScaleDesc: |-
 ShowViewModeButton: "Показывать кнопку режима"
 ShowViewModeButtonDesc: |-
   Показывать кнопку в верхней панели для переключения между таблицей и сеткой.
-HorizontalGrid: Горизантальная Сетка
+HorizontalGrid: Горизонтальная Сетка
 HorizontalGridDesc: |-
-  Сетка имееет горизонтальный скролл, как в оригинале. Отключите, чтобы использовать вертикальный скролл.
+  Сетка имеет горизонтальный скролл, как в оригинале. Отключите, чтобы использовать вертикальный скролл.
 TableRowHeightMult: "Множитель высоты строк таблицы"
 TableRowHeightMultDesc: |-
   Регулировка высоты строк в режиме таблицы как множителя размера текста.
@@ -141,6 +141,7 @@ Category_Book: "Книги"
 Category_Key: "Ключи"
 Category_Tool: "Инструменты"
 Category_Misc: "Разное"
+Category_Magic: "Магия"
 
 # Доспехи
 Type_Boots: "Сапоги"
@@ -184,7 +185,7 @@ Type_MarksmanBow: "Лук"
 Type_MarksmanCrossbow: "Арбалет"
 Type_MarksmanThrown: "Метательное"
 Type_ShortBladeOneHand: "Кр. клинки"
-Type_SpearTwoWide: "Копье"
+Type_SpearTwoWide: "Копьё"
 
 # Инструменты
 Type_Alembic: "Алембик"
@@ -221,6 +222,7 @@ UI_Tooltip_GridView: "Переключить на сетку"
 UI_Tooltip_UseButton: "Или нажмите {key} на предмете"
 UI_Tooltip_UseButton_Swapped: "Или кликните на предмет"
 UI_Tooltip_TakeAllButton_Shift: "Зажмите Shift, чтобы взять только видимые сейчас предметы."
+UI_Tooltip_Companion_Stats: "Показать характеристики спутника."
 
 UI_EnchantCapacity: "Емкость зачарования"
 UI_SoulCapacity: "Емкость души"
