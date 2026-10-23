@@ -1518,8 +1518,17 @@ function Inventory:createData()
 
     local ctx = self.ctx
     local modifiers = ctx.modifiers.data
+
+    ---@type fun(...):boolean
+    local rowIsDisabled
+    local observer = omwself --[[@as openmw.Object]]
     -- per-row state predicates come from the mode's states slot; a list of States ORs together
-    local rowIsDisabled = Mode.statePredicate(self.slots and self.slots.states, 'isDisabled')
+    local slots = self.slots
+    if slots then
+        rowIsDisabled = Mode.statePredicate(slots.states, 'isDisabled')
+        local observerFn = slots.tooltipObserver
+        observer = observerFn and observerFn(self, ctx) or observer
+    end
     --context data for the tooltip
     --[[
     local IER = {
@@ -1554,7 +1563,7 @@ function Inventory:createData()
 
         local baseTip = {
             object = itemStack,
-            observer = omwself,
+            observer = observer,
             owned = isOwned,
             --IER = IER,
         }
@@ -1565,7 +1574,7 @@ function Inventory:createData()
             for i = 1, #comparison do
                 table.insert(tips, 1, Tooltips.createTooltipLayout({
                     object = comparison[i],
-                    observer = omwself,
+                    observer = observer,
                     isOwned = false,
                     markEquipped = true,
                 }))

@@ -171,6 +171,7 @@
 ---@field infoBar InventoryExtenderRedone.Mode.InfoBarSection[]? bottom strip sections, in order
 ---@field categories InventoryExtenderRedone.Mode.Categories?
 ---@field columns InventoryExtenderRedone.Mode.Columns?
+---@field tooltipObserver? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip. If absent or returns nil - player is used.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
 ---@field pinnable boolean? default false; only the Interface Inventory window sets true
 ---@field storageSuffix string? built-ins keep the literal ':Container'/':Barter'/':Companion' - UIToolkit:WindowData keys are save identity, never derive from the mode key
@@ -209,6 +210,7 @@
 ---@field infoBar InventoryExtenderRedone.Mode.PatchList?
 ---@field categories InventoryExtenderRedone.Mode.Categories?
 ---@field columns InventoryExtenderRedone.Mode.Columns?
+---@field tooltipObserver? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip. If absent or returns nil - player is used.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
 ---@field pinnable boolean?
 ---@field storageSuffix string?
