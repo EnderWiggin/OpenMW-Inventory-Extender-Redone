@@ -188,7 +188,7 @@ IER.patchMode(IER.Modes.Barter, {
             infoBar = {
                 add = { {
                     id = 'ier_trade_invest',
-                    before = 'offer',
+                    before = 'barterCancel',
                     create = function(handler)
                         if mercantile.base < INVEST_SKILL then return nil end
                         L.info('create invest button')
