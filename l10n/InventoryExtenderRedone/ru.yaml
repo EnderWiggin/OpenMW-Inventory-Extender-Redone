@@ -126,6 +126,7 @@ Column_Value: "Цена"
 Column_Weight: "Вес"
 Column_Weight_Total: "Общ. вес"
 Column_VW: "Ц/В"
+Column_StealChance: "Шанс"
 
 # Категории
 Category_Favorites: "Избранное"

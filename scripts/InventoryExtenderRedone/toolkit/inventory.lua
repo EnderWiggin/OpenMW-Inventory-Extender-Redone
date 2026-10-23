@@ -20,21 +20,14 @@ local BUTTON    = input.CONTROLLER_BUTTON
 
 local Container = types.Container
 local Item      = types.Item
-local NPC       = types.NPC
--- the whole handler runs in the player script context, so omwself is always a Player actor:
--- cache the type table rather than re-reading omwself.type at every equip/inventory call
 local Player    = types.Player
-
-
--- the inventory object is a live handle on the player actor, not a snapshot: caching it is
--- safe, :getAll() still re-reads the current contents
-local playerInventory = Player.inventory(omwself)
 
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local iconPack = require('scripts.InventoryExtenderRedone.util.iconPack')
+local pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local l10n = core.l10n(D.L10N)
 local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 local InfoBar = require('scripts.InventoryExtenderRedone.toolkit.info_bar')
@@ -143,6 +136,7 @@ end
 local function renderNumber(data, cfg, height)
     local textSize = cfg.arg and cfg.arg.textSize or nil
     local textAlignH = cfg.arg and cfg.arg.textAlignH or nil
+    local suffix = cfg.arg and cfg.arg.suffix or ''
     ---@type openmw.ui.Layout
     local layout = {
         name = cfg.id,
@@ -152,7 +146,7 @@ local function renderNumber(data, cfg, height)
             textAlignH = textAlignH,
             autoSize = false,
             textSize = textSize,
-            text = formatNumber(data[cfg.id]),
+            text = formatNumber(data[cfg.id]) .. suffix,
         },
         userData = { colorable = true },
     }
@@ -357,7 +351,18 @@ local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
             render = renderNumber,
             update = updateNumber,
             arg = { textAlignH = ui.ALIGNMENT.End },
-        }
+        },
+        {
+            id = 'StealChance',
+            name = l10n('Column_StealChance'),
+            sort = { numeric = true },
+            width = 60 * fontRatio,
+            align = ui.ALIGNMENT.End,
+            descending = true,
+            render = renderNumber,
+            update = updateNumber,
+            arg = { textAlignH = ui.ALIGNMENT.End, suffix = '%' },
+        },
     }
 end
 
@@ -378,6 +383,7 @@ local EditableColumns = {
     'Weight_Total',
     'Value',
     'V/W',
+    'StealChance',
 }
 
 local function getColumnVisibility()
@@ -412,15 +418,16 @@ end
 
 ---@param columns {id:string}[]
 ---@param categoryHidden table<string, boolean>?
+---@param mode string
 ---@return table<string, boolean>
-local function combineHiddenColumns(columns, categoryHidden)
+local function combineHiddenColumns(columns, categoryHidden, mode)
     local hidden = {}
     local visibility = getColumnVisibility()
     local visible = 0
 
     for i = 1, #columns do
         local id = columns[i].id
-        if not isColumnVisible(id, visibility) then
+        if not isColumnVisible(id, visibility) or (id == 'StealChance' and mode ~= D.Modes.Pickpocket) then
             hidden[id] = true
         else
             visible = visible + 1
@@ -720,7 +727,8 @@ function Inventory:onOpened(wnd, data, saved)
         end
         self.table:setHiddenColumns(combineHiddenColumns(
             self.table.header.columns,
-            category and category.hiddenColumns
+            category and category.hiddenColumns,
+            self.mode
         ))
     end
 
@@ -843,7 +851,8 @@ function Inventory:onOpened(wnd, data, saved)
             end
 
             self.table:filter(false)
-            self.table:setHiddenColumns(combineHiddenColumns(self.table.header.columns, category.hiddenColumns))
+            self.table:setHiddenColumns(combineHiddenColumns(self.table.header.columns, category.hiddenColumns, self
+                .mode))
             self.table:setPosition(0)
 
             self:updateTitle()
@@ -1596,6 +1605,9 @@ function Inventory:createData()
             Weight = helpers.roundToPlaces(record.weight, 2),
             Weight_Total = helpers.roundToPlaces(record.weight * getItemCount(), 2),
             ['V/W'] = helpers.roundToPlaces(vw, vwPrecision),
+            StealChance = function()
+                return pickpocket.getStealChance(omwself, self.target, itemStack, getItemCount())
+            end,
             item = itemStack,
             itemRecord = record,
             isBartered = isBartered,

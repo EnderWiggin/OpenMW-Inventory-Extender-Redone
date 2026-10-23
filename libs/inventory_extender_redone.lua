@@ -109,6 +109,7 @@
 ---@field itemRecord {id:string, name:string, icon:string, isKey:boolean?, enchant:string?}
 ---@field getCount fun():number
 ---@field getNonDraggedCount fun():number
+---@field StealChance number|fun():number pickpocket-only column: the steal-success chance for the stack
 ---@field sortCache table?
 
 

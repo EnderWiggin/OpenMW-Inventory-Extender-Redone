@@ -62,10 +62,16 @@ function Pickpocket.isVisible(session, item)
     return session == nil or not session.active or session.visibleItems[item.id] == true
 end
 
-function Pickpocket.rollTake(player, target, item, stackCount)
+-- the steal chance for one stack: the same number rollTake rolls against, exposed without the
+-- roll so the pickpocket window can show it as a column
+function Pickpocket.getStealChance(player, target, item, stackCount)
     local stackValue = item.type.record(item).value * stackCount
     local valueTerm = 10 * core.getGMST('fPickPocketMod') * stackValue
-    local chance = getChance(player, target, valueTerm)
+    return getChance(player, target, valueTerm)
+end
+
+function Pickpocket.rollTake(player, target, item, stackCount)
+    local chance = Pickpocket.getStealChance(player, target, item, stackCount)
     return math.random(100) <= chance, chance
 end
 

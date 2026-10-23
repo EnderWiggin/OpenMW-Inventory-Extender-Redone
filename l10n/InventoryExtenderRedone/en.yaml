@@ -126,6 +126,7 @@ Column_Value: Val.
 Column_Weight: Wgt.
 Column_Weight_Total: T. Wgt.
 Column_VW: V/W
+Column_StealChance: Steal
 
 # Category
 Category_Favorites: Favorites
