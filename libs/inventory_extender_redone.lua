@@ -17,6 +17,7 @@
 ---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
+---@field update fun() the single refresh trigger for all windows; mods that change item state or settings call this so tables rebuild
 ---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?, uiMode:string?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. uiMode is the engine UI mode at the moment the window opens (nil = interface) and is forwarded to applies(); the mode key is the value of handler.mode
 ---@field getCategories fun():InventoryExtenderRedone.Category[]
 ---@field getCategory fun(key:string):InventoryExtenderRedone.Category?
@@ -111,6 +112,7 @@
 ---@field getNonDraggedCount fun():number
 ---@field StealChance number|fun():number pickpocket-only column: the steal-success chance for the stack
 ---@field sortCache table?
+---@field SearchText string? lower-cased haystack for the search filter; the filter computes it lazily, a row data modifier may own the field to widen what search matches
 
 
 ---@class InventoryExtenderRedone.InfoBarOpts
