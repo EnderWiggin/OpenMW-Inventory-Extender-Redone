@@ -177,7 +177,7 @@ function API.getConsoleState()
 end
 
 local categories = {}
-local categoriesChanged = false
+
 function API.getCategories()
     return categories
 end
@@ -198,7 +198,6 @@ function API.registerCategory(category)
             break
         end
     end
-    categoriesChanged = true
 
     if category.prepend then
         table.insert(categories, 1, category)
@@ -214,7 +213,6 @@ function API.unregisterCategory(key)
             return
         end
     end
-    categoriesChanged = true
 end
 
 --- Register a function to override the equipped status of items in the inventory.
