@@ -30,11 +30,19 @@ either missing, and does nothing when legacy Inventory Extender is the one insta
 
 ## Tuning
 
-`enabled`, `ieRowBadge`, `ieCategory`, `ieTooltip`, `menuShowFaction` and `menuMaxQuests` are
-read from QuestItemMarker's own storage sections, so QuestItemMarker's settings page drives the
-three features that mirror its IE integration. The two extras have no QuestItemMarker key: flip
-`BLOCK_SELLING`, `BLOCK_COMPANION_TRANSFER` and `SEARCH_BY_QUEST` at the top of
-`scripts/ier_qim_bridge/player.lua`.
+Each setting is read once from the one QuestItemMarker section it belongs to, with QuestItemMarker's
+own default used when the key was never stored — the same lookup its `config.getCfg` does. The
+values are cached for the whole session and refreshed only when a QuestItemMarker section changes,
+never re-read per item row:
+
+| Key | Section |
+| --- | --- |
+| `enabled` | `Settings_QuestItemMarker_Main` |
+| `ieRowBadge`, `ieCategory`, `ieTooltip`, `menuShowFaction`, `menuMaxQuests` | `Settings_QuestItemMarker_Menus` |
+
+So QuestItemMarker's settings page drives the three features that mirror its IE integration. The
+two extras have no QuestItemMarker key: flip `BLOCK_SELLING`, `BLOCK_COMPANION_TRANSFER` and
+`SEARCH_BY_QUEST` at the top of `scripts/ier_qim_bridge/player.lua`.
 
 `BLOCK_SELLING` refuses the click action on the player's side of a barter (selling), `BLOCK_COMPANION_TRANSFER`
 refuses handing items to a companion. Container and pickpocket clicks stay allowed: looting is
@@ -43,8 +51,11 @@ how a quest item gets acquired in the first place.
 The `Quest Items` tab follows the setting structurally: with `ieCategory` or the master `enabled`
 switch off, the tab is unregistered, not left greyed out — a greyed tab would be one you can
 select and that matches nothing. Turning either one back on re-registers it. The bridge subscribes
-to QuestItemMarker's storage sections and refreshes the windows through Redone's `update()`, so
-flipping a setting on QuestItemMarker's page takes effect without reopening the window; if the
+to all six QuestItemMarker sections — reads are section-specific, but a detection, category or
+advanced toggle changes which items count as quest items, so a change anywhere has to refresh the
+cached settings and then the windows through Redone's `update()`; flipping a setting on QuestItemMarker's
+page takes effect without reopening the window, and the cache, the category list and the table
+are refreshed in that order, so the rebuild sees the final settings and category list. If the
 removed tab was the selected category, the bar falls back to the default category.
 
 ## Caveats

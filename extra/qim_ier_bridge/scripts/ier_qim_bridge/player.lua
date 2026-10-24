@@ -33,15 +33,14 @@ local TAB_ICON                 = 'icons/QuestItemMarker/quest_tab.dds'
 local QUEST_CATEGORY_KEY       = 'QuestItems'
 
 -- QIM's own storage sections: detection and display toggles live there, and QIM's public
--- interface does not expose the ie* display toggles, so they are read directly.
-local QIM_SECTIONS             = {
-    'Settings_QuestItemMarker_Main',
-    'Settings_QuestItemMarker_Detection',
-    'Settings_QuestItemMarker_Categories',
-    'Settings_QuestItemMarker_HUD',
-    'Settings_QuestItemMarker_Menus',
-    'Settings_QuestItemMarker_Advanced',
-}
+-- interface does not expose the ie* display toggles, so they are read directly. Each key
+-- belongs to exactly one section, so reads name that section instead of probing all six.
+local qimMain       = storage.playerSection('Settings_QuestItemMarker_Main')
+local qimDetection  = storage.playerSection('Settings_QuestItemMarker_Detection')
+local qimCategories = storage.playerSection('Settings_QuestItemMarker_Categories')
+local qimHud        = storage.playerSection('Settings_QuestItemMarker_HUD')
+local qimMenus      = storage.playerSection('Settings_QuestItemMarker_Menus')
+local qimAdvanced   = storage.playerSection('Settings_QuestItemMarker_Advanced')
 
 -- IER-only extras: legacy IE has no equivalent, so QIM has no settings keys for them.
 -- Selling side of a barter and companion transfers are refused for quest items; Container
@@ -56,25 +55,32 @@ local l10n                     = core.l10n('ier_qim_bridge')
 local registered               = false
 local questTitleCache          = {}
 
--- sections are resolved once: the badge provider runs per row per refresh, and
--- storage.playerSection is not a cheap lookup
-local qimSections              = {}
-for _, name in ipairs(QIM_SECTIONS) do
-    qimSections[#qimSections + 1] = storage.playerSection(name)
+-- all six are subscribed: detection, category and advanced toggles change which items count
+-- as quest items, so a change anywhere in QIM's settings can stale the badges and the tab
+local qimSections = { qimMain, qimDetection, qimCategories, qimHud, qimMenus, qimAdvanced }
+
+-- reads one key from the section it belongs to, falling back to QuestItemMarker's own
+-- default for that key: the same shape its config.getCfg uses
+local function qimCfg(section, key, default)
+    local value = section:get(key)
+    if value == nil then return default end
+    return value
 end
 
-local function qimCfg(key)
-    for _, section in ipairs(qimSections) do
-        local value = section:get(key)
-        if value ~= nil then return value end
-    end
-    return nil
-end
+-- QIM settings are cached, never read per row: the badge provider, the row data modifier and
+-- the category filter all run per row per refresh, so storage reads happen only at bridge time
+-- and on a settings change. The table is mutated in place, never replaced, so the closures
+-- registered at bridge time keep seeing current values. Defaults live in the refresh below,
+-- one source, and it runs before any of those closures exists.
+local qimSettings = {}
 
-local function qimEnabled(key)
-    local value = qimCfg(key)
-    if value == nil then return true end
-    return value == true
+local function refreshQimSettings()
+    qimSettings.enabled = qimCfg(qimMain, 'enabled', true)
+    qimSettings.ieRowBadge = qimCfg(qimMenus, 'ieRowBadge', true)
+    qimSettings.ieCategory = qimCfg(qimMenus, 'ieCategory', true)
+    qimSettings.ieTooltip = qimCfg(qimMenus, 'ieTooltip', true)
+    qimSettings.menuShowFaction = qimCfg(qimMenus, 'menuShowFaction', false) == true
+    qimSettings.menuMaxQuests = tonumber(qimCfg(qimMenus, 'menuMaxQuests', 3)) or 0
 end
 
 local function findByName(items, name)
@@ -123,6 +129,9 @@ local function bridge()
         end
     end
 
+    -- the cache is filled before any hook closure exists
+    refreshQimSettings()
+
     local function menuColor(item)
         return QIM.getMenuColor(item)
     end
@@ -130,7 +139,7 @@ local function bridge()
     -- Row badge: Redone owns placement and draws it in the list AND grid views, next to the
     -- favorite/stolen/enchanted badges; the provider only names the icon and its color.
     IER.registerRowBadge(BADGE_ID, function(row, _)
-        if not qimEnabled('enabled') or not qimEnabled('ieRowBadge') then return end
+        if not qimSettings.enabled or not qimSettings.ieRowBadge then return end
         local item = row.item
         if not item or not QIM.isQuestItem(item) then return end
         return BADGE_ICON, menuColor(item)
@@ -159,7 +168,7 @@ local function bridge()
     }
 
     local function syncQuestCategory()
-        local wanted = qimEnabled('enabled') and qimEnabled('ieCategory')
+        local wanted = qimSettings.enabled and qimSettings.ieCategory
         local present = false
         for _, category in ipairs(IER.getCategories()) do
             if category.key:lower() == QUEST_CATEGORY_KEY:lower() then
@@ -181,12 +190,12 @@ local function bridge()
     local UTK = I.UTKTooltips
     if UTK and UTK.addPreCreateTooltipHandler then
         UTK.addPreCreateTooltipHandler(function(recipe, tooltip)
-            if not qimEnabled('enabled') or not qimEnabled('ieTooltip') then return end
+            if not qimSettings.enabled or not qimSettings.ieTooltip then return end
             local item = tooltip.object
             if not item or not QIM.isQuestItem(item) then return end
 
             local lines = QIM.getFormattedBadgeLines(item,
-                qimCfg('menuShowFaction') == true, tonumber(qimCfg('menuMaxQuests')) or 0)
+                qimSettings.menuShowFaction, qimSettings.menuMaxQuests)
             if not lines or #lines == 0 then return end
             local color = menuColor(item)
 
@@ -214,8 +223,8 @@ local function bridge()
     -- IER-only: the search box matches quest titles as well as item names. Redone's search
     -- filter only computes SearchText when nothing has set it, so a modifier owns the field.
     if SEARCH_BY_QUEST and IER.registerRowDataModifier and IER.Helpers then
-        IER.registerRowDataModifier(BADGE_ID, function(row, _, role)
-            if not qimEnabled('enabled') then return end
+        IER.registerRowDataModifier(BADGE_ID, function(row, _, _)
+            if not qimSettings.enabled then return end
             if not QIM.isQuestItem(row.item) then return end
             local titles = questTitles(QIM, row.item.recordId)
             if titles == '' then return end
@@ -228,7 +237,7 @@ local function bridge()
     -- transfer block in the handler does.
     if BLOCK_SELLING or BLOCK_COMPANION_TRANSFER then
         IER.registerRowPickupHandler(BADGE_ID, function(row, _, role)
-            if not qimEnabled('enabled') then return end
+            if not qimSettings.enabled then return end
             if not row or not row.item or row.isBartered then return end
             local wnd = IER.getWindow(role)
             if not wnd then return end
@@ -242,12 +251,13 @@ local function bridge()
         end)
     end
 
-    -- QIM's settings drive its detection caches and the ieCategory toggle; Redone windows
-    -- need the same refresh trigger or badges and the tab go stale after a settings change.
-    -- The category is synced first, so the rebuild that follows sees the final category list.
+    -- QIM's settings drive its detection caches and the ieCategory toggle; the cached copy is
+    -- refreshed first, then the category is synced, then Redone windows rebuild, so the refresh
+    -- sees the final settings and category list. Without this the badges and the tab go stale.
     if IER.update then
         for _, section in ipairs(qimSections) do
             section:subscribe(async:callback(function()
+                refreshQimSettings()
                 syncQuestCategory()
                 IER.update()
             end))
