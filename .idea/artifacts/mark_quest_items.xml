@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact name="mark_quest_items">
+    <output-path>$PROJECT_DIR$/artifacts</output-path>
+    <root id="root">
+      <element id="archive" name="mark_quest_items.zip">
+        <element id="directory" name="ier_mark_quest_items_compat">
+          <element id="dir-copy" path="$PROJECT_DIR$/extra/mark_quest_items" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
