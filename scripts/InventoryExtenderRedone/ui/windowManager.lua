@@ -83,6 +83,11 @@ end
 -- registerWindowRole may add a role after init already ran, so dedupe by role
 local windowRegistered = {}
 
+-- ids this repo registered into UIToolkit's manager: the manager is global, so its focus
+-- and handler lookups also see other mods' windows; membership here is what says a
+-- focused window is one of ours
+local ierWindowIds = {}
+
 local function registerWindow(role)
     if windowRegistered[role] then return end
     local opts = RoleRegistry.byRole[role]
@@ -91,7 +96,9 @@ local function registerWindow(role)
 
     local handler = InvHandler:new()
     handler:init(role)
-    Manager.register(getWindowId(role), {
+    local windowId = getWindowId(role)
+    ierWindowIds[windowId] = true
+    Manager.register(windowId, {
         title = opts.title,
         handler = handler,
         draggable = opts.draggable,
@@ -149,6 +156,14 @@ function WindowManager:update()
             handler:update()
         end
     end
+end
+
+---@return InventoryExtenderRedone.RowData?
+function WindowManager:getHoveredRow()
+    local handler, windowId = Manager.getFocusedWindowHandler()
+    if not windowId or not ierWindowIds[windowId] then return nil end
+    ---@cast handler IER.Inventory
+    return handler:getHoveredRow()
 end
 
 ---@param role InventoryExtenderRedone.Role

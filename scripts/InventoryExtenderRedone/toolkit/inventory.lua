@@ -451,6 +451,8 @@ end
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
 ---@field wnd UIToolkit.Window
+---@field table InventoryExtenderRedone.ItemTable? the column/grid component, set at open; public so external consumers can read hovered-row state through getWindow
+---@field infoBar InventoryExtenderRedone.InfoBarPrivate? the bottom strip, set at open; public so external consumers can measure and extend it
 ---@field role InventoryExtenderRedone.Role
 ---@field mode InventoryExtenderRedone.ModeKey? the mode key this window snapshotted at open
 ---@field slots InventoryExtenderRedone.Mode.RoleSpec? this role's slots from that mode
@@ -1265,6 +1267,14 @@ function Inventory:update()
     -- observability: rows built vs rows the filters let through; an empty filtered count is
     -- the "window opened but table empty" probe stall
     L.debug('refresh', self.role, self.mode, #data, #self.table.filteredItems)
+end
+
+--- the row under the cursor in this window, or nil when nothing is hovered; the table
+--- component only exists once the window opened, so an unopened handler reports nil
+---@return InventoryExtenderRedone.RowData?
+function Inventory:getHoveredRow()
+    if not self.table then return nil end
+    return self.table:getHovered()
 end
 
 function Inventory:isFavorite(item)

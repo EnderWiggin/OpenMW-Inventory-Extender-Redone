@@ -16,6 +16,7 @@
 ---@field hide fun(windowName:InventoryExtenderRedone.Role, arg:any?, force:boolean?)
 ---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
+---@field getHoveredRow fun():InventoryExtenderRedone.RowData? the row under the cursor in the open IER window UIToolkit currently has input focus on, or nil when no window is focused, when the focused window belongs to another mod, or when it hovers nothing
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
 ---@field update fun() the single refresh trigger for all windows; mods that change item state or settings call this so tables rebuild
 ---@field resolveMode fun(role:InventoryExtenderRedone.Role, arg:any?, uiMode:string?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec? which mode governs this window role: applies() + priority winner, patches merged; returns the fully merged mode and that role's slots, or nil when no registered mode applies. uiMode is the engine UI mode at the moment the window opens (nil = interface) and is forwarded to applies(); the mode key is the value of handler.mode

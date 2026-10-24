@@ -148,6 +148,11 @@ function API.getDraggingObject()
     return windowManager.ctx.dragAndDrop.draggingObject
 end
 
+---@return InventoryExtenderRedone.RowData? the row under the cursor in the window that owns scroll focus, nil when no window is focused or nothing is hovered
+function API.getHoveredRow()
+    return windowManager:getHoveredRow()
+end
+
 local lastCrimeLevel
 local function checkCrimeLevel()
     local crimeLevel = Player.getCrimeLevel(self)
