@@ -194,6 +194,18 @@ local function autoEquipArmor(slots)
         return oldArmorType >= newArmorType
     end
 
+    -- equipped items are part of inventory():getAll(), so an item already worn in one slot must
+    -- not be offered to the sibling slots: a ring in LeftRing would otherwise be re-placed into a
+    -- free RightRing and end up equipped twice, which also steals the slot from the next ring
+    local function isEquippedElsewhere(item, slot)
+        for equippedSlot, equipped in pairs(slots) do
+            if equippedSlot ~= slot and equipped == item then
+                return true
+            end
+        end
+        return false
+    end
+
     local function processItem(item)
         local isArmor = Armor.objectIsInstance(item)
         local isClothing = actorIsNpc and Clothing.objectIsInstance(item)
@@ -216,9 +228,9 @@ local function autoEquipArmor(slots)
         local itemSlots = helpers.getEquipmentSlots(item) or {}
         for _, slot in ipairs(itemSlots) do
             local oldItem = slots[slot]
-            local canEquip = true
+            local canEquip = not isEquippedElsewhere(item, slot)
 
-            if oldItem then
+            if canEquip and oldItem then
                 if isArmor then
                     canEquip = shouldEquipArmor(item, oldItem)
                 else
