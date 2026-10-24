@@ -39,7 +39,7 @@ local function makeSkillList(...)
     return result
 end
 
-local WEAPON = makeSkillList('axe', 'bluntweapon', 'longblade', 'marksman', 'shortblade', 'spear')
+local WEAPON = makeSkillList('axe', 'bluntweapon', 'handtohand', 'longblade', 'marksman', 'shortblade', 'spear')
 local ARMOR = makeSkillList('block', 'heavyarmor', 'lightarmor', 'mediumarmor', 'unarmored')
 local MAGIC = makeSkillList('alteration', 'conjuration', 'destruction', 'illusion', 'mysticism', 'restoration')
 
