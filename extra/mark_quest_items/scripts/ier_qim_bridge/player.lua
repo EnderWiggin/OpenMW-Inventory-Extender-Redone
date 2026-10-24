@@ -46,8 +46,8 @@ local qimAdvanced   = storage.playerSection('Settings_QuestItemMarker_Advanced')
 -- Selling to a merchant and handing items to a companion are refused for quest items. Like
 -- the favorite transfer block, the refusal belongs to the window the item leaves from, so it
 -- is the player's own window only: the merchant, companion and container windows still give.
-local BLOCK_SELLING            = true
-local BLOCK_COMPANION_TRANSFER = true
+local BLOCK_SELLING            = false
+local BLOCK_COMPANION_TRANSFER = false
 local SEARCH_BY_QUEST          = true
 
 local l10nQim                  = core.l10n and core.l10n('QuestItemMarker')
