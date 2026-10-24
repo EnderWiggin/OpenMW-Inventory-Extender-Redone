@@ -1,7 +1,7 @@
 ---@omw-context global
 
 local core = require 'openmw.core'
-local l10n = core.l10n 'ier_trading_redone'
+local l10n = core.l10n 'ier_trading_tweaks'
 
 
 local function applyInvestment(props)

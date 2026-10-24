@@ -12,9 +12,9 @@ local storage = require 'openmw.storage'
 
 local H          = require('scripts.UIToolkit.helpers')
 local Mode       = require('scripts.InventoryExtenderRedone.toolkit.mode')
-local D          = require('scripts.ier_trading_redone.config.defaults')
+local D          = require('scripts.ier_trading_tweaks.config.defaults')
 local L          = require 'scripts.InventoryExtenderRedone.util.logger'.get 'TradeRedone'
-local l10n       = core.l10n 'ier_trading_redone'
+local l10n       = core.l10n 'ier_trading_tweaks'
 local v2         = util.vector2
 local IER        = I.InventoryExtenderRedone
 local Toolkit    = I.UIToolkit

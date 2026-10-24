@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact name="trading">
+    <output-path>$PROJECT_DIR$/artifacts/</output-path>
+    <root id="root">
+      <element id="archive" name="ier_trading_tweaks.zip">
+        <element id="directory" name="ier_trading_tweaks">
+          <element id="dir-copy" path="$PROJECT_DIR$/extra/trading" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>

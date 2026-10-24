@@ -14,9 +14,9 @@
 ---@field InvestSkill IERTrading.Config.Defaults.Skill
 ---@field AllItemsSkill IERTrading.Config.Defaults.Skill
 local M = {
-    PageKey = 'ier_trading_redone',
-    L10N = 'ier_trading_redone',
-    Section = 'Settings/ier_trading_redone/Mercantile',
+    PageKey = 'ier_trading_tweaks',
+    L10N = 'ier_trading_tweaks',
+    Section = 'Settings/ier_trading_tweaks/Mercantile',
     InvestSkill = { default = 25, min = 1, max = 100 },
     AllItemsSkill = { default = 90, min = 1, max = 100 },
 }

@@ -1,7 +1,7 @@
 ---@omw-context menu
 local I = require 'openmw.interfaces'
 
-local D = require('scripts.ier_trading_redone.config.defaults')
+local D = require('scripts.ier_trading_tweaks.config.defaults')
 
 I.Settings.registerPage {
     key = D.PageKey,
