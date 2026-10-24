@@ -1,3 +1,8 @@
+0.0.7 (2026-10-24)
+- AR in tooltips and columns of companion's inventory show values as applied for companion
+- added hand-to-hand to companion stats popup
+- API: added 'observer' slot that can override who observer tooltip in inventory - used for companion inventory, mods can override if needed
+
 0.0.6 (2026-10-23)
 - fixed WindowManager:getWindow returning window control instead of handler
 - fixed restocking stacks decreasing if not bough-out fully
