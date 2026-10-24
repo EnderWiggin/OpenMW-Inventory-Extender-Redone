@@ -43,8 +43,9 @@ local qimMenus      = storage.playerSection('Settings_QuestItemMarker_Menus')
 local qimAdvanced   = storage.playerSection('Settings_QuestItemMarker_Advanced')
 
 -- IER-only extras: legacy IE has no equivalent, so QIM has no settings keys for them.
--- Selling side of a barter and companion transfers are refused for quest items; Container
--- and Pickpocket stay allowed, since looting is how a quest item gets acquired at all.
+-- Selling to a merchant and handing items to a companion are refused for quest items. Like
+-- the favorite transfer block, the refusal belongs to the window the item leaves from, so it
+-- is the player's own window only: the merchant, companion and container windows still give.
 local BLOCK_SELLING            = true
 local BLOCK_COMPANION_TRANSFER = true
 local SEARCH_BY_QUEST          = true
@@ -233,8 +234,11 @@ local function bridge()
     end
 
     -- IER-only: refuse the click action on quest items where it would move the item away
-    -- from the player. Returning false stops the default activation, like the favorite
-    -- transfer block in the handler does.
+    -- from the player. Like the favorite transfer block in the handler, the guard is keyed to
+    -- the window the item leaves from: only the player's own window (the Inventory role) refuses,
+    -- so the target window of the same mode still hands the item over — buying from a merchant,
+    -- taking it back from a companion and looting a container stay allowed. Returning false
+    -- stops the default activation, which also stops the drag that a plain click would start.
     if BLOCK_SELLING or BLOCK_COMPANION_TRANSFER then
         IER.registerRowPickupHandler(BADGE_ID, function(row, _, role)
             if not qimSettings.enabled then return end
@@ -242,8 +246,9 @@ local function bridge()
             local wnd = IER.getWindow(role)
             if not wnd then return end
             local mode = wnd.mode
-            local blocked = (BLOCK_SELLING and mode == IER.Modes.Barter and role == IER.Roles.Inventory)
-                or (BLOCK_COMPANION_TRANSFER and mode == IER.Modes.Companion)
+            local blocked = role == IER.Roles.Inventory
+                and ((BLOCK_SELLING and mode == IER.Modes.Barter)
+                    or (BLOCK_COMPANION_TRANSFER and mode == IER.Modes.Companion))
             if not blocked then return end
             if not QIM.isQuestItem(row.item) then return end
             ui.showMessage(string.format(l10n('Msg_QuestItemBlocked'), IER.Helpers.getItemName(row.item)))

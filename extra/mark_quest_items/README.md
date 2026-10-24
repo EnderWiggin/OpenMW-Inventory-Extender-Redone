@@ -44,9 +44,13 @@ So QuestItemMarker's settings page drives the three features that mirror its IE 
 two extras have no QuestItemMarker key: flip `BLOCK_SELLING`, `BLOCK_COMPANION_TRANSFER` and
 `SEARCH_BY_QUEST` at the top of `scripts/ier_qim_bridge/player.lua`.
 
-`BLOCK_SELLING` refuses the click action on the player's side of a barter (selling), `BLOCK_COMPANION_TRANSFER`
-refuses handing items to a companion. Container and pickpocket clicks stay allowed: looting is
-how a quest item gets acquired in the first place.
+`BLOCK_SELLING` refuses selling a quest item to a merchant, `BLOCK_COMPANION_TRANSFER` refuses
+handing one to a companion. Both work like the favorite transfer block: they key on the window
+the item leaves from, so only the player's own window refuses. The other windows still hand the
+item over — buying it back from a merchant, taking it back from a companion and looting a
+container or an NPC stay allowed, which is also how a quest item gets acquired in the first
+place. A refused click stops the action before it can start a drag, so the item never leaves
+the pockets by either path.
 
 The `Quest Items` tab follows the setting structurally: with `ieCategory` or the master `enabled`
 switch off, the tab is unregistered, not left greyed out — a greyed tab would be one you can
