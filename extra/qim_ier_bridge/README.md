@@ -11,7 +11,7 @@ currently does nothing in the inventory windows.
 | Feature | Redone hook |
 | --- | --- |
 | Quest icon on item rows, **list and grid views** | `registerRowBadge` |
-| `Quest Items` category tab (with the noisy columns hidden) | `registerCategory` |
+| `Quest Items` category tab (with the noisy columns hidden), registered or removed as the setting says | `registerCategory` / `unregisterCategory` |
 | Quest badge + quest titles in item tooltips | `I.UTKTooltips.addPreCreateTooltipHandler` |
 | Search box also matches **quest titles** (IER-only, no IE equivalent) | `registerRowDataModifier` |
 | Barter/companion clicks on quest items are refused (IER-only) | `registerRowPickupHandler` |
@@ -39,6 +39,13 @@ three features that mirror its IE integration. The two extras have no QuestItemM
 `BLOCK_SELLING` refuses the click action on the player's side of a barter (selling), `BLOCK_COMPANION_TRANSFER`
 refuses handing items to a companion. Container and pickpocket clicks stay allowed: looting is
 how a quest item gets acquired in the first place.
+
+The `Quest Items` tab follows the setting structurally: with `ieCategory` or the master `enabled`
+switch off, the tab is unregistered, not left greyed out — a greyed tab would be one you can
+select and that matches nothing. Turning either one back on re-registers it. The bridge subscribes
+to QuestItemMarker's storage sections and refreshes the windows through Redone's `update()`, so
+flipping a setting on QuestItemMarker's page takes effect without reopening the window; if the
+removed tab was the selected category, the bar falls back to the default category.
 
 ## Caveats
 

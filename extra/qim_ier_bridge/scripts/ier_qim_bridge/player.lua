@@ -30,6 +30,7 @@ local I                        = require 'openmw.interfaces'
 local BADGE_ID                 = 'QuestItemMarker'
 local BADGE_ICON               = 'icons/QuestItemMarker/quest_badge.dds'
 local TAB_ICON                 = 'icons/QuestItemMarker/quest_tab.dds'
+local QUEST_CATEGORY_KEY       = 'QuestItems'
 
 -- QIM's own storage sections: detection and display toggles live there, and QIM's public
 -- interface does not expose the ie* display toggles, so they are read directly.
@@ -109,6 +110,7 @@ local function bridge()
     local QIM = I.QuestItemMarker
     local IER = I.InventoryExtenderRedone
     if not QIM or not IER or not IER.registerRowBadge or not IER.registerCategory then return end
+    if not IER.unregisterCategory or not IER.getCategories then return end
 
     local ierCtx = IER.getContext and IER.getContext()
     if not ierCtx then return end
@@ -134,10 +136,14 @@ local function bridge()
         return BADGE_ICON, menuColor(item)
     end)
 
-    -- Quest Items tab. hiddenColumns keeps the tab readable: Redone renders one column per
-    -- entry, so a catch-all tab without them shows Damage/AR/Quality noise.
-    IER.registerCategory {
-        key = 'QuestItems',
+    -- Quest Items tab. The tab is structural, not a toggle inside the filter: when QIM's
+    -- ieCategory or master enabled switch is off, unregisterCategory removes it, so the bar
+    -- never shows a greyed-out tab that can never match. registerCategory dedupes by key and
+    -- unregisterCategory removes it; while the tab is the selected category, the filter bar
+    -- re-resolves through resolveCategoryKey, so removing it mid-session falls back to the
+    -- default category instead of leaving a stale selection.
+    local questCategory = {
+        key = QUEST_CATEGORY_KEY,
         name = l10nQim and l10nQim('Category_QuestItems') or 'Quest Items',
         icon = TAB_ICON,
         hiddenColumns = {
@@ -148,9 +154,27 @@ local function bridge()
             Condition = true,
         },
         filter = function(item)
-            return qimEnabled('enabled') and qimEnabled('ieCategory') and QIM.isQuestItem(item)
+            return QIM.isQuestItem(item)
         end,
     }
+
+    local function syncQuestCategory()
+        local wanted = qimEnabled('enabled') and qimEnabled('ieCategory')
+        local present = false
+        for _, category in ipairs(IER.getCategories()) do
+            if category.key:lower() == QUEST_CATEGORY_KEY:lower() then
+                present = true
+                break
+            end
+        end
+        if wanted and not present then
+            IER.registerCategory(questCategory)
+        elseif not wanted and present then
+            IER.unregisterCategory(QUEST_CATEGORY_KEY)
+        end
+    end
+
+    syncQuestCategory()
 
     -- Tooltip: Redone tooltips are UTKTooltips recipes, not MWUI layouts. Insert the badge
     -- lines before the Footer block, the same spot Redone's own stolen-info section uses.
@@ -190,7 +214,7 @@ local function bridge()
     -- IER-only: the search box matches quest titles as well as item names. Redone's search
     -- filter only computes SearchText when nothing has set it, so a modifier owns the field.
     if SEARCH_BY_QUEST and IER.registerRowDataModifier and IER.Helpers then
-        IER.registerRowDataModifier(BADGE_ID, function(row, _, _)
+        IER.registerRowDataModifier(BADGE_ID, function(row, _, role)
             if not qimEnabled('enabled') then return end
             if not QIM.isQuestItem(row.item) then return end
             local titles = questTitles(QIM, row.item.recordId)
@@ -218,11 +242,13 @@ local function bridge()
         end)
     end
 
-    -- QIM's settings drive its detection caches; Redone windows need the same refresh trigger
-    -- or badges and the tab go stale after a settings change.
+    -- QIM's settings drive its detection caches and the ieCategory toggle; Redone windows
+    -- need the same refresh trigger or badges and the tab go stale after a settings change.
+    -- The category is synced first, so the rebuild that follows sees the final category list.
     if IER.update then
         for _, section in ipairs(qimSections) do
             section:subscribe(async:callback(function()
+                syncQuestCategory()
                 IER.update()
             end))
         end
