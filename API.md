@@ -77,7 +77,7 @@ A mode is an `InventoryExtenderRedone.Mode` table:
 | `applies(role, arg, ctx, uiMode)` | mode selection: which windows this mode governs |
 | `priority` | higher wins when several modes apply (default 0). Equal priorities are unordered, so a custom mode that overlaps a built-in must out-prioritize it |
 | `drag` | `{ allowed, autoEquip }` — whether dragging is allowed in this mode |
-| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)` — pre-close, fires only when the engine's UI mode changes (built-in modes; `handler` is nil, and it also fires on mode-to-mode transitions); `onClosed(handler)` — post-close, once per closing window, on every close path including `IER.hide` and custom modes, but not for a pinned window. A list slot: entries chain instead of replacing each other, the chain runs the most recently merged entry first and the built-in entry (id = the mode key) last, and a callback returning `false` cuts the rest |
+| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)` — pre-close, fires only when the engine's UI mode changes (built-in modes; `handler` is nil, and it also fires on mode-to-mode transitions); `onClosed(handler)` — post-close, once per closing window, on every close path including `IER.hide` and custom modes, but not for a pinned window. A chained list slot: entries chain instead of replacing each other, the chain runs the most recently merged entry first and the built-in entry (id = the mode key) last, and a callback returning `false` cuts the rest. A plain hook table is sugar for one added entry |
 | `event` | `{ flags }` — serializable summary other mods see in event payloads |
 | `roles` | `table<role, RoleSpec>` — one slot-set per window role |
 
@@ -176,19 +176,15 @@ IER.patchMode(IER.Modes.Interface, {
 ```
 
 A patch can also replace a built-in part with its own behavior and add lifecycle callbacks. `lifecycle`
-is a list slot, so the patch adds an entry that chains onto the built-in hooks rather than replacing
-them: the chain runs the most recently merged entry first and the built-in entry (its id is the mode
-key) last, and returning `false` from a hook cuts the rest — that is how a mod vetoes a built-in hook
-without re-declaring it.
+is a chained list slot: a patch writing a plain hook table becomes one entry added to the chain, so
+the built-in hooks stay — the chain runs the most recently merged entry first and the built-in entry
+(its id is the mode key) last, and returning `false` from a hook cuts the rest, which is how a mod
+vetoes a built-in hook without re-declaring it.
 
 ```lua
 IER.patchMode(IER.Modes.Barter, {
     id = 'ier-trade-redone',
-    lifecycle = { add = { {
-        id = 'ier_trade_invest',
-        onOpened = function(handler, trader) ... end,
-        onClosed = function(handler) ... end,
-    } } },
+    lifecycle = { onOpened = function(handler, trader) ... end, onClosed = function(handler) ... end },
     roles = {
         Trade = {
             filters = { replace = { { id = 'barterOffered', fn = function(row, handler, ctx)
@@ -199,6 +195,10 @@ IER.patchMode(IER.Modes.Barter, {
     },
 })
 ```
+
+Name the entry explicitly (`lifecycle = { add = { { id = 'myMod_close', onClosed = ... } } }`) only when
+you need to position against, replace or remove a built-in entry by id — `remove = { 'Barter' }` drops
+that mode's built-in hooks.
 
 Remove a patch by the id passed to `patchMode`:
 

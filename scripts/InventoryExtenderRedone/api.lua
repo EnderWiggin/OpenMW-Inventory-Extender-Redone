@@ -34,10 +34,34 @@ API.resolveMode = modeApi.resolveMode
 --- Mode registry: the public surface over ctx.modes / ctx.modePatches. Built-in specs live
 --- in toolkit/mode.lua Mode.Builtins and are never stored in ctx; a custom mode registers a
 --- spec, a patch merges into a built-in or custom spec at resolve time.
+
+--- Lifecycle sugar: a spec or a patch may write lifecycle as one plain hook table instead of an
+--- entry list or { add/replace/remove } ops, so mods written against the old overwrite shape keep
+--- compiling and their hooks chain with the built-in ones instead of replacing them. The table
+--- becomes a single entry: a spec's entry is keyed by the mode key, a patch's by the patch id
+--- (generated when the patch has none, so it still adds rather than sharing the built-in entry's
+--- name). Entry lists and ops tables pass through untouched.
+---@param value any? lifecycle slot as authored: entry list, ops table, or one plain hook table
+---@param id string id for the entry the sugar produces
+---@param asOp boolean? a patch's entry must come in as an add op, since a plain array replaces the slot
+---@return any?
+local function lifecycleSugar(value, id, asOp)
+    if not value then return nil end
+    if value[1] ~= nil or value.add or value.replace or value.remove then return value end
+    local entry = {
+        id = id,
+        onOpened = value.onOpened,
+        onClosing = value.onClosing,
+        onClosed = value.onClosed,
+    }
+    return asOp and { add = { entry } } or { entry }
+end
+
 function API.registerMode(mode)
     if not mode or not mode.key then return end
     -- a key that collides with a built-in must go through patchMode, not replace the spec
     if D.Modes[mode.key] then return end
+    mode.lifecycle = lifecycleSugar(mode.lifecycle, mode.key)
     windowManager.ctx.modes[mode.key] = mode
 end
 
@@ -60,9 +84,10 @@ function API.getModes()
 end
 
 --- Patch a built-in or custom mode. The patch has the same shape as Mode; list slots
---- (sources/filters/infoBar) merge by id, every other slot overwrites. Patches apply at
---- resolve time in reverse registration order, so a mid-session patch affects the next open,
---- not an already-open window's snapshot.
+--- (sources/filters/infoBar/lifecycle) merge by id, every other slot overwrites. A patch may
+--- write lifecycle as a plain hook table: it becomes an add entry chained onto the built-in
+--- hooks, so it no longer clobbers them. Patches apply at resolve time in reverse registration
+--- order, so a mid-session patch affects the next open, not an already-open window's snapshot.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param patch InventoryExtenderRedone.ModePatch
 function API.patchMode(key, patch)
@@ -72,6 +97,9 @@ function API.patchMode(key, patch)
         patches = {}
         windowManager.ctx.modePatches[key] = patches
     end
+    -- an id-less patch still needs a distinct entry id, or it would collide with the built-in
+    -- entry named after the mode key and replace it instead of chaining onto it
+    patch.lifecycle = lifecycleSugar(patch.lifecycle, patch.id or (key .. '#' .. (#patches + 1)), true)
     patches[#patches + 1] = patch
 end
 

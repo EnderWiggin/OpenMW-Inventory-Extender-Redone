@@ -161,7 +161,7 @@
 ---@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? mode selection; the highest-priority applying mode wins
 ---@field priority number? higher wins when several modes apply; default 0
 ---@field drag InventoryExtenderRedone.Mode.Drag? mode-wide: drag is a ctx singleton, not per window
----@field lifecycle InventoryExtenderRedone.Mode.LifecycleEntry[]|InventoryExtenderRedone.Mode.Lifecycle? authoring is the entry list; resolveMode hands the handler the resolved chain form
+---@field lifecycle InventoryExtenderRedone.Mode.LifecycleEntry[]|InventoryExtenderRedone.Mode.Lifecycle? authoring is the entry list or one plain hook table (sugar: becomes a single entry keyed by the mode key); resolveMode hands the handler the resolved chain form
 ---@field event InventoryExtenderRedone.Mode.EventData? flat summary global.lua sees in event payloads
 ---@field roles table<string,InventoryExtenderRedone.Mode.RoleSpec> key is a window role
 
@@ -203,7 +203,7 @@
 ---@field applies? fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? same call shape as Mode.applies; selection consults registered specs, so a patch normally omits it
 ---@field priority number?
 ---@field drag InventoryExtenderRedone.Mode.Drag?
----@field lifecycle InventoryExtenderRedone.Mode.PatchList?
+---@field lifecycle InventoryExtenderRedone.Mode.PatchList|InventoryExtenderRedone.Mode.Lifecycle? ops table, or one plain hook table: sugar normalized at patchMode into an add entry chained onto the built-in hooks
 ---@field event InventoryExtenderRedone.Mode.EventData?
 ---@field roles table<string,InventoryExtenderRedone.Mode.RoleSpecPatch>? key is a window role
 ---@field disable string[]? slot names to drop from the merged spec
