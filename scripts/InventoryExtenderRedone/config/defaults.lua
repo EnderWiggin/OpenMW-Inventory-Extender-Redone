@@ -55,6 +55,7 @@ local M = {
     Binds = {
         Activate      = 'c_Activate',
         Favorite      = 'c_Favorite',
+        TransferAll      = 'c_TransferAll',
         Category_Prev = 'c_CatPrev',
         Category_Next = 'c_CatNext',
         Select_Up     = 'c_SelUp',

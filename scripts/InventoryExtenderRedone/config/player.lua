@@ -7,6 +7,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 ---@field b_SwapUsePickup boolean
 ---@field c_Activate UIToolkit.SettingRenderer.CustomBind[]?
 ---@field c_Favorite UIToolkit.SettingRenderer.CustomBind[]?
+---@field c_TransferAll UIToolkit.SettingRenderer.CustomBind[]?
 ---@field c_CatPrev UIToolkit.SettingRenderer.CustomBind[]?
 ---@field c_CatNext UIToolkit.SettingRenderer.CustomBind[]?
 ---@field c_SelUp UIToolkit.SettingRenderer.CustomBind[]?

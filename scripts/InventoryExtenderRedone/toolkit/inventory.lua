@@ -1188,6 +1188,8 @@ function Inventory:onInput(bind)
         self.table:shiftHoveredItem(v2(1, 0))
     elseif bind == BINDING.Favorite then
         self:toggleFavorite()
+    elseif bind == BINDING.TransferAll then
+        self:transferAll()
     elseif bind == BINDING.Activate then
         local ctx = self.ctx
         local row = self.table:getHovered()
@@ -1317,6 +1319,27 @@ function Inventory:isFavoriteTransferBlocked(row)
         and not row.isBartered
         and self:isFavorite(row.item)
         and self.mode ~= D.Modes.Interface
+end
+
+function Inventory:transferAll()
+    if self.mode ~= D.Modes.Container then return end
+    --TODO: implement transfer out of inventory
+    if self.target == omwself then return end
+
+    local items = {}
+    local visibleItems = self.table.filteredItems
+    for i = 1, #visibleItems do
+        local row = visibleItems[i]
+        if row and row.item and not row:isDisabled() then
+            items[#items + 1] = row.item
+        end
+    end
+
+    if not items or #items > 0 then
+        self.ctx.dragAndDrop:moveAll(self.target, omwself, items)
+    end
+
+    I.UI.removeMode(D.Modes.Container)
 end
 
 ---@param row InventoryExtenderRedone.RowData

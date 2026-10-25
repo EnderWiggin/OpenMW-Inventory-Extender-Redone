@@ -60,6 +60,16 @@ I.Settings.registerGroup {
             },
         },
         {
+            key = 'c_TransferAll',
+            renderer = 'UIToolkit/BindCustom',
+            name = 'KeybindTransferAll',
+            description = 'KeybindTransferAllDesc',
+            default = {
+                { device = Device.Controller, code = BUTTON.RightStick },
+                { device = Device.Keyboard,   code = KEY.Q },
+            },
+        },
+        {
             key = 'c_CatPrev',
             renderer = 'UIToolkit/BindCustom',
             name = 'KeybindCatPrev',

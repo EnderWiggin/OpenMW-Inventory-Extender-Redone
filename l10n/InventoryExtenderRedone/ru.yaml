@@ -20,6 +20,9 @@ KeybindSelUp: Выбор Вверх
 KeybindSelDown: Выбор Вниз
 KeybindSelLeft: Выбор Лево
 KeybindSelRight: Выбор Право
+KeybindTransferAll: "Взять все"
+KeybindTransferAllDesc: |-
+  Когда окно контейнера (или трупа) в фокусе, перенесет все видимые предметы и окно будет закрыто.
 
 SwapUsePickup: "Поменять местами исп./взять"
 SwapUsePickupDesc: |-
@@ -243,6 +246,7 @@ Hint_Category: "Категория"
 Hint_Select: "Выбрать"
 Hint_Favorite: "Избранное"
 Hint_Count: "Количество"
+Hint_TransferAll_Container: "Взять все"
 
 Popup_BTN_Defaults: "По умолчанию"
 

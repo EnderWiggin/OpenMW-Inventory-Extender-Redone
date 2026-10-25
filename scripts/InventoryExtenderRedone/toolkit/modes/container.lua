@@ -7,6 +7,7 @@ local core = require('openmw.core')
 local I = require('openmw.interfaces')
 local types = require('openmw.types')
 local omwself = require('openmw.self')
+local input = require('openmw.input')
 
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
@@ -14,9 +15,41 @@ local Pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local Roles = D.Roles
 local Modes = D.Modes
 
+local constants = require('scripts.InventoryExtenderRedone.util.constants')
+local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local cfgUtil = require 'scripts.UIToolkit.config.utils'
+local l10n = core.l10n(D.L10N)
+
+local BUTTON = input.CONTROLLER_BUTTON
+
 local Container = types.Container
 local NPC = types.NPC
 
+
+-- controller hints replace the base list: Activate offers instead of picking up, and B
+-- closes the deal
+---@param handler IER.Inventory
+---@param ctx InventoryExtenderRedone.Context
+---@param base UIToolkit.Controller.HintList
+---@return UIToolkit.Controller.HintList
+local function containerHints(handler, ctx, base)
+    local binds = configPlayer.keybinds
+    local find = cfgUtil.getFirstControllerInput
+    local select = handler.table.showGrid
+        and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
+        or { find(binds.c_SelUp), find(binds.c_SelDown) }
+    local swap = configPlayer.keybinds.b_SwapUsePickup
+    return {
+        { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
+        { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
+        { text = l10n 'Hint_TransferAll_Container',          input = find(binds.c_TransferAll) },
+        'separator',
+        { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+        { text = l10n 'Hint_Select',   input = select, },
+        'separator',
+        { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+    }
+end
 
 -- Looting a container: the player's window plus the container's own window.
 ---@type InventoryExtenderRedone.Mode
@@ -116,6 +149,7 @@ return {
                     return false
                 end,
             },
+            hints = containerHints,
         },
     },
 }
