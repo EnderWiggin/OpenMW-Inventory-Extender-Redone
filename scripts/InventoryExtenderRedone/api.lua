@@ -171,6 +171,40 @@ function API.getBuyRow(item)
     return windowManager:getBuyRow(item)
 end
 
+--- Add count units of row to the sell side of the offer: records the entry
+--- { item, stacks = row.virtualStacks, count }, clamped to row.getCount(), then reprices
+--- and refreshes the windows. Pass a row from getSellRow (isBartered false).
+---@param row InventoryExtenderRedone.RowData
+---@param count number
+function API.queueSell(row, count)
+    barterUtils.queueSell(windowManager.ctx, row, count)
+end
+
+---@param row InventoryExtenderRedone.RowData
+---@param count number
+function API.queueBuy(row, count)
+    barterUtils.queueBuy(windowManager.ctx, row, count)
+end
+
+--- Take count units of an offered row back out of the sell side; count omitted clears the
+--- entry. Pass the offered (isBartered) row.
+---@param row InventoryExtenderRedone.RowData
+---@param count number? omitted clears the entry
+function API.unqueueSell(row, count)
+    barterUtils.unqueueSell(windowManager.ctx, row, count)
+end
+
+---@param row InventoryExtenderRedone.RowData
+---@param count number? omitted clears the entry
+function API.unqueueBuy(row, count)
+    barterUtils.unqueueBuy(windowManager.ctx, row, count)
+end
+
+--- Empty the offer queues and zero the offer scalars, leaving any open window alone.
+function API.clearBarterOffer()
+    barterUtils.clearBarterOffer(windowManager.ctx)
+end
+
 --- Predicted gold gain from selling count of item at the last-known Trade merchant
 --- (ctx.windowArgs.Trade, decision 1: one merchant at a time, no role parameter).
 ---@param item openmw.Object

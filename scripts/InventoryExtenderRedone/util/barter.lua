@@ -9,6 +9,7 @@ local I = require('openmw.interfaces')
 
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
+local L = require('scripts.InventoryExtenderRedone.util.logger').get 'Barter'
 
 local Weapon = types.Weapon
 local Armor = types.Armor
@@ -160,6 +161,120 @@ local function updateOffer(ctx)
     state.currentBalance = (state.currentBalance or 0) + diff
 end
 
+--- Offer queue entry: { item, stacks = row.virtualStacks, count } keyed by row.item.id.
+--- stacks is nil on sell rows by construction; finalizeBarter walks entry.stacks restock-aware,
+--- so a virtual row must carry its stacks or items silently mis-move.
+local function offerIncrement(offer, row, count)
+    local entry = offer[row.item.id]
+    if not entry then
+        entry = { item = row.item, stacks = row.virtualStacks, count = 0 }
+        offer[row.item.id] = entry
+    end
+    entry.count = math.min(entry.count + count, row.getCount())
+end
+
+--- count omitted clears the entry.
+local function offerDecrement(offer, row, count)
+    local entry = offer[row.item.id]
+    if not entry then
+        return
+    end
+    entry.count = entry.count - (count or entry.count)
+    if entry.count <= 0 then
+        offer[row.item.id] = nil
+    end
+end
+
+--- Shared tail: the row-action sound plus repricing and the window refresh trigger.
+local function offerTail(row, ctx)
+    local sound = helpers.getItemSound(row.item, 'down')
+    if sound then
+        ambient.playSound(sound)
+    end
+    updateOffer(ctx)
+    self:sendEvent('IER_Update')
+end
+
+--- Row-action effect factory for the two Barter role parts (mode.lua Mode.Actions):
+--- decrementTable is where a bartered row's units come back from, incrementTable where a
+--- fresh offer is recorded; the parts differ only in which side of the offer they sit on.
+---@param decrementTable string 'selling' or 'buying'
+---@param incrementTable string the other side
+---@return fun(row:InventoryExtenderRedone.RowData, handler:any?, ctx:InventoryExtenderRedone.Context, count:number)
+local function barterOfferEffect(decrementTable, incrementTable)
+    return function(row, _, ctx, count)
+        if row.isBartered then
+            offerDecrement(ctx.barterState[decrementTable], row, count)
+        else
+            offerIncrement(ctx.barterState[incrementTable], row, count)
+        end
+        offerTail(row, ctx)
+    end
+end
+
+--- Queue ops for the public barter surface: the increment/decrement branch plus the shared
+--- tail, with the side fixed by the operation instead of read from row.isBartered. Outside
+--- a trade (no known merchant) they do nothing and only warn - the same nil-merchant
+--- condition updateOffer early-returns on, so the offer scalars never go stale silently.
+---@param ctx InventoryExtenderRedone.Context
+---@param op string the operation name, for the warning
+---@return boolean
+local function tradeGuard(ctx, op)
+    if ctx.windowArgs.Trade then
+        return true
+    end
+    L.warn('no merchant for barter queue op:', op)
+    return false
+end
+
+---@param ctx InventoryExtenderRedone.Context
+---@param row InventoryExtenderRedone.RowData
+---@param count number
+local function queueSell(ctx, row, count)
+    if not tradeGuard(ctx, 'queueSell') then return end
+    offerIncrement(ctx.barterState.selling, row, count)
+    offerTail(row, ctx)
+end
+
+---@param ctx InventoryExtenderRedone.Context
+---@param row InventoryExtenderRedone.RowData
+---@param count number
+local function queueBuy(ctx, row, count)
+    if not tradeGuard(ctx, 'queueBuy') then return end
+    offerIncrement(ctx.barterState.buying, row, count)
+    offerTail(row, ctx)
+end
+
+---@param ctx InventoryExtenderRedone.Context
+---@param row InventoryExtenderRedone.RowData
+---@param count number? omitted clears the entry
+local function unqueueSell(ctx, row, count)
+    if not tradeGuard(ctx, 'unqueueSell') then return end
+    offerDecrement(ctx.barterState.selling, row, count)
+    offerTail(row, ctx)
+end
+
+---@param ctx InventoryExtenderRedone.Context
+---@param row InventoryExtenderRedone.RowData
+---@param count number? omitted clears the entry
+local function unqueueBuy(ctx, row, count)
+    if not tradeGuard(ctx, 'unqueueBuy') then return end
+    offerDecrement(ctx.barterState.buying, row, count)
+    offerTail(row, ctx)
+end
+
+--- Reset the offer to empty. Mutates in place (unlike windowManager.lua:260, which replaces
+--- the table on mode change while every window closes): the Trade window stays open across
+--- this call, so its init-time closures holding the state table must keep seeing it.
+---@param ctx InventoryExtenderRedone.Context
+local function clearBarterOffer(ctx)
+    local state = ctx.barterState
+    state.selling = {}
+    state.buying = {}
+    state.currentMerchantOffer = 0
+    state.currentBalance = 0
+end
+
 --- The whole Offer sequence, shared by the Trade window's Offer button and the future
 --- offerBarter API (one implementation, two entry points).
 ---@param npc openmw.Object the merchant the Trade window is showing
@@ -282,4 +397,10 @@ return {
     completeOffer = completeOffer,
     getSellOffer = getSellOffer,
     getBuyOffer = getBuyOffer,
+    barterOfferEffect = barterOfferEffect,
+    queueSell = queueSell,
+    queueBuy = queueBuy,
+    unqueueSell = unqueueSell,
+    unqueueBuy = unqueueBuy,
+    clearBarterOffer = clearBarterOffer,
 }

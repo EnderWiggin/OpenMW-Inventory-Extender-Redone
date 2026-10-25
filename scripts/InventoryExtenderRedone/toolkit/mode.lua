@@ -1,7 +1,6 @@
 ---@omw-context player
 
 local I       = require('openmw.interfaces')
-local ambient = require('openmw.ambient')
 local core    = require('openmw.core')
 local input   = require('openmw.input')
 local omwself = require('openmw.self')
@@ -309,38 +308,6 @@ local function rollPickpocketTake(row, handler, ctx)
     return true
 end
 
--- Barter offer bookkeeping: decrementTable is where a bartered row's units come back from,
--- incrementTable is where a fresh offer is recorded; the two role parts differ only in which
--- side of the offer they sit on
-local function barterOfferEffect(decrementTable, incrementTable)
-    return function(row, _, ctx, count)
-        if row.isBartered then
-            local offer = ctx.barterState[decrementTable]
-            local entry = offer[row.item.id]
-            if entry then
-                entry.count = entry.count - count
-                if entry.count <= 0 then
-                    offer[row.item.id] = nil
-                end
-            end
-        else
-            local offer = ctx.barterState[incrementTable]
-            local entry = offer[row.item.id]
-            if not entry then
-                entry = { item = row.item, stacks = row.virtualStacks, count = 0 }
-                offer[row.item.id] = entry
-            end
-            entry.count = math.min(entry.count + count, row.getCount())
-        end
-        local sound = helpers.getItemSound(row.item, 'down')
-        if sound then
-            ambient.playSound(sound)
-        end
-        barterUtils.updateOffer(ctx)
-        omwself:sendEvent('IER_Update')
-    end
-end
-
 -- Interface world drop: favorite items refuse to leave the pockets
 local function worldDrop(row, handler, ctx, count)
     if not handler:isFavorite(row.item) then
@@ -399,12 +366,13 @@ Mode.Actions = {
         perform = performDrag,
         transfer = transferToPlayer(D.Modes.Companion),
     },
-    -- Barter never drags (drag.allowed is false), so only the transfer effect exists
+    -- Barter never drags (drag.allowed is false), so only the transfer effect exists;
+    -- the effect lives in util/barter.lua shared with the queue API (decrementTable first)
     pickupBarterInventory = {
-        transfer = barterOfferEffect('buying', 'selling'),
+        transfer = barterUtils.barterOfferEffect('buying', 'selling'),
     },
     pickupBarterTrade = {
-        transfer = barterOfferEffect('selling', 'buying'),
+        transfer = barterUtils.barterOfferEffect('selling', 'buying'),
     },
     -- pickpocket takes roll the sneak check before the drag/transfer lands
     pickpocketTake = {

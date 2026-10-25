@@ -44,6 +44,11 @@
 ---@field getBuyOffer fun(item:openmw.Object, count:number):number? predicted gold spent buying count of item at the last-known Trade merchant; same math and nil-means-no-merchant contract as getSellOffer
 ---@field getSellRow fun(item:openmw.Object):InventoryExtenderRedone.RowData? the visible, enabled, not-yet-offered (isBartered false) row for item in the open Inventory window while its handler.mode snapshot is Barter; nil means "not tradeable right now": no window in Barter mode, filtered out of handler.table.filteredItems, or row.isDisabled(). Match is row.item.id == item.id or row.itemRecord.id == item.recordId (record fallback covers merged virtual merchant stacks)
 ---@field getBuyRow fun(item:openmw.Object):InventoryExtenderRedone.RowData? same query in the open Trade window while its handler.mode snapshot is Barter (the merchant side); the two sides are the two Barter role windows, requested directly by role
+---@field queueSell fun(row:InventoryExtenderRedone.RowData, count:number) add count units to the sell side: records the InventoryExtenderRedone.BarterEntry { item, stacks = row.virtualStacks, count } keyed by row.item.id, clamped to row.getCount(), then reprices and fires IER_Update; pass a getSellRow row (isBartered false). Outside a trade (no known merchant in ctx.windowArgs.Trade) it does nothing and logs a warning
+---@field queueBuy fun(row:InventoryExtenderRedone.RowData, count:number) same on the buy side (getBuyRow row); same no-merchant no-op + warning
+---@field unqueueSell fun(row:InventoryExtenderRedone.RowData, count:number?) decrement the sell side by count, count omitted clears the entry; pass the offered (isBartered) row; same no-merchant no-op + warning
+---@field unqueueBuy fun(row:InventoryExtenderRedone.RowData, count:number?) same on the buy side; same no-merchant no-op + warning
+---@field clearBarterOffer fun() empty selling/buying and zero currentMerchantOffer/currentBalance in place (an open window's init-time closures keep holding the state table)
 
 
 ---@class InventoryExtenderRedone.Context
