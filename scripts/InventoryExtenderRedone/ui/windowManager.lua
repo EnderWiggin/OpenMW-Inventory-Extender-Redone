@@ -210,7 +210,9 @@ end
 ---@param role InventoryExtenderRedone.Role
 ---@param arg any? the target NPC/container/merchant
 function WindowManager:show(role, arg)
-    self.ctx.windowArgs[role] = arg or self.ctx.windowArgs[role]
+    -- when returning from other mode to Container mode arg is nil - try retrieving previous one
+    arg = arg or self.ctx.windowArgs[role]
+    self.ctx.windowArgs[role] = arg
 
     -- which behavior set this window gets; the pickpocket session is no longer created here, it
     -- comes from the Pickpocket spec's lifecycle.onOpened, and the Container spec clears it when
@@ -274,7 +276,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     if not configPlayer.window.b_EnableMod then
         return
     end
-    L.debug('onUiModeChanged', oldMode, newMode)
+    L.debug('onUiModeChanged', oldMode, newMode, arg)
 
     -- built-in lifecycle.onClosing fires from the mode change (decision 11): the transition
     -- decides which spec closes, and a pickpocket session closing under the engine's Container
