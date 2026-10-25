@@ -20,8 +20,8 @@ KeybindSelUp: Select Up
 KeybindSelDown: Select Down
 KeybindSelLeft: Select Left
 KeybindSelRight: Select Right
-KeybindTransferAll: Transfer All
-KeybindTransferAllDesc: When container (or corpse) window is focused will transfer all currently visible items and close window.
+KeybindTransferAll: Loot All
+KeybindTransferAllDesc: When viewing container (or corpse) will loot all currently visible items and close window.
 
 SwapUsePickup: Swap use/pick up
 SwapUsePickupDesc: |-
@@ -245,7 +245,7 @@ Hint_Category: Category
 Hint_Select: Select
 Hint_Favorite: Favorite
 Hint_Count: Count
-Hint_TransferAll_Container: Take all
+Hint_TransferAll_Container: Loot all
 
 Popup_BTN_Defaults: Defaults
 

@@ -1333,21 +1333,26 @@ end
 
 function Inventory:transferAll()
     if self.mode ~= D.Modes.Container then return end
-    --TODO: implement transfer out of inventory
-    if self.target == omwself then return end
+    if not self.arg then return end
 
-    local items = {}
-    local visibleItems = self.table.filteredItems
-    for i = 1, #visibleItems do
-        local row = visibleItems[i]
-        if row and row.item and not row:isDisabled() then
-            items[#items + 1] = row.item
+    local ctx = self.ctx
+    I.InventoryExtenderRedone.forEachOpenWindow(function(handler)
+        if handler == self or handler.target == omwself then return end
+
+        local items = {}
+        local visibleItems = handler.table.filteredItems
+        for i = 1, #visibleItems do
+            local row = visibleItems[i]
+            if row and row.item and not row:isDisabled() then
+                items[#items + 1] = row.item
+            end
         end
-    end
 
-    if not items or #items > 0 then
-        self.ctx.dragAndDrop:moveAll(self.target, omwself, items)
-    end
+        if not items or #items > 0 then
+            ctx.dragAndDrop:moveAll(handler.target, omwself, items)
+        end
+    end)
+
 
     I.UI.removeMode(D.Modes.Container)
 end
