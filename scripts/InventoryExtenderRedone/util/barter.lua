@@ -3,7 +3,11 @@ local types = require('openmw.types')
 local util = require('openmw.util')
 local self = require('openmw.self')
 local core = require('openmw.core')
+local ui = require('openmw.ui')
+local ambient = require('openmw.ambient')
+local I = require('openmw.interfaces')
 
+local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 
 local Weapon = types.Weapon
@@ -13,6 +17,10 @@ local Probe = types.Probe
 local Repair = types.Repair
 local Creature = types.Creature
 local NPC = types.NPC
+-- this file is player-context glue: omwself is always a Player, so the type table and the
+-- player inventory object are cached once at load instead of re-derived per call
+local Player = types.Player
+local playerInventory = Player.inventory(self)
 
 local function getEffectiveValue(item, count)
     local basePrice = item.type.record(item).value
@@ -137,7 +145,97 @@ local function updateOffer(ctx)
     state.currentBalance = (state.currentBalance or 0) + diff
 end
 
+--- The whole Offer sequence, shared by the Trade window's Offer button and the future
+--- offerBarter API (one implementation, two entry points).
+---@param npc openmw.Object the merchant the Trade window is showing
+---@param ctx InventoryExtenderRedone.Context
+---@param opts table? { closeWindow = boolean? } default true; governs only the Barter UI
+---  mode removal - when false, the offer queues are cleared and the offer scalars zeroed
+---  instead, because finalizeBarter does not reset them and the window would otherwise
+---  still show the just-moved items as offered
+---@return boolean accepted
+---@return number? skillGain
+local function completeOffer(npc, ctx, opts)
+    local state = ctx.barterState
+
+    if not next(state.selling) and not next(state.buying) then
+        ui.showMessage(constants.Strings.BARTER_NO_ITEMS)
+        return false
+    end
+
+    local playerGold = playerInventory:countOf('gold_001')
+    if state.currentBalance < 0 and playerGold < math.abs(state.currentBalance) then
+        ui.showMessage(constants.Strings.BARTER_PC_TOO_POOR)
+        return false
+    end
+
+    if state.currentBalance > 0 then
+        local merchantGold = npc.type.getBarterGold(npc)
+        if merchantGold < state.currentBalance then
+            ui.showMessage(constants.Strings.BARTER_NPC_TOO_POOR)
+            return false
+        end
+    end
+
+    for _, entry in pairs(state.selling) do
+        if ctx.stolenItems[entry.item.recordId] and ctx.stolenItems[entry.item.recordId][npc.recordId] then
+            I.UI.setMode(nil)
+            ui.showMessage(string.format(constants.Strings.THATS_MINE,
+                entry.item.type.record(entry.item).name))
+            core.sendGlobalEvent('IER_ConfiscateToOwner', {
+                item = entry.item,
+                count = entry.count,
+                player = self,
+                victim = npc,
+                stolenMap = ctx.stolenItems,
+            })
+            return false
+        end
+    end
+
+    local offerAccepted, skillGain = haggle(npc, state.currentBalance, state.currentMerchantOffer)
+    if NPC.objectIsInstance(npc) then
+        core.sendGlobalEvent('IER_ModDisposition', {
+            target = npc,
+            player = self,
+            amount = offerAccepted
+                and core.getGMST('iBarterSuccessDisposition')
+                or core.getGMST('iBarterFailDisposition'),
+        })
+    end
+
+    if not offerAccepted then
+        ui.showMessage(constants.Strings.BARTER_REFUSED)
+        return false
+    end
+
+    core.sendGlobalEvent('IER_FinalizeBarter', {
+        player = self,
+        merchant = npc,
+        barterState = state,
+        skillGain = skillGain,
+    })
+
+    ambient.playSound('item gold up')
+    state.success = true
+
+    if opts and opts.closeWindow == false then
+        -- finalizeBarter does not clear the queues; on mode change windowManager does.
+        -- Without the mode removal, reset them in place so the Trade window stops
+        -- showing the moved items as offered.
+        state.selling = {}
+        state.buying = {}
+        state.currentMerchantOffer = 0
+        state.currentBalance = 0
+    else
+        I.UI.removeMode('Barter')
+    end
+
+    return true, skillGain
+end
+
 return {
     haggle = haggle,
     updateOffer = updateOffer,
+    completeOffer = completeOffer,
 }

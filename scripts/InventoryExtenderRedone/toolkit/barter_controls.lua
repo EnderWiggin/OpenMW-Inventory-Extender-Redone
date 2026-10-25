@@ -1,10 +1,8 @@
 ---@omw-context player
 
 
-local ambient     = require('openmw.ambient')
 local core        = require('openmw.core')
 local input       = require('openmw.input')
-local omwself     = require 'openmw.self'
 local types       = require('openmw.types')
 local ui          = require('openmw.ui')
 local I           = require('openmw.interfaces')
@@ -20,12 +18,6 @@ local constants   = require('scripts.InventoryExtenderRedone.util.constants')
 local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 
 local Actor       = types.Actor
-local NPC         = types.NPC
--- this file is player-context glue: omwself is always a Player, so the type table and the
--- player inventory object are cached once at load instead of re-derived per call
-local Player      = types.Player
-
-local playerInventory = Player.inventory(omwself)
 
 
 local LBL_SPEND = l10n('UI_Barter_Spend')
@@ -122,70 +114,7 @@ function BarterControls:init(wnd)
         text = constants.Strings.OFFER,
         style = 'thin',
         onClick = function()
-            local state = ctx.barterState
-            local target = wnd.target
-
-            if not next(state.selling) and not next(state.buying) then
-                ui.showMessage(constants.Strings.BARTER_NO_ITEMS)
-                return
-            end
-
-            local playerGold = playerInventory:countOf('gold_001')
-            if state.currentBalance < 0 and playerGold < math.abs(state.currentBalance) then
-                ui.showMessage(constants.Strings.BARTER_PC_TOO_POOR)
-                return
-            end
-
-            if state.currentBalance > 0 then
-                local merchantGold = target.type.getBarterGold(target)
-                if merchantGold < state.currentBalance then
-                    ui.showMessage(constants.Strings.BARTER_NPC_TOO_POOR)
-                    return
-                end
-            end
-
-            for _, entry in pairs(state.selling) do
-                if ctx.stolenItems[entry.item.recordId] and ctx.stolenItems[entry.item.recordId][target.recordId] then
-                    I.UI.setMode(nil)
-                    ui.showMessage(string.format(constants.Strings.THATS_MINE,
-                        entry.item.type.record(entry.item).name))
-                    core.sendGlobalEvent('IER_ConfiscateToOwner', {
-                        item = entry.item,
-                        count = entry.count,
-                        player = omwself,
-                        victim = target,
-                        stolenMap = ctx.stolenItems,
-                    })
-                    return
-                end
-            end
-
-            local offerAccepted, skillGain = barterUtils.haggle(target, state.currentBalance, state.currentMerchantOffer)
-            if NPC.objectIsInstance(target) then
-                core.sendGlobalEvent('IER_ModDisposition', {
-                    target = target,
-                    player = omwself,
-                    amount = offerAccepted
-                        and core.getGMST('iBarterSuccessDisposition')
-                        or core.getGMST('iBarterFailDisposition'),
-                })
-            end
-
-            if not offerAccepted then
-                ui.showMessage(constants.Strings.BARTER_REFUSED)
-                return
-            end
-
-            core.sendGlobalEvent('IER_FinalizeBarter', {
-                player = omwself,
-                merchant = target,
-                barterState = state,
-                skillGain = skillGain,
-            })
-
-            ambient.playSound('item gold up')
-            state.success = true
-            I.UI.removeMode('Barter')
+            barterUtils.completeOffer(wnd.target, ctx)
         end,
     }
 
