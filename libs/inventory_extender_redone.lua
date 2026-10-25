@@ -49,6 +49,8 @@
 ---@field unqueueSell fun(row:InventoryExtenderRedone.RowData, count:number?) decrement the sell side by count, count omitted clears the entry; pass the offered (isBartered) row; same no-merchant no-op + warning
 ---@field unqueueBuy fun(row:InventoryExtenderRedone.RowData, count:number?) same on the buy side; same no-merchant no-op + warning
 ---@field clearBarterOffer fun() empty selling/buying and zero currentMerchantOffer/currentBalance in place (an open window's init-time closures keep holding the state table)
+---@field offerBarter fun(opts:table?):boolean, skillGain:number? commit the current offer queue through the same sequence the Trade window's Offer button runs (empty check, gold caps, stolen interruption, haggle through the override chain, disposition, finalize, gold sound); merchant is ctx.windowArgs.Trade, refuses with a warning when no merchant is known; opts.closeWindow defaults true (Barter UI mode removal), false clears the queues in place instead; state.success is set in both cases
+---@field registerHaggleOverride fun(id:string, handler:InventoryExtenderRedone.HaggleOverride) register a haggle modifier consulted before the acceptance dice roll, by both the Offer button and offerBarter; handlers run in reverse registration order, each non-nil return replaces the running chance and/or skillGain for its own field (stacking, last registered wins per field); returned chance clamped to [0,100] - 100 guarantees acceptance, 0 refusal; deliberately powerful, a mod can force-accept any offer
 
 
 ---@class InventoryExtenderRedone.Context
@@ -325,10 +327,17 @@
 
 ---@class InventoryExtenderRedone.Overrides
 ---@field equipped InventoryExtenderRedone.EquippedOverrideEntry[]
+---@field haggle InventoryExtenderRedone.HaggleOverrideEntry[]
 
 ---@class InventoryExtenderRedone.EquippedOverrideEntry
 ---@field id string
 ---@field handler fun(item:openmw.Object, actor:openmw.Object):boolean?
+
+---@class InventoryExtenderRedone.HaggleOverrideEntry
+---@field id string
+---@field handler InventoryExtenderRedone.HaggleOverride
+
+---@alias InventoryExtenderRedone.HaggleOverride fun(npc:openmw.Object, playerOffer:number, merchantOffer:number, chance:number):chance:number?, skillGain:number? chance is IER's computed acceptance threshold (roll > chance refuses, roll in [1,100]); a returned chance replaces the running value and is clamped to [0,100] by the chain, a returned skillGain replaces the price-delta-derived gain
 
 
 ---@class InventoryExtenderRedone.BarterState

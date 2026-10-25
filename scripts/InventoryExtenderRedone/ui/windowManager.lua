@@ -28,6 +28,7 @@ local WindowManager = {}
 WindowManager.ctx = {
     overrides = {
         equipped = {},
+        haggle = {},
     },
     handlers = {
         onRowUse = {},

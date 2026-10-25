@@ -205,6 +205,24 @@ function API.clearBarterOffer()
     barterUtils.clearBarterOffer(windowManager.ctx)
 end
 
+--- Commit the current offer queue through the same sequence the Trade window's Offer button
+--- runs: empty check, PC/NPC gold caps, stolen "that's mine" interruption, haggle through the
+--- override chain, disposition change, refusal message, finalize transfer, gold sound.
+--- opts.closeWindow defaults true (removes the Barter UI mode as usual); with false the
+--- queues are cleared in place instead so an open Trade window shows an empty offer.
+--- state.success is set in both cases, so the "thanks" line still fires on leaving.
+---@param opts table? { closeWindow = boolean? }
+---@return boolean accepted
+---@return number? skillGain
+function API.offerBarter(opts)
+    local merchant = windowManager.ctx.windowArgs.Trade
+    if not merchant then
+        L.warn('offerBarter: no known merchant, refusing')
+        return false
+    end
+    return barterUtils.completeOffer(merchant, windowManager.ctx, opts)
+end
+
 --- Predicted gold gain from selling count of item at the last-known Trade merchant
 --- (ctx.windowArgs.Trade, decision 1: one merchant at a time, no role parameter).
 ---@param item openmw.Object
@@ -302,6 +320,25 @@ function API.registerEquippedOverride(id, handler)
         end
     end
     table.insert(windowManager.ctx.overrides.equipped, { id = id, handler = handler })
+end
+
+--- Register a haggle modifier consulted before the acceptance dice are rolled, by both the
+--- Trade window's Offer button and offerBarter (one chain, two entry points). Handlers run in
+--- reverse registration order; each non-nil return replaces the running chance and/or skillGain
+--- for its own field, so modifiers stack and the last registered wins per field. The returned
+--- chance is clamped to [0, 100]: 100 guarantees acceptance, 0 guarantees refusal. skillGain
+--- replaces the price-delta-derived gain when a mod forced acceptance and the derived value
+--- would be wrong. Deliberately powerful: a mod can force-accept any offer.
+--- @param id string A unique identifier for the override
+--- @param handler fun(npc:openmw.Object, playerOffer:number, merchantOffer:number, chance:number):chance:number?, skillGain:number? The override function
+function API.registerHaggleOverride(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.overrides.haggle) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.overrides.haggle, { id = id, handler = handler })
 end
 
 --- Register a function to handle use actions (default: R, or left-click if swapped) on item rows in the inventory.

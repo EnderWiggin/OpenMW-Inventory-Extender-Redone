@@ -49,7 +49,35 @@ local function getEffectiveValue(item, count)
     return x * count
 end
 
-local function haggle(npc, playerOffer, merchantOffer)
+--- Haggle override chain (ctx.overrides.haggle): handlers run in reverse registration order,
+--- each non-nil return replaces the running value for its own field, so chance modifiers
+--- stack and the last registered wins per field. Chance is clamped to [0, 100] after each
+--- replacement, which makes 100 guaranteed acceptance and 0 guaranteed refusal with one
+--- number. The chain runs before the dice are rolled, so a mod never sees or re-rolls them.
+--- The vanilla early outs (offer already at/below the merchant's, creature merchants) have no
+--- computed chance and bypass the chain.
+---@param overrides InventoryExtenderRedone.HaggleOverrideEntry[]
+---@param npc openmw.Object
+---@param playerOffer number
+---@param merchantOffer number
+---@param chance number IER's computed acceptance threshold
+---@return number chance the possibly replaced threshold
+---@return number? skillGain the last registered replacement, nil when no handler forced one
+local function applyHaggleOverrides(overrides, npc, playerOffer, merchantOffer, chance)
+    local skillGain
+    for i = #overrides, 1, -1 do
+        local newChance, newGain = overrides[i].handler(npc, playerOffer, merchantOffer, chance)
+        if newChance ~= nil then
+            chance = util.clamp(newChance, 0, 100)
+        end
+        if newGain ~= nil then
+            skillGain = newGain
+        end
+    end
+    return chance, skillGain
+end
+
+local function haggle(npc, playerOffer, merchantOffer, ctx)
     if playerOffer <= merchantOffer then
         return true
     end
@@ -77,6 +105,10 @@ local function haggle(npc, playerOffer, merchantOffer)
     local npcTerm = (d1 + e1 + f1) * helpers.getFatigueTerm(npc)
     local x = core.getGMST('fBargainOfferMulti') * d + core.getGMST('fBargainOfferBase') + math.modf(pcTerm - npcTerm)
 
+    -- the override chain may replace the threshold and force a skill gain before the roll
+    local forcedGain
+    x, forcedGain = applyHaggleOverrides(ctx.overrides.haggle, npc, playerOffer, merchantOffer, x)
+
     local roll = math.random(1, 100)
 
     if roll > x or (merchantOffer < 0 and 0 < playerOffer) then
@@ -93,7 +125,8 @@ local function haggle(npc, playerOffer, merchantOffer)
         skillGain = math.floor(100 * (initialMerchantOffer - finalPrice) / initialMerchantOffer)
     end
 
-    return true, skillGain
+    -- a chain-forced gain replaces the price-delta-derived one (0 is a valid forced value)
+    return true, forcedGain or skillGain
 end
 
 local function getBarterOffer(merchant, basePrice, buying)
@@ -323,7 +356,7 @@ local function completeOffer(npc, ctx, opts)
         end
     end
 
-    local offerAccepted, skillGain = haggle(npc, state.currentBalance, state.currentMerchantOffer)
+    local offerAccepted, skillGain = haggle(npc, state.currentBalance, state.currentMerchantOffer, ctx)
     if NPC.objectIsInstance(npc) then
         core.sendGlobalEvent('IER_ModDisposition', {
             target = npc,
