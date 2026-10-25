@@ -152,25 +152,56 @@ local function getBarterOffer(merchant, basePrice, buying)
     return math.max(1, offerPrice)
 end
 
---- Per-item merchant-offer contribution: effective value -> getBarterOffer -> 0.75 cap ->
---- NPC min for selling. updateOffer and the price exports share this single implementation
---- so the prediction cannot drift from what the queue actually prices. Returns the
---- positive magnitude; updateOffer applies the sign per side.
+--- Price override chain (ctx.overrides.price): consulted inside itemOffer, so the queue
+--- (updateOffer), the prediction exports and the committed gold (finalizeBarter) all see
+--- the same repriced value - one implementation, no drift. Handlers run in reverse
+--- registration order; each non-nil return replaces the running magnitude, so modifiers
+--- compose and the last registered wins. buying is the barter direction - true when the
+--- player BUYS item from npc (the buy side), false when the player SELLS it to npc (the
+--- sell side) - so one handler can price the two directions differently. price is the
+--- final per-item contribution magnitude (after the 0.75 cap and the NPC min/max rule);
+--- updateOffer applies the sign per side. Returned price is clamped to [0, infinity):
+--- 0 means a free item; a negative would flip the offer sign and corrupt the balance scalars.
+---@param overrides InventoryExtenderRedone.PriceOverrideEntry[]
 ---@param npc openmw.Object
 ---@param item openmw.Object
 ---@param count number
 ---@param buying boolean
+---@param price number
 ---@return number
-local function itemOffer(npc, item, count, buying)
+local function applyPriceOverrides(overrides, npc, item, count, buying, price)
+    for i = #overrides, 1, -1 do
+        local newPrice = overrides[i].handler(npc, item, count, buying, price)
+        if newPrice ~= nil then
+            price = math.max(0, newPrice)
+        end
+    end
+    return price
+end
+
+--- Per-item merchant-offer contribution: effective value -> getBarterOffer -> 0.75 cap ->
+--- NPC min for selling, then the price override chain. updateOffer and the price exports
+--- share this single implementation so the prediction cannot drift from what the queue
+--- actually prices. Returns the positive magnitude; updateOffer applies the sign per side.
+---@param npc openmw.Object
+---@param item openmw.Object
+---@param count number
+---@param buying boolean true = player buying from npc (buy side), false = selling (sell side)
+---@param ctx InventoryExtenderRedone.Context carrier for the price override chain
+---@return number
+local function itemOffer(npc, item, count, buying, ctx)
     local basePrice = getEffectiveValue(item, count)
     local cap = math.modf(math.max(1, 0.75 * basePrice))
     local offerPrice = getBarterOffer(npc, basePrice, buying)
+    local price
     if buying then
-        return math.max(cap, offerPrice)
+        price = math.max(cap, offerPrice)
     elseif NPC.objectIsInstance(npc) then
-        return math.min(cap, offerPrice)
+        price = math.min(cap, offerPrice)
+    else
+        price = offerPrice
     end
-    return offerPrice
+    return applyPriceOverrides(ctx.overrides.price, npc, item, count, buying, price)
 end
 
 local function updateOffer(ctx)
@@ -182,11 +213,11 @@ local function updateOffer(ctx)
 
     local merchantOffer = 0
     for _, buyingData in pairs(state.buying) do
-        merchantOffer = merchantOffer - itemOffer(merchant, buyingData.item, buyingData.count, true)
+        merchantOffer = merchantOffer - itemOffer(merchant, buyingData.item, buyingData.count, true, ctx)
     end
 
     for _, sellingData in pairs(state.selling) do
-        merchantOffer = merchantOffer + itemOffer(merchant, sellingData.item, sellingData.count, false)
+        merchantOffer = merchantOffer + itemOffer(merchant, sellingData.item, sellingData.count, false, ctx)
     end
 
     local diff = merchantOffer - (state.currentMerchantOffer or 0)
@@ -403,12 +434,13 @@ end
 ---@param item openmw.Object
 ---@param count number
 ---@param npc openmw.Object? the module has no window, so the caller supplies the merchant
+---@param ctx InventoryExtenderRedone.Context price override chain carrier
 ---@return number? nil when there is no merchant - 0 would read as "free item"
-local function getSellOffer(item, count, npc)
+local function getSellOffer(item, count, npc, ctx)
     if not npc then
         return nil
     end
-    return itemOffer(npc, item, count, false)
+    return itemOffer(npc, item, count, false, ctx)
 end
 
 --- Predicted gold spent buying count of item at npc: the per-item half of updateOffer's
@@ -416,12 +448,13 @@ end
 ---@param item openmw.Object
 ---@param count number
 ---@param npc openmw.Object? the merchant
+---@param ctx InventoryExtenderRedone.Context price override chain carrier
 ---@return number? nil when there is no merchant - 0 would read as "free item"
-local function getBuyOffer(item, count, npc)
+local function getBuyOffer(item, count, npc, ctx)
     if not npc then
         return nil
     end
-    return itemOffer(npc, item, count, true)
+    return itemOffer(npc, item, count, true, ctx)
 end
 
 return {

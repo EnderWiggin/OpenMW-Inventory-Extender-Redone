@@ -234,7 +234,7 @@ end
 ---@param count number
 ---@return number? nil when no merchant is known - 0 would read as "free item"
 function Barter.getSellOffer(item, count)
-    return barterUtils.getSellOffer(item, count, windowManager.ctx.windowArgs.Trade)
+    return barterUtils.getSellOffer(item, count, windowManager.ctx.windowArgs.Trade, windowManager.ctx)
 end
 
 --- Current offer balance in gold: what committing the queue now would net the player
@@ -249,7 +249,7 @@ end
 ---@param count number
 ---@return number? nil when no merchant is known - 0 would read as "free item"
 function Barter.getBuyOffer(item, count)
-    return barterUtils.getBuyOffer(item, count, windowManager.ctx.windowArgs.Trade)
+    return barterUtils.getBuyOffer(item, count, windowManager.ctx.windowArgs.Trade, windowManager.ctx)
 end
 
 --- Register a haggle modifier consulted before the acceptance dice are rolled, by both the
@@ -269,6 +269,27 @@ function Barter.registerHaggleOverride(id, handler)
         end
     end
     table.insert(windowManager.ctx.overrides.haggle, { id = id, handler = handler })
+end
+
+--- Register a repricing modifier consulted by updateOffer, the price exports and the committed
+--- gold path (one implementation inside itemOffer, so queue, prediction and finalizeBarter all
+--- see the same repriced value - no drift). Handlers receive the barter direction: buying is
+--- true when the player buys item from the merchant (buy side), false when selling to it
+--- (sell side), so one handler can price the two directions differently. Handlers run in
+--- reverse registration order; each non-nil return replaces the running per-item magnitude,
+--- so modifiers compose and the last registered wins. price is the final per-item
+--- contribution magnitude (after the 0.75 cap and the NPC min/max rule); the returned price
+--- is clamped to [0, infinity) - 0 means a free item, negatives would flip the offer sign.
+--- @param id string A unique identifier for the override
+--- @param handler fun(npc:openmw.Object, item:openmw.Object, count:number, buying:boolean, price:number):price:number? The override function
+function Barter.registerPriceOverride(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.overrides.price) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.overrides.price, { id = id, handler = handler })
 end
 
 local lastCrimeLevel

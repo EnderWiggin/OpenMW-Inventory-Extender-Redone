@@ -46,7 +46,7 @@
 ---@class InventoryExtenderRedone.Context
 ---@field handlers InventoryExtenderRedone.Handlers registered row action handlers, called in reverse registration order
 ---@field modifiers InventoryExtenderRedone.Modifiers registered modifiers
----@field overrides InventoryExtenderRedone.Overrides override chains: equipped (eligibility, first non-nil wins) and haggle (chance/skillGain modifiers, replace-per-field stacking)
+---@field overrides InventoryExtenderRedone.Overrides override chains: equipped (eligibility, first non-nil wins), haggle (chance/skillGain modifiers, replace-per-field stacking) and price (per-item magnitude modifiers, replace-per-field stacking)
 ---@field modes table<string,InventoryExtenderRedone.Mode> custom mode specs registered through API.registerMode, keyed by mode key; built-in specs are not stored here, they live in toolkit/mode.lua Mode.Builtins
 ---@field modePatches table<string,InventoryExtenderRedone.ModePatch[]> registered mode patches per mode key, applied in reverse registration order
 ---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
@@ -318,6 +318,7 @@
 ---@class InventoryExtenderRedone.Overrides
 ---@field equipped InventoryExtenderRedone.EquippedOverrideEntry[]
 ---@field haggle InventoryExtenderRedone.HaggleOverrideEntry[]
+---@field price InventoryExtenderRedone.PriceOverrideEntry[]
 
 ---@class InventoryExtenderRedone.EquippedOverrideEntry
 ---@field id string
@@ -328,6 +329,12 @@
 ---@field handler InventoryExtenderRedone.HaggleOverride
 
 ---@alias InventoryExtenderRedone.HaggleOverride fun(npc:openmw.Object, playerOffer:number, merchantOffer:number, chance:number):chance:number?, skillGain:number? chance is IER's computed acceptance threshold (roll > chance refuses, roll in [1,100]); a returned chance replaces the running value and is clamped to [0,100] by the chain, a returned skillGain replaces the price-delta-derived gain
+
+---@class InventoryExtenderRedone.PriceOverrideEntry
+---@field id string
+---@field handler InventoryExtenderRedone.PriceOverride
+
+---@alias InventoryExtenderRedone.PriceOverride fun(npc:openmw.Object, item:openmw.Object, count:number, buying:boolean, price:number):price:number? buying is the barter direction (true = player buying from npc, false = player selling); price is the final per-item contribution magnitude (after the 0.75 cap and NPC min/max rule); a returned price replaces the running value, clamped to [0,infinity) by the chain, 0 = free item
 
 
 ---@class InventoryExtenderRedone.Barter
@@ -343,6 +350,7 @@
 ---@field clearBarterOffer fun() empty selling/buying and zero currentMerchantOffer/currentBalance in place (an open window's init-time closures keep holding the state table)
 ---@field offerBarter fun(opts:table?):boolean, skillGain:number? commit the current offer queue through the same sequence the Trade window's Offer button runs (empty check, gold caps, stolen interruption, haggle through the override chain, disposition, finalize, gold sound); merchant is ctx.windowArgs.Trade, refuses with a warning when no merchant is known; opts.closeWindow defaults true (Barter UI mode removal), false clears the queues in place instead; state.success is set in both cases
 ---@field registerHaggleOverride fun(id:string, handler:InventoryExtenderRedone.HaggleOverride) register a haggle modifier consulted before the acceptance dice roll, by both the Offer button and Barter.offerBarter; handlers run in reverse registration order, each non-nil return replaces the running chance and/or skillGain for its own field (stacking, last registered wins per field); returned chance clamped to [0,100] - 100 guarantees acceptance, 0 refusal; deliberately powerful, a mod can force-accept any offer
+---@field registerPriceOverride fun(id:string, handler:InventoryExtenderRedone.PriceOverride) register a repricing modifier consulted inside itemOffer, so the queue (updateOffer), the prediction exports and the committed gold (finalizeBarter) all see the same repriced value; handlers receive the barter direction (buying = player buying from npc) so they can price sell vs buy differently; reverse registration order, each non-nil return replaces the running per-item magnitude (modifiers compose, last registered wins); returned price clamped to [0,infinity) - 0 = free item
 
 ---@class InventoryExtenderRedone.BarterState
 ---@field selling table<string,InventoryExtenderRedone.BarterEntry?> keyed by item.id

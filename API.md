@@ -390,6 +390,32 @@ These share `updateOffer`'s per-item math (effective value, merchant offer, 0.75
 a mod can price a candidate against the current queue before committing: price the queue plus the
 candidate and subtract the existing offer.
 
+### Repricing — `IER.Barter.registerPriceOverride`
+
+```lua
+---@param id string
+---@param handler fun(npc, item, count, buying, price): price?
+IER.Barter.registerPriceOverride(id, handler)
+```
+
+The chain is consulted **inside `itemOffer`**, so the queue (`updateOffer`), the prediction
+exports and the committed gold (`finalizeBarter`) all see the same repriced value — one
+implementation, no drift. Handlers receive the barter direction: `buying` is true when the
+player buys `item` from the merchant (the buy side), false when selling it to the merchant
+(the sell side) — one handler can price the two directions differently. `price` is the final
+per-item contribution magnitude (after the 0.75 cap and the NPC min/max rule; `updateOffer`
+applies the sign per side). Handlers run in reverse registration order; each non-nil return
+replaces the running magnitude, so modifiers **compose** and the last registered wins.
+Returned prices are clamped to `[0, infinity)`: `0` means a free item; a negative would flip
+the offer sign and corrupt the balance scalars.
+
+```lua
+-- a generous trader: 10% cheaper when selling to them, 10% pricier when buying from them
+IER.Barter.registerPriceOverride('myMod_generousTrader', function(npc, item, count, buying, price)
+    return buying and price * 1.1 or price * 0.9
+end)
+```
+
 ### Queue the offer
 
 ```lua

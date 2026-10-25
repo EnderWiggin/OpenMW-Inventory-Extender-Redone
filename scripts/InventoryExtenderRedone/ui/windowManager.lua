@@ -29,6 +29,7 @@ WindowManager.ctx = {
     overrides = {
         equipped = {},
         haggle = {},
+        price = {},
     },
     handlers = {
         onRowUse = {},
