@@ -1113,6 +1113,16 @@ function Inventory:onClosed()
     if self.ctx.dragAndDrop.draggingObject then
         self.ctx.dragAndDrop:stopDrag()
     end
+    -- the mode's post-close hook: the only close path a custom mode has (it never changes the
+    -- engine UI mode, so windowManager's onClosing never fires for it). Runs while this window's
+    -- open-time snapshot is still readable, before the library destroys the element; fires once
+    -- per closing window, so a two-role mode fires twice, and also for the close that precedes a
+    -- reopen for a mode change (handler.mode is then the previous mode)
+    local mode = self.mode and Mode.resolve(self.mode)
+    if mode and mode.lifecycle and mode.lifecycle.onClosed then
+        L.debug('lifecycle.onClosed', self.role, self.mode)
+        mode.lifecycle.onClosed(self)
+    end
     self.wnd = nil
     self.arg = nil
     local column, asc = self.table.header:getActiveColumn()

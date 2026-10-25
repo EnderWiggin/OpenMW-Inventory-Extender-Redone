@@ -32,7 +32,10 @@ return {
     -- the session used to be created in windowManager:show before the window opened; it lives
     -- here now, keyed by the target so reopening either window of this mode does not re-roll
     -- which items the sneak check left visible
-    lifecycle = {
+    lifecycle = { {
+        id = 'Pickpocket',
+        -- a spec's own lifecycle array replaces the base's entries, and this spec names both
+        -- hooks, so Container's entry is not in the chain here
         onOpened = function(handler, arg, saved)
             local ctx = I.InventoryExtenderRedone.getContext()
             if Pickpocket.isTarget(arg) and (not ctx.pickpocket or ctx.pickpocket.targetId ~= arg.id) then
@@ -60,7 +63,7 @@ return {
             ctx.pickpocket = nil
             arg:sendEvent('IER_ContainerClosed')
         end,
-    },
+    } },
     -- only the Container role is ever in this mode: the player's own window keeps Container's
     -- slots during a pickpocket session, which is what it did before the mode existed
     roles = {

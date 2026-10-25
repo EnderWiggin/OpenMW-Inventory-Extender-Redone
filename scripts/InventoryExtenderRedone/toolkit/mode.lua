@@ -721,11 +721,11 @@ Mode.Builtins = {
 }
 
 
--- List slots merge through id-keyed ops; everything else is a whole-slot overwrite. A plain
--- array in a patch replaces the whole slot, a { add/remove/replace } table applies ops.
-local LIST_SLOTS = { 'sources', 'filters', 'infoBar' }
+-- List slots merge through id-keyed ops; everything else is a whole-slot overwrite. lifecycle is
+-- a list slot too: several specs contribute hooks and the merged entries run as one chain.
+local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle' }
 local ROLE_SLOTS = { 'states', 'actions', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
-local MODE_SLOTS = { 'applies', 'priority', 'drag', 'lifecycle', 'event' }
+local MODE_SLOTS = { 'applies', 'priority', 'drag', 'event' }
 
 
 local function isPatchList(op)
@@ -821,7 +821,8 @@ local function mergeRoleSpec(base, patch)
     return merged
 end
 
---- Merge a patch (or another spec) over a base spec. `roles` merges per role; every other slot
+--- Merge a patch (or another spec) over a base spec. `roles` merges per role and the list slots
+--- (sources/filters/infoBar/lifecycle) merge by id through the list-slot ops; every other slot
 --- is a whole-slot overwrite, so a mode that wants part of a slot uses the list-slot ops.
 ---@param base InventoryExtenderRedone.Mode?
 ---@param patch InventoryExtenderRedone.ModePatch|InventoryExtenderRedone.Mode
@@ -832,6 +833,9 @@ function Mode.merge(base, patch)
     if not patch then return merged end
 
     if patch.key then merged.key = patch.key end
+    for _, slot in ipairs(LIST_SLOTS) do
+        if patch[slot] then merged[slot] = mergeList(merged[slot], patch[slot]) end
+    end
     for _, slot in ipairs(MODE_SLOTS) do
         if patch[slot] ~= nil then merged[slot] = patch[slot] end
     end
@@ -897,8 +901,49 @@ local function resolveSpec(key, ctx, visited)
     return applyModeDefaults(merged)
 end
 
---- Nothing calls this yet: the phase that wires mode resolution into windowManager:show owns
---- the call. Reopen must compare against an already-open window's snapshot, not re-resolve it.
+--- Lifecycle hooks chain instead of replacing each other: the merged entries are folded into one
+--- callable per hook, so a call site names a hook and never walks the list. Chain order is the
+--- reverse of the merged list, like the ctx.handlers lists: the most recently merged entry runs
+--- first and the built-in spec's hook last, and a callback returning false cuts the rest of the
+--- chain - that is how a mod vetoes a built-in hook without re-declaring it. A hook is only
+--- callable when some entry names it, so the call-site guards keep working.
+local LIFECYCLE_HOOKS = { 'onOpened', 'onClosing', 'onClosed' }
+---@param entries InventoryExtenderRedone.Mode.LifecycleEntry[]?
+---@return InventoryExtenderRedone.Mode.Lifecycle?
+local function wrapLifecycle(entries)
+    if not entries then return nil end
+    local chains
+    for i = 1, #entries do
+        local entry = entries[i]
+        for _, hook in ipairs(LIFECYCLE_HOOKS) do
+            local callback = entry and entry[hook]
+            if callback then
+                local chain = chains and chains[hook]
+                if not chain then
+                    chain = {}
+                    chains = chains or {}
+                    chains[hook] = chain
+                end
+                chain[#chain + 1] = callback
+            end
+        end
+    end
+    if not chains then return nil end
+
+    local lifecycle = {}
+    for hook, chain in pairs(chains) do
+        lifecycle[hook] = function(...)
+            for i = #chain, 1, -1 do
+                if chain[i](...) == false then return end
+            end
+        end
+    end
+    return lifecycle
+end
+
+--- Re-resolves a key from scratch. The post-close hook in inventory.lua has only the mode key
+--- left to work from, so it uses this. Reopen must not: compare against an already-open window's
+--- snapshot, since re-resolving can pick a different mode than the one the window was opened with.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param role InventoryExtenderRedone.Role? when given, also return this role's merged slots
 ---@return InventoryExtenderRedone.Mode? mode
@@ -906,6 +951,8 @@ end
 function Mode.resolve(key, role)
     local mode = resolveSpec(key, I.InventoryExtenderRedone.getContext())
     if not mode then return nil end
+    -- the merged entry list becomes the callable chain; every consumer reads the resolved form
+    mode.lifecycle = wrapLifecycle(mode.lifecycle)
     if not role then return mode end
 
     local spec = mode.roles and mode.roles[role]

@@ -163,9 +163,12 @@ local function showInvestPopup(trader)
 end
 
 local btn
+-- lifecycle is a list slot: this entry chains onto Barter's own hooks rather than replacing them,
+-- so the "thanks" line still fires; returning false from a hook would cut the rest of the chain
 IER.patchMode(IER.Modes.Barter, {
     id = 'ier-trade-redone',
-    lifecycle = {
+    lifecycle = { add = { {
+        id = 'ier_trade_invest',
         onOpened = function(handler, trader)
             L.info('onOpened', handler.role)
             if handler.role ~= 'Trade' or not trader then return end
@@ -187,8 +190,8 @@ IER.patchMode(IER.Modes.Barter, {
         onClosed = function()
             if closePopup then closePopup() end
             closePopup = nil
-        end
-    },
+        end,
+    } } },
     roles = {
         Trade = {
             filters = {

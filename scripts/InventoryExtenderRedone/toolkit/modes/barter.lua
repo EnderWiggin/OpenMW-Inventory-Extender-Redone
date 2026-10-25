@@ -60,7 +60,8 @@ return {
     drag = { allowed = false },
     -- leaving a successful barter says thanks, once, before windowManager resets barterState
     -- (built-in lifecycle.onClosing fires from UiModeChanged, decision 11)
-    lifecycle = {
+    lifecycle = { {
+        id = 'Barter',
         onClosing = function(handler, arg, newMode)
             local ctx = I.InventoryExtenderRedone.getContext()
             if ctx.barterState.success then
@@ -69,7 +70,7 @@ return {
                 })
             end
         end,
-    },
+    } },
     -- controller hints replace the base list: Activate offers instead of picking up, and B
     -- closes the deal
     roles = {

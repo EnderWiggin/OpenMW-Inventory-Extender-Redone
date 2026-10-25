@@ -161,7 +161,7 @@
 ---@field applies fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? mode selection; the highest-priority applying mode wins
 ---@field priority number? higher wins when several modes apply; default 0
 ---@field drag InventoryExtenderRedone.Mode.Drag? mode-wide: drag is a ctx singleton, not per window
----@field lifecycle InventoryExtenderRedone.Mode.Lifecycle?
+---@field lifecycle InventoryExtenderRedone.Mode.LifecycleEntry[]|InventoryExtenderRedone.Mode.Lifecycle? authoring is the entry list; resolveMode hands the handler the resolved chain form
 ---@field event InventoryExtenderRedone.Mode.EventData? flat summary global.lua sees in event payloads
 ---@field roles table<string,InventoryExtenderRedone.Mode.RoleSpec> key is a window role
 
@@ -181,9 +181,18 @@
 ---@field allowed boolean?
 ---@field autoEquip? fun(ctx:InventoryExtenderRedone.Context, object:openmw.Object, source:openmw.Object?, destination:openmw.Object?):openmw.Object?
 
----@class InventoryExtenderRedone.Mode.Lifecycle
----@field onOpened fun(handler:IER.Inventory, arg:any?, saved:table?)?
----@field onClosing fun(handler:IER.Inventory?, arg:any?, newMode:string?)? built-in modes fire from UiModeChanged (the window is already closed, so handler is nil); newMode is the engine UI mode after the change (nil = mode stack empty)
+---@class InventoryExtenderRedone.Mode.LifecycleEntry one hook-set in the chain; entries merge by id through the usual list-slot ops, and a built-in entry's id is the mode key
+---@field id string
+---@field onOpened? fun(handler:IER.Inventory, arg:any?, saved:table?)?
+---@field onClosing? fun(handler:IER.Inventory?, arg:any?, newMode:string?)? built-in modes fire from UiModeChanged (the window is already closed, so handler is nil); newMode is the engine UI mode after the change (nil = mode stack empty)
+---@field onClosed? fun(handler:IER.Inventory)? post-close, per closing window: fires from WindowHandler:onClosed on every close path (engine-driven and IER-side) except a pinned window's, while the open-time snapshot is still readable; fires once per window, so a two-role mode fires twice, and also for the close that precedes a reopen for a mode change (handler.mode is then the previous mode); the only close hook a custom mode has
+---@field before string? position this entry before another lifecycle id
+---@field after string? position this entry after another lifecycle id
+
+---@class InventoryExtenderRedone.Mode.Lifecycle the resolved chain: Mode.resolve folds the merged entries into one callable per hook, so a call site names a hook and never iterates; the chain runs the most recently merged entry first and the built-in spec's hook last, and a callback returning false cuts the rest of the chain. A hook is only present when some entry names it
+---@field onOpened? fun(handler:IER.Inventory, arg:any?, saved:table?)?
+---@field onClosing? fun(handler:IER.Inventory?, arg:any?, newMode:string?)?
+---@field onClosed? fun(handler:IER.Inventory)?
 
 ---@class InventoryExtenderRedone.Mode.EventData
 ---@field flags table<string,boolean> serializable summary (isBarter, isPickpocket, isCompanion, canTransfer, ...); key and role are stamped at open time
@@ -194,7 +203,7 @@
 ---@field applies? fun(role:InventoryExtenderRedone.Role, arg:any?, ctx:InventoryExtenderRedone.Context, uiMode:string?):boolean? same call shape as Mode.applies; selection consults registered specs, so a patch normally omits it
 ---@field priority number?
 ---@field drag InventoryExtenderRedone.Mode.Drag?
----@field lifecycle InventoryExtenderRedone.Mode.Lifecycle?
+---@field lifecycle InventoryExtenderRedone.Mode.PatchList?
 ---@field event InventoryExtenderRedone.Mode.EventData?
 ---@field roles table<string,InventoryExtenderRedone.Mode.RoleSpecPatch>? key is a window role
 ---@field disable string[]? slot names to drop from the merged spec

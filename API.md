@@ -77,7 +77,7 @@ A mode is an `InventoryExtenderRedone.Mode` table:
 | `applies(role, arg, ctx, uiMode)` | mode selection: which windows this mode governs |
 | `priority` | higher wins when several modes apply (default 0). Equal priorities are unordered, so a custom mode that overlaps a built-in must out-prioritize it |
 | `drag` | `{ allowed, autoEquip }` — whether dragging is allowed in this mode |
-| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)` — `onClosing` fires for built-in modes from the engine's UI-mode change, with `handler` nil |
+| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)` — pre-close, fires only when the engine's UI mode changes (built-in modes; `handler` is nil, and it also fires on mode-to-mode transitions); `onClosed(handler)` — post-close, once per closing window, on every close path including `IER.hide` and custom modes, but not for a pinned window. A list slot: entries chain instead of replacing each other, the chain runs the most recently merged entry first and the built-in entry (id = the mode key) last, and a callback returning `false` cuts the rest |
 | `event` | `{ flags }` — serializable summary other mods see in event payloads |
 | `roles` | `table<role, RoleSpec>` — one slot-set per window role |
 
@@ -137,7 +137,8 @@ In a list slot, a plain array replaces the whole slot; a table with `add`/`repla
 applies operations (`InventoryExtenderRedone.Mode.PatchList`):
 
 - `add` — append entries. An entry can carry `before`/`after` to position itself against an
-  existing id. Ordering matters for `infoBar`, whose `filler` stretch gap lays out the strip.
+  existing id. Ordering matters for `infoBar`, whose `filler` stretch gap lays out the strip, and for `lifecycle`,
+   whose chain runs in reverse merged order so a later entry can veto the built-in hook.
 - `replace` — id-keyed: replaces the entry with the same id, appends when the id is new.
 - `remove` — ids to drop.
 - `disable` — on a patch or a role patch: whole slot names to drop from the merged spec.
@@ -174,18 +175,26 @@ IER.patchMode(IER.Modes.Interface, {
 })
 ```
 
-A patch can also replace a built-in part with its own behavior and add lifecycle callbacks:
+A patch can also replace a built-in part with its own behavior and add lifecycle callbacks. `lifecycle`
+is a list slot, so the patch adds an entry that chains onto the built-in hooks rather than replacing
+them: the chain runs the most recently merged entry first and the built-in entry (its id is the mode
+key) last, and returning `false` from a hook cuts the rest — that is how a mod vetoes a built-in hook
+without re-declaring it.
 
 ```lua
 IER.patchMode(IER.Modes.Barter, {
     id = 'ier-trade-redone',
-    lifecycle = { onOpened = function(handler, trader) ... end, onClosing = function(_, arg, newMode) ... end },
+    lifecycle = { add = { {
+        id = 'ier_trade_invest',
+        onOpened = function(handler, trader) ... end,
+        onClosed = function(handler) ... end,
+    } } },
     roles = {
         Trade = {
             filters = { replace = { { id = 'barterOffered', fn = function(row, handler, ctx)
                 return mercantile.base >= ALL_ITEMS_SKILL or barterOffered(row, handler, ctx)
             end } } },
-            infoBar = { add = { { id = 'ier_trade_invest', before = 'offer', create = ..., cleanup = ... } } },
+            infoBar = { add = { { id = 'ier_trade_invest', before = 'barterCancel', create = ..., cleanup = ... } } },
         },
     },
 })

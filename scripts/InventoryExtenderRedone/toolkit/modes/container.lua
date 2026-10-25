@@ -78,7 +78,10 @@ return {
     },
     -- opening anything that is not a pickpocket target ends a session: today windowManager:show
     -- cleared the flag on every Container-role show that did not create a new one
-    lifecycle = {
+    -- lifecycle is a list slot: the entry id is the mode key, so a patch adds to this hook
+    -- instead of replacing it (the chain runs mods first, the built-in entry last)
+    lifecycle = { {
+        id = 'Container',
         onOpened = function(handler, arg, saved)
             if not Pickpocket.isTarget(arg) then
                 I.InventoryExtenderRedone.getContext().pickpocket = nil
@@ -91,7 +94,7 @@ return {
             I.InventoryExtenderRedone.getContext().pickpocket = nil
             arg:sendEvent('IER_ContainerClosed')
         end,
-    },
+    } },
     roles = {
         [Roles.Inventory] = {
             -- literal, never derived from the mode key: this is the UIToolkit:WindowData key,
