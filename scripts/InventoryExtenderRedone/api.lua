@@ -154,12 +154,17 @@ function API.getHoveredRow()
     return windowManager:getHoveredRow()
 end
 
+--- Barter API: all barter-related methods live in this subtable, so the interface root
+--- stays about windows, modes and categories. Consumed as IER.Barter.getSellRow(item).
+local Barter = {}
+API.Barter = Barter
+
 --- The row feeding the sell side of a barter offer: the visible, enabled, not-yet-offered
 --- row for item in the open Inventory window while its mode snapshot is Barter. nil means
 --- "not tradeable right now": no window in Barter mode, filtered out, or disabled.
 ---@param item openmw.Object
 ---@return InventoryExtenderRedone.RowData?
-function API.getSellRow(item)
+function Barter.getSellRow(item)
     return windowManager:getSellRow(item)
 end
 
@@ -167,7 +172,7 @@ end
 --- while its mode snapshot is Barter.
 ---@param item openmw.Object
 ---@return InventoryExtenderRedone.RowData?
-function API.getBuyRow(item)
+function Barter.getBuyRow(item)
     return windowManager:getBuyRow(item)
 end
 
@@ -176,13 +181,13 @@ end
 --- and refreshes the windows. Pass a row from getSellRow (isBartered false).
 ---@param row InventoryExtenderRedone.RowData
 ---@param count number
-function API.queueSell(row, count)
+function Barter.queueSell(row, count)
     barterUtils.queueSell(windowManager.ctx, row, count)
 end
 
 ---@param row InventoryExtenderRedone.RowData
 ---@param count number
-function API.queueBuy(row, count)
+function Barter.queueBuy(row, count)
     barterUtils.queueBuy(windowManager.ctx, row, count)
 end
 
@@ -190,18 +195,18 @@ end
 --- entry. Pass the offered (isBartered) row.
 ---@param row InventoryExtenderRedone.RowData
 ---@param count number? omitted clears the entry
-function API.unqueueSell(row, count)
+function Barter.unqueueSell(row, count)
     barterUtils.unqueueSell(windowManager.ctx, row, count)
 end
 
 ---@param row InventoryExtenderRedone.RowData
 ---@param count number? omitted clears the entry
-function API.unqueueBuy(row, count)
+function Barter.unqueueBuy(row, count)
     barterUtils.unqueueBuy(windowManager.ctx, row, count)
 end
 
 --- Empty the offer queues and zero the offer scalars, leaving any open window alone.
-function API.clearBarterOffer()
+function Barter.clearBarterOffer()
     barterUtils.clearBarterOffer(windowManager.ctx)
 end
 
@@ -214,10 +219,10 @@ end
 ---@param opts table? { closeWindow = boolean? }
 ---@return boolean accepted
 ---@return number? skillGain
-function API.offerBarter(opts)
+function Barter.offerBarter(opts)
     local merchant = windowManager.ctx.windowArgs.Trade
     if not merchant then
-        L.warn('offerBarter: no known merchant, refusing')
+        L.warn('Barter.offerBarter: no known merchant, refusing')
         return false
     end
     return barterUtils.completeOffer(merchant, windowManager.ctx, opts)
@@ -228,14 +233,14 @@ end
 ---@param item openmw.Object
 ---@param count number
 ---@return number? nil when no merchant is known - 0 would read as "free item"
-function API.getSellOffer(item, count)
+function Barter.getSellOffer(item, count)
     return barterUtils.getSellOffer(item, count, windowManager.ctx.windowArgs.Trade)
 end
 
 --- Current offer balance in gold: what committing the queue now would net the player
 --- (negative means spending). 0 when no trade has priced anything yet.
 ---@return number
-function API.getBarterBalance()
+function Barter.getBarterBalance()
     return windowManager.ctx.barterState.currentBalance or 0
 end
 
@@ -243,8 +248,27 @@ end
 ---@param item openmw.Object
 ---@param count number
 ---@return number? nil when no merchant is known - 0 would read as "free item"
-function API.getBuyOffer(item, count)
+function Barter.getBuyOffer(item, count)
     return barterUtils.getBuyOffer(item, count, windowManager.ctx.windowArgs.Trade)
+end
+
+--- Register a haggle modifier consulted before the acceptance dice are rolled, by both the
+--- Trade window's Offer button and Barter.offerBarter (one chain, two entry points). Handlers run in
+--- reverse registration order; each non-nil return replaces the running chance and/or skillGain
+--- for its own field, so modifiers stack and the last registered wins per field. The returned
+--- chance is clamped to [0, 100]: 100 guarantees acceptance, 0 guarantees refusal. skillGain
+--- replaces the price-delta-derived gain when a mod forced acceptance and the derived value
+--- would be wrong. Deliberately powerful: a mod can force-accept any offer.
+--- @param id string A unique identifier for the override
+--- @param handler fun(npc:openmw.Object, playerOffer:number, merchantOffer:number, chance:number):chance:number?, skillGain:number? The override function
+function Barter.registerHaggleOverride(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.overrides.haggle) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.overrides.haggle, { id = id, handler = handler })
 end
 
 local lastCrimeLevel
@@ -327,25 +351,6 @@ function API.registerEquippedOverride(id, handler)
         end
     end
     table.insert(windowManager.ctx.overrides.equipped, { id = id, handler = handler })
-end
-
---- Register a haggle modifier consulted before the acceptance dice are rolled, by both the
---- Trade window's Offer button and offerBarter (one chain, two entry points). Handlers run in
---- reverse registration order; each non-nil return replaces the running chance and/or skillGain
---- for its own field, so modifiers stack and the last registered wins per field. The returned
---- chance is clamped to [0, 100]: 100 guarantees acceptance, 0 guarantees refusal. skillGain
---- replaces the price-delta-derived gain when a mod forced acceptance and the derived value
---- would be wrong. Deliberately powerful: a mod can force-accept any offer.
---- @param id string A unique identifier for the override
---- @param handler fun(npc:openmw.Object, playerOffer:number, merchantOffer:number, chance:number):chance:number?, skillGain:number? The override function
-function API.registerHaggleOverride(id, handler)
-    for _, existingHandler in ipairs(windowManager.ctx.overrides.haggle) do
-        if existingHandler.id:lower() == id:lower() then
-            existingHandler.handler = handler
-            return
-        end
-    end
-    table.insert(windowManager.ctx.overrides.haggle, { id = id, handler = handler })
 end
 
 --- Register a function to handle use actions (default: R, or left-click if swapped) on item rows in the inventory.

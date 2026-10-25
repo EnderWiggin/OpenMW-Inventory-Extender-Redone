@@ -351,11 +351,12 @@ window; in other windows it behaves like `All`.
 
 ## Barter API
 
-One merchant at a time: no barter function takes a role or merchant parameter. The merchant is
-`ctx.windowArgs.Trade` — the `arg` last passed to `show(IER.Roles.Trade, merchant)`. **Last-known,
-not current**: `show` with a nil `arg` keeps the previous value, and nothing clears it when the
-window closes, so it may name a merchant whose window is gone. With no merchant known, the queue
-functions do nothing and log a warning, and the price queries return `nil` (`0` would read as
+All barter-related methods live in the `IER.Barter` subtable, so the interface root stays about
+windows, modes and categories. One merchant at a time: no barter function takes a role or merchant
+parameter. The merchant is `ctx.windowArgs.Trade` — the `arg` last passed to `show(IER.Roles.Trade, merchant)`.
+**Last-known, not current**: `show` with a nil `arg` keeps the previous value, and nothing clears it
+when the window closes, so it may name a merchant whose window is gone. With no merchant known, the
+queue functions do nothing and log a warning, and the price queries return `nil` (`0` would read as
 "free item").
 
 ### Find the row for an item
@@ -363,8 +364,8 @@ functions do nothing and log a warning, and the price queries return `nil` (`0` 
 ```lua
 ---@param item openmw.Object
 ---@return InventoryExtenderRedone.RowData?
-IER.getSellRow(item)   -- your side: the row in the open Inventory window while its mode is Barter
-IER.getBuyRow(item)    -- merchant side: the row in the open Trade window while its mode is Barter
+IER.Barter.getSellRow(item)   -- your side: the row in the open Inventory window while its mode is Barter
+IER.Barter.getBuyRow(item)    -- merchant side: the row in the open Trade window while its mode is Barter
 ```
 
 A row comes back only while it is visible and enabled (in `handler.table.filteredItems`,
@@ -380,9 +381,9 @@ any object of that record.
 ---@param item openmw.Object
 ---@param count number
 ---@return number?  nil when no merchant is known
-IER.getSellOffer(item, count)   -- predicted gold gain from selling
-IER.getBuyOffer(item, count)    -- predicted gold spent buying
-IER.getBarterBalance()          -- current offer balance in gold (committing now nets this)
+IER.Barter.getSellOffer(item, count)   -- predicted gold gain from selling
+IER.Barter.getBuyOffer(item, count)    -- predicted gold spent buying
+IER.Barter.getBarterBalance()          -- current offer balance in gold (committing now nets this)
 ```
 
 These share `updateOffer`'s per-item math (effective value, merchant offer, 0.75 cap, NPC rule), so
@@ -392,11 +393,11 @@ candidate and subtract the existing offer.
 ### Queue the offer
 
 ```lua
-IER.queueSell(row, count)      -- add to the sell side (row from getSellRow, isBartered false)
-IER.queueBuy(row, count)       -- add to the buy side (row from getBuyRow)
-IER.unqueueSell(row, count?)   -- retract from the sell side (the offered, isBartered row)
-IER.unqueueBuy(row, count?)    -- retract from the buy side; count omitted clears the entry
-IER.clearBarterOffer()         -- empty both sides and zero the scalars, leaving any open window alone
+IER.Barter.queueSell(row, count)      -- add to the sell side (row from getSellRow, isBartered false)
+IER.Barter.queueBuy(row, count)       -- add to the buy side (row from getBuyRow)
+IER.Barter.unqueueSell(row, count?)   -- retract from the sell side (the offered, isBartered row)
+IER.Barter.unqueueBuy(row, count?)    -- retract from the buy side; count omitted clears the entry
+IER.Barter.clearBarterOffer()         -- empty both sides and zero the scalars, leaving any open window alone
 ```
 
 Input is a `RowData`, not a raw item: `row.virtualStacks` is carried into the queue entry
@@ -404,13 +405,13 @@ Input is a `RowData`, not a raw item: `row.virtualStacks` is carried into the qu
 — a missing `stacks` on a virtual row silently mis-moves items. Counts clamp to `row.getCount()`.
 Queueing reprices the offer and refreshes the windows.
 
-### Commit — `IER.offerBarter`
+### Commit — `IER.Barter.offerBarter`
 
 ```lua
 ---@param opts table?  { closeWindow = boolean? } default true
 ---@return boolean accepted
 ---@return number? skillGain
-IER.offerBarter(opts)
+IER.Barter.offerBarter(opts)
 ```
 
 Runs the same sequence the Trade window's Offer button runs: empty check, PC/NPC gold caps, stolen
@@ -424,28 +425,28 @@ Typical autosell shape:
 ```lua
 IER.show(IER.Roles.Trade, merchant)              -- opens both Barter windows
 for _, item in ipairs(junk) do
-    local row = IER.getSellRow(item)
+    local row = IER.Barter.getSellRow(item)
     if row then
         -- incremental pricing: value of queue + candidate minus current offer
-        local gain = IER.getSellOffer(item, row.getCount()) - IER.getBarterBalance()
+        local gain = IER.Barter.getSellOffer(item, row.getCount()) - IER.Barter.getBarterBalance()
         if worth(gain) then
-            IER.queueSell(row, row.getCount())
+            IER.Barter.queueSell(row, row.getCount())
         end
     end
 end
-local accepted = IER.offerBarter({ closeWindow = false })
+local accepted = IER.Barter.offerBarter({ closeWindow = false })
 IER.hide(IER.Roles.Trade)                        -- close the windows yourself
 ```
 
-### Haggle override — `IER.registerHaggleOverride`
+### Haggle override — `IER.Barter.registerHaggleOverride`
 
 ```lua
 ---@param id string
 ---@param handler fun(npc, playerOffer, merchantOffer, chance): chance?, skillGain?
-IER.registerHaggleOverride(id, handler)
+IER.Barter.registerHaggleOverride(id, handler)
 ```
 
-The chain is consulted by both the Offer button and `offerBarter`, **before the acceptance dice are
+The chain is consulted by both the Offer button and `Barter.offerBarter`, **before the acceptance dice are
 rolled** — a mod never sees or re-rolls them. `chance` is IER's computed acceptance threshold
 (`roll > chance` refuses, `roll` in `[1, 100]`). Handlers run in reverse registration order; each
 non-nil return replaces the running value for its own field, so chance modifiers **stack** and the
