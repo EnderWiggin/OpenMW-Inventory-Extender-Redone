@@ -40,6 +40,8 @@
 ---@field registerWindowRole fun(role:string, opts:InventoryExtenderRedone.RoleOpts) the only way to get a new window id (decision 1): registers role geometry and opens the window through UIToolkit; mode specs never register windows
 ---@field openMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) open the mode's role windows through UIToolkit.WindowManager.open only, never I.UI.setMode/addMode (decision 10); no-op while allWindowsDisabled
 ---@field closeMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) close the mode's role windows through UIToolkit; custom modes never call I.UI.removeMode
+---@field getSellOffer fun(item:openmw.Object, count:number):number? predicted gold gain from selling count of item at the last-known Trade merchant (ctx.windowArgs.Trade, decision 1: one merchant at a time); nil when no merchant is known (0 would read as "free item"). Shares updateOffer's per-item math (effective value, getBarterOffer, 0.75 cap, NPC min) - price the queue plus a candidate and subtract the existing offer for incremental knapsacks
+---@field getBuyOffer fun(item:openmw.Object, count:number):number? predicted gold spent buying count of item at the last-known Trade merchant; same math and nil-means-no-merchant contract as getSellOffer
 
 
 ---@class InventoryExtenderRedone.Context

@@ -11,6 +11,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
 local modeApi = require('scripts.InventoryExtenderRedone.toolkit.mode')
+local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 local L = require('scripts.InventoryExtenderRedone.util.logger').get 'API'
 
 local Player = types.Player
@@ -151,6 +152,23 @@ end
 ---@return InventoryExtenderRedone.RowData? the row under the cursor in the window that owns scroll focus, nil when no window is focused or nothing is hovered
 function API.getHoveredRow()
     return windowManager:getHoveredRow()
+end
+
+--- Predicted gold gain from selling count of item at the last-known Trade merchant
+--- (ctx.windowArgs.Trade, decision 1: one merchant at a time, no role parameter).
+---@param item openmw.Object
+---@param count number
+---@return number? nil when no merchant is known - 0 would read as "free item"
+function API.getSellOffer(item, count)
+    return barterUtils.getSellOffer(item, count, windowManager.ctx.windowArgs.Trade)
+end
+
+--- Predicted gold spent buying count of item at the last-known Trade merchant.
+---@param item openmw.Object
+---@param count number
+---@return number? nil when no merchant is known - 0 would read as "free item"
+function API.getBuyOffer(item, count)
+    return barterUtils.getBuyOffer(item, count, windowManager.ctx.windowArgs.Trade)
 end
 
 local lastCrimeLevel

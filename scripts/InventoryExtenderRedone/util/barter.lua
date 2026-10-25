@@ -118,6 +118,27 @@ local function getBarterOffer(merchant, basePrice, buying)
     return math.max(1, offerPrice)
 end
 
+--- Per-item merchant-offer contribution: effective value -> getBarterOffer -> 0.75 cap ->
+--- NPC min for selling. updateOffer and the price exports share this single implementation
+--- so the prediction cannot drift from what the queue actually prices. Returns the
+--- positive magnitude; updateOffer applies the sign per side.
+---@param npc openmw.Object
+---@param item openmw.Object
+---@param count number
+---@param buying boolean
+---@return number
+local function itemOffer(npc, item, count, buying)
+    local basePrice = getEffectiveValue(item, count)
+    local cap = math.modf(math.max(1, 0.75 * basePrice))
+    local offerPrice = getBarterOffer(npc, basePrice, buying)
+    if buying then
+        return math.max(cap, offerPrice)
+    elseif NPC.objectIsInstance(npc) then
+        return math.min(cap, offerPrice)
+    end
+    return offerPrice
+end
+
 local function updateOffer(ctx)
     local state = ctx.barterState
     local merchant = ctx.windowArgs.Trade
@@ -127,17 +148,11 @@ local function updateOffer(ctx)
 
     local merchantOffer = 0
     for _, buyingData in pairs(state.buying) do
-        local basePrice = getEffectiveValue(buyingData.item, buyingData.count)
-        local cap = math.modf(math.max(1, 0.75 * basePrice))
-        local buyingPrice = getBarterOffer(merchant, basePrice, true)
-        merchantOffer = merchantOffer - math.max(cap, buyingPrice)
+        merchantOffer = merchantOffer - itemOffer(merchant, buyingData.item, buyingData.count, true)
     end
 
     for _, sellingData in pairs(state.selling) do
-        local basePrice = getEffectiveValue(sellingData.item, sellingData.count)
-        local cap = math.modf(math.max(1, 0.75 * basePrice))
-        local sellingPrice = getBarterOffer(merchant, basePrice, false)
-        merchantOffer = merchantOffer + (NPC.objectIsInstance(merchant) and math.min(cap, sellingPrice) or sellingPrice)
+        merchantOffer = merchantOffer + itemOffer(merchant, sellingData.item, sellingData.count, false)
     end
 
     local diff = merchantOffer - (state.currentMerchantOffer or 0)
@@ -234,8 +249,37 @@ local function completeOffer(npc, ctx, opts)
     return true, skillGain
 end
 
+--- Predicted gold gain from selling count of item at npc: the per-item half of updateOffer's
+--- selling loop (0.75 cap, NPC min). Incremental pricing for pre-commit knapsacks: price the
+--- queue plus the candidate and subtract the existing offer.
+---@param item openmw.Object
+---@param count number
+---@param npc openmw.Object? the module has no window, so the caller supplies the merchant
+---@return number? nil when there is no merchant - 0 would read as "free item"
+local function getSellOffer(item, count, npc)
+    if not npc then
+        return nil
+    end
+    return itemOffer(npc, item, count, false)
+end
+
+--- Predicted gold spent buying count of item at npc: the per-item half of updateOffer's
+--- buying loop (0.75 cap floor via max).
+---@param item openmw.Object
+---@param count number
+---@param npc openmw.Object? the merchant
+---@return number? nil when there is no merchant - 0 would read as "free item"
+local function getBuyOffer(item, count, npc)
+    if not npc then
+        return nil
+    end
+    return itemOffer(npc, item, count, true)
+end
+
 return {
     haggle = haggle,
     updateOffer = updateOffer,
     completeOffer = completeOffer,
+    getSellOffer = getSellOffer,
+    getBuyOffer = getBuyOffer,
 }
