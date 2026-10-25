@@ -166,6 +166,45 @@ function WindowManager:getHoveredRow()
     return handler:getHoveredRow()
 end
 
+--- Barter row queries for one window role: the sell side is the Inventory window, the buy side is the Trade window. 
+--- The handler answers only while its mode is Barter
+--- Only the add affordance is answered: rows already offered (isBartered) stay out. 
+--- nil means "not tradeable right now": no window in Barter mode, filtered out of handler.table.filteredItems, or row.isDisabled().
+---@param role InventoryExtenderRedone.Role
+---@param item openmw.Object
+---@return InventoryExtenderRedone.RowData?
+local function findBarterRow(role, item)
+    local handler = Manager.getHandler(getWindowId(role)) --[[@as IER.Inventory]]
+    if not handler or handler.mode ~= D.Modes.Barter then return nil end
+
+    local rows = handler.table and handler.table.filteredItems
+    if not rows then return nil end
+
+    for r = 1, #rows do
+        local row = rows[r]
+        -- record-level fallback: virtual merchant rows are merged stacks (row.item =
+        -- stacks[1]), so object identity misses another object of the same record
+        if not row.isBartered and row.item
+            and (row.item.id == item.id or row.itemRecord.id == item.recordId)
+            and not row.isDisabled() then
+            return row
+        end
+    end
+    return nil
+end
+
+---@param item openmw.Object
+---@return InventoryExtenderRedone.RowData? the row in the open Inventory window under the Barter mode, nil when not tradeable right now
+function WindowManager:getSellRow(item)
+    return findBarterRow(D.Roles.Inventory, item)
+end
+
+---@param item openmw.Object
+---@return InventoryExtenderRedone.RowData? the row in the open Trade window under the Barter mode, nil when not tradeable right now
+function WindowManager:getBuyRow(item)
+    return findBarterRow(D.Roles.Trade, item)
+end
+
 ---@param role InventoryExtenderRedone.Role
 ---@param arg any? the target NPC/container/merchant
 function WindowManager:show(role, arg)

@@ -154,6 +154,23 @@ function API.getHoveredRow()
     return windowManager:getHoveredRow()
 end
 
+--- The row feeding the sell side of a barter offer: the visible, enabled, not-yet-offered
+--- row for item in the open Inventory window while its mode snapshot is Barter. nil means
+--- "not tradeable right now": no window in Barter mode, filtered out, or disabled.
+---@param item openmw.Object
+---@return InventoryExtenderRedone.RowData?
+function API.getSellRow(item)
+    return windowManager:getSellRow(item)
+end
+
+--- The row feeding the buy side of a barter offer: same query in the open Trade window
+--- while its mode snapshot is Barter.
+---@param item openmw.Object
+---@return InventoryExtenderRedone.RowData?
+function API.getBuyRow(item)
+    return windowManager:getBuyRow(item)
+end
+
 --- Predicted gold gain from selling count of item at the last-known Trade merchant
 --- (ctx.windowArgs.Trade, decision 1: one merchant at a time, no role parameter).
 ---@param item openmw.Object
