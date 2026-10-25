@@ -232,6 +232,13 @@ function API.getSellOffer(item, count)
     return barterUtils.getSellOffer(item, count, windowManager.ctx.windowArgs.Trade)
 end
 
+--- Current offer balance in gold: what committing the queue now would net the player
+--- (negative means spending). 0 when no trade has priced anything yet.
+---@return number
+function API.getBarterBalance()
+    return windowManager.ctx.barterState.currentBalance or 0
+end
+
 --- Predicted gold spent buying count of item at the last-known Trade merchant.
 ---@param item openmw.Object
 ---@param count number

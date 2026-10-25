@@ -349,6 +349,117 @@ defaultSelected }`. `iconPackRelativePath` resolves against the active icon pack
 `icon` is an absolute path. `Favorites` has no filter and applies only to the player's own
 window; in other windows it behaves like `All`.
 
+## Barter API
+
+One merchant at a time: no barter function takes a role or merchant parameter. The merchant is
+`ctx.windowArgs.Trade` — the `arg` last passed to `show(IER.Roles.Trade, merchant)`. **Last-known,
+not current**: `show` with a nil `arg` keeps the previous value, and nothing clears it when the
+window closes, so it may name a merchant whose window is gone. With no merchant known, the queue
+functions do nothing and log a warning, and the price queries return `nil` (`0` would read as
+"free item").
+
+### Find the row for an item
+
+```lua
+---@param item openmw.Object
+---@return InventoryExtenderRedone.RowData?
+IER.getSellRow(item)   -- your side: the row in the open Inventory window while its mode is Barter
+IER.getBuyRow(item)    -- merchant side: the row in the open Trade window while its mode is Barter
+```
+
+A row comes back only while it is visible and enabled (in `handler.table.filteredItems`,
+`row.isDisabled()` false); `nil` means "not tradeable right now": no window in Barter mode,
+filtered out, or disabled. The queries are split because the two windows apply different filter
+sets and an already-offered item is hidden in your window but visible in the merchant's as an
+`isBartered` row. Matching falls back to the record id, so a merged virtual merchant stack matches
+any object of that record.
+
+### Predict the price
+
+```lua
+---@param item openmw.Object
+---@param count number
+---@return number?  nil when no merchant is known
+IER.getSellOffer(item, count)   -- predicted gold gain from selling
+IER.getBuyOffer(item, count)    -- predicted gold spent buying
+IER.getBarterBalance()          -- current offer balance in gold (committing now nets this)
+```
+
+These share `updateOffer`'s per-item math (effective value, merchant offer, 0.75 cap, NPC rule), so
+a mod can price a candidate against the current queue before committing: price the queue plus the
+candidate and subtract the existing offer.
+
+### Queue the offer
+
+```lua
+IER.queueSell(row, count)      -- add to the sell side (row from getSellRow, isBartered false)
+IER.queueBuy(row, count)       -- add to the buy side (row from getBuyRow)
+IER.unqueueSell(row, count?)   -- retract from the sell side (the offered, isBartered row)
+IER.unqueueBuy(row, count?)    -- retract from the buy side; count omitted clears the entry
+IER.clearBarterOffer()         -- empty both sides and zero the scalars, leaving any open window alone
+```
+
+Input is a `RowData`, not a raw item: `row.virtualStacks` is carried into the queue entry
+`{ item, stacks, count }` keyed by `item.id`, and `finalizeBarter` walks `entry.stacks` restock-aware
+— a missing `stacks` on a virtual row silently mis-moves items. Counts clamp to `row.getCount()`.
+Queueing reprices the offer and refreshes the windows.
+
+### Commit — `IER.offerBarter`
+
+```lua
+---@param opts table?  { closeWindow = boolean? } default true
+---@return boolean accepted
+---@return number? skillGain
+IER.offerBarter(opts)
+```
+
+Runs the same sequence the Trade window's Offer button runs: empty check, PC/NPC gold caps, stolen
+"that's mine" interruption, haggle (through the override chain below), disposition change, refusal
+message, transfer, gold sound. `closeWindow = true` removes the Barter UI mode as usual; `false`
+clears the queues in place instead so an open Trade window shows an empty offer. `barterState.success`
+is set in both cases, so the "thanks" line still fires when the player eventually leaves.
+
+Typical autosell shape:
+
+```lua
+IER.show(IER.Roles.Trade, merchant)              -- opens both Barter windows
+for _, item in ipairs(junk) do
+    local row = IER.getSellRow(item)
+    if row then
+        -- incremental pricing: value of queue + candidate minus current offer
+        local gain = IER.getSellOffer(item, row.getCount()) - IER.getBarterBalance()
+        if worth(gain) then
+            IER.queueSell(row, row.getCount())
+        end
+    end
+end
+local accepted = IER.offerBarter({ closeWindow = false })
+IER.hide(IER.Roles.Trade)                        -- close the windows yourself
+```
+
+### Haggle override — `IER.registerHaggleOverride`
+
+```lua
+---@param id string
+---@param handler fun(npc, playerOffer, merchantOffer, chance): chance?, skillGain?
+IER.registerHaggleOverride(id, handler)
+```
+
+The chain is consulted by both the Offer button and `offerBarter`, **before the acceptance dice are
+rolled** — a mod never sees or re-rolls them. `chance` is IER's computed acceptance threshold
+(`roll > chance` refuses, `roll` in `[1, 100]`). Handlers run in reverse registration order; each
+non-nil return replaces the running value for its own field, so chance modifiers **stack** and the
+last registered wins per field (this is replace-per-field on purpose: chance modifiers compose,
+unlike eligibility chains such as `registerEquippedOverride` where the first non-nil decides).
+The returned chance is clamped to `[0, 100]`: `100` guarantees acceptance, `0` guarantees refusal —
+one number covers "raise the chance" tweaks and force-decide. A returned `skillGain` replaces the
+price-delta-derived gain when a mod forced acceptance and the derived value would be wrong. The
+vanilla early outs (offer already at/below the merchant's, creature merchants) have no computed
+chance and bypass the chain.
+
+**Deliberately powerful:** a handler can force-accept any offer. Use it for tweaks, not as a gate
+other mods must respect.
+
 ## Windows and context
 
 ```lua
@@ -380,7 +491,7 @@ fields across frames without invalidation.
 | `pickpocket` | the current pickpocket session, or `nil` |
 | `companionProfit[actorId]` | profit a companion gained from the player |
 | `containerVariables[name]` | vanilla-parity ownership globals |
-| `windowArgs[role]` | the `arg` last passed to `show` for that role (the current target) |
+| `windowArgs[role]` | the `arg` last passed to `show` for that role — **last-known, not current**: `show` with a nil `arg` keeps the previous value and nothing clears it on close, so `windowArgs.Trade` may name a merchant whose window is gone |
 | `modes[modeKey]` | custom mode specs registered through `registerMode` |
 | `modePatches[modeKey]` | registered patches per mode key |
 | `dragAndDrop` | drag state: `draggingObject`, `draggingCount`, `draggingActivationContext` (carries `role` and `modeKey` of the mode that started the drag) |
