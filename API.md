@@ -15,7 +15,7 @@ LuaLS `---@meta` file, not shipped); this document is its human-facing companion
 
 ## Overview and quick start
 
-This reference describes API version 2 (`IER.VERSION`). A mod that uses this surface should check
+This reference describes API version 3 (`IER.VERSION`). A mod that uses this surface should check
 the version first, then extend the mod through the registration points below: `patchMode` to
 change an existing mode, `registerMode` for a new behavior set, `registerWindowRole` for a new
 window, `openMode` to open a custom mode's windows.
@@ -23,8 +23,8 @@ window, `openMode` to open a custom mode's windows.
 ```lua
 local IER = I.InventoryExtenderRedone
 
-if IER.VERSION < 2 then
-    return   -- this reference describes API version 2
+if IER.VERSION < 3 then
+    return   -- this reference describes API version 3
 end
 
 -- Hide gold rows in the player's window
@@ -76,11 +76,9 @@ A mode is an `InventoryExtenderRedone.Mode` table:
 | `base` | inherit another mode's slots (e.g. `Pickpocket` inherits `Container`) |
 | `applies(role, arg, ctx, uiMode)` | mode selection: which windows this mode governs |
 | `priority` | higher wins when several modes apply (default 0). Equal priorities are unordered, so a custom mode that overlaps a built-in must out-prioritize it |
-| `syncCategory` | category switching syncs across open windows (default true) |
 | `drag` | `{ allowed, autoEquip }` — whether dragging is allowed in this mode |
-| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)`, `onClosed(handler?)` |
+| `lifecycle` | `onOpened(handler, arg, saved)`, `onClosing(handler?, arg, newMode)` — `onClosing` fires for built-in modes from the engine's UI-mode change, with `handler` nil |
 | `event` | `{ flags }` — serializable summary other mods see in event payloads |
-| `title` | l10n key, or `fun(handler, arg): string` |
 | `roles` | `table<role, RoleSpec>` — one slot-set per window role |
 
 A `Mode.RoleSpec` is the per-window behavior:
@@ -89,11 +87,9 @@ A `Mode.RoleSpec` is the per-window behavior:
 | --- | --- | --- |
 | `sources` | `Mode.Source[]` | which items a window lists |
 | `filters` | `Mode.Filter[]` | which of them are visible |
-| `states` | `Mode.State` | per-row states (`isDisabled`, `isActive`, `isOwned`, `badges`) |
-| `actions` | `Mode.Actions` | gates and effects for row actions (`use`/`pickup`/`favorite`/`takeAll`/`dispose`/`close`) |
+| `states` | `Mode.State` | per-row states (`isDisabled`, `isOwned`) |
+| `actions` | `Mode.Actions` | gates and effects for the two row actions (`use`/`pickup`); the bulk affordances (`takeAll`, `dispose`, `close`) are `infoBar` sections and the favorite toggle is a shared handler mechanic, not a mode slot |
 | `infoBar` | `Mode.InfoBarSection[]` | bottom-strip sections, in order |
-| `categories` | `Mode.Categories` | `{ available, default, map }` |
-| `columns` | `Mode.Columns` | `{ hiddenColumns }` |
 | `hints` | `Mode.Hints` | controller hints |
 | `pinnable` | boolean | only the `Interface` Inventory window sets true |
 | `storageSuffix` | string | suffix of this window's saved data (see Notes) |
@@ -117,7 +113,7 @@ local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 --                 pickupCompanionInventory, pickupCompanionTarget, pickupBarterInventory,
 --                 pickupBarterTrade, pickpocketTake
 -- Mode.Info     : encumbrance, gold, armorRating, filler, use, dispose, takeAll, profit,
---                 barterControls, close
+--                 barterControls, barterCancel, close
 ```
 
 ## Changing window behavior
@@ -183,7 +179,7 @@ A patch can also replace a built-in part with its own behavior and add lifecycle
 ```lua
 IER.patchMode(IER.Modes.Barter, {
     id = 'ier-trade-redone',
-    lifecycle = { onOpened = function(handler, trader) ... end, onClosed = function() ... end },
+    lifecycle = { onOpened = function(handler, trader) ... end, onClosing = function(_, arg, newMode) ... end },
     roles = {
         Trade = {
             filters = { replace = { { id = 'barterOffered', fn = function(row, handler, ctx)
@@ -540,7 +536,7 @@ What external mods typically interact with:
 ## Constants and helpers
 
 ```lua
-IER.VERSION       -- API version (currently 2)
+IER.VERSION       -- API version (currently 3)
 IER.Constants     -- shared constants: C.Colors, C.Strings (GMST-backed), C.OPT_KEYS,
                     C.ServiceToType, C.BoundItemIDs
 IER.Helpers       -- item inspection helpers: getItem*, isItemEquipped, doesItemFit, isGold,

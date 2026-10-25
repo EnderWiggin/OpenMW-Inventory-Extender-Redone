@@ -62,7 +62,6 @@ local Mode = {}
 --- Function-bearing defaults arrive with the phase that owns the behavior.
 Mode.Defaults = {
     priority = 0,
-    syncCategory = true,
     drag = { allowed = true }, -- validDragModes today: Barter is the mode that forbids dragging
     RoleSpec = {
         pinnable = false,      -- only the Interface Inventory window is pinnable (inventory.lua:519)
@@ -725,8 +724,8 @@ Mode.Builtins = {
 -- List slots merge through id-keyed ops; everything else is a whole-slot overwrite. A plain
 -- array in a patch replaces the whole slot, a { add/remove/replace } table applies ops.
 local LIST_SLOTS = { 'sources', 'filters', 'infoBar' }
-local ROLE_SLOTS = { 'states', 'actions', 'categories', 'columns', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
-local MODE_SLOTS = { 'title', 'applies', 'priority', 'syncCategory', 'drag', 'lifecycle', 'event' }
+local ROLE_SLOTS = { 'states', 'actions', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
+local MODE_SLOTS = { 'applies', 'priority', 'drag', 'lifecycle', 'event' }
 
 
 local function isPatchList(op)
@@ -862,7 +861,6 @@ end
 ---@return InventoryExtenderRedone.Mode
 local function applyModeDefaults(mode)
     if mode.priority == nil then mode.priority = Mode.Defaults.priority end
-    if mode.syncCategory == nil then mode.syncCategory = Mode.Defaults.syncCategory end
     if not mode.drag then
         mode.drag = { allowed = Mode.Defaults.drag.allowed }
     elseif mode.drag.allowed == nil then
