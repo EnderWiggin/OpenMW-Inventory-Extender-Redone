@@ -1,3 +1,11 @@
+0.0.8 (2026-10-25)
+- fixed autoEquip equipping only 1 ring (notably for companions)
+- API: added ways to modify how barter works:
+  - ways to modify how items are priced and success chance and skill gain of barter offer
+  - ways to get price of selling or buying an item
+  - ways to manipulate what's currently queued to sell/buy
+- bumped API version to 3
+
 0.0.7 (2026-10-24)
 - AR in tooltips and columns of companion's inventory show values as applied for companion
 - added hand-to-hand to companion stats popup
