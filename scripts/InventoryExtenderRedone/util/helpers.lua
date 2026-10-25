@@ -595,7 +595,7 @@ Helpers.getItemValue = function(item)
     if configGlobal.gameplay.b_SoulGemValueRebalance then
         soulValue = 0.0001 * (soulValue ^ 3) + 2 * soulValue
 
-        if item.recordId:lower() == 'misc_soulgem_azura' then
+        if item.recordId == 'misc_soulgem_azura' then
             return baseValue + math.modf(soulValue)
         else
             return math.modf(soulValue)
@@ -606,7 +606,7 @@ Helpers.getItemValue = function(item)
 end
 
 Helpers.isSoulGem = function(item)
-    return Miscellaneous.objectIsInstance(item) and item.recordId:lower():find('^misc_soulgem')
+    return Miscellaneous.objectIsInstance(item) and item.recordId:find('^misc_soulgem')
 end
 
 Helpers.getSoulGemCapacity = function(item)
@@ -665,7 +665,7 @@ Helpers.itemCanStack = function(a, b)
     if Helpers.isGold(a) and Helpers.isGold(b) then
         return true
     end
-    if a.recordId:lower() ~= b.recordId:lower() then
+    if a.recordId ~= b.recordId then
         return false
     end
     if not Helpers.itemDataEquals(a, b) then
@@ -715,7 +715,7 @@ Helpers.getMerchantItems = function(npc)
     local virtualMerged = {}
     for i = 1, #unmerged do
         local item = unmerged[i]
-        local key = item.recordId:lower()
+        local key = item.recordId
         if virtualMerged[key] then
             local existing = false
             for j = 1, #virtualMerged[key] do
@@ -773,12 +773,12 @@ Helpers.isStealing = function(actor, ownerInfo, variable)
 end
 
 Helpers.isGold = function(item)
-    local id = type(item) == 'string' and item:lower() or item.recordId:lower()
+    local id = type(item) == 'string' and item:lower() or item.recordId
     return id == 'gold_001' or id == 'gold_005' or id == 'gold_010' or id == 'gold_025' or id == 'gold_100'
 end
 
 Helpers.isBoundItem = function(item)
-    return C.BoundItemIDs[item.recordId:lower()] ~= nil
+    return C.BoundItemIDs[item.recordId] ~= nil
 end
 
 Helpers.getItemSound = function(item, upOrDown)
