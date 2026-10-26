@@ -644,6 +644,45 @@ Mode.Info = {
             end
         end,
     },
+    -- put everything: move all non-equipped, non-favorite visible items into container
+    putAll = {
+        id = 'putAll',
+        create = function(handler, ctx)
+            local theme = Toolkit.getTheme()
+            local isFavorite = I.InventoryExtenderRedone.isFavorite
+            local btnPutAll = Components.textButton {
+                name = 'putAll',
+                style = theme.IntRe and 'empty' or 'thin',
+                text = l10n('UI_Text_PutAllButton'),
+                onClick = function()
+                    local mode = handler.mode
+                    if mode ~= D.Modes.Container then return end
+                    if not handler.arg then return end
+                    local items = {}
+
+                    local visibleItems = handler.table.filteredItems
+                    local overrides = ctx.overrides.equipped
+                    for i = 1, #visibleItems do
+                        local row = visibleItems[i]
+                        local item = row and row.item
+                        if item and not isFavorite(item) and not helpers.isItemEquipped(item, omwself, overrides)
+                        then
+                            items[#items + 1] = item
+                        end
+                    end
+
+                    if not items or #items > 0 then
+                        ctx.dragAndDrop:moveAll(omwself, handler.arg, items)
+                    end
+                end,
+                tooltip = l10n('UI_Tooltip_PutAllButton'),
+            }
+            return function(c)
+                btnPutAll:setVisible(not (c.pickpocket and c.pickpocket.active))
+                return btnPutAll.element
+            end
+        end,
+    },
     -- what a companion has gained from the player, only on its window
     profit = {
         id = 'profit',

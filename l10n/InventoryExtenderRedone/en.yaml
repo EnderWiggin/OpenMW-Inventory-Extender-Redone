@@ -224,6 +224,8 @@ UI_Tooltip_GridView: Switch to grid view
 UI_Tooltip_UseButton: Or press {key} on item
 UI_Tooltip_UseButton_Swapped: Or click on item
 UI_Tooltip_TakeAllButton_Shift: Hold Shift to take only currently visible items.
+UI_Tooltip_PutAllButton: Moves all visible non-equipped, non-favorite items.
+UI_Text_PutAllButton: Move All
 UI_Tooltip_Companion_Stats: Show companion stats.
 
 UI_EnchantCapacity: Enchant Capacity

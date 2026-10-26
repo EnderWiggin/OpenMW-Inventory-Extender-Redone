@@ -114,6 +114,7 @@ return {
                 { id = 'armorRating' },
                 { id = 'filler' },
                 { id = 'use' },
+                { id = 'putAll' },
             },
             states = {
                 -- the player's own rows in a chest: an organic container takes everything it

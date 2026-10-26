@@ -225,6 +225,8 @@ UI_Tooltip_GridView: "Переключить на сетку"
 UI_Tooltip_UseButton: "Или нажмите {key} на предмете"
 UI_Tooltip_UseButton_Swapped: "Или кликните на предмет"
 UI_Tooltip_TakeAllButton_Shift: "Зажмите Shift, чтобы взять только видимые сейчас предметы."
+UI_Tooltip_PutAllButton: "Перемещает все видимые не одетые, не избранные предметы."
+UI_Text_PutAllButton: "Переместить все"
 UI_Tooltip_Companion_Stats: "Показать характеристики спутника."
 
 UI_EnchantCapacity: "Емкость зачарования"
