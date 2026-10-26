@@ -477,28 +477,24 @@ function Inventory:onOpened(wnd, data, saved)
     local ctx = IE.getContext()
     self.ctx = ctx
 
-    -- the mode and its slots are snapshotted here: a mod patching the mode later affects the next
-    -- open, not this window
+    -- snapshotted here: a mode patched later affects the next open, not this window
     local mode, roleSpec = Mode.resolveMode(self.role, self.arg, I.UI.getMode())
     self.mode = mode and mode.key or nil
     L.info('onOpened', self.role, self.mode)
     self.slots = roleSpec
-    -- snapshotted from the resolved slots: getStorageSuffix/getDefaultStorage answer from these
-    -- while the window is open, and windowManager's dragAllowed() reads drag off the open
-    -- windows, not the engine mode
+    -- the open window answers from these snapshots, never from the engine mode
     self.suffix = roleSpec and roleSpec.storageSuffix or nil
     self.drag = mode and mode.drag or nil
     self.infoBarSections = roleSpec and Mode.resolveParts(Mode.Info, roleSpec.infoBar) or nil
     self.sources = Mode.resolveParts(Mode.Sources, roleSpec and roleSpec.sources)
     local modeFilters = Mode.resolveParts(Mode.Filters, roleSpec and roleSpec.filters)
-    -- the actions slot is a whole overwrite per role: resolve the entry ids against the parts
+    -- the actions slot is a whole overwrite per role: entry ids resolve against the parts
     -- library here, the handler dispatches to them per row action
     local actions = roleSpec and roleSpec.actions
     self.actions = actions and {
         use = Mode.resolvePart(Mode.Actions, actions.use),
         pickup = Mode.resolvePart(Mode.Actions, actions.pickup),
     } or nil
-    -- observability: the whole open-time snapshot the probes' readiness waits hinge on
     L.debug('slots', self.role, self.mode, self.suffix, self.drag and self.drag.allowed,
         self.sources and #self.sources or 0, #modeFilters)
 
@@ -799,9 +795,7 @@ function Inventory:onOpened(wnd, data, saved)
         end)
     end
 
-    -- the key this window's opened category is remembered under. It used to be the engine UI mode
-    -- plus a hand-written 'pickpocket' special case for the Container role; the mode key already
-    -- distinguishes Pickpocket from Container, so the special case is gone.
+    -- the key this window's opened category is remembered under
     local function getOpenedCategoryKey()
         --TODO: check trader services?
         return self.mode
@@ -1113,11 +1107,9 @@ function Inventory:onClosed()
     if self.ctx.dragAndDrop.draggingObject then
         self.ctx.dragAndDrop:stopDrag()
     end
-    -- the mode's post-close hook: the only close path a custom mode has (it never changes the
-    -- engine UI mode, so windowManager's onClosing never fires for it). Runs while this window's
-    -- open-time snapshot is still readable, before the library destroys the element; fires once
-    -- per closing window, so a two-role mode fires twice, and also for the close that precedes a
-    -- reopen for a mode change (handler.mode is then the previous mode)
+    -- the mode's post-close hook: the only close path a custom mode has, since it never changes
+    -- the engine UI mode. Runs while this window's open-time snapshot is still readable, once per
+    -- closing window (a two-role mode fires twice), including the close that precedes a reopen.
     local mode = self.mode and Mode.resolve(self.mode)
     if mode and mode.lifecycle and mode.lifecycle.onClosed then
         L.debug('lifecycle.onClosed', self.role, self.mode)
@@ -1138,8 +1130,6 @@ function Inventory:onResized(inner)
     local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self:getTopBarHeight()
     local tableSize = inner - v2(0, topBarHeight + infoHeight + 4)
-    -- observability: the resize probes assert table.size.x == wnd inner width; this line
-    -- shows the arithmetic that produced it
     L.debug('onResized', self.role, self.mode, inner, infoHeight, topBarHeight, tableSize)
     self.table:setSize(tableSize)
 end
@@ -1156,8 +1146,7 @@ function Inventory:updateInputHints()
         or { find(binds.c_SelUp), find(binds.c_SelDown) }
     local swap = configPlayer.keybinds.b_SwapUsePickup
 
-    -- the base list is the interface default; the hints slot is a whole-overwrite role slot, so
-    -- a mode (Barter names it for both roles) replaces it wholesale and returns nil to keep this
+    -- the base list is the interface default; the hints role slot replaces it wholesale
     local hints = {
         { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
         { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
@@ -1276,13 +1265,11 @@ function Inventory:update()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
-    -- observability: rows built vs rows the filters let through; an empty filtered count is
-    -- the "window opened but table empty" probe stall
     L.debug('refresh', self.role, self.mode, #data, #self.table.filteredItems)
 end
 
---- the row under the cursor in this window, or nil when nothing is hovered; the table
---- component only exists once the window opened, so an unopened handler reports nil
+--- The row under the cursor in this window, or nil when nothing is hovered or the window
+--- is not open.
 ---@return InventoryExtenderRedone.RowData?
 function Inventory:getHoveredRow()
     if not self.table then return nil end
@@ -1404,8 +1391,6 @@ end
 ---@param forceBarterAction boolean? set when delegated from the use action; keeps the delegation one-way
 function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
     local ctx = self.ctx
-    -- observability: the click entry point; every early return below is a silent no-op that
-    -- leaves the probe waiting for a drag that never starts
     L.info('onRowPickup', self.role, self.mode, row.id, row.getCount())
     if ctx.dragAndDrop.draggingObject then
         if fromKBMKeybind then
@@ -1512,7 +1497,7 @@ end
 function Inventory:updateTitle()
     local title
     -- the window's own mode snapshot decides: a pinned Interface window keeps this title while
-    -- the engine mode stack is empty (decision 14: reading the engine mode misclassifies it)
+    -- the engine mode stack is empty
     if self.mode == D.Modes.Interface then
         title = helpers.getEquippedName(omwself)
     else
@@ -1712,8 +1697,7 @@ function Inventory:createData()
         isOwned = isOwnedState(self, ctx) == true
     end
 
-    -- rows come from the mode's sources: which inventories feed this window, in order. The
-    -- primary feed and the cross-fed barter side are no longer hand-branched here.
+    -- rows come from the mode's sources: which inventories feed this window, in order
     local sources = self.sources or {}
     for i = 1, #sources do
         local source = sources[i]
@@ -1747,9 +1731,9 @@ function Inventory:initInfoBar()
     local sections = self.infoBarSections
     if not sections then return end
     local ctx = self.ctx
-    -- the sections are this role's infoBar slot resolved against Mode.Info, in slot order: create
-    -- builds the once-per-open part (buttons, bars) and hands back the per-frame provider, a
-    -- provider-only section is stateless; cleanup runs in InfoBar:beforeElementDestroy()
+    -- sections come from this role's infoBar slot, in slot order: create builds the once-per-open
+    -- part and returns the per-frame provider; a provider-only section is stateless, and cleanup
+    -- runs when the bar is destroyed
     for i = 1, #sections do
         local section = sections[i]
         local provider = section.provider

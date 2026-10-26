@@ -66,9 +66,7 @@ return {
     end,
     drag = {
         allowed = true,
-        -- an NPC container partner auto-equips what it receives: this used to read the engine's
-        -- Container mode at transfer time, the mode spec decides it now, keyed by the mode that
-        -- started the transfer
+        -- an NPC container partner auto-equips what it receives
         autoEquip = function(ctx, object, source, destination)
             local target = ctx.windowArgs[D.Roles.Container]
             if target and NPC.objectIsInstance(target) then
@@ -76,10 +74,7 @@ return {
             end
         end,
     },
-    -- opening anything that is not a pickpocket target ends a session: today windowManager:show
-    -- cleared the flag on every Container-role show that did not create a new one
-    -- lifecycle is a list slot: the entry id is the mode key, so a patch adds to this hook
-    -- instead of replacing it (the chain runs mods first, the built-in entry last)
+    -- opening anything that is not a pickpocket target ends a pickpocket session
     lifecycle = { {
         id = 'Container',
         onOpened = function(handler, arg, saved)
@@ -87,8 +82,7 @@ return {
                 I.InventoryExtenderRedone.getContext().pickpocket = nil
             end
         end,
-        -- the engine popped the Container mode: the session flag is cleared and the body plays
-        -- its close animation (fires from UiModeChanged for built-ins, decision 11)
+        -- the engine popped the Container mode: clear the session and play the close animation
         onClosing = function(handler, arg, newMode)
             if newMode ~= nil or not arg then return end
             I.InventoryExtenderRedone.getContext().pickpocket = nil
@@ -97,8 +91,7 @@ return {
     } },
     roles = {
         [Roles.Inventory] = {
-            -- literal, never derived from the mode key: this is the UIToolkit:WindowData key,
-            -- and losing it silently loses the saved position/size of the player's window
+            -- the UIToolkit:WindowData key: literal, never derived from the mode key
             storageSuffix = ':Container',
             -- getDefaultStorage: only the Inventory role gets defaults outside Interface mode
             defaultStorage = { position = v2(0.05, 0.05), size = v2(0.45, 0.85) },
@@ -135,8 +128,7 @@ return {
                 use = { id = 'useTarget' },
                 pickup = { id = 'pickupContainerTarget' },
             },
-            -- the container's own strip: weight, the gap, dispose, take all, close (no gold:
-            -- the original added gold only for the Inventory and Trade roles)
+            -- the container's own strip: weight, the gap, dispose, take all, close
             infoBar = {
                 { id = 'encumbrance' },
                 { id = 'filler' },

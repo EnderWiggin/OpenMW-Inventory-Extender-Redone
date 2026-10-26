@@ -49,13 +49,11 @@ local function getEffectiveValue(item, count)
     return x * count
 end
 
---- Haggle override chain (ctx.overrides.haggle): handlers run in reverse registration order,
---- each non-nil return replaces the running value for its own field, so chance modifiers
---- stack and the last registered wins per field. Chance is clamped to [0, 100] after each
---- replacement, which makes 100 guaranteed acceptance and 0 guaranteed refusal with one
---- number. The chain runs before the dice are rolled, so a mod never sees or re-rolls them.
---- The vanilla early outs (offer already at/below the merchant's, creature merchants) have no
---- computed chance and bypass the chain.
+--- Haggle override chain (ctx.overrides.haggle): handlers run in reverse registration order, and
+--- each non-nil return replaces the running chance and/or skillGain, so the last registered wins
+--- per field. Chance is clamped to [0, 100] after each replacement. The chain runs before the
+--- acceptance dice, and the vanilla early outs (offer at/below the merchant's, creature merchants)
+--- bypass it.
 ---@param overrides InventoryExtenderRedone.HaggleOverrideEntry[]
 ---@param npc openmw.Object
 ---@param playerOffer number
@@ -152,16 +150,12 @@ local function getBarterOffer(merchant, basePrice, buying)
     return math.max(1, offerPrice)
 end
 
---- Price override chain (ctx.overrides.price): consulted inside itemOffer, so the queue
---- (updateOffer), the prediction exports and the committed gold (finalizeBarter) all see
---- the same repriced value - one implementation, no drift. Handlers run in reverse
---- registration order; each non-nil return replaces the running magnitude, so modifiers
---- compose and the last registered wins. buying is the barter direction - true when the
---- player BUYS item from npc (the buy side), false when the player SELLS it to npc (the
---- sell side) - so one handler can price the two directions differently. price is the
---- final per-item contribution magnitude (after the 0.75 cap and the NPC min/max rule);
---- updateOffer applies the sign per side. Returned price is clamped to [0, infinity):
---- 0 means a free item; a negative would flip the offer sign and corrupt the balance scalars.
+--- Price override chain (ctx.overrides.price): consulted inside itemOffer, so the queue, the
+--- prediction exports and the committed gold all see the same repriced value. Handlers run in
+--- reverse registration order; each non-nil return replaces the running per-item price, so the
+--- last registered wins. buying is true when the player buys item from npc, false when selling it
+--- to npc, so one handler can price the two directions differently. price is the final per-item
+--- magnitude; the returned price is clamped to [0, infinity).
 ---@param overrides InventoryExtenderRedone.PriceOverrideEntry[]
 ---@param npc openmw.Object
 ---@param item openmw.Object
@@ -179,10 +173,9 @@ local function applyPriceOverrides(overrides, npc, item, count, buying, price)
     return price
 end
 
---- Per-item merchant-offer contribution: effective value -> getBarterOffer -> 0.75 cap ->
---- NPC min for selling, then the price override chain. updateOffer and the price exports
---- share this single implementation so the prediction cannot drift from what the queue
---- actually prices. Returns the positive magnitude; updateOffer applies the sign per side.
+--- Per-item merchant-offer contribution: effective value -> getBarterOffer -> 0.75 cap -> NPC
+--- min for selling, then the price override chain. Returns the positive magnitude; updateOffer
+--- applies the sign per side.
 ---@param npc openmw.Object
 ---@param item openmw.Object
 ---@param count number
@@ -225,9 +218,8 @@ local function updateOffer(ctx)
     state.currentBalance = (state.currentBalance or 0) + diff
 end
 
---- Offer queue entry: { item, stacks = row.virtualStacks, count } keyed by row.item.id.
---- stacks is nil on sell rows by construction; finalizeBarter walks entry.stacks restock-aware,
---- so a virtual row must carry its stacks or items silently mis-move.
+--- Offer queue entry: { item, stacks = row.virtualStacks, count } keyed by row.item.id. A
+--- virtual row must carry its stacks, or finalizeBarter silently mis-moves items.
 local function offerIncrement(offer, row, count)
     local entry = offer[row.item.id]
     if not entry then
@@ -259,9 +251,8 @@ local function offerTail(row, ctx)
     self:sendEvent('IER_Update')
 end
 
---- Row-action effect factory for the two Barter role parts (mode.lua Mode.Actions):
---- decrementTable is where a bartered row's units come back from, incrementTable where a
---- fresh offer is recorded; the parts differ only in which side of the offer they sit on.
+--- Row-action effect factory for the two Barter role parts: decrementTable is where an offered
+--- row's units come back from, incrementTable where a fresh offer is recorded.
 ---@param decrementTable string 'selling' or 'buying'
 ---@param incrementTable string the other side
 ---@return fun(row:InventoryExtenderRedone.RowData, handler:any?, ctx:InventoryExtenderRedone.Context, count:number)
@@ -276,10 +267,9 @@ local function barterOfferEffect(decrementTable, incrementTable)
     end
 end
 
---- Queue ops for the public barter surface: the increment/decrement branch plus the shared
---- tail, with the side fixed by the operation instead of read from row.isBartered. Outside
---- a trade (no known merchant) they do nothing and only warn - the same nil-merchant
---- condition updateOffer early-returns on, so the offer scalars never go stale silently.
+--- Queue ops for the public barter surface: the increment/decrement branch plus the shared tail,
+--- with the side fixed by the operation instead of read from row.isBartered. Outside a trade
+--- (no known merchant) they only warn, so the offer scalars never go stale silently.
 ---@param ctx InventoryExtenderRedone.Context
 ---@param op string the operation name, for the warning
 ---@return boolean
@@ -327,9 +317,8 @@ local function unqueueBuy(ctx, row, count)
     offerTail(row, ctx)
 end
 
---- Reset the offer to empty. Mutates in place (unlike windowManager.lua:260, which replaces
---- the table on mode change while every window closes): the Trade window stays open across
---- this call, so its init-time closures holding the state table must keep seeing it.
+--- Reset the offer to empty. Mutates in place: the Trade window stays open across this call, so
+--- its init-time closures holding the state table must keep seeing it.
 ---@param ctx InventoryExtenderRedone.Context
 local function clearBarterOffer(ctx)
     local state = ctx.barterState
@@ -339,14 +328,13 @@ local function clearBarterOffer(ctx)
     state.currentBalance = 0
 end
 
---- The whole Offer sequence, shared by the Trade window's Offer button and the future
---- offerBarter API (one implementation, two entry points).
+--- The whole Offer sequence, shared by the Trade window's Offer button and Barter.offerBarter.
 ---@param npc openmw.Object the merchant the Trade window is showing
 ---@param ctx InventoryExtenderRedone.Context
----@param opts table? { closeWindow = boolean? } default true; governs only the Barter UI
----  mode removal - when false, the offer queues are cleared and the offer scalars zeroed
----  instead, because finalizeBarter does not reset them and the window would otherwise
----  still show the just-moved items as offered
+---@param opts table? { closeWindow = boolean? } default true; governs only the Barter UI mode
+--- removal - when false, the offer queues are cleared and the scalars zeroed in place instead,
+--- since finalizeBarter does not reset them and the window would still show the moved items
+--- as offered
 ---@return boolean accepted
 ---@return number? skillGain
 local function completeOffer(npc, ctx, opts)
@@ -414,9 +402,8 @@ local function completeOffer(npc, ctx, opts)
     state.success = true
 
     if opts and opts.closeWindow == false then
-        -- finalizeBarter does not clear the queues; on mode change windowManager does.
-        -- Without the mode removal, reset them in place so the Trade window stops
-        -- showing the moved items as offered.
+        -- finalizeBarter does not clear the queues, so reset them in place to keep the Trade
+        -- window from showing the moved items as offered
         state.selling = {}
         state.buying = {}
         state.currentMerchantOffer = 0
@@ -429,8 +416,7 @@ local function completeOffer(npc, ctx, opts)
 end
 
 --- Predicted gold gain from selling count of item at npc: the per-item half of updateOffer's
---- selling loop (0.75 cap, NPC min). Incremental pricing for pre-commit knapsacks: price the
---- queue plus the candidate and subtract the existing offer.
+--- selling loop (0.75 cap, NPC min).
 ---@param item openmw.Object
 ---@param count number
 ---@param npc openmw.Object? the module has no window, so the caller supplies the merchant

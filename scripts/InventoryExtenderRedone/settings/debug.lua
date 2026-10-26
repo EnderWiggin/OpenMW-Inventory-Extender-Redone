@@ -2,9 +2,8 @@
 local I = require('openmw.interfaces')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
--- Debug section: kept separate from settings/global.lua so it can later hold more debug knobs.
--- The dropdown stores the integer rank itself (n_LogLevel) via numeric ids; labels come from
--- the l10n text keys. The logger reads the same n_LogLevel and compares integers at runtime.
+-- The dropdown stores the integer rank itself (n_LogLevel) as the item id; labels come from the
+-- LogLevel_* l10n keys, and the logger compares that integer at runtime.
 I.Settings.registerGroup {
     key = D.Section.Debug,
     order = 7,

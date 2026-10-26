@@ -39,8 +39,7 @@ WindowManager.ctx = {
         data = {},
         badge = {},
     },
-    -- custom modes and id-keyed patches registered by other mods; built-in specs
-    -- live in toolkit/mode.lua Mode.Builtins and are never stored here
+    -- custom modes and id-keyed patches registered by other mods
     modes = {},
     modePatches = {},
     isConsoleOpen = false,
@@ -66,8 +65,8 @@ local function getWindowId(role)
     return D.WindowIdPrefix .. role
 end
 
--- drag gating reads the open windows' mode snapshots, not the engine mode: a pinned Interface
--- window keeps drag alive while the engine mode stack is empty, and a Barter window kills it
+-- drag gating reads the open windows' mode snapshots, not the engine mode: a pinned window
+-- keeps drag alive while the engine mode stack is empty
 local function dragAllowed()
     for i = 1, #RoleRegistry.order do
         local windowId = getWindowId(RoleRegistry.order[i])
@@ -82,12 +81,10 @@ local function dragAllowed()
 end
 
 -- a role's window is registered at most once: init() runs at onLoad and onInit, and
--- registerWindowRole may add a role after init already ran, so dedupe by role
+-- registerWindowRole may add a role after init already ran
 local windowRegistered = {}
 
--- ids this repo registered into UIToolkit's manager: the manager is global, so its focus
--- and handler lookups also see other mods' windows; membership here is what says a
--- focused window is one of ours
+-- ids this repo registered into UIToolkit's manager: membership says a focused window is ours
 local ierWindowIds = {}
 
 local function registerWindow(role)
@@ -118,8 +115,8 @@ function WindowManager:init()
     end
 end
 
---- The only way to get a new window id (decision 1): geometry into the role registry, the
---- window itself through UIToolkit. A mode spec never registers a window.
+--- Registers a new window role and its window. The only way to get a new window id; mode specs
+--- never register windows.
 ---@param role string
 ---@param opts InventoryExtenderRedone.RoleOpts
 function WindowManager:registerWindowRole(role, opts)
@@ -127,8 +124,7 @@ function WindowManager:registerWindowRole(role, opts)
     registerWindow(role)
 end
 
---- Purely IER-side (decision 10): open the mode's role windows through UIToolkit only. The
---- mode governs each window through its applies(); openMode forces the open, not the mode.
+--- Opens the windows of a mode through UIToolkit only, without changing the engine UI mode.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param arg any?
 function WindowManager:openMode(key, arg)
@@ -168,10 +164,10 @@ function WindowManager:getHoveredRow()
     return handler:getHoveredRow()
 end
 
---- Barter row queries for one window role: the sell side is the Inventory window, the buy side is the Trade window. 
---- The handler answers only while its mode is Barter
---- Only the add affordance is answered: rows already offered (isBartered) stay out. 
---- nil means "not tradeable right now": no window in Barter mode, filtered out of handler.table.filteredItems, or row.isDisabled().
+--- Barter row query for one window role: the sell side is the Inventory window, the buy side is
+--- the Trade window. Answers only while that window's mode is Barter.
+--- nil means "not tradeable right now": no window in Barter mode, the row is filtered out, or
+--- row.isDisabled().
 ---@param role InventoryExtenderRedone.Role
 ---@param item openmw.Object
 ---@return InventoryExtenderRedone.RowData?
@@ -184,8 +180,7 @@ local function findBarterRow(role, item)
 
     for r = 1, #rows do
         local row = rows[r]
-        -- record-level fallback: virtual merchant rows are merged stacks (row.item =
-        -- stacks[1]), so object identity misses another object of the same record
+        -- virtual merchant rows are merged stacks, so match the record too, not only the object
         if not row.isBartered and row.item
             and (row.item.id == item.id or row.itemRecord.id == item.recordId)
             and not row.isDisabled() then
@@ -214,18 +209,15 @@ function WindowManager:show(role, arg)
     arg = arg or self.ctx.windowArgs[role]
     self.ctx.windowArgs[role] = arg
 
-    -- which behavior set this window gets; the pickpocket session is no longer created here, it
-    -- comes from the Pickpocket spec's lifecycle.onOpened, and the Container spec clears it when
-    -- a real chest window opens
+    -- which behavior set this window gets
     local mode = Mode.resolveMode(role, arg)
     L.info('show', role, mode and mode.key)
 
     local windowId = getWindowId(role)
     local handler = Manager.getHandler(windowId) --[[@as IER.Inventory?]]
-    -- only the Inventory role needs this: the engine re-shows it when the UI mode changes but
-    -- leaves it open, so its snapshot of the previous mode's slots is stale. The target windows
-    -- are opened and closed by their own mode, so an already-open one keeps its snapshot and is
-    -- never reopened from here.
+    -- the Inventory role stays open across mode changes, so its slots snapshot of the previous
+    -- mode is stale: close it here and let the new mode reopen it. Target windows are opened and
+    -- closed by their own mode, so an already-open one keeps its snapshot.
     if handler and role == D.Roles.Inventory and mode and handler.mode ~= mode.key then
         L.info('show: reopen for mode change', role, handler.mode, mode.key)
         Manager.close(windowId, true)
@@ -235,9 +227,7 @@ function WindowManager:show(role, arg)
         _, handler = Manager.open(windowId, arg) --[[@as any]]
         ---@cast handler IER.Inventory
         L.info('opened', windowId, handler.role, handler.mode)
-        -- flags is the mode's serializable summary (Mode.EventData.flags); built-ins define
-        -- none, so it is nil there. Resolve by the opened window's actual mode key, not the
-        -- role-forced mode resolved above (which is Interface for the Inventory role).
+        -- flags is the mode's serializable summary (Mode.EventData.flags); built-ins define none
         local openedMode = Mode.resolve(handler.mode)
         omwself:sendEvent('IER_Window_Opened', {
             id = windowId,
@@ -278,10 +268,9 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     end
     L.debug('onUiModeChanged', oldMode, newMode, arg)
 
-    -- built-in lifecycle.onClosing fires from the mode change (decision 11): the transition
-    -- decides which spec closes, and a pickpocket session closing under the engine's Container
-    -- mode belongs to the Pickpocket spec, which overrides Container's onClosing. The arg is
-    -- what the closing mode's target role was showing; built-in modes have one target role each.
+    -- the transition decides which spec's lifecycle.onClosing fires: a pickpocket session closing
+    -- under the engine's Container mode belongs to the Pickpocket spec, which overrides
+    -- Container's onClosing. closingArg is what the closing mode's target role was showing.
     if oldMode then
         local closingMode
         if oldMode == D.Modes.Container and self.ctx.pickpocket then
@@ -318,7 +307,6 @@ end
 function WindowManager:onFrame()
     if not configPlayer.window.b_EnableMod then return end
 
-    -- I.Cursor when??? (:
     local mouseMoved = I.UIToolkit.cursorMovedThisFrame()
 
     if mouseMoved then

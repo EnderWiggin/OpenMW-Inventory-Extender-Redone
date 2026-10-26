@@ -139,9 +139,7 @@ return {
     end,
     drag = {
         allowed = true,
-        -- a companion auto-equips armor/clothing/weapons it receives: this used to read the
-        -- engine's Companion mode at transfer time, the mode spec decides it now, keyed by
-        -- the mode that started the transfer
+        -- a companion auto-equips armor/clothing/weapons it receives
         autoEquip = function(ctx, object, source, destination)
             if Armor.objectIsInstance(object) or Clothing.objectIsInstance(object) or Weapon.objectIsInstance(object) then
                 return ctx.windowArgs[D.Roles.Companion]
@@ -172,8 +170,8 @@ return {
                 use = { id = 'useTarget' },
                 pickup = { id = 'pickupCompanionTarget' },
             },
-            -- the companion's strip: weight, the gap, what it gained from the player, close (no gold:
-            -- the original added gold only for the Inventory and Trade roles)
+            -- the companion's strip: weight, armor rating, the gap, what it gained from the
+            -- player, its stats, close
             infoBar = {
                 { id = 'encumbrance' },
                 { id = 'armorRating' },

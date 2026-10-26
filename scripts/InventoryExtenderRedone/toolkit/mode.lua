@@ -37,9 +37,8 @@ local Player         = types.Player
 local playerInventory = Player.inventory(omwself)
 
 
--- Mode specs are pure behavior: they never register windows, a new window role only comes
--- through API.registerWindowRole. Slots are keyed per window role because the Inventory role
--- appears in four modes and needs four different slot sets.
+-- Mode specs are pure behavior; slots are keyed per window role, since the Inventory role
+-- appears in four modes and needs a different slot set each time.
 ---@class InventoryExtenderRedone.Mode.Library
 ---@field Defaults InventoryExtenderRedone.Mode.Defaults
 ---@field Sources table<string,InventoryExtenderRedone.Mode.Source>
@@ -56,23 +55,18 @@ local playerInventory = Player.inventory(omwself)
 local Mode = {}
 
 
---- Slot defaults: what a mode gets when it does not name the slot. A custom mode that omits
---- an axis keeps today's behavior, which is what makes built-in specs and mod-added specs
---- one mechanism. Slots whose default is "absent" cannot be stored in a table and stay nil.
---- Function-bearing defaults arrive with the phase that owns the behavior.
+--- Slot defaults: what a mode gets when it does not name the slot. Slots whose default is
+--- "absent" stay nil.
 Mode.Defaults = {
     priority = 0,
-    drag = { allowed = true }, -- validDragModes today: Barter is the mode that forbids dragging
+    drag = { allowed = true }, -- Barter is the mode that forbids dragging
     RoleSpec = {
-        pinnable = false,      -- only the Interface Inventory window is pinnable (inventory.lua:519)
+        pinnable = false, -- only the Interface Inventory window is pinnable
     },
 }
 
---- Built-in part library. The namespaces are declared here so the contract resolves; the
---- phase that owns the behavior fills them: sources and filters arrived with Phase 2, actions
---- come with Phase 3 and the info bar with Phase 4. Specs reference parts by id, never by
---- inlining behavior, and a part never branches on handler.role - which RoleSpec names the
---- part decides that.
+--- Built-in parts a mode spec references by id: sources, filters, actions, info bar sections.
+--- A part never branches on which window it belongs to.
 local function merchantItems(npc)
     local merged = helpers.getMerchantItems(npc)
     local flat = {}
@@ -118,8 +112,8 @@ local function isOfferedByMerchant(row, npc)
 end
 
 Mode.Sources = {
-    -- the window's own target inventory: the player's for the Inventory role, the container's or
-    -- the companion's for its own role
+    -- the window's own target inventory: the player's for the Inventory role, the container's
+    -- or the companion's for its own role
     target = {
         id = 'target',
         get = function(handler, _)
@@ -133,10 +127,7 @@ Mode.Sources = {
             return playerInventory:getAll()
         end,
     },
-    -- merchant stock merged into virtual stacks; the two ids differ only in which NPC is asked,
-    -- and merchantOfOther keeps the ctx.windowArgs fallback because the engine may open the
-    -- player's window before the Trade window has recorded the merchant
-    --TODO: consider removing ctx.windowArgs
+    -- merchant stock merged into virtual stacks
     merchantOfTarget = {
         id = 'merchantOfTarget',
         virtual = true,
@@ -147,10 +138,11 @@ Mode.Sources = {
     merchantOfOther = {
         id = 'merchantOfOther',
         virtual = true,
-        -- this side is always the far end of an offer: the rows exist to show what the other
-        -- window is holding out for
+        -- the far end of an offer: those rows are shown as already offered
         isBartered = true,
         get = function(handler, ctx)
+            -- the engine may open the player's window before the Trade window recorded the
+            -- merchant, so fall back to the last known one
             local barterNpc = ctx.windowArgs[D.Roles.Trade] or handler.arg
             if not barterNpc then return {} end
             return merchantItems(barterNpc)
@@ -217,10 +209,9 @@ Mode.Filters = {
     },
 }
 -- Built-in row actions: gate + effect only. The shared row mechanics (bound-item and favorite
--- guards, Alt/Shift/Ctrl modifiers, the stack-count popup) stay in the handler and call these
--- parts with (row, handler, ctx, count); perform is the default effect, transfer the Alt-held
--- variant. use parts also carry the IER_UseItem payload providers: which inventory the item
--- moves from first and, during a pickpocket session, whose session the roll belongs to.
+-- guards, Alt/Shift/Ctrl modifiers, the stack-count popup) stay in the handler, which calls
+-- these parts with (row, handler, ctx, count); perform is the default effect, transfer the
+-- Alt-held variant. use parts also carry the IER_UseItem payload providers.
 local function useSourceSelf(row, _, _)
     return row.item.parentContainer or omwself
 end
@@ -237,8 +228,8 @@ local function usePickpocketSession(_, handler, ctx)
     return nil
 end
 
--- the shared drag start: every mode that allows dragging lands here; the activation context
--- carries modeKey so the dragAndDrop singleton can find this spec back for autoEquip
+-- the shared drag start: the activation context carries modeKey so dragAndDrop can find
+-- this spec back for autoEquip
 local function dragStart(row, handler, ctx, count, pickpocketCtx)
     ctx.dragAndDrop:startDrag(
         row.item,
@@ -328,7 +319,7 @@ Mode.Actions = {
         source = useSourceTarget,
     },
     -- the pickpocket Container role: same use as a target window, plus the session the roll
-    -- belongs to, carried into the IER_UseItem payload
+    -- belongs to
     useTargetPickpocket = {
         enabled = function() return true end,
         source = useSourceTarget,
@@ -365,8 +356,7 @@ Mode.Actions = {
         perform = performDrag,
         transfer = transferToPlayer(D.Modes.Companion),
     },
-    -- Barter never drags (drag.allowed is false), so only the transfer effect exists;
-    -- the effect lives in util/barter.lua shared with the queue API (decrementTable first)
+    -- Barter never drags (drag.allowed is false), so only the transfer effect exists
     pickupBarterInventory = {
         transfer = barterUtils.barterOfferEffect('buying', 'selling'),
     },
@@ -385,9 +375,9 @@ Mode.Actions = {
         end,
     },
 }
--- InfoBar sections: `create` builds the once-per-open part (buttons, bars, layouts) and hands
--- back the per-frame provider; `provider` alone is a stateless section. The handler feeds both
--- to InfoBar:addProvider in slot order, so the filler (stretch) position stays load-bearing.
+-- InfoBar sections: `create` builds the once-per-open part (buttons, bars, layouts) and returns
+-- the per-frame provider; `provider` alone is a stateless section. Sections are added in slot
+-- order, so the filler (stretch) position is what lays the strip out.
 local function createDraggedActivationRow(ctx, item)
     local activationContext = ctx.dragAndDrop.draggingActivationContext or {}
     return {
@@ -700,8 +690,7 @@ Mode.Info = {
             end
         end,
     },
-    -- close the target window: built-in roles close through the engine mode; a custom role's
-    -- close arrives with API.closeMode (Phase 5)
+    -- close the target window
     close = {
         id = 'close',
         create = function(handler, _)
@@ -750,7 +739,7 @@ Mode.Info = {
     },
 }
 
---- Built-in specs, keyed by mode key. Custom specs live in ctx.modes and are never stored here.
+--- Built-in specs, keyed by mode key. Custom specs live in ctx.modes.
 Mode.Builtins = {
     Interface  = require('scripts.InventoryExtenderRedone.toolkit.modes.interface'),
     Container  = require('scripts.InventoryExtenderRedone.toolkit.modes.container'),
@@ -760,8 +749,8 @@ Mode.Builtins = {
 }
 
 
--- List slots merge through id-keyed ops; everything else is a whole-slot overwrite. lifecycle is
--- a list slot too: several specs contribute hooks and the merged entries run as one chain.
+-- List slots merge through id-keyed ops; other slots are a whole-slot overwrite. lifecycle is a
+-- list slot too: several specs contribute hooks, merged into one chain.
 local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle' }
 local ROLE_SLOTS = { 'states', 'actions', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
 local MODE_SLOTS = { 'applies', 'priority', 'drag', 'event' }
@@ -771,9 +760,9 @@ local function isPatchList(op)
     return op.add ~= nil or op.remove ~= nil or op.replace ~= nil
 end
 
---- `after`/`before` on an entry position it against an existing id; entries without them keep
---- insertion order. Ordering only matters for infoBar sections, whose filler (stretch) position
---- is load-bearing for layout.
+--- `after`/`before` position an entry against an existing id; entries without them keep
+--- insertion order. Only infoBar sections care, since the filler (stretch) position lays out
+--- the strip.
 ---@param ordered string[] ids in order, no duplicates
 ---@param id string
 ---@param after string? put directly after this id
@@ -860,9 +849,8 @@ local function mergeRoleSpec(base, patch)
     return merged
 end
 
---- Merge a patch (or another spec) over a base spec. `roles` merges per role and the list slots
---- (sources/filters/infoBar/lifecycle) merge by id through the list-slot ops; every other slot
---- is a whole-slot overwrite, so a mode that wants part of a slot uses the list-slot ops.
+--- Merge a patch (or another spec) over a base spec: `roles` merges per role, list slots merge
+--- by id through the ops, every other slot is a whole-slot overwrite.
 ---@param base InventoryExtenderRedone.Mode?
 ---@param patch InventoryExtenderRedone.ModePatch|InventoryExtenderRedone.Mode
 ---@return InventoryExtenderRedone.Mode
@@ -912,8 +900,8 @@ local function applyModeDefaults(mode)
     return mode
 end
 
---- Resolve a mode key to its fully merged spec: base chain, then registered patches in
---- reverse registration order, like every other id-keyed extension list in the repo.
+--- A spec's own slots win over its base chain, which wins over Mode.Defaults. Registered patches
+--- then apply in reverse registration order.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param ctx InventoryExtenderRedone.Context
 ---@param visited table<string,boolean>? guards a mod-supplied base cycle
@@ -940,12 +928,10 @@ local function resolveSpec(key, ctx, visited)
     return applyModeDefaults(merged)
 end
 
---- Lifecycle hooks chain instead of replacing each other: the merged entries are folded into one
---- callable per hook, so a call site names a hook and never walks the list. Chain order is the
---- reverse of the merged list, like the ctx.handlers lists: the most recently merged entry runs
---- first and the built-in spec's hook last, and a callback returning false cuts the rest of the
---- chain - that is how a mod vetoes a built-in hook without re-declaring it. A hook is only
---- callable when some entry names it, so the call-site guards keep working.
+--- Lifecycle hooks chain instead of replacing each other: the merged entries fold into one
+--- callable per hook. The most recently merged entry runs first, the built-in hook last, and a
+--- callback returning false cuts the rest of the chain. A hook is callable only when some entry
+--- names it, so the call-site guards keep working.
 local LIFECYCLE_HOOKS = { 'onOpened', 'onClosing', 'onClosed' }
 ---@param entries InventoryExtenderRedone.Mode.LifecycleEntry[]?
 ---@return InventoryExtenderRedone.Mode.Lifecycle?
@@ -980,9 +966,9 @@ local function wrapLifecycle(entries)
     return lifecycle
 end
 
---- Re-resolves a key from scratch. The post-close hook in inventory.lua has only the mode key
---- left to work from, so it uses this. Reopen must not: compare against an already-open window's
---- snapshot, since re-resolving can pick a different mode than the one the window was opened with.
+--- Re-resolves a key from scratch, for callers that only have the mode key left (the post-close
+--- hook). A reopen must not do this: compare against the already-open window's snapshot, since
+--- re-resolving can pick a different mode than the window was opened with.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param role InventoryExtenderRedone.Role? when given, also return this role's merged slots
 ---@return InventoryExtenderRedone.Mode? mode
@@ -990,7 +976,7 @@ end
 function Mode.resolve(key, role)
     local mode = resolveSpec(key, I.InventoryExtenderRedone.getContext())
     if not mode then return nil end
-    -- the merged entry list becomes the callable chain; every consumer reads the resolved form
+    -- the merged entry list becomes the callable chain
     mode.lifecycle = wrapLifecycle(mode.lifecycle)
     if not role then return mode end
 
@@ -1000,8 +986,7 @@ function Mode.resolve(key, role)
 end
 
 --- A spec entry may name a built-in part by id or carry its own behavior; the entry's own fields
---- win over the library part, so a mod can reuse a built-in with one field changed. Resolved once
---- at open, like the rest of the snapshot.
+--- win over the library part, so a mod can reuse a built-in part with one field changed.
 ---@param library table<string,any> Mode.Sources, Mode.Filters, Mode.Actions, …
 ---@param entry any?
 ---@return any
@@ -1045,12 +1030,11 @@ function Mode.statePredicate(state, field)
     end
 end
 
---- Selection step, before Mode.resolve: which mode governs this window role. Built-in specs match
---- through applies(), which is handed the engine UI mode by the caller: resolveMode takes uiMode and
---- forwards it, so specs never call I.UI themselves and the mode cannot be stale at open.
---- Highest priority wins; equal priorities are not ordered, so a custom mode that overlaps
---- a built-in must out-prioritize it. Selection consults registered specs, not patched ones:
---- patchMode changes slots, never which mode applies.
+--- Which mode governs this window role: the registered spec with the highest priority whose
+--- applies() matches. uiMode is the engine UI mode at open (nil = interface); specs are handed it
+--- so they never call I.UI themselves. Equal priorities are not ordered, so a custom mode
+--- overlapping a built-in must out-prioritize it. patchMode changes slots, never which mode
+--- applies.
 ---@param role InventoryExtenderRedone.Role
 ---@param arg any? the target NPC/container/merchant
 ---@param uiMode string? engine UI mode when the window opened (nil = interface)
@@ -1084,8 +1068,6 @@ function Mode.resolveMode(role, arg, uiMode)
         L.debug('resolveMode: no mode applies', role, uiMode)
         return nil
     end
-    -- observability: which spec won selection and at what priority; a probe forcing a
-    -- custom mode that loses priority shows up here as the built-in key
     L.debug('resolveMode', role, uiMode, bestKey, bestPriority)
     return Mode.resolve(bestKey, role)
 end

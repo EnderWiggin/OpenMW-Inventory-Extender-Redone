@@ -5,10 +5,8 @@ local v2 = util.vector2
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 
--- Window roles: which windows exist and how they are placed. Behavior (sources, filters,
--- info bar sections) belongs to mode specs in toolkit/mode.lua; this registry is identity
--- and geometry only, so a mode spec never names a window id. Built-in roles are registered
--- here; a new role comes only through API.registerWindowRole.
+-- Window roles: which windows exist and how they are placed. Identity and geometry only;
+-- behavior belongs to mode specs, and a new role comes only through API.registerWindowRole.
 ---@class InventoryExtenderRedone.RoleRegistry
 ---@field order InventoryExtenderRedone.Role[] registration order, drives update()/forEachOpenWindow
 ---@field byRole table<string,InventoryExtenderRedone.RoleOpts> role -> registration opts
@@ -39,8 +37,7 @@ Registry.register(D.Roles.Inventory, {
     minSize = MIN_SIZE,
     draggable = true,
     resizing = true,
-    -- pinnable stays false for every built-in role: pinning is set at open by the
-    -- Interface mode (inventory.lua setPinnable), not by window registration
+    -- pinning is set at open by the Interface mode, not by window registration
     pinnable = false,
 })
 Registry.register(D.Roles.Trade, {

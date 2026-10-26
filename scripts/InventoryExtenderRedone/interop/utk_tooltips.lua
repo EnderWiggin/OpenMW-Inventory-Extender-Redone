@@ -16,7 +16,7 @@ local constants = require 'scripts.InventoryExtenderRedone.util.constants'
 local NPC       = types.NPC
 
 
--- Stolen from info
+-- Stolen-info tooltip section
 local function stolenInfoCompare(a, b)
     local ra = a.record
     local rb = b.record

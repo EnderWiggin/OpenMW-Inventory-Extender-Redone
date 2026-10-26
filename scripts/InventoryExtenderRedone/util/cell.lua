@@ -79,6 +79,8 @@ local function getClosestMarkerFromExteriorPosition(position)
     end
 
     -- Tie-breaking logic: SW -> SE -> NE -> NW -> SW path
+    --TODO: the perimeter distance is computed twice here (once for the fallback marker, once
+    --      for sortDistance); merge the two loops
     local closestMarker = nil
     local earliestDistance = math.huge
 

@@ -5,8 +5,7 @@ local Roles = D.Roles
 local Modes = D.Modes
 
 
--- The player's own window. Root spec: everything a custom mode does not name comes from
--- Mode.Defaults.
+-- The player's own window.
 ---@type InventoryExtenderRedone.Mode
 return {
     key = Modes.Interface,
@@ -21,8 +20,7 @@ return {
     drag = { allowed = true },
     roles = {
         [Roles.Inventory] = {
-            -- the only pinnable window (inventory.lua:519); no storageSuffix and no defaultStorage
-            -- because getStorageSuffix and getDefaultStorage return nil only here
+            -- the only pinnable window; no storageSuffix or defaultStorage here
             pinnable = true,
             -- the player's own inventory: for this role the target always is omwself
             sources = { { id = 'target' } },

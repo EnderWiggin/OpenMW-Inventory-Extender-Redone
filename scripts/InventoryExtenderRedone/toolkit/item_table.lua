@@ -245,8 +245,6 @@ end
 function ItemTable:setItems(items)
     self.allItems = items
     self:filter()
-    -- observability: rows in vs rows the window filters let through, and the view mode the
-    -- storage write produced (the probe asserts showGrid matches s_ItemViewMode)
     L.debug('setItems', #items, #self.filteredItems, self.showGrid)
 end
 
@@ -259,8 +257,6 @@ function ItemTable:setSize(size)
     else
         self.list:setSize(self:getListSize())
     end
-    -- observability: the resize probes assert table.size.x == wnd inner width; this shows
-    -- the grid/list geometry the table settled on
     L.debug('setSize', size, self:getListSize())
 
     self.header:updateProps { size = self:getHeaderSize() }

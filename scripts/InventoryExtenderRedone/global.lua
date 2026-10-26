@@ -128,7 +128,6 @@ local function scriptedDragStart(props)
     -- Patch for Purists immediately replaces cursed gem on pickup
     -- Some other mods may do this too, so we skip trying to drag item if it has 0 count or is invalid
     if not obj:isValid() then
-        -- observability: a swallowed scripted drag leaves the probe waiting forever
         L.debug('scriptedDragStart: resulting object invalid', obj.id)
         return
     elseif not obj.count or obj.count <= 0 then
@@ -150,16 +149,11 @@ local function moveInto(props)
     local destination = props.destination
     local recordId = obj.recordId
     local moveCount = props.count or obj.count
-    -- observability: the global side of the drag chain; correlates with the DnD startDrag line
     L.info('moveInto', obj.id, recordId, moveCount, props.source and props.source.id, destination.id,
         props.dragStart and true or false)
 
-    --[[This check guards against errors happening when trying to pickup item that's already gone. Reported with stack traces like this:
-    eventHandler[IER_MoveInto] failed. Lua error: Can't remove 8 of 0 items
-    stack traceback:
-        [C]: in function 'split'
-        [string "scripts/inventoryextender/global.lua"]:233: in function <[string "scripts/inventoryextender/global.lua"]:118>
-    ]]
+    -- the object may already have been replaced or emptied by a scripted pickup, and split/remove
+    -- on it errors ("Can't remove 8 of 0 items")
     if not obj:isValid() then
         error('[WARN] trying to move invalid object: ' .. tostring(obj))
         return
@@ -237,8 +231,6 @@ local function moveInto(props)
         if mwscript then
             local scriptRecord = core.mwscripts.records[mwscript]
             if scriptRecord and scriptRecord.text:lower():find('onactivate') then
-                -- observability: this detour returns without ever sending IER_SetDraggingObject
-                -- from here; the scriptedDragStart handler below is the one that lands the drag
                 L.info('moveInto: scripted activation detour', obj.id)
                 world._runStandardActivationAction(obj, props.player)
                 core.sendGlobalEvent('IER_ScriptedDragStart',
@@ -297,8 +289,6 @@ local function moveInto(props)
     end
 
     if props.dragStart then
-        -- observability: the hop the row-click probe waits for; correlate with the API
-        -- IER_SetDraggingObject line on the player side
         L.info('moveInto: IER_SetDraggingObject sent', resultingObj.id, destination.id)
         props.player:sendEvent('IER_SetDraggingObject', {
             obj = resultingObj,
@@ -320,7 +310,6 @@ end
 
 local function moveAll(props)
     if not props.source or not props.destination then return end
-    -- observability: the Take All / dispose path
     L.info('moveAll', props.source.id, props.destination.id, props.items and #props.items)
 
     local sourceInv = props.source.type.inventory(props.source)
@@ -410,7 +399,7 @@ end
 local lastItemPickedUp = nil
 
 local function onUpdate(dt)
-    -- observability: the frame-delay queue the stolen-item bookkeeping defers across frames
+    -- frame-delay queue: stolen-item bookkeeping runs on later frames
     if #delayedJobs > 0 then
         L.debug('delayedJobs', #delayedJobs)
     end
@@ -552,7 +541,7 @@ local function confiscateStolenItems(data)
     for _, container in ipairs(cell:getAll(Container)) do
         if container.recordId == 'stolen_goods' then
             if Lockable.getLockLevel(container) == VANILLA_LOCK_LEVEL then
-                --print("Confiscating goods to", container)
+                L.debug('confiscating goods to', container.id)
 
                 -- compare with memory
                 local cellId = container.cell.id:lower()
@@ -566,7 +555,7 @@ local function confiscateStolenItems(data)
                     local memCount = memory[recordId] or 0
                     if count > memCount then
                         delta[recordId] = count - memCount
-                        --print("newly confiscated item:", recordId, "count:", delta[recordId])
+                        L.debug('newly confiscated item', recordId, 'count:', delta[recordId])
                     end
                 end
 
@@ -592,7 +581,7 @@ local function confiscateStolenItems(data)
                         totalConfiscated = totalConfiscated + toConfiscate
                     end
                     if (totalConfiscated - (delta[recordId] or 0)) > 0 then
-                        --print("Script confiscated item:", recordId, "count:", (totalConfiscated - (delta[recordId] or 0)))
+                        L.debug('script confiscated item', recordId, 'count:', totalConfiscated - (delta[recordId] or 0))
                     end
                     for victimId, count in pairs(victimCounts) do
                         if totalConfiscated >= count then
@@ -699,8 +688,6 @@ local function finalizeBarter(props)
     local merchant = props.merchant
     local barterState = props.barterState
     local currentBalance = barterState.currentBalance
-    -- observability: barter finalization; selling/buying are maps keyed by item id, so
-    -- currentBalance is the scalar worth printing
     L.info('finalizeBarter', merchant and merchant.id, currentBalance)
     transferItems(barterState.selling, merchant, false)
     transferItems(barterState.buying, props.player, true)

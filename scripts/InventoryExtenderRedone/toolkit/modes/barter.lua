@@ -55,11 +55,9 @@ return {
         end
         return role == Roles.Inventory and uiMode == Modes.Barter
     end,
-    -- validDragModes has no Barter key: dragging is off for both roles, and drag is a ctx
-    -- singleton, so the flag is mode-wide rather than per role
+    -- dragging is off for both roles; drag is a ctx singleton, so the flag is mode-wide
     drag = { allowed = false },
     -- leaving a successful barter says thanks, once, before windowManager resets barterState
-    -- (built-in lifecycle.onClosing fires from UiModeChanged, decision 11)
     lifecycle = { {
         id = 'Barter',
         onClosing = function(handler, arg, newMode)
@@ -71,8 +69,6 @@ return {
             end
         end,
     } },
-    -- controller hints replace the base list: Activate offers instead of picking up, and B
-    -- closes the deal
     roles = {
         [Roles.Inventory] = {
             storageSuffix = ':Barter',

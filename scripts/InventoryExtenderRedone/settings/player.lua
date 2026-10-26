@@ -16,7 +16,6 @@ local C = require('scripts.InventoryExtenderRedone.util.constants')
 
 I.Settings.registerRenderer('InventoryExtender/inputKeySelection', renderers.inputKey)
 
--- Settings page
 I.Settings.registerPage {
     key = D.PageKey,
     l10n = D.L10N,

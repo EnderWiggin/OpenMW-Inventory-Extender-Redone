@@ -25,22 +25,12 @@ API.Helpers = helpers
 API.Roles = D.Roles
 API.Modes = D.Modes
 
---- Which mode governs a window role right now: applies() + priority winner, patches merged.
---- Returns the fully merged mode and that role's slots, or nil when no registered mode applies.
---- The mode key is the value of handler.mode; the second return is what the handler snapshots
---- into its slots at open.
+--- Which mode governs a window role right now, and that role's slots: the highest-priority
+--- registered mode whose applies() matches, with its patches merged. nil when none applies.
 API.resolveMode = modeApi.resolveMode
 
---- Mode registry: the public surface over ctx.modes / ctx.modePatches. Built-in specs live
---- in toolkit/mode.lua Mode.Builtins and are never stored in ctx; a custom mode registers a
---- spec, a patch merges into a built-in or custom spec at resolve time.
-
---- Lifecycle sugar: a spec or a patch may write lifecycle as one plain hook table instead of an
---- entry list or { add/replace/remove } ops, so mods written against the old overwrite shape keep
---- compiling and their hooks chain with the built-in ones instead of replacing them. The table
---- becomes a single entry: a spec's entry is keyed by the mode key, a patch's by the patch id
---- (generated when the patch has none, so it still adds rather than sharing the built-in entry's
---- name). Entry lists and ops tables pass through untouched.
+--- Turns a plain hook table in a lifecycle slot into a one-entry list, so hooks chain
+--- instead of replacing each other. Entry lists and ops tables pass through untouched.
 ---@param value any? lifecycle slot as authored: entry list, ops table, or one plain hook table
 ---@param id string id for the entry the sugar produces
 ---@param asOp boolean? a patch's entry must come in as an add op, since a plain array replaces the slot
@@ -59,7 +49,7 @@ end
 
 function API.registerMode(mode)
     if not mode or not mode.key then return end
-    -- a key that collides with a built-in must go through patchMode, not replace the spec
+    -- a key colliding with a built-in has to go through patchMode
     if D.Modes[mode.key] then return end
     mode.lifecycle = lifecycleSugar(mode.lifecycle, mode.key)
     windowManager.ctx.modes[mode.key] = mode
@@ -83,11 +73,9 @@ function API.getModes()
     return list
 end
 
---- Patch a built-in or custom mode. The patch has the same shape as Mode; list slots
---- (sources/filters/infoBar/lifecycle) merge by id, every other slot overwrites. A patch may
---- write lifecycle as a plain hook table: it becomes an add entry chained onto the built-in
---- hooks, so it no longer clobbers them. Patches apply at resolve time in reverse registration
---- order, so a mid-session patch affects the next open, not an already-open window's snapshot.
+--- Patch a built-in or custom mode with the same shape as Mode: list slots (sources/filters/
+--- infoBar/lifecycle) merge by id, every other slot overwrites. Patches apply at resolve time,
+--- in reverse registration order.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param patch InventoryExtenderRedone.ModePatch
 function API.patchMode(key, patch)
@@ -97,8 +85,8 @@ function API.patchMode(key, patch)
         patches = {}
         windowManager.ctx.modePatches[key] = patches
     end
-    -- an id-less patch still needs a distinct entry id, or it would collide with the built-in
-    -- entry named after the mode key and replace it instead of chaining onto it
+    -- an id-less patch gets a generated one, so its entry chains onto the built-in entry
+    -- instead of replacing it
     patch.lifecycle = lifecycleSugar(patch.lifecycle, patch.id or (key .. '#' .. (#patches + 1)), true)
     patches[#patches + 1] = patch
 end
@@ -116,17 +104,16 @@ function API.unpatchMode(key, id)
     end
 end
 
---- The only way to get a new window id (decision 1): mode specs stay pure behavior and never
---- register windows, so a new role comes through here with its geometry.
+--- Registers a new window role (its geometry) and opens its window through UIToolkit. The only
+--- way to get a new window id; mode specs never register windows.
 ---@param role string
 ---@param opts InventoryExtenderRedone.RoleOpts
 function API.registerWindowRole(role, opts)
     windowManager:registerWindowRole(role, opts)
 end
 
---- Purely IER-side (decision 10): opens the mode's role windows through UIToolkit only, never
---- I.UI.setMode/addMode. The mode governs each window through its applies(); openMode forces the
---- open, not the mode onto a window whose applies does not match the arg. No-op while disabled.
+--- Opens the windows of a mode through UIToolkit only, without touching the engine UI mode.
+--- No-op while all windows are disabled.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param arg any?
 function API.openMode(key, arg)
@@ -142,9 +129,8 @@ end
 
 API.allWindowsDisabled = false
 
----Set to true to temporarily disable IE windows
----NOTE: it won't bring back default windows - no windows will be shown instead
---- Added on request of Quick Loot mod to temporarily disable UI when scripted containers/corpses are automatically activated
+--- Set to true to temporarily disable IE windows.
+--- NOTE: it won't bring back default windows - no windows will be shown instead.
 function API.disableAllWindows(value)
     API.allWindowsDisabled = value
 end
@@ -182,31 +168,29 @@ function API.getHoveredRow()
     return windowManager:getHoveredRow()
 end
 
---- Barter API: all barter-related methods live in this subtable, so the interface root
---- stays about windows, modes and categories. Consumed as IER.Barter.getSellRow(item).
+--- Barter API: barter-related methods, grouped so the interface root stays about windows,
+--- modes and categories. Consumed as IER.Barter.getSellRow(item).
 local Barter = {}
 API.Barter = Barter
 
---- The row feeding the sell side of a barter offer: the visible, enabled, not-yet-offered
---- row for item in the open Inventory window while its mode snapshot is Barter. nil means
---- "not tradeable right now": no window in Barter mode, filtered out, or disabled.
+--- The row that feeds the sell side of an offer: the visible, enabled, not-yet-offered row for
+--- item in the open Inventory window, while that window's mode is Barter. nil means "not
+--- tradeable right now".
 ---@param item openmw.Object
 ---@return InventoryExtenderRedone.RowData?
 function Barter.getSellRow(item)
     return windowManager:getSellRow(item)
 end
 
---- The row feeding the buy side of a barter offer: same query in the open Trade window
---- while its mode snapshot is Barter.
+--- The row that feeds the buy side of an offer: same query in the open Trade window.
 ---@param item openmw.Object
 ---@return InventoryExtenderRedone.RowData?
 function Barter.getBuyRow(item)
     return windowManager:getBuyRow(item)
 end
 
---- Add count units of row to the sell side of the offer: records the entry
---- { item, stacks = row.virtualStacks, count }, clamped to row.getCount(), then reprices
---- and refreshes the windows. Pass a row from getSellRow (isBartered false).
+--- Add count units of row to the sell side of the offer, clamped to row.getCount(). Pass a row
+--- from getSellRow.
 ---@param row InventoryExtenderRedone.RowData
 ---@param count number
 function Barter.queueSell(row, count)
@@ -238,12 +222,9 @@ function Barter.clearBarterOffer()
     barterUtils.clearBarterOffer(windowManager.ctx)
 end
 
---- Commit the current offer queue through the same sequence the Trade window's Offer button
---- runs: empty check, PC/NPC gold caps, stolen "that's mine" interruption, haggle through the
---- override chain, disposition change, refusal message, finalize transfer, gold sound.
---- opts.closeWindow defaults true (removes the Barter UI mode as usual); with false the
---- queues are cleared in place instead so an open Trade window shows an empty offer.
---- state.success is set in both cases, so the "thanks" line still fires on leaving.
+--- Commit the current offer queue: transfer items, adjust gold, apply mercantile gain.
+--- opts.closeWindow defaults true (leaves the Barter UI mode); with false the queues are
+--- cleared in place so an open Trade window shows an empty offer.
 ---@param opts table? { closeWindow = boolean? }
 ---@return boolean accepted
 ---@return number? skillGain
@@ -257,7 +238,7 @@ function Barter.offerBarter(opts)
 end
 
 --- Predicted gold gain from selling count of item at the last-known Trade merchant
---- (ctx.windowArgs.Trade, decision 1: one merchant at a time, no role parameter).
+--- (ctx.windowArgs.Trade: one merchant at a time).
 ---@param item openmw.Object
 ---@param count number
 ---@return number? nil when no merchant is known - 0 would read as "free item"
@@ -280,13 +261,10 @@ function Barter.getBuyOffer(item, count)
     return barterUtils.getBuyOffer(item, count, windowManager.ctx.windowArgs.Trade, windowManager.ctx)
 end
 
---- Register a haggle modifier consulted before the acceptance dice are rolled, by both the
---- Trade window's Offer button and Barter.offerBarter (one chain, two entry points). Handlers run in
---- reverse registration order; each non-nil return replaces the running chance and/or skillGain
---- for its own field, so modifiers stack and the last registered wins per field. The returned
---- chance is clamped to [0, 100]: 100 guarantees acceptance, 0 guarantees refusal. skillGain
---- replaces the price-delta-derived gain when a mod forced acceptance and the derived value
---- would be wrong. Deliberately powerful: a mod can force-accept any offer.
+--- Register a haggle modifier, consulted when an offer is committed (by the Trade window's Offer
+--- button and by Barter.offerBarter). Handlers run in reverse registration order; each non-nil
+--- return replaces the running chance and/or skillGain, so modifiers stack and the last
+--- registered wins per field. The returned chance is clamped to [0, 100].
 --- @param id string A unique identifier for the override
 --- @param handler fun(npc:openmw.Object, playerOffer:number, merchantOffer:number, chance:number):chance:number?, skillGain:number? The override function
 function Barter.registerHaggleOverride(id, handler)
@@ -299,15 +277,11 @@ function Barter.registerHaggleOverride(id, handler)
     table.insert(windowManager.ctx.overrides.haggle, { id = id, handler = handler })
 end
 
---- Register a repricing modifier consulted by updateOffer, the price exports and the committed
---- gold path (one implementation inside itemOffer, so queue, prediction and finalizeBarter all
---- see the same repriced value - no drift). Handlers receive the barter direction: buying is
---- true when the player buys item from the merchant (buy side), false when selling to it
---- (sell side), so one handler can price the two directions differently. Handlers run in
---- reverse registration order; each non-nil return replaces the running per-item magnitude,
---- so modifiers compose and the last registered wins. price is the final per-item
---- contribution magnitude (after the 0.75 cap and the NPC min/max rule); the returned price
---- is clamped to [0, infinity) - 0 means a free item, negatives would flip the offer sign.
+--- Register a repricing modifier, consulted by the offer price, the price predictions and the
+--- committed gold. Handlers run in reverse registration order; each non-nil return replaces the
+--- running per-item price, so modifiers compose and the last registered wins. buying is true
+--- when the player buys item from the merchant, false when selling to it. price is the final
+--- per-item contribution magnitude; the returned price is clamped to [0, infinity).
 --- @param id string A unique identifier for the override
 --- @param handler fun(npc:openmw.Object, item:openmw.Object, count:number, buying:boolean, price:number):price:number? The override function
 function Barter.registerPriceOverride(id, handler)
@@ -432,9 +406,8 @@ function API.registerRowPickupHandler(id, handler)
     table.insert(windowManager.ctx.handlers.onRowPickup, { id = id, handler = handler })
 end
 
---TODO: registerRowDropHandler(id, fn(row, draggedItem, ctx, role)) is a PLANNED FUTURE addition, not
---      yet implemented. The drop/transfer action belongs on the Actions axis (Mode.Actions.pickup.transfer);
---      design and implement it when we plan the drop handler. AGENTS.md lists it as future API.
+--TODO: registerRowDropHandler(id, fn(row, draggedItem, ctx, role)) is planned but not implemented.
+--      The drop/transfer action belongs on the Actions axis (Mode.Actions.pickup.transfer).
 
 --- Register a function to modify row data
 --- @param id string A unique identifier for the handler
@@ -502,8 +475,6 @@ local eventHandlers = {
         windowManager.ctx.stolenItems = props.stolenMap or windowManager.ctx.stolenItems
     end,
     IER_Update = function()
-        -- observability: the single refresh trigger for all windows; a refresh gap between
-        -- an item change and the next window update explains a stale-table probe failure
         L.debug('IER_Update')
         windowManager:update()
     end,
@@ -520,8 +491,6 @@ local eventHandlers = {
             end
             L.debug('IER_SetDraggingObject: gold remap', props.obj.id, obj and obj.id)
         end
-        -- observability: the player-side landing of the drag chain; the matching DnD
-        -- setDraggingObject line is what the probe waits for
         L.info('IER_SetDraggingObject', obj and obj.id, props.resetMode)
 
         windowManager.ctx.dragAndDrop:setDraggingObject(obj)

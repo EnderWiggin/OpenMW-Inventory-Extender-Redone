@@ -12,7 +12,7 @@ local M = {
     API = 3,
     -- window ids and UIToolkit:WindowData keys must keep the pre-rename spelling (save identity)
     WindowIdPrefix = 'InventoryExtender:',
-    -- window roles, order = ui/roles.lua registration order (registration and iteration order)
+    -- window roles, in ui/roles.lua registration order
     Roles = {
         Inventory = 'Inventory',
         Trade     = 'Trade',
@@ -38,9 +38,9 @@ local M = {
         Gameplay    = section 'Gameplay',
         Debug       = section 'Debug',
     },
-    -- log verbosity threshold stored as an integer (n_LogLevel); rank <= threshold prints.
-    -- error is the least verbose (rank 1), debug the most (rank 4). Dropdown labels come from
-    -- l10n keys (LogLevel_*); the stored id is the integer rank itself.
+    -- log verbosity threshold stored as an integer (n_LogLevel): rank <= threshold prints, error
+    -- is least verbose, debug most. The dropdown stores the rank itself; labels come from the
+    -- LogLevel_* l10n keys.
     LogLevels = {
         Error   = 1,
         Warning = 2,
