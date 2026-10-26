@@ -1,5 +1,10 @@
-0.0.8 (2026-10-25)
+0.0.8 (2026-10-26)
 - fixed autoEquip equipping only 1 ring (notably for companions)
+- added "Take All" keybind for containers (defaults to Q and R-Stick)
+- fixed error after opening book (or other UI change) while looting containers
+- fixed autoEquip preferring gauntlets to bracers even when they have lower armor rating
+- fixed doubled sounds when picking up equipped item
+- added button to move all visible non-equipped, non-favorite items into container
 - API: added ways to modify how barter works:
   - ways to modify how items are priced and success chance and skill gain of barter offer
   - ways to get price of selling or buying an item
