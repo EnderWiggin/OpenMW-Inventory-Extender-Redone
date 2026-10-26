@@ -181,17 +181,11 @@ local function autoEquipArmor(slots)
             return true
         end
 
-        local oldArmorType = oldItem.type.record(oldItem).type
-        local newArmorType = item.type.record(item).type
-        if oldArmorType == newArmorType then
-            if actorIsNpc then
-                return (I.Combat.getEffectiveArmorRating(item, self) or 0) >
-                    (I.Combat.getEffectiveArmorRating(oldItem, self) or 0)
-            end
-            return getItemCondition(item) > getItemCondition(oldItem)
+        if actorIsNpc then
+            return (I.Combat.getEffectiveArmorRating(item, self) or 0) >
+                (I.Combat.getEffectiveArmorRating(oldItem, self) or 0)
         end
-
-        return oldArmorType >= newArmorType
+        return getItemCondition(item) > getItemCondition(oldItem)
     end
 
     -- equipped items are part of inventory():getAll(), so an item already worn in one slot must
