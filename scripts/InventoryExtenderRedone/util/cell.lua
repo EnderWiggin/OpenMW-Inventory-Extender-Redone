@@ -11,8 +11,8 @@ local validMarkers = {}
 
 for contentFile, markers in pairs(PrisonMarkers) do
     if core.contentFiles.has(contentFile) then
-        for _, marker in ipairs(markers) do
-            table.insert(validMarkers, marker)
+        for i = 1, #markers do
+            table.insert(validMarkers, markers[i])
         end
     end
 end
@@ -45,7 +45,8 @@ local function getClosestMarkerFromExteriorPosition(position)
     local bestMarkers = {}
     local minGridSize = math.huge
 
-    for _, marker in ipairs(validMarkers) do
+    for i = 1, #validMarkers do
+        local marker = validMarkers[i]
         if not marker.cell then
             local deltaX = marker.x - cellX
             local deltaY = marker.y - cellY
@@ -79,12 +80,11 @@ local function getClosestMarkerFromExteriorPosition(position)
     end
 
     -- Tie-breaking logic: SW -> SE -> NE -> NW -> SW path
-    --TODO: the perimeter distance is computed twice here (once for the fallback marker, once
-    --      for sortDistance); merge the two loops
     local closestMarker = nil
     local earliestDistance = math.huge
 
-    for _, info in ipairs(bestMarkers) do
+    for i = 1, #bestMarkers do
+        local info = bestMarkers[i]
         local distance = 0
         if info.row == 0 then               -- South edge
             distance = info.col
@@ -96,31 +96,19 @@ local function getClosestMarkerFromExteriorPosition(position)
             distance = minGridSize * 4 - info.row
         end
 
+        info.sortDistance = distance
         if distance < earliestDistance then
             closestMarker = info.marker
             earliestDistance = distance
         end
     end
-    for _, info in ipairs(bestMarkers) do
-        local distance = 0
-        if info.row == 0 then               -- South edge
-            distance = info.col
-        elseif info.col == minGridSize then -- East edge
-            distance = minGridSize + info.row
-        elseif info.row == minGridSize then -- North edge
-            distance = minGridSize * 3 - info.col
-        else                                -- West edge
-            distance = minGridSize * 4 - info.row
-        end
-        info.sortDistance = distance
-    end
 
     table.sort(bestMarkers, function(a, b) return a.sortDistance < b.sortDistance end)
 
-    for _, info in ipairs(bestMarkers) do
-        local success = pcall(world.getCellById, info.marker.interior)
+    for i = 1, #bestMarkers do
+        local success = pcall(world.getCellById, bestMarkers[i].marker.interior)
         if success then
-            return info.marker
+            return bestMarkers[i].marker
         end
     end
 
@@ -145,14 +133,17 @@ function CellUtils.getClosestMarker(object)
                 checkedCells[cell.id] = true
 
                 -- Search for a marker in this cell
-                for _, marker in ipairs(validMarkers) do
+                for i = 1, #validMarkers do
+                    local marker = validMarkers[i]
                     if marker.cell and marker.cell:lower() == cell.id:lower() then
                         return marker
                     end
                 end
 
                 -- Check doors
-                for _, door in ipairs(cell:getAll(Door)) do
+                local doors = cell:getAll(Door)
+                for i = 1, #doors do
+                    local door = doors[i]
                     if Door.isTeleport(door) then
                         local destCell = Door.destCell(door)
                         if destCell then
@@ -175,9 +166,10 @@ end
 
 function CellUtils.getPrisonCells()
     local prisonCells = {}
-    for _, marker in ipairs(validMarkers) do
-        if marker.interior then
-            prisonCells[marker.interior] = true
+    for i = 1, #validMarkers do
+        local interior = validMarkers[i].interior
+        if interior then
+            prisonCells[interior] = true
         end
     end
     return prisonCells
