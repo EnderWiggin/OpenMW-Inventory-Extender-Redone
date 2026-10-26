@@ -96,10 +96,6 @@ function DragAndDrop:tryUnequipping(item)
         if equippedItem == item then
             equipment[slot] = nil
             Player.setEquipment(omwself, equipment)
-            local sound = helpers.getItemSound(item, 'down')
-            if sound then
-                ambient.playSound(sound)
-            end
             return true
         end
     end
