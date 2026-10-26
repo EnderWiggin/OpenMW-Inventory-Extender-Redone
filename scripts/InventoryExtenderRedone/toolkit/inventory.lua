@@ -1337,7 +1337,7 @@ function Inventory:transferAll()
 
     local ctx = self.ctx
     I.InventoryExtenderRedone.forEachOpenWindow(function(handler)
-        if handler == self or handler.target == omwself then return end
+        if handler.target == omwself then return end
 
         local items = {}
         local visibleItems = handler.table.filteredItems
