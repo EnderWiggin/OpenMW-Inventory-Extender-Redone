@@ -15,15 +15,16 @@ local Modes = D.Modes
 local l10n  = core.l10n(D.L10N)
 
 
-local Toolkit    = I.UIToolkit
-local Components = Toolkit.Components
-local T          = Toolkit.Templates
-local Armor      = types.Armor
-local Clothing   = types.Clothing
-local Weapon     = types.Weapon
-local NPC        = types.NPC
-local Creature   = types.Creature
-local NPCSkills  = NPC.stats.skills
+local Toolkit       = I.UIToolkit
+local Components    = Toolkit.Components
+local T             = Toolkit.Templates
+local Armor         = types.Armor
+local Clothing      = types.Clothing
+local Weapon        = types.Weapon
+local NPC           = types.NPC
+local Creature      = types.Creature
+local NPCSkills     = NPC.stats.skills
+local NPCAttributes = NPC.stats.attributes
 
 ---@return {name:string, get:fun(obj:openmw.Object):openmw.types.SkillStat}[]
 local function makeSkillList(...)
@@ -39,9 +40,27 @@ local function makeSkillList(...)
     return result
 end
 
+---@return {name:string, get:fun(obj:openmw.Object):openmw.types.AttributeStat}[]
+local function makeAttrList(...)
+    local ids = { ... }
+    local result = {}
+    for i = 1, #ids do
+        local id = ids[i]
+        result[#result + 1] = {
+            name = core.stats.Attribute.records[id].name,
+            get = NPCAttributes[id],
+        }
+    end
+    return result
+end
+
+local ATTRIBUTE = makeAttrList('agility', 'endurance', 'intelligence', 'luck', 'personality', 'speed', 'strength',
+    'willpower')
 local WEAPON = makeSkillList('axe', 'bluntweapon', 'handtohand', 'longblade', 'marksman', 'shortblade', 'spear')
 local ARMOR = makeSkillList('block', 'heavyarmor', 'lightarmor', 'mediumarmor', 'unarmored')
 local MAGIC = makeSkillList('alteration', 'conjuration', 'destruction', 'illusion', 'mysticism', 'restoration')
+local OTHER = makeSkillList('enchant', 'security', 'sneak', 'armorer', 'athletics', 'acrobatics', 'alchemy',
+    'speechcraft', 'mercantile')
 
 
 local closePopup
@@ -101,11 +120,15 @@ local function showStatsPopup(companion)
     end
 
     local panes = {
+        makePane(l10n 'Category_Attribute', ATTRIBUTE, companion),
+        T.intervalH(8),
         makePane(l10n 'Category_Weapon', WEAPON, companion),
         T.intervalH(8),
         makePane(l10n 'Category_Armor', ARMOR, companion),
         T.intervalH(8),
         makePane(l10n 'Category_Magic', MAGIC, companion),
+        T.intervalH(8),
+        makePane(l10n 'Category_Misc', OTHER, companion),
     }
     --TODO: add known spells?
 
