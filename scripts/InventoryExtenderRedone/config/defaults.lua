@@ -9,7 +9,7 @@ local M = {
     PageKey = MOD,
     L10N = 'InventoryExtenderRedone',
     Version = '0.0.8',
-    API = 3,
+    API = 4,
     -- window ids and UIToolkit:WindowData keys must keep the pre-rename spelling (save identity)
     WindowIdPrefix = 'InventoryExtender:',
     -- window roles, in ui/roles.lua registration order

@@ -27,6 +27,8 @@ local T              = Toolkit.Templates
 local H              = require 'scripts.UIToolkit.helpers'
 local cfgUtil        = require 'scripts.UIToolkit.config.utils'
 local BarterControls = require('scripts.InventoryExtenderRedone.toolkit.barter_controls')
+local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_item'
+local GridIcon       = require('scripts.InventoryExtenderRedone.toolkit.grid_icon_provider')
 
 local Actor          = types.Actor
 local Container      = types.Container
@@ -44,6 +46,7 @@ local playerInventory = Player.inventory(omwself)
 ---@field Sources table<string,InventoryExtenderRedone.Mode.Source>
 ---@field Filters table<string,InventoryExtenderRedone.Mode.Filter>
 ---@field Actions table<string,InventoryExtenderRedone.Mode.Action>
+---@field Columns table<string,InventoryExtenderRedone.Mode.Column>
 ---@field Info table<string,InventoryExtenderRedone.Mode.InfoBarSection>
 ---@field Builtins table<string,InventoryExtenderRedone.Mode>
 ---@field resolve fun(key:string, role:InventoryExtenderRedone.Role?):InventoryExtenderRedone.Mode?,InventoryExtenderRedone.Mode.RoleSpec?
@@ -62,6 +65,13 @@ Mode.Defaults = {
     drag = { allowed = true }, -- Barter is the mode that forbids dragging
     RoleSpec = {
         pinnable = false, -- only the Interface Inventory window is pinnable
+        -- the built-in column chain, in display order; StealChance belongs to the Pickpocket
+        -- spec's Container role, and the handler supplies Icon/Name behavior at open
+        columns = {
+            { id = 'Icon' }, { id = 'Name' }, { id = 'Type' }, { id = 'Class' },
+            { id = 'AR' }, { id = 'Damage' }, { id = 'Quality' }, { id = 'Condition' },
+            { id = 'Weight' }, { id = 'Weight_Total' }, { id = 'Value' }, { id = 'V/W' },
+        },
     },
 }
 
@@ -739,6 +749,259 @@ Mode.Info = {
     },
 }
 
+--- Column parts: the built-in column configs a mode spec references by id from its `columns`
+--- slot, in display order. Icon and Name keep their popup-facing flags here; the window handler
+--- merges its own open-time width, sort and Name renderers over those ids at open.
+local function shouldShowEnchantedSwirl()
+    return configPlayer.tweaks.s_EnchantedIndicatorMode ~= 'EnchantedIndicatorMode_Icon'
+end
+
+---@param value any
+---@return string
+local function formatNumber(value)
+    if type(value) == 'function' then
+        value = value()
+    end
+
+    if value == 0 or value == nil then
+        return '-'
+    elseif type(value) == 'number' then
+        return H.addSeparators(H.roundToPlaces(value, 2))
+    end
+    return tostring(value)
+end
+
+---@type UIToolkit.ListItem.Column.Renderer
+local function renderNumber(data, cfg, height)
+    local textSize = cfg.arg and cfg.arg.textSize or nil
+    local textAlignH = cfg.arg and cfg.arg.textAlignH or nil
+    local suffix = cfg.arg and cfg.arg.suffix or ''
+    ---@type openmw.ui.Layout
+    local layout = {
+        name = cfg.id,
+        template = T.text(),
+        props = {
+            textAlignV = ui.ALIGNMENT.Center,
+            textAlignH = textAlignH,
+            autoSize = false,
+            textSize = textSize,
+            text = formatNumber(data[cfg.id]) .. suffix,
+        },
+        userData = { colorable = true },
+    }
+
+    ColumnItem.applySize(layout, cfg, height)
+    return layout
+end
+
+---@type UIToolkit.ListItem.Column.Updater
+local function updateNumber(part, data, cfg)
+    local new = formatNumber(data[cfg.id])
+    local props = H.props(part)
+    if props.text == new then return false end
+    props.text = new
+    return true
+end
+
+---@type UIToolkit.ListItem.Column.Renderer
+local function iconRenderer(data, cfg, height)
+    ---@cast data InventoryExtenderRedone.RowData
+    local width = cfg.width or height
+    local sz = cfg.arg and cfg.arg.sz or math.min(height, width or height)
+    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
+    return GridIcon.renderIcon(data, v2(width, height), v2(sz, sz), v2(sz, sz), showEnchantSwirl)
+end
+
+---@param data InventoryExtenderRedone.RowData
+---@type UIToolkit.ListItem.Column.Updater
+local function iconUpdater(part, data)
+    local changed = false
+
+    local props = H.props(part.content['itemIcon'])
+    local tex = Toolkit.texture(data.itemRecord.icon)
+    if tex ~= props.resource then
+        props.resource = tex
+        changed = true
+    end
+
+    local ctx = I.InventoryExtenderRedone.getContext()
+    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
+    local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
+    props = H.props(part.content['itemBackground'])
+    tex = GridIcon.getBackgroundTexture(data.isBartered, equipped, showEnchantSwirl)
+
+    if tex ~= props.resource then
+        props.resource = tex
+        changed = true
+    end
+
+    return changed
+end
+
+-- column widths follow the theme text size, so they are settled once at load
+local fontRatio = Toolkit.getTheme().Sizes.textNormal / 16
+local wide = 60 * fontRatio
+
+Mode.Columns = {
+    Icon = {
+        id = 'Icon',
+        render = iconRenderer,
+        update = iconUpdater,
+        editable = false,
+    },
+    Name = {
+        id = 'Name',
+        name = l10n('Column_Name'),
+        editable = false,
+    },
+    Type = {
+        id = 'Type',
+        name = l10n('Column_Type'),
+        sort = { numeric = false },
+        width = 90 * fontRatio,
+        align = ui.ALIGNMENT.End,
+        render = ColumnItem.renderText,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    Class = {
+        id = 'Class',
+        name = l10n('Column_Class'),
+        sort = { numeric = false },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        render = ColumnItem.renderText,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    AR = {
+        id = 'AR',
+        name = l10n('Column_AR'),
+        sort = { numeric = true },
+        width = 50 * fontRatio,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    Damage = {
+        id = 'Damage',
+        name = l10n('Column_Damage'),
+        sort = { numeric = true },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    Quality = {
+        id = 'Quality',
+        name = l10n('Column_Quality'),
+        sort = { numeric = true },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    Condition = {
+        id = 'Condition',
+        name = l10n('Column_Condition'),
+        width = 55 * fontRatio,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+        optional = true,
+        ---@param a InventoryExtenderRedone.RowData
+        ---@param b InventoryExtenderRedone.RowData
+        sort = function(a, b)
+            local aValue = helpers.getConditionPercent(a.item)
+            local bValue = helpers.getConditionPercent(b.item)
+
+            if aValue == bValue then
+                return 0
+            end
+            if aValue == nil then
+                return -1
+            end
+            if bValue == nil then
+                return 1
+            end
+
+            return aValue < bValue and -1 or 1
+        end,
+    },
+    Weight = {
+        id = 'Weight',
+        name = l10n('Column_Weight'),
+        sort = { numeric = true },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    Weight_Total = {
+        id = 'Weight_Total',
+        name = l10n('Column_Weight_Total'),
+        sort = { numeric = true },
+        width = 70 * fontRatio,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    Value = {
+        id = 'Value',
+        name = l10n('Column_Value'),
+        sort = { numeric = true },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    ['V/W'] = {
+        id = 'V/W',
+        name = l10n('Column_VW'),
+        sort = { numeric = true },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End },
+        editable = true,
+    },
+    StealChance = {
+        id = 'StealChance',
+        name = l10n('Column_StealChance'),
+        sort = { numeric = true },
+        width = wide,
+        align = ui.ALIGNMENT.End,
+        descending = true,
+        render = renderNumber,
+        update = updateNumber,
+        arg = { textAlignH = ui.ALIGNMENT.End, suffix = '%' },
+        editable = true,
+    },
+}
+
 --- Built-in specs, keyed by mode key. Custom specs live in ctx.modes.
 Mode.Builtins = {
     Interface  = require('scripts.InventoryExtenderRedone.toolkit.modes.interface'),
@@ -751,13 +1014,13 @@ Mode.Builtins = {
 
 -- List slots merge through id-keyed ops; other slots are a whole-slot overwrite. lifecycle is a
 -- list slot too: several specs contribute hooks, merged into one chain.
-local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle' }
+local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle', 'columns' }
 local ROLE_SLOTS = { 'states', 'actions', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
 local MODE_SLOTS = { 'applies', 'priority', 'drag', 'event' }
 
 
 local function isPatchList(op)
-    return op.add ~= nil or op.remove ~= nil or op.replace ~= nil
+    return op.add ~= nil or op.remove ~= nil or op.replace ~= nil or op.set ~= nil
 end
 
 --- `after`/`before` position an entry against an existing id; entries without them keep
@@ -786,6 +1049,8 @@ local function insertOrdered(ordered, id, after, before)
     ordered[#ordered + 1] = id
 end
 
+--- Merges a list slot: an op table with no ops keys replaces the chain wholesale, an ops table
+--- merges onto it. `op.set` names the chain to merge against instead of the inherited one.
 ---@param base any[]?
 ---@param op any[]|InventoryExtenderRedone.Mode.PatchList
 ---@return any[]
@@ -795,9 +1060,10 @@ local function mergeList(base, op)
 
     local ordered = {}
     local byId = {}
-    if base then
-        for i = 1, #base do
-            local entry = base[i]
+    local chain = op.set or base
+    if chain then
+        for i = 1, #chain do
+            local entry = chain[i]
             if entry and entry.id and not byId[entry.id] then
                 ordered[#ordered + 1] = entry.id
                 byId[entry.id] = entry

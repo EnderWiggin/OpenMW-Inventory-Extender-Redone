@@ -31,7 +31,6 @@ local pickpocket = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local l10n = core.l10n(D.L10N)
 local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 local InfoBar = require('scripts.InventoryExtenderRedone.toolkit.info_bar')
-local GridIcon = require('scripts.InventoryExtenderRedone.toolkit.grid_icon_provider')
 local ItemTable = require('scripts.InventoryExtenderRedone.toolkit.item_table')
 local ItemStackModal = require('scripts.InventoryExtenderRedone.toolkit.item_stack_modal')
 
@@ -67,10 +66,6 @@ local function getEnchantedIndicatorMode()
     return configPlayer.tweaks.s_EnchantedIndicatorMode or 'EnchantedIndicatorMode_Both'
 end
 
-local function shouldShowEnchantedSwirl()
-    return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Icon'
-end
-
 local function shouldShowEnchantedNameIcon()
     return getEnchantedIndicatorMode() ~= 'EnchantedIndicatorMode_Swirl'
 end
@@ -82,87 +77,11 @@ local function getSyncedCategoryKey(categoryKey, targetWindow)
     return categoryKey
 end
 
----@type UIToolkit.ListItem.Column.Renderer
-local function iconRenderer(data, cfg, height)
-    ---@cast data InventoryExtenderRedone.RowData
-    local width = cfg.width or height
-    local sz = cfg.arg and cfg.arg.sz or math.min(height, width or height)
-    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
-    return GridIcon.renderIcon(data, v2(width, height), v2(sz, sz), v2(sz, sz), showEnchantSwirl)
-end
-
----@param data InventoryExtenderRedone.RowData
----@type UIToolkit.ListItem.Column.Updater
-local function iconUpdater(part, data)
-    local changed = false
-
-    local props = H.props(part.content['itemIcon'])
-    local tex = Toolkit.texture(data.itemRecord.icon)
-    if tex ~= props.resource then
-        props.resource = tex
-        changed = true
-    end
-
-    local ctx = I.InventoryExtenderRedone.getContext()
-    local showEnchantSwirl = data.showAsEnchanted() and shouldShowEnchantedSwirl() or false
-    local equipped = helpers.isItemEquipped(data.item, data.item.parentContainer, ctx.overrides.equipped)
-    props = H.props(part.content['itemBackground'])
-    tex = GridIcon.getBackgroundTexture(data.isBartered, equipped, showEnchantSwirl)
-
-    if tex ~= props.resource then
-        props.resource = tex
-        changed = true
-    end
-
-    return changed
-end
-
----@param value any
----@return string
-local function formatNumber(value)
-    if type(value) == 'function' then
-        value = value()
-    end
-
-    if value == 0 or value == nil then
-        return '-'
-    elseif type(value) == 'number' then
-        return H.addSeparators(H.roundToPlaces(value, 2))
-    end
-    return tostring(value)
-end
-
----@type UIToolkit.ListItem.Column.Renderer
-local function renderNumber(data, cfg, height)
-    local textSize = cfg.arg and cfg.arg.textSize or nil
-    local textAlignH = cfg.arg and cfg.arg.textAlignH or nil
-    local suffix = cfg.arg and cfg.arg.suffix or ''
-    ---@type openmw.ui.Layout
-    local layout = {
-        name = cfg.id,
-        template = T.text(),
-        props = {
-            textAlignV = ui.ALIGNMENT.Center,
-            textAlignH = textAlignH,
-            autoSize = false,
-            textSize = textSize,
-            text = formatNumber(data[cfg.id]) .. suffix,
-        },
-        userData = { colorable = true },
-    }
-
-    ColumnItem.applySize(layout, cfg, height)
-    return layout
-end
-
----@type UIToolkit.ListItem.Column.Updater
-local function updateNumber(part, data, cfg)
-    local new = formatNumber(data[cfg.id])
-    local props = H.props(part)
-    if props.text == new then return false end
-    props.text = new
-    return true
-end
+-- the column renderers live in the mode library; the Name renderers below close over the handler
+local iconRenderer = Mode.Columns.Icon.render --[[@as UIToolkit.ListItem.Column.Renderer ]]
+local iconUpdater = Mode.Columns.Icon.update --[[@as UIToolkit.ListItem.Column.Updater ]]
+local renderNumber = Mode.Columns.Value.render --[[@as UIToolkit.ListItem.Column.Renderer ]]
+local updateNumber = Mode.Columns.Value.update --[[@as UIToolkit.ListItem.Column.Updater ]]
 
 ---@param row InventoryExtenderRedone.RowData
 ---@param type string

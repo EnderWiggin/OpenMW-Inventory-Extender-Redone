@@ -171,6 +171,7 @@
 ---@field states InventoryExtenderRedone.Mode.State? per-row states (disabled/owned)
 ---@field actions InventoryExtenderRedone.Mode.Actions? gate + effect only; shared row mechanics stay in the handler
 ---@field infoBar InventoryExtenderRedone.Mode.InfoBarSection[]? bottom strip sections, in order
+---@field columns InventoryExtenderRedone.Mode.Column[]? the window's columns, in display order; absent means the built-in chain in Mode.Defaults.RoleSpec.columns
 ---@field observer? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip and AR. If absent or returns nil - player is used.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
 ---@field pinnable boolean? default false; only the Interface Inventory window sets true
@@ -214,6 +215,7 @@
 ---@field states InventoryExtenderRedone.Mode.State?
 ---@field actions InventoryExtenderRedone.Mode.Actions?
 ---@field infoBar InventoryExtenderRedone.Mode.PatchList?
+---@field columns InventoryExtenderRedone.Mode.PatchList? a plain array here is sugar for {add = array}: a patch always merges onto the window's resolved chain
 ---@field observer? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip and AR. If absent or returns nil - player is used.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
 ---@field pinnable boolean?
@@ -225,6 +227,7 @@
 ---@field add any[]? appended
 ---@field replace any[]? id-keyed: replaces the entry with the same id, appends when the id is new
 ---@field remove string[]? ids to drop
+---@field set any[]? explicit whole-chain replacement; add/replace/remove then apply on top of it
 
 ---@class InventoryExtenderRedone.Mode.Source
 ---@field id string
@@ -264,6 +267,23 @@
 ---@field cleanup fun()? runs in InfoBar:beforeElementDestroy()
 ---@field before string? order before this section id
 ---@field after string? order after this section id
+
+---@class InventoryExtenderRedone.Mode.Column one column part in Mode.Columns or a spec entry; an entry naming an id inherits that built-in part and its own fields win over it
+---@field id string column id; the RowData field of the same name carries the data
+---@field name string? l10n key or resolved header text (nil = no header label)
+---@field width number? 0 or nil with auto = a stretch column
+---@field auto number? grow factor when width is 0
+---@field sort? UIToolkit.ColumnComparator|UIToolkit.SimpleColumnComparatorConfig|nil nil = not sortable
+---@field render? UIToolkit.ListItem.Column.Renderer absent for Icon/Name: the window handler provides those renderers at open
+---@field update? UIToolkit.ListItem.Column.Updater
+---@field arg any? renderer args (textAlignH, suffix, textSize)
+---@field align? openmw.ui.Alignment
+---@field descending boolean? preferred sort direction when the column is toggled
+---@field inactive boolean? sortable but not clickable in the header
+---@field optional boolean? default-hidden: shown only when the player opted in
+---@field editable boolean? offered in the column-settings popup (false for Icon/Name)
+---@field after string? position this entry after another column id
+---@field before string? position this entry before another column id
 
 ---@alias InventoryExtenderRedone.Mode.Hints fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context, base:UIToolkit.Controller.HintList):UIToolkit.Controller.HintList?
 
