@@ -879,6 +879,7 @@ function Inventory:setTarget(actor)
         error('InventoryExtenderRedone setTarget: invalid actor', 2)
     end
     self.target = actor
+    self:updateTitle()
 end
 
 function Inventory:onClosed()
