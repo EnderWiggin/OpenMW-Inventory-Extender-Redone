@@ -1,0 +1,12 @@
+PageName: Party Barter
+PageDesc: |-
+  Barter with a follower: sell the follower's items to a merchant and buy the merchant's stock into the follower's inventory.
+SettingsName: Party Barter
+SettingsDesc: |-
+  Settings for the party barter partner selector.
+EnableName: Enable Party Barter
+EnableDesc: |-
+  Adds a partner selector to the barter window. Followers are detected by Follower Detection Util.
+OfferNonNpcFollowersName: Offer Non-NPC Followers
+OfferNonNpcFollowersDesc: |-
+  Include creature and other non-NPC followers in the partner selector.
