@@ -1,5 +1,6 @@
 ---@omw-context player
 
+local core    = require 'openmw.core'
 local I       = require 'openmw.interfaces'
 local types   = require 'openmw.types'
 local async   = require 'openmw.async'
@@ -209,7 +210,6 @@ local function cleanupSection()
     if not box then return end
     Toolkit.queueDestroy(box.element)
     box = nil
-    state = nil
 end
 
 local initialized = false
@@ -244,5 +244,14 @@ return {
     engineHandlers = {
         onInit = tryInit,
         onLoad = tryInit,
+    },
+    eventHandlers = {
+        IER_BarterFinalized = function()
+            local selected = state and state.selectedActor
+            if selected and selected ~= omwself then
+                core.sendGlobalEvent('IER_AutoEquip', { target = selected })
+            end
+            state = nil
+        end,
     },
 }
