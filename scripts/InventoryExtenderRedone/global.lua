@@ -396,6 +396,15 @@ local function onContainerActivated(container, actor)
     return true
 end
 
+local function processAutoEquip(data)
+    local target = data and data.target
+    if not target or not NPC.objectIsInstance(target) then return end
+    queueDelayedJob(function()
+        target:addScript('scripts/InventoryExtenderRedone/autoEquip.lua', data)
+        target:removeScript('scripts/InventoryExtenderRedone/autoEquip.lua')
+    end, 2)
+end
+
 local lastItemPickedUp = nil
 
 local function onUpdate(dt)
@@ -721,6 +730,7 @@ local eventHandlers = {
     IER_MoveInto = moveInto,
     IER_MoveAll = moveAll,
     IER_FinalizeBarter = finalizeBarter,
+    IER_AutoEquip = processAutoEquip,
     IER_UIModeChanged = onUiModeChanged,
     IER_StolenChestInactive = updateChestMemory,
     IER_DisposeOfCorpse = function(props)
