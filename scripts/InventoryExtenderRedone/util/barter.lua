@@ -197,6 +197,36 @@ local function itemOffer(npc, item, count, buying, ctx)
     return applyPriceOverrides(ctx.overrides.price, npc, item, count, buying, price)
 end
 
+--- Store the barter partner descriptor: which actors a barter runs between. Omitted party and
+--- gold are filled with the player at set time; omitted pricing stays nil and reads the last-known
+--- Trade merchant at use time. nil clears it. Does not refresh the windows.
+---@param ctx InventoryExtenderRedone.Context
+---@param descriptor InventoryExtenderRedone.BarterPartner?
+local function setPartner(ctx, descriptor)
+    if not descriptor then
+        ctx.barterState.partner = nil
+        return
+    end
+    ctx.barterState.partner = {
+        pricing = descriptor.pricing,
+        party = descriptor.party or self,
+        gold = descriptor.gold or self,
+    }
+end
+
+--- The three actors the current barter runs between, defaults applied: pricing is the merchant
+--- read at call time (never stored at set time), party and gold are the player.
+---@param ctx InventoryExtenderRedone.Context
+---@return openmw.Object? pricing
+---@return openmw.Object party
+---@return openmw.Object gold
+local function resolvePartner(ctx)
+    local partner = ctx.barterState.partner
+    return partner and partner.pricing or ctx.windowArgs.Trade,
+        partner and partner.party or self,
+        partner and partner.gold or self
+end
+
 local function updateOffer(ctx)
     local state = ctx.barterState
     local merchant = ctx.windowArgs.Trade
@@ -455,4 +485,5 @@ return {
     unqueueSell = unqueueSell,
     unqueueBuy = unqueueBuy,
     clearBarterOffer = clearBarterOffer,
+    setPartner = setPartner,
 }

@@ -53,6 +53,7 @@ WindowManager.ctx = {
         buying = {},
         currentMerchantOffer = 0,
         currentBalance = 0,
+        partner = nil,
     },
     companionProfit = {},
     pickpocket = nil,
@@ -294,6 +295,7 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
         buying = {},
         currentMerchantOffer = 0,
         currentBalance = 0,
+        partner = nil,
     }
 
     if self.ctx.dragAndDrop.wrapper then

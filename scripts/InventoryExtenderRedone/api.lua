@@ -239,6 +239,30 @@ function Barter.clearBarterOffer()
     barterUtils.clearBarterOffer(windowManager.ctx)
 end
 
+--- Name the actors a barter runs between, so an offer can price against one merchant and move
+--- items to and from another actor. pricing is the merchant (haggle, per-item offer, the barter
+--- gold pool, disposition, stolen victim, sell destination); party is the item holder on the
+--- player's side (sell source and buy destination); gold is the pocket a negative balance is
+--- paid from and a positive one received into. Omitted party and gold mean the player; omitted
+--- pricing means the last-known Trade merchant. An empty descriptor is not the same as clearing:
+--- it still fills party and gold with the player. Does not refresh the windows.
+---@param descriptor InventoryExtenderRedone.BarterPartner?
+function Barter.setPartner(descriptor)
+    barterUtils.setPartner(windowManager.ctx, descriptor)
+end
+
+--- The stored descriptor, or nil when none was set. Do not mutate what this returns: it is the
+--- stored table, normalized when it was set.
+---@return InventoryExtenderRedone.BarterPartner?
+function Barter.getPartner()
+    return windowManager.ctx.barterState.partner
+end
+
+--- Drop the descriptor, so the next barter uses vanilla actors. Does not refresh the windows.
+function Barter.clearPartner()
+    barterUtils.setPartner(windowManager.ctx, nil)
+end
+
 --- Commit the current offer queue: transfer items, adjust gold, apply mercantile gain.
 --- opts.closeWindow defaults true (leaves the Barter UI mode); with false the queues are
 --- cleared in place so an open Trade window shows an empty offer.

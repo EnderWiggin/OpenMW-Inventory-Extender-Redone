@@ -354,6 +354,9 @@
 ---@field unqueueSell fun(row:InventoryExtenderRedone.RowData, count:number?) decrement the sell side by count, count omitted clears the entry; pass the offered (isBartered) row; same no-merchant no-op + warning
 ---@field unqueueBuy fun(row:InventoryExtenderRedone.RowData, count:number?) same on the buy side; same no-merchant no-op + warning
 ---@field clearBarterOffer fun() empty selling/buying and zero currentMerchantOffer/currentBalance in place (an open window's init-time closures keep holding the state table)
+---@field setPartner fun(descriptor:InventoryExtenderRedone.BarterPartner?) name the actors a barter runs between: pricing (the merchant: haggle, per-item offer, barter-gold pool, disposition, stolen victim, sell destination), party (the item holder on the player's side: sell source and buy destination), gold (who pays a negative balance and receives a positive one). Omitted party and gold are filled with the player at set time; omitted pricing stays nil and reads ctx.windowArgs.Trade at use time. nil clears the descriptor. Does not refresh: batch writes, then call IER.update() once
+---@field getPartner fun():InventoryExtenderRedone.BarterPartner? the raw stored table, read-only - do not mutate what this returns; nil when no descriptor was set (vanilla actors)
+---@field clearPartner fun() drop the descriptor so the next barter uses vanilla actors; not the same state as setPartner with an empty descriptor, which still names party and gold as the player; does not refresh
 ---@field offerBarter fun(opts:table?):boolean, skillGain:number? commit the current offer queue through the same sequence the Trade window's Offer button runs (empty check, gold caps, stolen interruption, haggle through the override chain, disposition, finalize, gold sound); merchant is ctx.windowArgs.Trade, refuses with a warning when no merchant is known; opts.closeWindow defaults true (Barter UI mode removal), false clears the queues in place instead; state.success is set in both cases
 ---@field registerHaggleOverride fun(id:string, handler:InventoryExtenderRedone.HaggleOverride) register a haggle modifier consulted before the acceptance dice roll, by both the Offer button and Barter.offerBarter; handlers run in reverse registration order, each non-nil return replaces the running chance and/or skillGain for its own field (stacking, last registered wins per field); returned chance clamped to [0,100] - 100 guarantees acceptance, 0 refusal; deliberately powerful, a mod can force-accept any offer
 ---@field registerPriceOverride fun(id:string, handler:InventoryExtenderRedone.PriceOverride) register a repricing modifier consulted inside itemOffer, so the queue (updateOffer), the prediction exports and the committed gold (finalizeBarter) all see the same repriced value; handlers receive the barter direction (buying = player buying from npc) so they can price sell vs buy differently; reverse registration order, each non-nil return replaces the running per-item magnitude (modifiers compose, last registered wins); returned price clamped to [0,infinity) - 0 = free item
@@ -364,11 +367,17 @@
 ---@field currentMerchantOffer number
 ---@field currentBalance number
 ---@field success boolean?
+---@field partner InventoryExtenderRedone.BarterPartner? the descriptor set by Barter.setPartner; nil means vanilla actors. A fresh barterState table at a mode change clears it
 
 ---@class InventoryExtenderRedone.BarterEntry
 ---@field item openmw.Object
 ---@field stacks table?
 ---@field count number
+
+---@class InventoryExtenderRedone.BarterPartner the three actors a barter runs between, all optional; stored in barterState.partner and normalized on write
+---@field pricing openmw.Object? the merchant: haggle, per-item offer, the barter-gold pool, disposition, stolen victim and the sell destination. Absent means ctx.windowArgs.Trade, read at use time
+---@field party openmw.Object? the item holder on the player's side: sell source and buy destination; filled with the player when the descriptor is stored
+---@field gold openmw.Object? who pays a negative balance and receives a positive one; filled with the player when the descriptor is stored
 
 
 ---@class InventoryExtenderRedone.PickpocketSession
