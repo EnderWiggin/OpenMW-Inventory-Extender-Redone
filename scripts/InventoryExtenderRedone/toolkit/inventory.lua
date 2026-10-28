@@ -1304,7 +1304,7 @@ function Inventory:updateTitle()
     end
 end
 
-local function getEquippedItemsForComparison(item, ctx)
+local function getEquippedItemsForComparison(item, ctx, actor)
     local mode = configPlayer.window.s_CompareItemsMode
     if mode == constants.COMPARISON_OPTS.ALT then
         if not input.isAltPressed() then return nil end
@@ -1315,7 +1315,6 @@ local function getEquippedItemsForComparison(item, ctx)
         return nil
     end
 
-    local actor = omwself
     local overrides = ctx.overrides.equipped
 
     if helpers.isItemEquipped(item, actor, overrides) then
@@ -1387,7 +1386,7 @@ function Inventory:createData()
             --IER = IER,
         }
         local function tooltip()
-            local comparison = getEquippedItemsForComparison(itemStack, ctx)
+            local comparison = getEquippedItemsForComparison(itemStack, ctx, self.target or omwself)
             if not comparison or #comparison <= 0 then return baseTip end
             local tips = { Tooltips.createTooltipLayout(baseTip) }
             for i = 1, #comparison do

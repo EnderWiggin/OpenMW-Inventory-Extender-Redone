@@ -467,8 +467,8 @@ Mode.Info = {
             end
         end,
     },
-    -- gold the window's actor carries: pocket gold for the Inventory role, the merchant's
-    -- remaining offer for Trade
+    -- gold the window shows: the descriptor's gold holder for the player's window, the priced
+    -- merchant's remaining offer for the others
     gold = {
         id = 'gold',
         create = function(handler, _)
@@ -496,13 +496,19 @@ Mode.Info = {
                     }
                 }
             }
-            return function(_)
-                if not handler.target then return nil end
+            return function(ctx)
                 local goldAmount
                 if handler.role == D.Roles.Inventory then
-                    goldAmount = handler.target.type.inventory(handler.target):countOf('gold_001')
+                    -- a mod-named gold holder wins over the window's own actor
+                    local actor = ctx.barterState.partner and ctx.barterState.partner.gold or handler.target
+                    if not actor then return nil end
+                    goldAmount = getInventory(actor):countOf('gold_001')
                 else
-                    goldAmount = handler.target.type.getBarterGold(handler.target)
+                    -- the merchant the offer is priced against: the same actor the Offer button
+                    -- and the Max button use
+                    local pricing = barterUtils.resolvePartner(ctx)
+                    if not pricing then return nil end
+                    goldAmount = Actor.getBarterGold(pricing)
                 end
                 props.text = H.addSeparators(goldAmount)
                 return layout
