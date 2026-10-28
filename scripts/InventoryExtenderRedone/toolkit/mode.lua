@@ -38,6 +38,17 @@ local Player         = types.Player
 -- the player inventory is a live handle on omwself, not a snapshot: :getAll() re-reads contents
 local playerInventory = Player.inventory(omwself)
 
+--- The inventory to read an actor's items from: the cached player handle when the actor is the
+--- player, that actor's own inventory otherwise.
+---@param actor openmw.Object
+---@return openmw.core.Inventory
+local function getInventory(actor)
+    if actor == omwself then
+        return playerInventory
+    end
+    return actor.type.inventory(actor)
+end
+
 
 -- Mode specs are pure behavior; slots are keyed per window role, since the Inventory role
 -- appears in four modes and needs a different slot set each time.
@@ -127,7 +138,7 @@ Mode.Sources = {
     target = {
         id = 'target',
         get = function(handler, _)
-            return handler.target.type.inventory(handler.target):getAll()
+            return getInventory(handler.target):getAll()
         end,
     },
     -- always the player's own inventory, whichever window asks for the other side of a barter
@@ -143,9 +154,8 @@ Mode.Sources = {
         id = 'partner',
         isBartered = true,
         get = function(_, ctx)
-            local party = ctx.barterState.partner and ctx.barterState.partner.party or omwself
-            if party == omwself then return playerInventory:getAll() end
-            return party.type.inventory(party):getAll()
+            local _, party = barterUtils.resolvePartner(ctx)
+            return getInventory(party):getAll()
         end,
     },
     -- merchant stock merged into virtual stacks

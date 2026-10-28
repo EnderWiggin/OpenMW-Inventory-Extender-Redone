@@ -23,6 +23,17 @@ local NPC = types.NPC
 local Player = types.Player
 local playerInventory = Player.inventory(self)
 
+--- The inventory to read an actor's items from: the cached player handle when the actor is the
+--- player, that actor's own inventory otherwise.
+---@param actor openmw.Object
+---@return openmw.core.Inventory
+local function getInventory(actor)
+    if actor == self then
+        return playerInventory
+    end
+    return actor.type.inventory(actor)
+end
+
 local function getEffectiveValue(item, count)
     local basePrice = item.type.record(item).value
 
@@ -384,7 +395,7 @@ local function completeOffer(ctx, opts)
         return false
     end
 
-    local pocketGold = gold.type.inventory(gold):countOf('gold_001')
+    local pocketGold = getInventory(gold):countOf('gold_001')
     if state.currentBalance < 0 and pocketGold < math.abs(state.currentBalance) then
         ui.showMessage(constants.Strings.BARTER_PC_TOO_POOR)
         return false
