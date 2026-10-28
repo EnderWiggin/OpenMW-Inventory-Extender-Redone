@@ -91,6 +91,8 @@ A `Mode.RoleSpec` is the per-window behavior:
 | `actions` | `Mode.Actions` | gates and effects for the two row actions (`use`/`pickup`); the bulk affordances (`takeAll`, `dispose`, `close`) are `infoBar` sections and the favorite toggle is a shared handler mechanic, not a mode slot |
 | `infoBar` | `Mode.InfoBarSection[]` | bottom-strip sections, in order |
 | `columns` | `Mode.Column[]` | the window's columns, in display order; absent means the built-in default chain (all columns except `StealChance`) |
+| `target` | `fun(handler, ctx): openmw.Object?` | the window's actor — whose inventory is listed, whose equipped gear/encumbrance/armor rating/gold the info bar and sorting read, whose name the title shows. Absent or returning `nil` means the built-in rule: the player for the `Inventory` role, the open argument for any other role. An open window is retargeted through `handler:setTarget` |
+| `observer` | `fun(handler, ctx): openmw.Object?` | who the rows are read as — the actor whose active magic effects the `AR` column and the row tooltips are computed against. Absent or returning `nil` means the player. The `Companion` role's spec sets the window's target, so a companion's gear is rated as that NPC wears it |
 | `hints` | `Mode.Hints` | controller hints |
 | `pinnable` | boolean | only the `Interface` Inventory window sets true |
 | `storageSuffix` | string | suffix of this window's saved data (see Notes) |
@@ -384,7 +386,7 @@ parameter. The merchant is `ctx.windowArgs.Trade` — the `arg` last passed to `
 **Last-known, not current**: `show` with a nil `arg` keeps the previous value, and nothing clears it
 when the window closes, so it may name a merchant whose window is gone. With no merchant known, the
 queue functions do nothing and log a warning, and the price queries return `nil` (`0` would read as
-"free item").
+"free item"). A mod that needs a merchant other than that one names it through `setPartner` (below).
 
 ### Find the row for an item
 
@@ -442,6 +444,49 @@ IER.Barter.registerPriceOverride('myMod_generousTrader', function(npc, item, cou
     return buying and price * 1.1 or price * 0.9
 end)
 ```
+
+### Name the participants — `IER.Barter.setPartner`
+
+By default a barter runs entirely between the player and `ctx.windowArgs.Trade`. A **partner
+descriptor** names the actors it runs between, so an offer can price against one merchant and move
+items to and from another actor — a follower's goods sold to the merchant, the merchant's stock
+bought into the follower's inventory, while every price still uses the player's mercantile.
+
+```lua
+---@param descriptor InventoryExtenderRedone.BarterPartner?  { pricing, party, gold }, all optional
+IER.Barter.setPartner(descriptor)   -- nil clears it
+IER.Barter.clearPartner()           -- back to vanilla actors
+IER.Barter.getPartner()             -- the stored descriptor, or nil; do not mutate what this returns
+```
+
+| Field | Drives | Omitted means |
+| --- | --- | --- |
+| `pricing` | haggle, per-item offer, the merchant's barter-gold pool, disposition change, stolen victim, sell destination | `ctx.windowArgs.Trade`, read when the offer is priced |
+| `party` | sell source, buy destination | the player |
+| `gold` | who pays a negative balance and who receives a positive one | the player |
+
+`pricing` is resolved when the offer is priced, never stored when the descriptor is set, so a mod
+that does not name it follows the last-known merchant. `party` and `gold` are filled with the player
+at set time — `setPartner({})` is therefore **not** the same observable state as clearing: with a
+descriptor present the Inventory window's gold readout names the descriptor's gold actor, with none
+it falls back to the window's own actor. Pass `gold` explicitly when that readout matters.
+
+The merchant's own barter pool stays bound to `pricing`: `getBarterGold`/`setBarterGold` read the
+NPC that priced the offer, and pricing one merchant while draining another has no coherent meaning.
+
+The descriptor only says where items go; the window still has to show them, and that is what
+`handler:setTarget` does (see *Windows and context*). The Barter mode's Inventory role lists its
+target's items plus the merchant's stock, and the Trade role lists the merchant's stock plus the
+descriptor's `party` as offered rows:
+
+```lua
+IER.show(IER.Roles.Trade, merchant)                    -- opens both Barter windows
+IER.getWindow(IER.Roles.Inventory):setTarget(follower) -- the sell side is the follower's items
+IER.Barter.setPartner({ party = follower })            -- pricing stays the last-known merchant
+IER.update()                                           -- one refresh after the batch of writes
+```
+
+`setPartner` does not refresh the windows, same as `clearBarterOffer`.
 
 ### Queue the offer
 
@@ -521,6 +566,7 @@ IER.show(role, arg)                 -- open a role's window (arg = target NPC/co
 IER.hide(role, arg, force)          -- close it
 IER.getWindow(role)                 -- the open window's handler (IER.Inventory), or nil
 IER.forEachOpenWindow(apply)        -- apply(handler, wnd) over every open window
+IER.update()                        -- refresh every open window now (what sending IER_Update does)
 IER.getContext()                    -- the shared mutable context table
 IER.getDraggingObject()             -- the object being dragged, or nil
 IER.isFavorite(itemOrId)            -- string id or object -> boolean
@@ -532,6 +578,30 @@ IER.allWindowsDisabled              -- live flag; while true, show() and openMod
 expose `infoBar` and `table` as public fields for external consumers
 (`handler.infoBar:getHeight()`, `handler.table.size`).
 
+### Retarget an open window — `handler:setTarget`
+
+```lua
+---@param actor openmw.Object?  nil re-applies the role's default
+IER.getWindow(IER.Roles.Inventory):setTarget(actor)
+```
+
+`getWindow(role)` returns the open window's handler, so the setter is reached through it. `setTarget`
+points the window at another actor: its rows, its info bar (encumbrance, gold, armor rating,
+companion profit) and its sorting follow that actor, and its title shows the actor's record name.
+With `nil` it re-applies the role's default from the mode's `target` slot — the same rule the window
+used when it opened — which for the built-in modes is the player for the Inventory role and the open
+argument for any other role.
+
+A non-`nil` actor must be a live object (`isValid()` and `enabled`); otherwise this **throws**. That
+is the one exception to the refuse-and-return style of the barter surface: passing a dead or removed
+object is a programming error. A mod retargeting to an actor that may go dead mid-trade re-checks
+before calling.
+
+It does not refresh: batch the writes, then call `IER.update()` once and only read rows after that.
+Rows are rebuilt fresh on every refresh, so one update after a batch is enough, and refreshing per
+write would re-price per write. Between a write and that update the tables still show the previous
+actor's rows, so `Barter.getSellRow`/`getBuyRow` can name rows the window no longer offers.
+
 ### Shared context (`IER.getContext()`)
 
 One mutable table shared with the mod's own code. Read it fresh each frame; do not cache its
@@ -541,7 +611,7 @@ fields across frames without invalidation.
 | --- | --- |
 | `stolenItems[recordId][victimId or factionId]` | stolen-item counts: badges, confiscation, "that's mine" barter interruption |
 | `favoriteItems[item.id]`, `favoriteRevision` | favorites; favorites refuse transfers outside Interface mode |
-| `barterState` | `{ selling, buying, currentMerchantOffer, currentBalance, success }`, entries `{ item, stacks, count }` keyed by `item.id` |
+| `barterState` | `{ selling, buying, currentMerchantOffer, currentBalance, success, partner }`, entries `{ item, stacks, count }` keyed by `item.id`; `partner` is the descriptor set by `Barter.setPartner`, `nil` in vanilla, cleared by the fresh table at a mode change |
 | `pickpocket` | the current pickpocket session, or `nil` |
 | `companionProfit[actorId]` | profit a companion gained from the player |
 | `containerVariables[name]` | vanilla-parity ownership globals |
@@ -567,7 +637,7 @@ What external mods typically interact with:
 ## Constants and helpers
 
 ```lua
-IER.VERSION       -- API version (currently 3)
+IER.VERSION       -- API version (currently 4)
 IER.Constants     -- shared constants: C.Colors, C.Strings (GMST-backed), C.OPT_KEYS,
                     C.ServiceToType, C.BoundItemIDs
 IER.Helpers       -- item inspection helpers: getItem*, isItemEquipped, doesItemFit, isGold,
