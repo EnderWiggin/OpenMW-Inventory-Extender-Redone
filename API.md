@@ -15,7 +15,7 @@ LuaLS `---@meta` file, not shipped); this document is its human-facing companion
 
 ## Overview and quick start
 
-This reference describes API version 3 (`IER.VERSION`). A mod that uses this surface should check
+This reference describes API version 4 (`IER.VERSION`). A mod that uses this surface should check
 the version first, then extend the mod through the registration points below: `patchMode` to
 change an existing mode, `registerMode` for a new behavior set, `registerWindowRole` for a new
 window, `openMode` to open a custom mode's windows.
@@ -23,8 +23,8 @@ window, `openMode` to open a custom mode's windows.
 ```lua
 local IER = I.InventoryExtenderRedone
 
-if IER.VERSION < 3 then
-    return   -- this reference describes API version 3
+if IER.VERSION < 4 then
+    return   -- this reference describes API version 4
 end
 
 -- Hide gold rows in the player's window
@@ -90,14 +90,17 @@ A `Mode.RoleSpec` is the per-window behavior:
 | `states` | `Mode.State` | per-row states (`isDisabled`, `isOwned`) |
 | `actions` | `Mode.Actions` | gates and effects for the two row actions (`use`/`pickup`); the bulk affordances (`takeAll`, `dispose`, `close`) are `infoBar` sections and the favorite toggle is a shared handler mechanic, not a mode slot |
 | `infoBar` | `Mode.InfoBarSection[]` | bottom-strip sections, in order |
+| `columns` | `Mode.Column[]` | the window's columns, in display order; absent means the built-in default chain (all columns except `StealChance`) |
 | `hints` | `Mode.Hints` | controller hints |
 | `pinnable` | boolean | only the `Interface` Inventory window sets true |
 | `storageSuffix` | string | suffix of this window's saved data (see Notes) |
 | `defaultStorage` | `UIToolkit.WindowSaveData` | saved-state fallbacks |
 
-**List slots vs overwrite slots.** The list slots `sources`, `filters` and `infoBar` merge by id;
-every other slot is a whole-slot overwrite. A spec that wants part of a list slot uses the patch
-list ops (`{ add, replace, remove }`); a plain array replaces the whole slot.
+**List slots vs overwrite slots.** The list slots `sources`, `filters`, `infoBar`, `lifecycle` and
+`columns` merge by id; every other slot is a whole-slot overwrite. A spec that wants part of a list
+slot uses the patch list ops (`{ add, replace, remove, set }`); in a **spec** a plain array replaces
+the whole slot, while in a **patch** a plain array is sugar for `{ add = array }` — a patch always
+merges onto the resolved chain, and `{ set = … }` is the explicit whole-slot replacement.
 
 **Specs name built-in parts by id.** A slot entry can name a built-in part by `id` or carry its
 own behavior; when it does both, the entry's own fields win, so you can reuse a built-in part with
@@ -112,8 +115,10 @@ local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
 --                 pickupInterface, pickupContainerInventory, pickupContainerTarget,
 --                 pickupCompanionInventory, pickupCompanionTarget, pickupBarterInventory,
 --                 pickupBarterTrade, pickpocketTake
--- Mode.Info     : encumbrance, gold, armorRating, filler, use, dispose, takeAll, profit,
---                 barterControls, barterCancel, close
+-- Mode.Info     : encumbrance, gold, armorRating, filler, use, dispose, takeAll, putAll, profit,
+--                 close, barterCancel, barterControls
+-- Mode.Columns  : Icon, Name, Type, Class, AR, Damage, Quality, Condition, Weight,
+--                 Weight_Total, Value, V/W, StealChance
 ```
 
 ## Changing window behavior
@@ -133,14 +138,17 @@ registered patch wins). A patch registered mid-session takes effect from the nex
 change an already-open window's snapshot. Patches change slots, never which mode applies. The
 patch's `id` is required if you want to remove it later with `unpatchMode`.
 
-In a list slot, a plain array replaces the whole slot; a table with `add`/`replace`/`remove`
-applies operations (`InventoryExtenderRedone.Mode.PatchList`):
+In a patch's list slot, a plain array is sugar for `{ add = array }` so the patch always merges onto
+the resolved chain; a table with `add`/`replace`/`remove`/`set` applies operations
+(`InventoryExtenderRedone.Mode.PatchList`):
 
-- `add` — append entries. An entry can carry `before`/`after` to position itself against an
-  existing id. Ordering matters for `infoBar`, whose `filler` stretch gap lays out the strip, and for `lifecycle`,
-   whose chain runs in reverse merged order so a later entry can veto the built-in hook.
+- `add` — append entries. An entry can carry `before`/`after` to position itself against an existing
+  id. Ordering is load-bearing for `infoBar` (the `filler` stretch gap lays out the strip), for
+  `columns` (left-to-right display order) and for `lifecycle` (the chain runs in reverse merged order
+  so a later entry can veto the built-in hook).
 - `replace` — id-keyed: replaces the entry with the same id, appends when the id is new.
 - `remove` — ids to drop.
+- `set` — explicit whole-chain replacement; `add`/`replace`/`remove` then apply on top of it.
 - `disable` — on a patch or a role patch: whole slot names to drop from the merged spec.
 
 Example: add a Crafting Framework button to the bottom strip of the player's window. `create`
@@ -199,6 +207,20 @@ IER.patchMode(IER.Modes.Barter, {
 Name the entry explicitly (`lifecycle = { add = { { id = 'myMod_close', onClosed = ... } } }`) only when
 you need to position against, replace or remove a built-in entry by id — `remove = { 'Barter' }` drops
 that mode's built-in hooks.
+
+`columns` is a list slot too, so a patch adds to the window's resolved chain rather than replacing it.
+The row data behind a new column id comes from `registerRowDataModifier`:
+
+```lua
+IER.patchMode(IER.Modes.Pickpocket, {
+    id = 'myMod_charges',
+    roles = { Container = { columns = { add = { {
+        id = 'Charges', name = 'Column_Charges', sort = { numeric = true },
+        width = 60, align = ui.ALIGNMENT.End, descending = true, after = 'Value',
+        render = ..., update = ...,
+    } } } } },
+})
+```
 
 Remove a patch by the id passed to `patchMode`:
 
