@@ -1017,6 +1017,8 @@ Mode.Builtins = {
 local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle', 'columns' }
 local ROLE_SLOTS = { 'states', 'actions', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
 local MODE_SLOTS = { 'applies', 'priority', 'drag', 'event' }
+local LIST_SLOT_KEYS = {}
+for _, slot in ipairs(LIST_SLOTS) do LIST_SLOT_KEYS[slot] = true end
 
 
 local function isPatchList(op)
@@ -1024,8 +1026,8 @@ local function isPatchList(op)
 end
 
 --- `after`/`before` position an entry against an existing id; entries without them keep
---- insertion order. Only infoBar sections care, since the filler (stretch) position lays out
---- the strip.
+--- insertion order. Order is load-bearing for infoBar sections (the filler, stretch, lays out
+--- the strip) and for columns (left to right).
 ---@param ordered string[] ids in order, no duplicates
 ---@param id string
 ---@param after string? put directly after this id
@@ -1097,12 +1099,15 @@ local function mergeList(base, op)
     return result
 end
 
+--- Merges one role's slots. With no base it starts from Mode.Defaults.RoleSpec, so the built-in
+--- list-slot chains are already there and a patch's ops compose against them.
 ---@param base InventoryExtenderRedone.Mode.RoleSpec?
 ---@param patch InventoryExtenderRedone.Mode.RoleSpecPatch|InventoryExtenderRedone.Mode.RoleSpec?
 ---@return InventoryExtenderRedone.Mode.RoleSpec
 local function mergeRoleSpec(base, patch)
     local merged = {}
-    for key, value in pairs(base or {}) do merged[key] = value end
+    local defaults = Mode.Defaults.RoleSpec --[[@as InventoryExtenderRedone.Mode.RoleSpec ]]
+    for key, value in pairs(base or defaults) do merged[key] = value end
     if not patch then return merged end
 
     for _, slot in ipairs(LIST_SLOTS) do
@@ -1144,12 +1149,16 @@ function Mode.merge(base, patch)
     return merged
 end
 
---- A spec's own slots win over its base chain, which wins over Mode.Defaults.
+--- A spec's own slots win over its base chain, which wins over Mode.Defaults. List slots are
+--- already merged by mergeRoleSpec; copying the defaults over them would replace the merged
+--- chain with the built-in one.
 ---@param spec InventoryExtenderRedone.Mode.RoleSpec?
 ---@return InventoryExtenderRedone.Mode.RoleSpec
 local function applyRoleDefaults(spec)
     local merged = {}
-    for key, value in pairs(Mode.Defaults.RoleSpec) do merged[key] = value end
+    for key, value in pairs(Mode.Defaults.RoleSpec) do
+        if not LIST_SLOT_KEYS[key] then merged[key] = value end
+    end
     for key, value in pairs(spec or {}) do merged[key] = value end
     return merged
 end

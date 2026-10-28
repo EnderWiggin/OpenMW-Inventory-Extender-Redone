@@ -47,6 +47,22 @@ local function lifecycleSugar(value, id, asOp)
     return asOp and { add = { entry } } or { entry }
 end
 
+--- A patch's plain-array `columns` means "add these columns": it becomes `{ add = array }`, so a
+--- patch always merges onto the window's resolved chain and cannot replace it by accident. An ops
+--- table (add/replace/remove/set) passes through untouched.
+---@param patch InventoryExtenderRedone.ModePatch
+local function columnsSugar(patch)
+    if not patch.roles then return end
+    for _, spec in pairs(patch.roles) do
+        local columns = spec.columns
+        if columns and (columns[1] ~= nil or next(columns) == nil)
+            and not columns.add and not columns.replace and not columns.remove and not columns.set
+        then
+            spec.columns = { add = columns }
+        end
+    end
+end
+
 function API.registerMode(mode)
     if not mode or not mode.key then return end
     -- a key colliding with a built-in has to go through patchMode
@@ -74,8 +90,8 @@ function API.getModes()
 end
 
 --- Patch a built-in or custom mode with the same shape as Mode: list slots (sources/filters/
---- infoBar/lifecycle) merge by id, every other slot overwrites. Patches apply at resolve time,
---- in reverse registration order.
+--- infoBar/lifecycle/columns) merge by id, every other slot overwrites. Patches apply at resolve
+--- time, in reverse registration order.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param patch InventoryExtenderRedone.ModePatch
 function API.patchMode(key, patch)
@@ -88,6 +104,7 @@ function API.patchMode(key, patch)
     -- an id-less patch gets a generated one, so its entry chains onto the built-in entry
     -- instead of replacing it
     patch.lifecycle = lifecycleSugar(patch.lifecycle, patch.id or (key .. '#' .. (#patches + 1)), true)
+    columnsSugar(patch)
     patches[#patches + 1] = patch
 end
 

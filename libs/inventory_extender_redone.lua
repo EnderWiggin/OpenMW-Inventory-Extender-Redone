@@ -35,7 +35,7 @@
 ---@field unregisterMode fun(key:InventoryExtenderRedone.ModeKey) drop a registered custom mode
 ---@field getMode fun(key:InventoryExtenderRedone.ModeKey):InventoryExtenderRedone.Mode? the spec as registered (built-in or custom), not the merged one
 ---@field getModes fun():InventoryExtenderRedone.Mode[] all registered specs, built-in and custom
----@field patchMode fun(key:InventoryExtenderRedone.ModeKey, patch:InventoryExtenderRedone.ModePatch) id-keyed patch merged into a built-in or custom mode at resolve time; list slots (sources/filters/infoBar) merge by id, other slots overwrite
+---@field patchMode fun(key:InventoryExtenderRedone.ModeKey, patch:InventoryExtenderRedone.ModePatch) id-keyed patch merged into a built-in or custom mode at resolve time; list slots (sources/filters/infoBar/lifecycle/columns) merge by id, other slots overwrite. A patch naming a plain columns array is sugar for {add = array}: patches always merge onto the window's resolved chain, explicit replace is the set op
 ---@field unpatchMode fun(key:InventoryExtenderRedone.ModeKey, id:string) remove a registered patch by the id passed to patchMode
 ---@field registerWindowRole fun(role:string, opts:InventoryExtenderRedone.RoleOpts) the only way to get a new window id: registers role geometry and opens the window through UIToolkit; mode specs never register windows
 ---@field openMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) open the mode's role windows through UIToolkit.WindowManager.open only, never I.UI.setMode/addMode; no-op while allWindowsDisabled
