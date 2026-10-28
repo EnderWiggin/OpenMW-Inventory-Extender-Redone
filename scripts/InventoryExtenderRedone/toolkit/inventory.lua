@@ -186,6 +186,15 @@ local function combineHiddenColumns(columns, categoryHidden)
     return hidden
 end
 
+--- The actor a window answers from: the target role slot if it names one, else the built-in
+--- rule (the player for the Inventory role, the open argument for any other role).
+local function resolveTarget(handler, slots, ctx)
+    local targetFn = slots and slots.target
+    local target = targetFn and targetFn(handler, ctx)
+    if target then return target end
+    return handler.role == D.Roles.Inventory and omwself or handler.arg
+end
+
 ---@class IER.Inventory: UIToolkit.WindowHandler
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
@@ -248,14 +257,11 @@ function Inventory:onOpened(wnd, data, saved)
         mode.lifecycle.onOpened(self, self.arg, saved)
     end
 
-    if self.role == 'Inventory' then
-        self.target = omwself
-        -- pinnable comes from the role slot: only the Interface spec names it
-        if roleSpec and roleSpec.pinnable then
-            self.wnd:setPinnable(true)
-        end
-    else
-        self.target = data
+    -- the window's actor: the target role slot's default, else the built-in rule
+    self.target = resolveTarget(self, self.slots, self.ctx)
+    -- pinnable comes from the role slot: only the Interface spec names it
+    if self.role == D.Roles.Inventory and roleSpec and roleSpec.pinnable then
+        self.wnd:setPinnable(true)
     end
     self.filter = CompoundFilter:new()
     self.filter:add('draggedItemFilter', function(row)

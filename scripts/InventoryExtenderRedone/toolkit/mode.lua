@@ -1015,7 +1015,7 @@ Mode.Builtins = {
 -- List slots merge through id-keyed ops; other slots are a whole-slot overwrite. lifecycle is a
 -- list slot too: several specs contribute hooks, merged into one chain.
 local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle', 'columns' }
-local ROLE_SLOTS = { 'states', 'actions', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
+local ROLE_SLOTS = { 'states', 'actions', 'target', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
 local MODE_SLOTS = { 'applies', 'priority', 'drag', 'event' }
 local LIST_SLOT_KEYS = {}
 for _, slot in ipairs(LIST_SLOTS) do LIST_SLOT_KEYS[slot] = true end

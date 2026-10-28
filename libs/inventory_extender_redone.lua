@@ -173,6 +173,7 @@
 ---@field infoBar InventoryExtenderRedone.Mode.InfoBarSection[]? bottom strip sections, in order
 ---@field columns InventoryExtenderRedone.Mode.Column[]? the window's columns, in display order; absent means the built-in chain in Mode.Defaults.RoleSpec.columns
 ---@field observer? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip and AR. If absent or returns nil - player is used.
+---@field target? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? the window's actor: whose inventory is listed, whose equipped gear/encumbrance/armor rating/gold the info bar and sorting read, whose name the title shows. If absent or returns nil - the built-in rule: the player for the Inventory role, the open argument for any other role.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
 ---@field pinnable boolean? default false; only the Interface Inventory window sets true
 ---@field storageSuffix string? built-ins keep the literal ':Container'/':Barter'/':Companion' - UIToolkit:WindowData keys are save identity, never derive from the mode key
@@ -217,6 +218,7 @@
 ---@field infoBar InventoryExtenderRedone.Mode.PatchList?
 ---@field columns InventoryExtenderRedone.Mode.PatchList? a plain array here is sugar for {add = array}: a patch always merges onto the window's resolved chain
 ---@field observer? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip and AR. If absent or returns nil - player is used.
+---@field target? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? the window's actor; a patch overwrites the whole slot. If absent or returns nil - the built-in rule: the player for the Inventory role, the open argument for any other role.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
 ---@field pinnable boolean?
 ---@field storageSuffix string?
