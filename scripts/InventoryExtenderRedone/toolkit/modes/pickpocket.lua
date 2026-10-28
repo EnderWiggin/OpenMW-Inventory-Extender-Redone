@@ -63,6 +63,8 @@ return {
         [Roles.Container] = {
             -- inherits Container's Container-role filters and adds the visibility one
             filters = { add = { { id = 'pickpocketVisibility' } } },
+            -- the built-in chain omits StealChance: only an NPC's pockets show it
+            columns = { add = { { id = 'StealChance' } } },
             -- the take roll runs before either effect lands; use carries the session the roll
             -- belongs to into the IER_UseItem payload
             actions = {

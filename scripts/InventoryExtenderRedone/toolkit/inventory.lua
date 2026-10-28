@@ -77,12 +77,6 @@ local function getSyncedCategoryKey(categoryKey, targetWindow)
     return categoryKey
 end
 
--- the column renderers live in the mode library; the Name renderers below close over the handler
-local iconRenderer = Mode.Columns.Icon.render --[[@as UIToolkit.ListItem.Column.Renderer ]]
-local iconUpdater = Mode.Columns.Icon.update --[[@as UIToolkit.ListItem.Column.Updater ]]
-local renderNumber = Mode.Columns.Value.render --[[@as UIToolkit.ListItem.Column.Renderer ]]
-local updateNumber = Mode.Columns.Value.update --[[@as UIToolkit.ListItem.Column.Updater ]]
-
 ---@param row InventoryExtenderRedone.RowData
 ---@param type string
 ---@param mode string
@@ -125,200 +119,24 @@ end
 
 
 
-local function ALL_COLUMNS(defaultSort, nameRenderer, nameUpdater)
-    local theme = Toolkit.getTheme()
-    local textSize = theme.Sizes.textNormal
-    local rowHeight = util.round(theme.Sizes.lineHeight * configPlayer.window.f_TableRowHeightMult)
-    local fontRatio = textSize / 16
-    local w = 60 * fontRatio
 
-    ---@type UIToolkit.SortedList.Column[]
-    return {
-        {
-            id = 'Icon',
-            width = rowHeight + 8,
-            sort = defaultSort,
-            render = iconRenderer,
-            update = iconUpdater,
-        },
-        {
-            id = 'Name',
-            name = l10n('Column_Name'),
-            sort = { numeric = false },
-            render = nameRenderer,
-            update = nameUpdater,
-        },
-        {
-            id = 'Type',
-            name = l10n('Column_Type'),
-            sort = { numeric = false },
-            width = 90 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            render = ColumnItem.renderText,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'Class',
-            name = l10n('Column_Class'),
-            sort = { numeric = false },
-            width = 60 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            render = ColumnItem.renderText,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'AR',
-            name = l10n('Column_AR'),
-            sort = { numeric = true },
-            width = 50 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'Damage',
-            name = l10n('Column_Damage'),
-            sort = { numeric = true },
-            width = 60 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'Quality',
-            name = l10n('Column_Quality'),
-            sort = { numeric = true },
-            width = 60 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'Condition',
-            name = l10n('Column_Condition'),
-            width = 55 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-            ---@param a InventoryExtenderRedone.RowData
-            ---@param b InventoryExtenderRedone.RowData
-            sort = function(a, b)
-                local aValue = helpers.getConditionPercent(a.item)
-                local bValue = helpers.getConditionPercent(b.item)
-
-                if aValue == bValue then
-                    return 0
-                end
-                if aValue == nil then
-                    return -1
-                end
-                if bValue == nil then
-                    return 1
-                end
-
-                return aValue < bValue and -1 or 1
-            end,
-        },
-        {
-            id = 'Weight',
-            name = l10n('Column_Weight'),
-            sort = { numeric = true },
-            width = w,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'Weight_Total',
-            name = l10n('Column_Weight_Total'),
-            sort = { numeric = true },
-            width = 70 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'Value',
-            name = l10n('Column_Value'),
-            sort = { numeric = true },
-            width = w,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'V/W',
-            name = l10n('Column_VW'),
-            sort = { numeric = true },
-            width = w,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End },
-        },
-        {
-            id = 'StealChance',
-            name = l10n('Column_StealChance'),
-            sort = { numeric = true },
-            width = 60 * fontRatio,
-            align = ui.ALIGNMENT.End,
-            descending = true,
-            render = renderNumber,
-            update = updateNumber,
-            arg = { textAlignH = ui.ALIGNMENT.End, suffix = '%' },
-        },
-    }
-end
-
-local OptionalColumns = {
-    Condition = true,
-    Weight_Total = true,
-    ['V/W'] = true,
-}
-
-local EditableColumns = {
-    'Type',
-    'Damage',
-    'Class',
-    'AR',
-    'Quality',
-    'Condition',
-    'Weight',
-    'Weight_Total',
-    'Value',
-    'V/W',
-    'StealChance',
-}
 
 local function getColumnVisibility()
     return windowOptionsSection:getCopy(columnVisibilityKey) or {}
 end
 
-local function setColumnVisibility(columnId, visible)
+---@param column InventoryExtenderRedone.Mode.Column resolved column part
+---@param visible boolean
+local function setColumnVisibility(column, visible)
     local visibility = getColumnVisibility()
     if visible then
-        if OptionalColumns[columnId] then
-            visibility[columnId] = true
+        if column.optional then
+            visibility[column.id] = true
         else
-            visibility[columnId] = nil
+            visibility[column.id] = nil
         end
     else
-        visibility[columnId] = false
+        visibility[column.id] = false
     end
     windowOptionsSection:set(columnVisibilityKey, visibility)
 end
@@ -327,27 +145,29 @@ local function resetHiddenColumns()
     windowOptionsSection:set(columnVisibilityKey, {})
 end
 
-local function isColumnVisible(columnId, visibility)
+---@param column InventoryExtenderRedone.Mode.Column resolved column part
+---@param visibility table<string, boolean>?
+---@return boolean
+local function isColumnVisible(column, visibility)
     visibility = visibility or getColumnVisibility()
-    if OptionalColumns[columnId] then
-        return visibility[columnId] == true
+    if column.optional then
+        return visibility[column.id] == true
     end
-    return visibility[columnId] ~= false
+    return visibility[column.id] ~= false
 end
 
----@param columns {id:string}[]
+---@param columns InventoryExtenderRedone.Mode.Column[] resolved column parts, in display order
 ---@param categoryHidden table<string, boolean>?
----@param mode string
 ---@return table<string, boolean>
-local function combineHiddenColumns(columns, categoryHidden, mode)
+local function combineHiddenColumns(columns, categoryHidden)
     local hidden = {}
     local visibility = getColumnVisibility()
     local visible = 0
 
     for i = 1, #columns do
-        local id = columns[i].id
-        if not isColumnVisible(id, visibility) or (id == 'StealChance' and mode ~= D.Modes.Pickpocket) then
-            hidden[id] = true
+        local column = columns[i]
+        if not isColumnVisible(column, visibility) then
+            hidden[column.id] = true
         else
             visible = visible + 1
         end
@@ -377,6 +197,7 @@ end
 ---@field slots InventoryExtenderRedone.Mode.RoleSpec? this role's slots from that mode
 ---@field actions InventoryExtenderRedone.Mode.Actions? use/pickup parts resolved from that role's slots
 ---@field sources InventoryExtenderRedone.Mode.Source[] those slots' sources, parts resolved at open
+---@field columns InventoryExtenderRedone.Mode.Column[]? column parts resolved at open, in display order, with the handler's Icon/Name closures merged over them
 ---@field infoBarSections InventoryExtenderRedone.Mode.InfoBarSection[]? info bar sections, parts resolved at open, in slot order
 ---@field drag InventoryExtenderRedone.Mode.Drag? the mode's drag snapshot at open (mode-wide, not per role)
 ---@field suffix string? the UIToolkit:WindowData suffix snapshotted from that role's slots at open
@@ -407,6 +228,10 @@ function Inventory:onOpened(wnd, data, saved)
     self.infoBarSections = roleSpec and Mode.resolveParts(Mode.Info, roleSpec.infoBar) or nil
     self.sources = Mode.resolveParts(Mode.Sources, roleSpec and roleSpec.sources)
     local modeFilters = Mode.resolveParts(Mode.Filters, roleSpec and roleSpec.filters)
+    -- a role spec without columns gets the built-in chain; the handler merges its Icon/Name
+    -- closures over these parts at open, below where those closures are defined
+    self.columns = Mode.resolveParts(Mode.Columns, roleSpec and roleSpec.columns
+        or Mode.Defaults.RoleSpec.columns)
     -- the actions slot is a whole overwrite per role: entry ids resolve against the parts
     -- library here, the handler dispatches to them per row action
     local actions = roleSpec and roleSpec.actions
@@ -643,9 +468,8 @@ function Inventory:onOpened(wnd, data, saved)
             category = categoryKey and IE.getCategory(categoryKey)
         end
         self.table:setHiddenColumns(combineHiddenColumns(
-            self.table.header.columns,
-            category and category.hiddenColumns,
-            self.mode
+            self.columns,
+            category and category.hiddenColumns
         ))
     end
 
@@ -657,25 +481,25 @@ function Inventory:onOpened(wnd, data, saved)
         ---@type openmw.ui.LayoutOrElement[]
         local elements = {}
 
-        for i = 1, #EditableColumns do
-            if i > 1 then
-                elements[#elements + 1] = T.intervalV(4)
+        for i = 1, #self.columns do
+            local column = self.columns[i]
+            if column.editable then
+                if #elements > 0 then
+                    elements[#elements + 1] = T.intervalV(4)
+                end
+                local id = column.id
+                elements[#elements + 1] = Toolkit.Components.checkbox {
+                    name = id,
+                    text = column.name,
+                    width = 200,
+                    default = isColumnVisible(column),
+                    accentedCheckmark = true,
+                    onValueChanged = function(value)
+                        setColumnVisibility(column, value)
+                        updateHiddenColumns()
+                    end,
+                }.element
             end
-            local id = EditableColumns[i]
-            local column = self.table.header:getColumnConfig(id)
-            assert(column)
-
-            elements[#elements + 1] = Toolkit.Components.checkbox {
-                name = id,
-                text = column.name,
-                width = 200,
-                default = isColumnVisible(id),
-                accentedCheckmark = true,
-                onValueChanged = function(value)
-                    setColumnVisibility(id, value)
-                    updateHiddenColumns()
-                end,
-            }.element
         end
         self._closeSettingsPopup = I.UIToolkit.Popups.show {
             title = l10n('UI_ColumnSettingsTitle'),
@@ -766,8 +590,7 @@ function Inventory:onOpened(wnd, data, saved)
             end
 
             self.table:filter(false)
-            self.table:setHiddenColumns(combineHiddenColumns(self.table.header.columns, category.hiddenColumns, self
-                .mode))
+            self.table:setHiddenColumns(combineHiddenColumns(self.columns, category.hiddenColumns))
             self.table:setPosition(0)
 
             self:updateTitle()
@@ -957,11 +780,31 @@ function Inventory:onOpened(wnd, data, saved)
 
     self.infoBar = InfoBar.create({}) --[[@as InventoryExtenderRedone.InfoBarPrivate  ]]
 
+    -- Icon/Name behavior closes over the handler: merge its open-time closures over the
+    -- resolved parts by id; width/sort only fill in when absent, so a patch can replace them
+    for i = 1, #self.columns do
+        local column = self.columns[i]
+        if column.id == 'Icon' then
+            if not column.width then
+                column.width = rowHeight + 8
+            end
+            if not column.sort then
+                column.sort = fallBackSort
+            end
+        elseif column.id == 'Name' then
+            if not column.sort then
+                column.sort = { numeric = false }
+            end
+            column.render = nameRenderer
+            column.update = nameUpdater
+        end
+    end
+
     local infoHeight = self.infoBar:getHeight()
     local topBarHeight = self:getTopBarHeight()
     self.table = ItemTable:new()
     self.table:init {
-        columns = ALL_COLUMNS(fallBackSort, nameRenderer, nameUpdater),
+        columns = self.columns --[[@as UIToolkit.SortedList.Column[] ]],
         defaultColumn = 'Icon',
         showGrid = getItemViewMode() == 'ItemViewMode_Grid',
         getBadges = getItemBadgeState,
