@@ -8,6 +8,7 @@ local ui          = require('openmw.ui')
 local I           = require('openmw.interfaces')
 
 local D           = require('scripts.InventoryExtenderRedone.config.defaults')
+local L           = require('scripts.InventoryExtenderRedone.util.logger').get 'BarterControl'
 local l10n        = core.l10n(D.L10N)
 
 local Toolkit     = I.UIToolkit
@@ -103,7 +104,13 @@ function BarterControls:init(wnd)
         text = BTN_MAX,
         style = 'thin',
         onClick = function()
-            local barterGold = Actor.getBarterGold(wnd.target)
+            -- the same merchant the Offer button prices and commits against
+            local pricing = barterUtils.resolvePartner(ctx)
+            if not pricing then
+                L.error('MAX', 'no pricing target')
+                return
+            end
+            local barterGold = Actor.getBarterGold(pricing)
             ctx.barterState.currentBalance = barterGold
             txtAmount:setValue(barterGold)
         end,
@@ -114,7 +121,7 @@ function BarterControls:init(wnd)
         text = constants.Strings.OFFER,
         style = 'thin',
         onClick = function()
-            barterUtils.completeOffer(wnd.target, ctx)
+            barterUtils.completeOffer(ctx)
         end,
     }
 

@@ -64,7 +64,7 @@ Mode.Defaults = {
     priority = 0,
     drag = { allowed = true }, -- Barter is the mode that forbids dragging
     RoleSpec = {
-        pinnable = false, -- only the Interface Inventory window is pinnable
+        pinnable = false,      -- only the Interface Inventory window is pinnable
         -- the built-in column chain, in display order; StealChance belongs to the Pickpocket
         -- spec's Container role, and the handler supplies Icon/Name behavior at open
         columns = {
@@ -135,6 +135,17 @@ Mode.Sources = {
         id = 'self',
         get = function(_, _)
             return playerInventory:getAll()
+        end,
+    },
+    -- the item holder on the player's side of a barter: the player unless a partner descriptor
+    -- names another actor
+    partner = {
+        id = 'partner',
+        isBartered = true,
+        get = function(_, ctx)
+            local party = ctx.barterState.partner and ctx.barterState.partner.party or omwself
+            if party == omwself then return playerInventory:getAll() end
+            return party.type.inventory(party):getAll()
         end,
     },
     -- merchant stock merged into virtual stacks

@@ -688,19 +688,22 @@ local function finalizeBarter(props)
     local merchant = props.merchant
     local barterState = props.barterState
     local currentBalance = barterState.currentBalance
+    -- a sender naming only the player finalizes against the player, as vanilla did
+    local party = props.party or props.player
+    local goldHolder = props.gold or props.player
     L.info('finalizeBarter', merchant and merchant.id, currentBalance)
     transferItems(barterState.selling, merchant, false)
-    transferItems(barterState.buying, props.player, true)
+    transferItems(barterState.buying, party, true)
 
     if currentBalance ~= 0 then
         if currentBalance < 0 then
-            local gold = Actor.inventory(props.player):find('gold_001')
+            local gold = Actor.inventory(goldHolder):find('gold_001')
             if gold then
                 gold:remove(-currentBalance)
             end
         else
             local gold = world.createObject('gold_001', currentBalance)
-            gold:moveInto(Actor.inventory(props.player))
+            gold:moveInto(Actor.inventory(goldHolder))
         end
         NPC.setBarterGold(merchant, NPC.getBarterGold(merchant) - currentBalance)
     end

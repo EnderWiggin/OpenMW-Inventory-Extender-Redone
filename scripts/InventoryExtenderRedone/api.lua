@@ -275,7 +275,7 @@ function Barter.offerBarter(opts)
         L.warn('Barter.offerBarter: no known merchant, refusing')
         return false
     end
-    return barterUtils.completeOffer(merchant, windowManager.ctx, opts)
+    return barterUtils.completeOffer(windowManager.ctx, opts)
 end
 
 --- Predicted gold gain from selling count of item at the last-known Trade merchant

@@ -96,10 +96,11 @@ return {
             hints = barterHints,
         },
         [Roles.Trade] = {
-            -- the merchant's own stock, plus what the player is offering from their pockets
+            -- the merchant's own stock, plus what the item holder on the player's side is
+            -- offering (the player in vanilla)
             sources = {
                 { id = 'merchantOfTarget' },
-                { id = 'self', isBartered = true },
+                { id = 'partner', isBartered = true },
             },
             filters = { { id = 'barterAllowed' }, { id = 'barterTradeEquipped' }, { id = 'barterOffered' }, { id = 'barterTraderForeign' } },
             actions = {

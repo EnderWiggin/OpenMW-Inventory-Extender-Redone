@@ -229,7 +229,7 @@ end
 
 local function updateOffer(ctx)
     local state = ctx.barterState
-    local merchant = ctx.windowArgs.Trade
+    local merchant = (resolvePartner(ctx))
     if not state or not merchant then
         return
     end
@@ -359,15 +359,16 @@ local function clearBarterOffer(ctx)
 end
 
 --- The whole Offer sequence, shared by the Trade window's Offer button and Barter.offerBarter.
----@param npc openmw.Object the merchant the Trade window is showing
+--- The merchant is the descriptor's pricing or the last-known Trade
+--- merchant, the same actor updateOffer priced the queue against.
 ---@param ctx InventoryExtenderRedone.Context
 ---@param opts table? { closeWindow = boolean? } default true; governs only the Barter UI mode
 --- removal - when false, the offer queues are cleared and the scalars zeroed in place instead,
 --- since finalizeBarter does not reset them and the window would still show the moved items
 --- as offered
----@return boolean accepted
+---@return boolean accepted false when the offer is empty or nothing is known to price it against
 ---@return number? skillGain
-local function completeOffer(npc, ctx, opts)
+local function completeOffer(ctx, opts)
     local state = ctx.barterState
 
     if not next(state.selling) and not next(state.buying) then
@@ -375,14 +376,22 @@ local function completeOffer(npc, ctx, opts)
         return false
     end
 
-    local playerGold = playerInventory:countOf('gold_001')
-    if state.currentBalance < 0 and playerGold < math.abs(state.currentBalance) then
+    -- the descriptor's actors when a mod named them; pricing also owns the barter gold pool
+    local pricing, party, gold = resolvePartner(ctx)
+
+    if not pricing then
+        L.error('completeOffer: no merchant to price the offer against')
+        return false
+    end
+
+    local pocketGold = gold.type.inventory(gold):countOf('gold_001')
+    if state.currentBalance < 0 and pocketGold < math.abs(state.currentBalance) then
         ui.showMessage(constants.Strings.BARTER_PC_TOO_POOR)
         return false
     end
 
     if state.currentBalance > 0 then
-        local merchantGold = npc.type.getBarterGold(npc)
+        local merchantGold = pricing.type.getBarterGold(pricing)
         if merchantGold < state.currentBalance then
             ui.showMessage(constants.Strings.BARTER_NPC_TOO_POOR)
             return false
@@ -390,7 +399,7 @@ local function completeOffer(npc, ctx, opts)
     end
 
     for _, entry in pairs(state.selling) do
-        if ctx.stolenItems[entry.item.recordId] and ctx.stolenItems[entry.item.recordId][npc.recordId] then
+        if ctx.stolenItems[entry.item.recordId] and ctx.stolenItems[entry.item.recordId][pricing.recordId] then
             I.UI.setMode(nil)
             ui.showMessage(string.format(constants.Strings.THATS_MINE,
                 entry.item.type.record(entry.item).name))
@@ -398,17 +407,17 @@ local function completeOffer(npc, ctx, opts)
                 item = entry.item,
                 count = entry.count,
                 player = self,
-                victim = npc,
+                victim = pricing,
                 stolenMap = ctx.stolenItems,
             })
             return false
         end
     end
 
-    local offerAccepted, skillGain = haggle(npc, state.currentBalance, state.currentMerchantOffer, ctx)
-    if NPC.objectIsInstance(npc) then
+    local offerAccepted, skillGain = haggle(pricing, state.currentBalance, state.currentMerchantOffer, ctx)
+    if NPC.objectIsInstance(pricing) then
         core.sendGlobalEvent('IER_ModDisposition', {
-            target = npc,
+            target = pricing,
             player = self,
             amount = offerAccepted
                 and core.getGMST('iBarterSuccessDisposition')
@@ -423,7 +432,9 @@ local function completeOffer(npc, ctx, opts)
 
     core.sendGlobalEvent('IER_FinalizeBarter', {
         player = self,
-        merchant = npc,
+        merchant = pricing,
+        party = party,
+        gold = gold,
         barterState = state,
         skillGain = skillGain,
     })
@@ -486,4 +497,5 @@ return {
     unqueueBuy = unqueueBuy,
     clearBarterOffer = clearBarterOffer,
     setPartner = setPartner,
+    resolvePartner = resolvePartner,
 }
