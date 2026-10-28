@@ -199,6 +199,7 @@ end
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
 ---@field wnd UIToolkit.Window
+---@field target openmw.Object? the actor this window answers from: whose inventory is listed and whose equipped gear, encumbrance and gold the info bar and sorting read; set at open from the target role slot and changeable through setTarget
 ---@field table InventoryExtenderRedone.ItemTable? the column/grid component, set at open; public so external consumers can read hovered-row state through getWindow
 ---@field infoBar InventoryExtenderRedone.InfoBarPrivate? the bottom strip, set at open; public so external consumers can measure and extend it
 ---@field role InventoryExtenderRedone.Role
@@ -861,6 +862,23 @@ function Inventory:onOpened(wnd, data, saved)
     self.categoryFilter.updateCategories()
 
     self:updateInputHints()
+end
+
+--- Points this window at another actor, so its rows, info bar and sorting follow that actor.
+--- With nil it re-applies the role's default from the target slot, the same rule onOpened used;
+--- a non-nil actor must be a live object, otherwise this throws. Does not refresh the window:
+--- batch the writes, then call IER.update() once and only read rows after that.
+---@param actor openmw.Object?
+function Inventory:setTarget(actor)
+    if not actor then
+        self.target = resolveTarget(self, self.slots, self.ctx)
+        return
+    end
+    -- omwself is a SelfObject and has no isValid; enabled is read-only outside global scripts
+    if actor ~= omwself and not (actor:isValid() and actor.enabled) then
+        error('InventoryExtenderRedone setTarget: invalid actor', 2)
+    end
+    self.target = actor
 end
 
 function Inventory:onClosed()

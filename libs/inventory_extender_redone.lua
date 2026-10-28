@@ -14,7 +14,7 @@
 ---@field disableAllWindows fun(value:boolean) temporarily suppress IE windows; does NOT restore vanilla windows - nothing is shown
 ---@field show fun(windowName:InventoryExtenderRedone.Role, arg:any?) windowName is one of InventoryExtenderRedone.Role; arg is the target NPC/container/merchant
 ---@field hide fun(windowName:InventoryExtenderRedone.Role, arg:any?, force:boolean?)
----@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil
+---@field getWindow fun(windowName:InventoryExtenderRedone.Role):IER.Inventory? converts the name into UIToolkit's window id and asks its manager; returns the window's handler if that window is open, otherwise nil; the handler answers from its target actor, retargetable through setTarget
 ---@field forEachOpenWindow fun(apply:fun(handler:IER.Inventory, wnd:UIToolkit.Window))
 ---@field getHoveredRow fun():InventoryExtenderRedone.RowData? the row under the cursor in the open IER window UIToolkit currently has input focus on, or nil when no window is focused, when the focused window belongs to another mod, or when it hovers nothing
 ---@field getContext fun():InventoryExtenderRedone.Context WindowManager.ctx - the shared mutable state, read by every toolkit file
