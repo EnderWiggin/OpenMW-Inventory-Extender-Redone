@@ -1,3 +1,10 @@
+0.0.9 (2026-10-28)
+- added attributes and misc skills to companion stats popup
+- API:
+  - bumped to version 4
+  - added API to add/replace/remove columns for a mode
+  - added API to modify who is trading with a merchant and who is paying for stuff during trade - allows to make mods that buy/sell directly from followers
+
 0.0.8 (2026-10-26)
 - fixed autoEquip equipping only 1 ring (notably for companions)
 - added "Take All" keybind for containers (defaults to Q and R-Stick)
