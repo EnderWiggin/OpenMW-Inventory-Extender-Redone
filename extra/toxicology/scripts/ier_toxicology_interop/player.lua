@@ -1,10 +1,12 @@
 ---@omw-context player
 
-local core  = require 'openmw.core'
-local I     = require 'openmw.interfaces'
-local types = require 'openmw.types'
-local ui    = require 'openmw.ui'
-local util  = require 'openmw.util'
+local ambient = require('openmw.ambient')
+local core    = require 'openmw.core'
+local I       = require 'openmw.interfaces'
+local player  = require 'openmw.self'
+local types   = require 'openmw.types'
+local ui      = require 'openmw.ui'
+local util    = require 'openmw.util'
 
 
 local l10n       = core.l10n 'ier_toxicology_interop'
@@ -12,6 +14,7 @@ local toxicology = require 'scripts.ier_toxicology_interop.toxicology'
 local helpers    = require 'scripts.UIToolkit.tooltips.utils'
 
 
+local API      = I.Toxicology
 local Weapon   = types.Weapon
 local Tooltips = I.UTKTooltips
 local IER      = I.InventoryExtenderRedone
@@ -31,6 +34,27 @@ IER.registerRowBadge('toxicology-coatings', function(row)
     if not data then return end
 
     return ICON
+end)
+
+IER.registerRowDropHandler(NAME, function(row, potion, ctx)
+    local weapon = row and row.item
+    if not weapon then return end
+    if not types.Weapon.objectIsInstance(weapon) then return end
+    if not types.Potion.objectIsInstance(potion) then return end
+    if not API.isPoison(potion) then return end
+
+    player:sendEvent('Toxicology_PromptApply', {
+        potion = potion,
+        potionRecord = potion.recordId,
+        weapon = weapon,
+        weaponRecord = weapon.recordId,
+    })
+    local downSound = IER.Helpers.getItemSound(potion, 'down')
+    if downSound then
+        ambient.playSound(downSound)
+    end
+    ctx.dragAndDrop:stopDrag()
+    return true
 end)
 
 Tooltips.registerBuilder(NAME, function(item)
