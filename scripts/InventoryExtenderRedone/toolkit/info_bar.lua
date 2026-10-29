@@ -31,15 +31,15 @@ function InfoBar:init(opts)
     local maxHeight = opts.maxHeight or 32
     self.providers = {}
     self.cleanup = {}
-    local gap = C.API.GAP and Toolkit.getTheme().Sizes.standardGap or nil
+    local gap = Toolkit.getTheme().Sizes.standardGap
 
     Component.init(self, ui.create {
         type = ui.TYPE.Flex,
         props = {
             horizontal = true,
             autoSize = false,
-            gap = gap,
-            size = v2(0, maxHeight),
+            gap = C.API.GAP and gap or nil,
+            size = v2(-gap, maxHeight),
             relativeSize = v2(1, 0),
             align = ui.ALIGNMENT.Start,
             arrange = ui.ALIGNMENT.Center,
@@ -91,7 +91,6 @@ function InfoBar:update()
             self.element.layout.content:add(layout)
         end
     end
-    self.element.layout.content:add(T.intervalH(Toolkit.getTheme().Sizes.standardGap))
     Toolkit.queueUpdate(self.element)
 end
 
