@@ -43,7 +43,6 @@ local ColumnItem     = require 'scripts.UIToolkit.components.list_items.column_i
 local CompoundFilter = require 'scripts.UIToolkit.compound_filter'
 local Tooltips       = I.UTKTooltips
 local Toolkit        = I.UIToolkit
-local Components     = Toolkit.Components
 local T              = Toolkit.Templates
 
 
@@ -195,6 +194,26 @@ local function resolveTarget(handler, slots, ctx)
     return handler.role == D.Roles.Inventory and omwself or handler.arg
 end
 
+--- Drop action: runs when a row is clicked while an item is being dragged, before the drag
+--- is ended and the dragged item transferred into this window's target.
+--- Handlers get (row, draggedItem, ctx, windowType); draggedItem is never nil while the drop runs.
+---@param target openmw.Object
+---@param row InventoryExtenderRedone.RowData
+---@param draggedItem openmw.Object
+---@param role InventoryExtenderRedone.Role
+---@param ctx InventoryExtenderRedone.Context
+---@return boolean? false when a registered handler vetoed the drop
+local function onRowDrop(target, row, draggedItem, role, ctx)
+    for i = #ctx.handlers.onRowDrop, 1, -1 do
+        local handler = ctx.handlers.onRowDrop[i]
+        if handler.handler(row, draggedItem, ctx, role) == false then
+            return false
+        end
+    end
+    ctx.dragAndDrop:stopDrag(target)
+    return true
+end
+
 ---@class IER.Inventory: UIToolkit.WindowHandler
 ---@field new fun(self:IER.Inventory):IER.Inventory
 ---@field arg table
@@ -316,7 +335,6 @@ function Inventory:onOpened(wnd, data, saved)
             return a.isBartered and -1 or 1
         end
 
-        local mode = self.mode
         local inBarterMode = mode == 'Barter'
 
         a.sortCache = a.sortCache or {}
@@ -820,10 +838,16 @@ function Inventory:onOpened(wnd, data, saved)
         rowHeight = rowHeight,
         scrollStep = configPlayer.window.i_TableScrollStep,
         noBorder = true,
-        onListClicked = function(button)
+        onListClicked = function(button, row)
             if button ~= 1 then return end
-            if not ctx.dragAndDrop.draggingObject then return end
-            ctx.dragAndDrop:stopDrag(self.target)
+            ---@cast row InventoryExtenderRedone.RowData
+            local dragged = ctx.dragAndDrop.draggingObject
+            if not dragged then return end
+            if row then
+                onRowDrop(self.target, row, dragged, self.role, ctx)
+            else
+                ctx.dragAndDrop:stopDrag(self.target)
+            end
         end,
         onItemClicked = function(row)
             ---@cast row InventoryExtenderRedone.RowData

@@ -31,6 +31,7 @@
 ---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
 ---@field registerRowUseHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?) called in reverse registration order until one returns false; handlers of the use/equip action (default: R, c_Activate, InfoBar "Use" button)
 ---@field registerRowPickupHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?) called in reverse registration order until one returns false; handlers of the pick-up action (default: left-click)
+---@field registerRowDropHandler fun(id:string, handler:fun(row:InventoryExtenderRedone.RowData, draggedItem:openmw.Object, ctx:InventoryExtenderRedone.Context, windowType:string):boolean?) called in reverse registration order until one returns false; handlers of the drop action (row clicked while dragging; draggedItem is the dragged object, never nil; false keeps the item dragged)
 ---@field registerMode fun(mode:InventoryExtenderRedone.Mode) register a custom mode spec into ctx.modes; a key colliding with a built-in is rejected (use patchMode to change a built-in)
 ---@field unregisterMode fun(key:InventoryExtenderRedone.ModeKey) drop a registered custom mode
 ---@field getMode fun(key:InventoryExtenderRedone.ModeKey):InventoryExtenderRedone.Mode? the spec as registered (built-in or custom), not the merged one
@@ -298,10 +299,15 @@
 ---@class InventoryExtenderRedone.Handlers
 ---@field onRowUse InventoryExtenderRedone.RowHandlerEntry[] handlers run by Inventory:onRowUse (use/equip action)
 ---@field onRowPickup InventoryExtenderRedone.RowHandlerEntry[] handlers run by Inventory:onRowPickup (pick-up action)
+---@field onRowDrop InventoryExtenderRedone.RowDropHandlerEntry[] handlers run by Inventory:onRowDrop (drop the dragged item, before the drag is ended)
 
 ---@class InventoryExtenderRedone.RowHandlerEntry
 ---@field id string
 ---@field handler fun(row:InventoryExtenderRedone.RowData, ctx:InventoryExtenderRedone.Context, role:InventoryExtenderRedone.Role):boolean?
+
+---@class InventoryExtenderRedone.RowDropHandlerEntry
+---@field id string
+---@field handler InventoryExtenderRedone.RowDropHandler
 
 
 ---@class InventoryExtenderRedone.Modifiers
@@ -319,6 +325,7 @@
 ---@field provider InventoryExtenderRedone.RowBadgeProvider The provider function. Must return icon path with optional color, or nil if no need for a badge.
 
 ---@alias InventoryExtenderRedone.RowBadgeProvider fun(row: InventoryExtenderRedone.RowData, ctx: InventoryExtenderRedone.Context):string|nil, openmw.util.Color?
+---@alias InventoryExtenderRedone.RowDropHandler fun(row: InventoryExtenderRedone.RowData, draggedItem: openmw.Object, ctx: table, role: InventoryExtenderRedone.Role):boolean?
 
 
 ---@class InventoryExtenderRedone.Overrides

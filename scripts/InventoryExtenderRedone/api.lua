@@ -466,6 +466,21 @@ function API.registerRowDataModifier(id, modifier)
     table.insert(modifiers, { id = id, modifier = modifier })
 end
 
+--- Register a function to handle the drop action (clicking a row while an item is being dragged) on item rows in the inventory.
+--- By default, this ends the drag and transfers the dragged item into the window's target.
+--- Handlers are called in reverse order of registration until one returns false, at which point the drop is not processed further and the item stays dragged. If all handlers return true, the default drop behavior is executed.
+--- @param id string A unique identifier for the handler
+--- @param handler InventoryExtenderRedone.RowDropHandler
+function API.registerRowDropHandler(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.handlers.onRowDrop) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.handlers.onRowDrop, { id = id, handler = handler })
+end
+
 --- Register a function to provide row badges
 --- @param id string A unique identifier for the handler
 --- @param provider InventoryExtenderRedone.RowBadgeProvider The provider function. Must return icon path with optional color, or nil if no need for a badge.

@@ -34,6 +34,7 @@ WindowManager.ctx = {
     handlers = {
         onRowUse = {},
         onRowPickup = {},
+        onRowDrop = {},
     },
     modifiers = {
         data = {},
