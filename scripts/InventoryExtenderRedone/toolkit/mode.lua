@@ -875,6 +875,7 @@ Mode.Columns = {
         render = iconRenderer,
         update = iconUpdater,
         editable = false,
+        align = ui.ALIGNMENT.Center,
     },
     Name = {
         id = 'Name',
