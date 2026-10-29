@@ -8,7 +8,7 @@ end
 local M = {
     PageKey = MOD,
     L10N = 'InventoryExtenderRedone',
-    Version = '0.0.9',
+    Version = '0.0.10',
     API = 4,
     -- window ids and UIToolkit:WindowData keys must keep the pre-rename spelling (save identity)
     WindowIdPrefix = 'InventoryExtender:',
