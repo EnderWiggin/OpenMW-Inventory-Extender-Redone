@@ -1387,7 +1387,7 @@ function Inventory:createData()
             --IER = IER,
         }
         local function tooltip()
-            local comparison = getEquippedItemsForComparison(itemStack, ctx, self.target or omwself)
+            local comparison = getEquippedItemsForComparison(itemStack, ctx, observer)
             if not comparison or #comparison <= 0 then return baseTip end
             local tips = { Tooltips.createTooltipLayout(baseTip) }
             for i = 1, #comparison do
