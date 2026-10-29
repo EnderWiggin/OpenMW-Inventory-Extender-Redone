@@ -11,6 +11,7 @@ local hasNearby, nearby = pcall(require, 'openmw.nearby')
 
 local C = require('scripts.InventoryExtenderRedone.util.constants')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local pocket = require('scripts.InventoryExtenderRedone.interop.nsp_pocket')
 
 local configGlobal = require('scripts.InventoryExtenderRedone.config.global')
 local l10n = core.l10n(D.L10N)
@@ -629,7 +630,10 @@ Helpers.getWeaponRangeInFeet = function(item)
 end
 
 Helpers.doesItemFit = function(item, container, count)
-    if configGlobal.gameplay.b_IgnoreChestCapacity then return true end
+    if configGlobal.gameplay.b_IgnoreChestCapacity
+        and not pocket.isPocketSpaceContainer(container) then
+        return true
+    end
     if not container or not Container.objectIsInstance(container) then
         return true
     end
