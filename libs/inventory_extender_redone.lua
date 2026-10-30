@@ -115,6 +115,7 @@
 ---@field getCount fun():number
 ---@field getNonDraggedCount fun():number
 ---@field StealChance number|fun():number pickpocket-only column: the steal-success chance for the stack
+---@field PlantChance? number|fun():number|nil plant-chance column: a row data modifier owns it, the roll for planting this item, nil when no session is live
 ---@field sortCache table?
 ---@field SearchText string? lower-cased haystack for the search filter; the filter computes it lazily, a row data modifier may own the field to widen what search matches
 

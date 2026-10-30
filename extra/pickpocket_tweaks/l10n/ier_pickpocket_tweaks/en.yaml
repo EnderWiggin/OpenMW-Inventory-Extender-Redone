@@ -65,6 +65,7 @@ PlantValueMultName: Plant Price Multiplier
 PlantValueMultDesc: '+ (price + add)^exponent × mult for the planted potion.'
 PlantWeightMultName: Plant Weight Multiplier
 PlantWeightMultDesc: '+ weight × mult for the planted potion.'
+Column_PlantChance: Plant
 PotionsGroupName: Your Window During a Session
 PotionsGroupDesc: |-
   During a pickpocket session your own window can narrow what is worth planting.

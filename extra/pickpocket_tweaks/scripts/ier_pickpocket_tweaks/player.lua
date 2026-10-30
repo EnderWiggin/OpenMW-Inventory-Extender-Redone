@@ -21,6 +21,12 @@ if not Pickpocket then return end
 local Helpers = IER.Helpers
 if not Helpers then return end
 
+local Toolkit    = I.UIToolkit
+local T          = Toolkit.Templates
+local H          = require 'scripts.UIToolkit.helpers'
+local ColumnItem = require 'scripts.UIToolkit.components.list_items.column_item'
+local l10n       = core.l10n(D.L10N)
+
 
 local closeSection  = storage.playerSection(D.CloseSection)
 local stealSection  = storage.playerSection(D.StealSection)
@@ -197,6 +203,70 @@ local function sessionTarget(ctx)
     return target
 end
 
+-- the PlantChance column: the plant roll's number for this row, blank when there is no live
+-- session to plant into
+local fontRatio = Toolkit.getTheme().Sizes.textNormal / 16
+
+---@param value any
+---@return string
+local function formatChance(value)
+    if value == nil or value == '' then return '' end
+    if type(value) == 'number' then
+        return H.addSeparators(H.roundToPlaces(value, 2)) .. '%'
+    end
+    return tostring(value)
+end
+
+---@type UIToolkit.ListItem.Column.Renderer
+local function renderPlantChance(data, cfg, height)
+    local value = data[cfg.id]
+    if type(value) == 'function' then
+        value = value()
+    end
+    ---@type openmw.ui.Layout
+    local layout = {
+        name = cfg.id,
+        template = T.text(),
+        props = {
+            textAlignV = ui.ALIGNMENT.Center,
+            textAlignH = cfg.arg and cfg.arg.textAlignH or nil,
+            autoSize = false,
+            textSize = cfg.arg and cfg.arg.textSize or nil,
+            text = formatChance(value),
+        },
+        userData = { colorable = true },
+    }
+    ColumnItem.applySize(layout, cfg, height)
+    return layout
+end
+
+---@type UIToolkit.ListItem.Column.Updater
+local function updatePlantChance(part, data, cfg)
+    local value = data[cfg.id]
+    if type(value) == 'function' then
+        value = value()
+    end
+    local new = formatChance(value)
+    local props = H.props(part)
+    if props.text == new then return false end
+    props.text = new
+    return true
+end
+
+---@type InventoryExtenderRedone.Mode.Column
+local plantChanceColumn = {
+    id = 'PlantChance',
+    name = l10n('Column_PlantChance'),
+    sort = { numeric = true },
+    width = 60 * fontRatio,
+    align = ui.ALIGNMENT.End,
+    descending = true,
+    render = renderPlantChance,
+    update = updatePlantChance,
+    arg = { textAlignH = ui.ALIGNMENT.End },
+    editable = true,
+}
+
 -- the always-transfer model: during a session a row click never drags and never shows the
 -- stack popup — the takeover owns the count (full stack out of the pockets, one item in).
 -- It runs before the default bound-item and favorite guards, so it replicates both; the
@@ -273,15 +343,24 @@ local function tryInit()
         },
     })
     -- add (not replace): CompoundFilter ANDs the named filters, this only narrows what the
-    -- Container role left visible
+    -- Container role left visible. The PlantChance column rides the same patch: it is the
+    -- player's own window, so both belong to the Container spec's Inventory role.
     IER.patchMode(IER.Modes.Container, {
         id = D.PatchId,
         roles = {
             [IER.Roles.Inventory] = {
                 filters = { add = { { id = D.PatchId .. '.PlantFilter', fn = isPlantCandidate } } },
+                columns = { add = { plantChanceColumn } },
             },
         },
     })
+    -- the column's data, lazy so only visible rows price the plant roll
+    IER.registerRowDataModifier(D.PatchId, function(row, ctx)
+        row.PlantChance = function()
+            if not settings.plantDirection or not sessionTarget(ctx) then return nil end
+            return getPlantChance(row.item, 1)
+        end
+    end)
     -- one closure on both lists: use/k_UseItem/swap behave like pickup during a session
     IER.registerRowPickupHandler(D.PatchId, takeover)
     IER.registerRowUseHandler(D.PatchId, takeover)
