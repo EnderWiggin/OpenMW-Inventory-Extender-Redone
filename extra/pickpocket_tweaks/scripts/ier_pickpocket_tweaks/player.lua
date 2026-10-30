@@ -286,6 +286,14 @@ local function tryInit()
     -- one closure on both lists: use/k_UseItem/swap behave like pickup during a session
     IER.registerRowPickupHandler(D.PatchId, takeover)
     IER.registerRowUseHandler(D.PatchId, takeover)
+    -- apply on success: the planted potion has already landed in the NPC, so the engine's own
+    -- use path makes it drink it — no moveInto needed
+    Pickpocket.registerTransferHandler(D.PatchId, function(payload)
+        if not payload.planted or not types.Potion.objectIsInstance(payload.item) then
+            return
+        end
+        core.sendGlobalEvent('UseItem', { object = payload.item, actor = payload.target })
+    end)
 end
 
 return {
