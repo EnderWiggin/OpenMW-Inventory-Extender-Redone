@@ -22,6 +22,7 @@ local closeSection  = storage.playerSection(D.CloseSection)
 local stealSection  = storage.playerSection(D.StealSection)
 local equippedSection = storage.playerSection(D.EquippedSection)
 local visibilitySection = storage.playerSection(D.VisibilitySection)
+local potionsSection = storage.playerSection(D.PotionsSection)
 local settings = {
     closeSkillThreshold = D.CloseSkill.default,
     ownSkillMult = D.OwnSkillMult.default,
@@ -36,6 +37,7 @@ local settings = {
     equippedWeaponBonus = D.EquippedWeaponBonus.default,
     equippedJewelryBonus = D.EquippedJewelryBonus.default,
     equippedArmorBonus = D.EquippedArmorBonus.default,
+    showAllPotions = false,
 }
 
 local function readSettings()
@@ -59,12 +61,16 @@ local function readSettings()
 
     stored = visibilitySection:asTable()
     settings.visibleChanceThreshold = stored.n_VisibleChanceThreshold or D.VisibleChance.default
+
+    stored = potionsSection:asTable()
+    settings.showAllPotions = stored.b_ShowAllPotions == true
 end
 readSettings()
 closeSection:subscribe(async:callback(readSettings))
 stealSection:subscribe(async:callback(readSettings))
 equippedSection:subscribe(async:callback(readSettings))
 visibilitySection:subscribe(async:callback(readSettings))
+potionsSection:subscribe(async:callback(readSettings))
 
 
 local function getSneak(actor)
@@ -127,13 +133,38 @@ local function isVisible(row, handler, ctx)
     return chance >= settings.visibleChanceThreshold
 end
 
+-- during a live session the player's own window is governed by the Container spec's Inventory
+-- role: narrow it to harmful potions so only plant candidates stay listed. The predicate
+-- self-guards the session identity: outside a pickpocket session nothing is hidden.
+local function isHarmfulPotion(item)
+    if not types.Potion.objectIsInstance(item) then return false end
+    local effects = item.type.record(item).effects
+    for i = 1, #effects do
+        local effect = effects[i]
+        if effect and effect.effect.harmful then
+            return true
+        end
+    end
+    return false
+end
+
+local function isPlantCandidate(row, handler, ctx)
+    local session = ctx.pickpocket
+    local target = ctx.windowArgs.Container
+    if not session or not session.active or not target or session.targetId ~= target.id then
+        return true
+    end
+    if settings.showAllPotions then return true end
+    return isHarmfulPotion(row.item)
+end
+
 local initialized = false
 
 local function tryInit()
     if initialized then return end
     initialized = true
 
-    L.debug('register chance handlers + visibility patch')
+    L.debug('register chance handlers + visibility patches')
     Pickpocket.registerCloseChance(D.PatchId, function(player, target, session, chance)
         if getSneak(player) >= settings.closeSkillThreshold then
             return 100
@@ -147,6 +178,16 @@ local function tryInit()
         roles = {
             [IER.Roles.Container] = {
                 filters = { replace = { { id = 'pickpocketVisibility', fn = isVisible } } },
+            },
+        },
+    })
+    -- add (not replace): CompoundFilter ANDs the named filters, this only narrows what the
+    -- Container role left visible
+    IER.patchMode(IER.Modes.Container, {
+        id = D.PatchId,
+        roles = {
+            [IER.Roles.Inventory] = {
+                filters = { add = { { id = D.PatchId .. '.PlantFilter', fn = isPlantCandidate } } },
             },
         },
     })
