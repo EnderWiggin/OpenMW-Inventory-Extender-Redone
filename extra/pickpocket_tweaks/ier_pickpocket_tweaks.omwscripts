@@ -1,0 +1,3 @@
+PLAYER: scripts/ier_pickpocket_tweaks/player.lua
+GLOBAL: scripts/ier_pickpocket_tweaks/global.lua
+MENU: scripts/ier_pickpocket_tweaks/settings.lua
