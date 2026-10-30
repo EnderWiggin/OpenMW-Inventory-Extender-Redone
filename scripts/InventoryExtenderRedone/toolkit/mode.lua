@@ -833,7 +833,8 @@ end
 
 ---@type UIToolkit.ListItem.Column.Updater
 local function updateNumber(part, data, cfg)
-    local new = formatNumber(data[cfg.id])
+    local suffix = cfg.arg and cfg.arg.suffix or ''
+    local new = formatNumber(data[cfg.id]) .. suffix
     local props = H.props(part)
     if props.text == new then return false end
     props.text = new
