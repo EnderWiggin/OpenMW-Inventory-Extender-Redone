@@ -1,9 +1,13 @@
 ---@omw-context player
 
+local core    = require 'openmw.core'
 local I       = require 'openmw.interfaces'
 local types   = require 'openmw.types'
 local async   = require 'openmw.async'
 local storage = require 'openmw.storage'
+local ui      = require 'openmw.ui'
+local util    = require 'openmw.util'
+local omwself = require 'openmw.self'
 
 local Actor = types.Actor
 local NPC   = types.NPC
@@ -23,6 +27,7 @@ local stealSection  = storage.playerSection(D.StealSection)
 local equippedSection = storage.playerSection(D.EquippedSection)
 local visibilitySection = storage.playerSection(D.VisibilitySection)
 local potionsSection = storage.playerSection(D.PotionsSection)
+local plantSection = storage.playerSection(D.PlantSection)
 local settings = {
     closeSkillThreshold = D.CloseSkill.default,
     ownSkillMult = D.OwnSkillMult.default,
@@ -38,6 +43,12 @@ local settings = {
     equippedJewelryBonus = D.EquippedJewelryBonus.default,
     equippedArmorBonus = D.EquippedArmorBonus.default,
     showAllPotions = false,
+    plantDirection = true,
+    plantBase = D.PlantBase.default,
+    plantValueAdd = D.PlantValueAdd.default,
+    plantValueExp = D.PlantValueExp.default,
+    plantValueMult = D.PlantValueMult.default,
+    plantWeightMult = D.PlantWeightMult.default,
 }
 
 local function readSettings()
@@ -62,6 +73,14 @@ local function readSettings()
     stored = visibilitySection:asTable()
     settings.visibleChanceThreshold = stored.n_VisibleChanceThreshold or D.VisibleChance.default
 
+    stored = plantSection:asTable()
+    settings.plantDirection = stored.b_PlantDirection ~= false
+    settings.plantBase = stored.n_PlanBase or D.PlantBase.default
+    settings.plantValueAdd = stored.n_PlanValueAdd or D.PlantValueAdd.default
+    settings.plantValueExp = stored.n_PlanValueExp or D.PlantValueExp.default
+    settings.plantValueMult = stored.n_PlanValueMult or D.PlantValueMult.default
+    settings.plantWeightMult = stored.n_PlanWeightMult or D.PlantWeightMult.default
+
     stored = potionsSection:asTable()
     settings.showAllPotions = stored.b_ShowAllPotions == true
 end
@@ -71,6 +90,7 @@ stealSection:subscribe(async:callback(readSettings))
 equippedSection:subscribe(async:callback(readSettings))
 visibilitySection:subscribe(async:callback(readSettings))
 potionsSection:subscribe(async:callback(readSettings))
+plantSection:subscribe(async:callback(readSettings))
 
 
 local function getSneak(actor)
@@ -158,6 +178,78 @@ local function isPlantCandidate(row, handler, ctx)
     return isHarmfulPotion(row.item)
 end
 
+-- the plant roll: value + weight only, no potion-effect term; prices the single planted item
+local function getPlantChance(item, count)
+    local record = item.type.record(item)
+    local difficulty = settings.plantBase
+        + math.max(0, record.value * count + settings.plantValueAdd) ^ settings.plantValueExp
+            * settings.plantValueMult
+        + record.weight * count * settings.plantWeightMult
+    return util.clamp(getSkillTerm(omwself) * settings.ownSkillMult - difficulty, 0, 100)
+end
+
+-- the session NPC: windowArgs is last-known, the targetId guard is what makes it sound
+local function sessionTarget(ctx)
+    local target = ctx.windowArgs.Container
+    if not target or not ctx.pickpocket or ctx.pickpocket.targetId ~= target.id then
+        return nil
+    end
+    return target
+end
+
+-- the always-transfer model: during a session a row click never drags and never shows the
+-- stack popup — the takeover owns the count (full stack out of the pockets, one item in).
+-- It runs before the default bound-item and favorite guards, so it replicates both; the
+-- steal roll and its failure resolution mirror the built-in pickpocketTake.
+local function takeover(row, ctx, role)
+    local session = ctx.pickpocket
+    if not session or not session.active then return end
+    local target = sessionTarget(ctx)
+    if not target then return end
+
+    if Helpers.isBoundItem(row.item) then
+        ui.showMessage(core.getGMST('sContentsMessage1'))
+        return false
+    end
+
+    if role == IER.Roles.Container then
+        if ctx.favoriteItems[row.item.id] then return false end
+        local chance = Pickpocket.getStealChance(row.item, row.getCount())
+        if chance == nil then return end
+        if math.random(100) > chance then
+            session.resolved = true
+            core.sendGlobalEvent('IER_CommitPickpocket', {
+                player = omwself,
+                target = target,
+                victimAware = true,
+            })
+            I.UI.removeMode(IER.Modes.Container)
+            return false
+        end
+        omwself:sendEvent('IER_PickpocketSuccess', { item = row.item, target = target })
+        ctx.dragAndDrop:transferInto(row.item, omwself, target, row.getCount(),
+            { target = target }, IER.Modes.Pickpocket)
+        return false
+    end
+
+    if role == IER.Roles.Inventory and settings.plantDirection then
+        if ctx.favoriteItems[row.item.id] then return false end
+        if math.random(100) > getPlantChance(row.item, 1) then
+            session.resolved = true
+            I.UI.removeMode(IER.Modes.Container)
+            core.sendGlobalEvent('IERPT_Assault', {
+                player = omwself,
+                target = target,
+                item = row.item,
+            })
+            return false
+        end
+        ctx.dragAndDrop:transferInto(row.item, target, omwself, 1,
+            { target = target }, IER.Modes.Container)
+        return false
+    end
+end
+
 local initialized = false
 
 local function tryInit()
@@ -191,6 +283,9 @@ local function tryInit()
             },
         },
     })
+    -- one closure on both lists: use/k_UseItem/swap behave like pickup during a session
+    IER.registerRowPickupHandler(D.PatchId, takeover)
+    IER.registerRowUseHandler(D.PatchId, takeover)
 end
 
 return {
