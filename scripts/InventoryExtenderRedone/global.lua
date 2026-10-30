@@ -202,9 +202,12 @@ local function moveInto(props)
         ownerInfo = obj.owner
         globalVariable = obj.globalVariable
     end
+    -- a move into the session NPC hands the item over instead of taking it: the ownership tag
+    -- is what lets the transfer hook fire, nothing is stolen from that NPC
+    local planted = props.pickpocket ~= nil and props.pickpocket.target == destination
     local victimInfo = isStealing(props.player, ownerInfo, globalVariable)
     local victimActor
-    if victimInfo then
+    if victimInfo and not planted then
         L.debug('moveInto: stealing', obj.id, victimInfo.recordId or victimInfo.factionId)
         if victimInfo.recordId then
             for _, actor in ipairs(world.activeActors) do
@@ -307,7 +310,7 @@ local function moveInto(props)
             item = resultingObj,
             recordId = recordId,
             count = moveCount,
-            planted = destination == props.pickpocket.target,
+            planted = planted,
             via = props.useItem and 'use' or (props.dragStart and 'drag' or 'transfer'),
         })
     end
