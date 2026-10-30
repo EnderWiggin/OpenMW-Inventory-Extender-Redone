@@ -18,8 +18,9 @@ local Helpers = IER.Helpers
 if not Helpers then return end
 
 
-local closeSection = storage.playerSection(D.CloseSection)
-local stealSection = storage.playerSection(D.StealSection)
+local closeSection  = storage.playerSection(D.CloseSection)
+local stealSection  = storage.playerSection(D.StealSection)
+local equippedSection = storage.playerSection(D.EquippedSection)
 local settings = {
     closeSkillThreshold = D.CloseSkill.default,
     ownSkillMult = D.OwnSkillMult.default,
@@ -29,6 +30,10 @@ local settings = {
     valueMult = D.ValueMult.default,
     weightMult = D.WeightMult.default,
     targetSkillMult = D.TargetSkillMult.default,
+    equippedThreshold = D.EquippedThreshold.default,
+    equippedWeaponBonus = D.EquippedWeaponBonus.default,
+    equippedJewelryBonus = D.EquippedJewelryBonus.default,
+    equippedArmorBonus = D.EquippedArmorBonus.default,
 }
 
 local function readSettings()
@@ -43,10 +48,17 @@ local function readSettings()
     settings.valueMult = stored.n_QLPPValueMult or D.ValueMult.default
     settings.weightMult = stored.n_QLPPWeightMult or D.WeightMult.default
     settings.targetSkillMult = stored.n_QLPPTargetSkillMult or D.TargetSkillMult.default
+
+    stored = equippedSection:asTable()
+    settings.equippedThreshold = stored.n_EquippedSkillThreshold or D.EquippedThreshold.default
+    settings.equippedWeaponBonus = stored.n_EquippedWeaponBonus or D.EquippedWeaponBonus.default
+    settings.equippedJewelryBonus = stored.n_EquippedJewelryBonus or D.EquippedJewelryBonus.default
+    settings.equippedArmorBonus = stored.n_EquippedArmorBonus or D.EquippedArmorBonus.default
 end
 readSettings()
 closeSection:subscribe(async:callback(readSettings))
 stealSection:subscribe(async:callback(readSettings))
+equippedSection:subscribe(async:callback(readSettings))
 
 
 local function getSneak(actor)
@@ -70,12 +82,31 @@ end
 -- the QLPP difficulty model minus facing/attempts: price, weight and the target's skill make
 -- difficulty, own skill makes chance; the chain clamps the result to [0, 100]. Gold runs the
 -- same formula: a full gold stack is simply hard to steal, a small one stays easy
+local function getEquippedBonus(item)
+    if types.Weapon.objectIsInstance(item) then
+        return settings.equippedWeaponBonus
+    end
+    if types.Clothing.objectIsInstance(item) then
+        local recordType = item.type.record(item).type
+        if recordType == types.Clothing.TYPE.Ring or recordType == types.Clothing.TYPE.Amulet then
+            return settings.equippedJewelryBonus
+        end
+    end
+    return settings.equippedArmorBonus
+end
+
 local function getStealChance(player, target, item, count)
     local record = item.type.record(item)
     local difficulty = settings.baseDifficulty
         + math.max(0, record.value * count + settings.valueAdd) ^ settings.valueExp * settings.valueMult
         + record.weight * count * settings.weightMult
         + getSkillTerm(target) * settings.targetSkillMult
+    if Actor.hasEquipped(target, item) then
+        if getSneak(player) < settings.equippedThreshold then
+            return 0
+        end
+        difficulty = difficulty + getEquippedBonus(item)
+    end
     return getSkillTerm(player) * settings.ownSkillMult - difficulty
 end
 
