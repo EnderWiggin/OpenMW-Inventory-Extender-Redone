@@ -12,6 +12,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
 local modeApi = require('scripts.InventoryExtenderRedone.toolkit.mode')
 local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
+local pickpocketUtils = require('scripts.InventoryExtenderRedone.util.pickpocket')
 local L = require('scripts.InventoryExtenderRedone.util.logger').get 'API'
 
 local Player = types.Player
@@ -335,6 +336,91 @@ function Barter.registerPriceOverride(id, handler)
     table.insert(windowManager.ctx.overrides.price, { id = id, handler = handler })
 end
 
+--- Pickpocket API: pickpocket-related methods, grouped so the interface root stays about
+--- windows, modes and categories. Consumed as IER.Pickpocket.<name>.
+--- Visibility has no method here: which items an NPC's pockets show is the Pickpocket mode's
+--- Container-role filters list slot (the built-in pickpocketVisibility part), changed through
+--- patchMode/unpatchMode.
+local Pickpocket = {}
+API.Pickpocket = Pickpocket
+
+--- Register a steal-chance modifier, consulted for every visible row of an NPC's pockets: the
+--- chain runs inside getStealChance, so the window's StealChance column and the take roll read
+--- the same number and the displayed chance and the dice agree. Handlers run in reverse
+--- registration order; each non-nil return replaces the running chance, so modifiers compose and
+--- the last registered wins. The returned chance is clamped to [0, 100]: 0 = never stealable,
+--- 100 = guaranteed. The handler is a query, not a roll: it must return the chance the roll will
+--- be made against, so a fresh random value per call makes the column lie. count is the row's
+--- full stack count, also when the player takes fewer units. Handlers run per visible row per
+--- refresh: keep them cheap.
+--- @param id string A unique identifier for the override
+--- @param handler fun(player:openmw.Object, target:openmw.Object, item:openmw.Object, count:number, chance:number):chance:number? The override function
+function Pickpocket.registerStealChance(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.overrides.stealChance) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.overrides.stealChance, { id = id, handler = handler })
+end
+
+--- Register a caught-on-close modifier, consulted when a pickpocket session leaves without
+--- resolving: the default dice roll always runs against whatever the chain produced, so a mod
+--- retunes the odds, it does not replace the roll. Handlers run in reverse registration order;
+--- each non-nil return replaces the running chance, clamped to [0, 100]. Returning 0 means the
+--- close never fails (the victim is never alerted on leaving); 100 means it always alerts; nil
+--- defers to the running chance. The session clear and the close animation are not part of the
+--- check and stay.
+--- @param id string A unique identifier for the override
+--- @param handler fun(player:openmw.Object, target:openmw.Object, session:InventoryExtenderRedone.PickpocketSession, chance:number):chance:number? The override function
+function Pickpocket.registerCloseChance(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.overrides.closeChance) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.overrides.closeChance, { id = id, handler = handler })
+end
+
+--- Register a handler notified after an item has actually moved to or from an NPC's pockets.
+--- It fires after the item lands and after the stolen-item bookkeeping, before the window
+--- refresh: a handler that changes item state batches its writes and calls IER.update() once.
+--- Notification only: the return value is ignored, nothing can veto the move; handlers run in
+--- reverse registration order.
+--- @param id string A unique identifier for the handler
+--- @param handler InventoryExtenderRedone.PickpocketTransferHandler The handler function
+function Pickpocket.registerTransferHandler(id, handler)
+    for _, existingHandler in ipairs(windowManager.ctx.handlers.onPickpocketTransfer) do
+        if existingHandler.id:lower() == id:lower() then
+            existingHandler.handler = handler
+            return
+        end
+    end
+    table.insert(windowManager.ctx.handlers.onPickpocketTransfer, { id = id, handler = handler })
+end
+
+--- The modified steal chance for item: the same number the take roll would be made against,
+--- without opening a window. Resolves the session itself: nil when no pickpocket session is live.
+---@param item openmw.Object
+---@param count number
+---@return number? nil when no pickpocket session is live
+function Pickpocket.getStealChance(item, count)
+    local session = windowManager.ctx.pickpocket
+    if not session or not session.active then return nil end
+    local target = windowManager.ctx.windowArgs.Container
+    -- windowArgs is last-known: the targetId guard is what makes the target sound
+    if not target or session.targetId ~= target.id then return nil end
+    return pickpocketUtils.getStealChance(self, target, item, count)
+end
+
+--- The live pickpocket session or nil. Do not mutate what this returns: it is the stored table.
+---@return InventoryExtenderRedone.PickpocketSession?
+function Pickpocket.getSession()
+    return windowManager.ctx.pickpocket
+end
+
 local lastCrimeLevel
 local function checkCrimeLevel()
     local crimeLevel = Player.getCrimeLevel(self)
@@ -559,6 +645,13 @@ local eventHandlers = {
         I.SkillProgression.skillUsed('sneak', {
             useType = I.SkillProgression.SKILL_USE_TYPES.Sneak_PickPocket
         })
+    end,
+    IER_PickpocketTransfer = function(props)
+        L.debug('IER_PickpocketTransfer', props.recordId, props.count, props.planted)
+        local handlers = windowManager.ctx.handlers.onPickpocketTransfer
+        for i = #handlers, 1, -1 do
+            handlers[i].handler(props)
+        end
     end,
     IER_ContainerVariable = function(data)
         L.debug('IER_ContainerVariable', data.key, data.value)

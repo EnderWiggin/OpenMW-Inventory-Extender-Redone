@@ -296,6 +296,22 @@ local function moveInto(props)
         })
     end
 
+    -- the move has landed: notify the registered pickpocket transfer handlers before the
+    -- refresh, so a handler batches its writes and calls IER.update() once itself
+    if props.pickpocket and props.pickpocket.target then
+        props.player:sendEvent('IER_PickpocketTransfer', {
+            player = props.player,
+            target = props.pickpocket.target,
+            source = props.source,
+            destination = destination,
+            item = resultingObj,
+            recordId = recordId,
+            count = moveCount,
+            planted = destination == props.pickpocket.target,
+            via = props.useItem and 'use' or (props.dragStart and 'drag' or 'transfer'),
+        })
+    end
+
     if props.autoEquip and NPC.objectIsInstance(props.autoEquip) then
         queueDelayedJob(function()
             props.autoEquip:addScript('scripts/InventoryExtenderRedone/autoEquip.lua', { player = props.player })
@@ -774,6 +790,7 @@ local eventHandlers = {
                 destination = props.actor,
                 player = props.actor,
                 pickpocket = props.pickpocket,
+                useItem = true,
             })
             if movedObject then
                 core.sendGlobalEvent('UseItem', {

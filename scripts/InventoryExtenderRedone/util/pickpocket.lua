@@ -1,6 +1,8 @@
 ---@omw-context player
 local core = require('openmw.core')
+local I = require('openmw.interfaces')
 local types = require('openmw.types')
+local util = require('openmw.util')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 
@@ -65,11 +67,22 @@ function Pickpocket.isVisible(session, item)
 end
 
 -- the steal chance for one stack: the same number rollTake rolls against, exposed without the
--- roll so the pickpocket window can show it as a column
+-- roll so the pickpocket window can show it as a column. The registered steal-chance chain runs
+-- here, so the displayed chance and the actual roll agree: handlers receive the running chance
+-- and each non-nil return replaces it, clamped to [0, 100]
 function Pickpocket.getStealChance(player, target, item, stackCount)
     local stackValue = item.type.record(item).value * stackCount
     local valueTerm = 10 * core.getGMST('fPickPocketMod') * stackValue
-    return getChance(player, target, valueTerm)
+    local chance = getChance(player, target, valueTerm)
+
+    local overrides = I.InventoryExtenderRedone.getContext().overrides.stealChance
+    for i = #overrides, 1, -1 do
+        local newChance = overrides[i].handler(player, target, item, stackCount, chance)
+        if newChance ~= nil then
+            chance = util.clamp(newChance, 0, 100)
+        end
+    end
+    return chance
 end
 
 function Pickpocket.rollTake(player, target, item, stackCount)
@@ -77,8 +90,21 @@ function Pickpocket.rollTake(player, target, item, stackCount)
     return math.random(100) <= chance, chance
 end
 
+-- the caught-on-close check: the vanilla sneak number is handed to the registered close-chance
+-- chain, whose result the same default roll runs against, so a mod retunes the odds rather than
+-- replacing the roll
 function Pickpocket.rollClose(player, target)
     local chance = getChance(player, target, 0)
+
+    local ctx = I.InventoryExtenderRedone.getContext()
+    local overrides = ctx.overrides.closeChance
+    for i = #overrides, 1, -1 do
+        local newChance = overrides[i].handler(player, target, ctx.pickpocket, chance)
+        if newChance ~= nil then
+            chance = util.clamp(newChance, 0, 100)
+        end
+    end
+
     return math.random(100) <= chance, chance
 end
 

@@ -42,12 +42,13 @@
 ---@field openMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) open the mode's role windows through UIToolkit.WindowManager.open only, never I.UI.setMode/addMode; no-op while allWindowsDisabled
 ---@field closeMode fun(key:InventoryExtenderRedone.ModeKey, arg:any?) close the mode's role windows through UIToolkit; custom modes never call I.UI.removeMode
 ---@field Barter InventoryExtenderRedone.Barter barter API subtable: all barter-related methods live here (row queries, price prediction, offer queue, commit, haggle overrides), consumed as IER.Barter.<name>
+---@field Pickpocket InventoryExtenderRedone.Pickpocket pickpocket API subtable: steal/close chance chains, the after-transfer notification and the session readers, consumed as IER.Pickpocket.<name>
 
 
 ---@class InventoryExtenderRedone.Context
 ---@field handlers InventoryExtenderRedone.Handlers registered row action handlers, called in reverse registration order
 ---@field modifiers InventoryExtenderRedone.Modifiers registered modifiers
----@field overrides InventoryExtenderRedone.Overrides override chains: equipped (eligibility, first non-nil wins), haggle (chance/skillGain modifiers, replace-per-field stacking) and price (per-item magnitude modifiers, replace-per-field stacking)
+---@field overrides InventoryExtenderRedone.Overrides override chains: equipped (eligibility, first non-nil wins), haggle (chance/skillGain modifiers, replace-per-field stacking), price (per-item magnitude modifiers, replace-per-field stacking) and stealChance/closeChance (pickpocket chance providers in [0,100], replace-per-field stacking)
 ---@field modes table<string,InventoryExtenderRedone.Mode> custom mode specs registered through API.registerMode, keyed by mode key; built-in specs are not stored here, they live in toolkit/mode.lua Mode.Builtins
 ---@field modePatches table<string,InventoryExtenderRedone.ModePatch[]> registered mode patches per mode key, applied in reverse registration order
 ---@field dragAndDrop InventoryExtenderRedone.DragAndDrop ui/dragAndDrop.lua singleton (draggingObject, draggingCount, draggingActivationContext, lastHoveredObject, wrapper, …)
@@ -300,6 +301,7 @@
 ---@field onRowUse InventoryExtenderRedone.RowHandlerEntry[] handlers run by Inventory:onRowUse (use/equip action)
 ---@field onRowPickup InventoryExtenderRedone.RowHandlerEntry[] handlers run by Inventory:onRowPickup (pick-up action)
 ---@field onRowDrop InventoryExtenderRedone.RowDropHandlerEntry[] handlers run by Inventory:onRowDrop (drop the dragged item, before the drag is ended)
+---@field onPickpocketTransfer InventoryExtenderRedone.PickpocketTransferHandlerEntry[] notification handlers run by the IER_PickpocketTransfer event after a pickpocket move lands
 
 ---@class InventoryExtenderRedone.RowHandlerEntry
 ---@field id string
@@ -332,6 +334,8 @@
 ---@field equipped InventoryExtenderRedone.EquippedOverrideEntry[]
 ---@field haggle InventoryExtenderRedone.HaggleOverrideEntry[]
 ---@field price InventoryExtenderRedone.PriceOverrideEntry[]
+---@field stealChance InventoryExtenderRedone.StealChanceOverrideEntry[]
+---@field closeChance InventoryExtenderRedone.CloseChanceOverrideEntry[]
 
 ---@class InventoryExtenderRedone.EquippedOverrideEntry
 ---@field id string
@@ -386,6 +390,41 @@
 ---@field party openmw.Object? the item holder on the player's side: sell source and buy destination; filled with the player when the descriptor is stored
 ---@field gold openmw.Object? who pays a negative balance and receives a positive one; filled with the player when the descriptor is stored
 
+
+---@class InventoryExtenderRedone.Pickpocket pickpocket API subtable: chance chains and the after-transfer notification, consumed as IER.Pickpocket.<name>. Visibility has no method here: which items an NPC's pockets show is the Pickpocket mode's Container-role filters list slot (the built-in pickpocketVisibility part), changed through patchMode/unpatchMode
+---@field registerStealChance fun(id:string, handler:InventoryExtenderRedone.Pickpocket.StealChanceOverride) register a steal-chance modifier consulted by the StealChance column and the take roll: the chain runs inside getStealChance, so the displayed number and the dice agree. Handlers run in reverse registration order; each non-nil return replaces the running chance, so modifiers compose and the last registered wins. The returned chance is clamped to [0,100] by the chain: 0 = never stealable, 100 = guaranteed. The handler is a query, not a roll: it must return the chance the roll will be made against, so a fresh random value per call makes the column lie. count is the row's full stack count, also when the player takes fewer units. Runs per visible row per refresh: keep handlers cheap
+---@field registerCloseChance fun(id:string, handler:InventoryExtenderRedone.Pickpocket.CloseChanceOverride) register a caught-on-close modifier consulted when a pickpocket session leaves without resolving: the default dice roll always runs against whatever the chain produced, so a mod retunes the odds, it does not replace the roll. Returning 0 means the close never fails (the victim is never alerted on leaving); 100 means it always alerts; nil defers to the running chance. The session clear and the close animation are not part of the check and stay
+---@field registerTransferHandler fun(id:string, handler:InventoryExtenderRedone.PickpocketTransferHandler) register a handler notified after an item has moved to or from an NPC's pockets. Fires after the item lands and after the stolen-item bookkeeping, before the window refresh: a handler that changes item state batches its writes and calls IER.update() once. Notification only: the return value is ignored, nothing can veto the move; handlers run in reverse registration order
+---@field getStealChance fun(item:openmw.Object, count:number):number? the modified chance the take roll would be made against, without opening a window; nil when no pickpocket session is live (the target comes from ctx.windowArgs.Container, guarded by the session's targetId)
+---@field getSession fun():InventoryExtenderRedone.PickpocketSession? the live session or nil, read-only: do not mutate what this returns
+
+---@class InventoryExtenderRedone.PickpocketTransfer payload of the IER_PickpocketTransfer player event, sent after a pickpocket move lands
+---@field player openmw.Object
+---@field target openmw.Object the NPC whose pockets the move involves
+---@field source openmw.Object? where the item moved from
+---@field destination openmw.Object where it landed
+---@field item openmw.Object the live object after stacking/splitting (resultingObj)
+---@field recordId string already lower-cased
+---@field count number units moved
+---@field planted boolean true = put into the NPC's pockets, false = stolen out of them
+---@field via string? 'drag' | 'transfer' | 'use' - which row action moved it
+
+---@alias InventoryExtenderRedone.PickpocketTransferHandler fun(payload:InventoryExtenderRedone.PickpocketTransfer)
+
+---@class InventoryExtenderRedone.PickpocketTransferHandlerEntry
+---@field id string
+---@field handler InventoryExtenderRedone.PickpocketTransferHandler
+
+---@class InventoryExtenderRedone.StealChanceOverrideEntry
+---@field id string
+---@field handler InventoryExtenderRedone.Pickpocket.StealChanceOverride
+
+---@class InventoryExtenderRedone.CloseChanceOverrideEntry
+---@field id string
+---@field handler InventoryExtenderRedone.Pickpocket.CloseChanceOverride
+
+---@alias InventoryExtenderRedone.Pickpocket.StealChanceOverride fun(player:openmw.Object, target:openmw.Object, item:openmw.Object, count:number, chance:number):chance:number? chance is the running value (the vanilla formula unless an earlier handler replaced it); a returned chance replaces it and is clamped to [0,100] by the chain
+---@alias InventoryExtenderRedone.Pickpocket.CloseChanceOverride fun(player:openmw.Object, target:openmw.Object, session:InventoryExtenderRedone.PickpocketSession, chance:number):chance:number? same contract as the steal chain
 
 ---@class InventoryExtenderRedone.PickpocketSession
 ---@field active boolean

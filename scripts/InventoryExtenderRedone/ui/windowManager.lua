@@ -30,11 +30,14 @@ WindowManager.ctx = {
         equipped = {},
         haggle = {},
         price = {},
+        stealChance = {},
+        closeChance = {},
     },
     handlers = {
         onRowUse = {},
         onRowPickup = {},
         onRowDrop = {},
+        onPickpocketTransfer = {},
     },
     modifiers = {
         data = {},

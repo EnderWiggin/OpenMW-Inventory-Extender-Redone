@@ -290,7 +290,12 @@ local function transferIntoWindow(role, modeKey)
     return function(row, _, ctx, count)
         local target = ctx.windowArgs[role]
         if target then
-            ctx.dragAndDrop:transferInto(row.item, target, omwself, count, nil, modeKey)
+            -- during a live pickpocket session on that target the plant direction is tagged,
+            -- so moveInto attributes ownership to the NPC and the transfer hook can fire
+            local session = ctx.pickpocket
+            local pickpocketCtx = session and session.active and session.targetId == target.id
+                and { target = target } or nil
+            ctx.dragAndDrop:transferInto(row.item, target, omwself, count, pickpocketCtx, modeKey)
         end
     end
 end
@@ -325,6 +330,11 @@ local function rollPickpocketTake(row, handler, ctx)
             I.UI.removeMode(D.Modes.Container)
             return false
         end
+        -- the roll-won signal: sneak practices on a won take, before the move lands
+        omwself:sendEvent('IER_PickpocketSuccess', {
+            item = row.item,
+            target = handler.target,
+        })
     end
     return true
 end
