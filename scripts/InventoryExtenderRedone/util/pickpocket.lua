@@ -7,6 +7,8 @@ local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local NPC = types.NPC
 local Actor = types.Actor
 local Item = types.Item
+local iPickMinChance = core.getGMST('iPickMinChance')
+local iPickMaxChance = core.getGMST('iPickMaxChance')
 
 local Pickpocket = {}
 
@@ -28,12 +30,12 @@ local function getChance(player, target, valueTerm)
     local y = (valueTerm + getSneak(target) + 0.2 * getAgility(target) + 0.1 * getLuck(target)) * helpers.getFatigueTerm(target)
     local t = x - y + x
 
-    local minChance = pcSneak / core.getGMST('iPickMinChance')
+    local minChance = pcSneak / iPickMinChance
     if t < minChance then
         return math.max(0, math.floor(minChance))
     end
 
-    return math.max(0, math.floor(math.min(core.getGMST('iPickMaxChance'), t)))
+    return math.max(0, math.floor(math.min(iPickMaxChance, t)))
 end
 
 function Pickpocket.isTarget(target)
