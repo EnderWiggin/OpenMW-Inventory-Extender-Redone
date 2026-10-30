@@ -240,7 +240,6 @@ local function takeover(row, ctx, role)
             core.sendGlobalEvent('IERPT_Assault', {
                 player = omwself,
                 target = target,
-                item = row.item,
             })
             return false
         end
