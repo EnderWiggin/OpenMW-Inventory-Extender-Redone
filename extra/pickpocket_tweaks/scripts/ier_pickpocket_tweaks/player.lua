@@ -21,6 +21,7 @@ if not Helpers then return end
 local closeSection  = storage.playerSection(D.CloseSection)
 local stealSection  = storage.playerSection(D.StealSection)
 local equippedSection = storage.playerSection(D.EquippedSection)
+local visibilitySection = storage.playerSection(D.VisibilitySection)
 local settings = {
     closeSkillThreshold = D.CloseSkill.default,
     ownSkillMult = D.OwnSkillMult.default,
@@ -30,6 +31,7 @@ local settings = {
     valueMult = D.ValueMult.default,
     weightMult = D.WeightMult.default,
     targetSkillMult = D.TargetSkillMult.default,
+    visibleChanceThreshold = D.VisibleChance.default,
     equippedThreshold = D.EquippedThreshold.default,
     equippedWeaponBonus = D.EquippedWeaponBonus.default,
     equippedJewelryBonus = D.EquippedJewelryBonus.default,
@@ -54,11 +56,15 @@ local function readSettings()
     settings.equippedWeaponBonus = stored.n_EquippedWeaponBonus or D.EquippedWeaponBonus.default
     settings.equippedJewelryBonus = stored.n_EquippedJewelryBonus or D.EquippedJewelryBonus.default
     settings.equippedArmorBonus = stored.n_EquippedArmorBonus or D.EquippedArmorBonus.default
+
+    stored = visibilitySection:asTable()
+    settings.visibleChanceThreshold = stored.n_VisibleChanceThreshold or D.VisibleChance.default
 end
 readSettings()
 closeSection:subscribe(async:callback(readSettings))
 stealSection:subscribe(async:callback(readSettings))
 equippedSection:subscribe(async:callback(readSettings))
+visibilitySection:subscribe(async:callback(readSettings))
 
 
 local function getSneak(actor)
@@ -110,8 +116,24 @@ local function getStealChance(player, target, item, count)
     return getSkillTerm(player) * settings.ownSkillMult - difficulty
 end
 
+-- pocket visibility is the Pickpocket mode's Container-role filters slot: replace the built-in
+-- snapshot rule with a live deterministic one, the same chain number the column shows and the
+-- roll runs against. No session: everything stays visible.
+local function isVisible(row, handler, ctx)
+    local session = ctx.pickpocket
+    if not session or not session.active then return true end
+    local chance = Pickpocket.getStealChance(row.item, row.getCount())
+    if chance == nil then return true end
+    return chance >= settings.visibleChanceThreshold
+end
+
+local initialized = false
+
 local function tryInit()
-    L.debug('register chance handlers')
+    if initialized then return end
+    initialized = true
+
+    L.debug('register chance handlers + visibility patch')
     Pickpocket.registerCloseChance(D.PatchId, function(player, target, session, chance)
         if getSneak(player) >= settings.closeSkillThreshold then
             return 100
@@ -120,6 +142,14 @@ local function tryInit()
     Pickpocket.registerStealChance(D.PatchId, function(player, target, item, count, chance)
         return getStealChance(player, target, item, count)
     end)
+    IER.patchMode(IER.Modes.Pickpocket, {
+        id = D.PatchId,
+        roles = {
+            [IER.Roles.Container] = {
+                filters = { replace = { { id = 'pickpocketVisibility', fn = isVisible } } },
+            },
+        },
+    })
 end
 
 return {
