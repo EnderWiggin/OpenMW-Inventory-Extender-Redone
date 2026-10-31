@@ -51,12 +51,12 @@ I.Settings.registerGroup {
     permanentStorage = true,
     settings = {
         slider('n_QLPPOwnSkillMult', 'OwnSkillMultName', 'OwnSkillMultDesc', D.OwnSkillMult),
+        slider('n_QLPPTargetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.TargetSkillMult),
         slider('n_QLPPBaseDifficulty', 'BaseDifficultyName', 'BaseDifficultyDesc', D.BaseDifficulty),
         slider('n_QLPPValueAdd', 'ValueAddName', 'ValueAddDesc', D.ValueAdd),
         slider('n_QLPPValueExp', 'ValueExpName', 'ValueExpDesc', D.ValueExp),
         slider('n_QLPPValueMult', 'ValueMultName', 'ValueMultDesc', D.ValueMult),
         slider('n_QLPPWeightMult', 'WeightMultName', 'WeightMultDesc', D.WeightMult),
-        slider('n_QLPPTargetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.TargetSkillMult),
     },
 }
 
@@ -105,6 +105,8 @@ I.Settings.registerGroup {
             description = 'PlantDirectionDesc',
             default = true,
         },
+        slider('n_PlanOwnSkillMult', 'OwnSkillMultName', 'OwnSkillMultDesc', D.PlantOwnSkillMult),
+        slider('n_PlanTargetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.PlantTargetSkillMult),
         slider('n_PlanBase', 'PlantBaseName', 'PlantBaseDesc', D.PlantBase),
         slider('n_PlanValueAdd', 'PlantValueAddName', 'PlantValueAddDesc', D.PlantValueAdd),
         slider('n_PlanValueExp', 'PlantValueExpName', 'PlantValueExpDesc', D.PlantValueExp),

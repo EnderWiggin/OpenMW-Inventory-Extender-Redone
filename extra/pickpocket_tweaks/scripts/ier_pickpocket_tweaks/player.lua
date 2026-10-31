@@ -9,12 +9,12 @@ local ui      = require 'openmw.ui'
 local util    = require 'openmw.util'
 local omwself = require 'openmw.self'
 
-local Actor = types.Actor
-local NPC   = types.NPC
-local D   = require('scripts.ier_pickpocket_tweaks.config.defaults')
-local L   = require('scripts.InventoryExtenderRedone.util.logger').get 'PickpocketTweaks'
+local Actor   = types.Actor
+local NPC     = types.NPC
+local D       = require('scripts.ier_pickpocket_tweaks.config.defaults')
+local L       = require('scripts.InventoryExtenderRedone.util.logger').get 'PickpocketTweaks'
 
-local IER = I.InventoryExtenderRedone
+local IER     = I.InventoryExtenderRedone
 if not IER then return end
 local Pickpocket = IER.Pickpocket
 if not Pickpocket then return end
@@ -28,13 +28,13 @@ local ColumnItem = require 'scripts.UIToolkit.components.list_items.column_item'
 local l10n       = core.l10n(D.L10N)
 
 
-local closeSection  = storage.playerSection(D.CloseSection)
-local stealSection  = storage.playerSection(D.StealSection)
-local equippedSection = storage.playerSection(D.EquippedSection)
+local closeSection      = storage.playerSection(D.CloseSection)
+local stealSection      = storage.playerSection(D.StealSection)
+local equippedSection   = storage.playerSection(D.EquippedSection)
 local visibilitySection = storage.playerSection(D.VisibilitySection)
-local potionsSection = storage.playerSection(D.PotionsSection)
-local plantSection = storage.playerSection(D.PlantSection)
-local settings = {
+local potionsSection    = storage.playerSection(D.PotionsSection)
+local plantSection      = storage.playerSection(D.PlantSection)
+local settings          = {
     closeSkillThreshold = D.CloseSkill.default,
     ownSkillMult = D.OwnSkillMult.default,
     baseDifficulty = D.BaseDifficulty.default,
@@ -55,6 +55,8 @@ local settings = {
     plantValueExp = D.PlantValueExp.default,
     plantValueMult = D.PlantValueMult.default,
     plantWeightMult = D.PlantWeightMult.default,
+    planOwnSkillMult = D.PlantOwnSkillMult.default,
+    plantTargetSkillMult = D.PlantTargetSkillMult.default,
 }
 
 local function readSettings()
@@ -80,6 +82,8 @@ local function readSettings()
     settings.visibleChanceThreshold = stored.n_VisibleChanceThreshold or D.VisibleChance.default
 
     stored = plantSection:asTable()
+    settings.plantOwnSkillMult = stored.n_PlanOwnSkillMult or D.PlantOwnSkillMult.default
+    settings.plantTargetSkillMult = stored.n_PlanTargetSkillMult or D.PlantTargetSkillMult.default
     settings.plantDirection = stored.b_PlantDirection ~= false
     settings.plantBase = stored.n_PlanBase or D.PlantBase.default
     settings.plantValueAdd = stored.n_PlanValueAdd or D.PlantValueAdd.default
@@ -133,11 +137,16 @@ local function getEquippedBonus(item)
     return settings.equippedArmorBonus
 end
 
+local function getStealCount(row)
+    if Helpers.isGold(row.item) then return row.getCount() end
+    return 1
+end
+
 local function getStealChance(player, target, item, count)
     local record = item.type.record(item)
     local difficulty = settings.baseDifficulty
-        + math.max(0, record.value * count + settings.valueAdd) ^ settings.valueExp * settings.valueMult
-        + record.weight * count * settings.weightMult
+        + (math.max(0, record.value + settings.valueAdd) ^ settings.valueExp * settings.valueMult * count)
+        + record.weight * settings.weightMult * count
         + getSkillTerm(target) * settings.targetSkillMult
     if Actor.hasEquipped(target, item) then
         if getSneak(player) < settings.equippedThreshold then
@@ -145,7 +154,7 @@ local function getStealChance(player, target, item, count)
         end
         difficulty = difficulty + getEquippedBonus(item)
     end
-    return getSkillTerm(player) * settings.ownSkillMult - difficulty
+    return util.round(getSkillTerm(player) * settings.ownSkillMult - difficulty)
 end
 
 -- pocket visibility is the Pickpocket mode's Container-role filters slot: replace the built-in
@@ -154,7 +163,7 @@ end
 local function isVisible(row, handler, ctx)
     local session = ctx.pickpocket
     if not session or not session.active then return true end
-    local chance = Pickpocket.getStealChance(row.item, row.getCount())
+    local chance = Pickpocket.getStealChance(row.item, getStealCount(row)) --TODO: use different check
     if chance == nil then return true end
     return chance >= settings.visibleChanceThreshold
 end
@@ -185,13 +194,14 @@ local function isPlantCandidate(row, handler, ctx)
 end
 
 -- the plant roll: value + weight only, no potion-effect term; prices the single planted item
-local function getPlantChance(item, count)
+local function getPlantChance(target, item)
     local record = item.type.record(item)
+
     local difficulty = settings.plantBase
-        + math.max(0, record.value * count + settings.plantValueAdd) ^ settings.plantValueExp
-            * settings.plantValueMult
-        + record.weight * count * settings.plantWeightMult
-    return util.clamp(getSkillTerm(omwself) * settings.ownSkillMult - difficulty, 0, 100)
+        + (math.max(0, record.value + settings.plantValueAdd) ^ settings.plantValueExp * settings.plantValueMult)
+        + record.weight * settings.plantWeightMult
+        + getSkillTerm(target) * settings.plantTargetSkillMult
+    return util.round(util.clamp(getSkillTerm(omwself) * settings.planOwnSkillMult - difficulty, 0, 100))
 end
 
 -- the session NPC: windowArgs is last-known, the targetId guard is what makes it sound
@@ -284,7 +294,8 @@ local function takeover(row, ctx, role)
 
     if role == IER.Roles.Container then
         if ctx.favoriteItems[row.item.id] then return false end
-        local chance = Pickpocket.getStealChance(row.item, row.getCount())
+        local count = getStealCount(row)
+        local chance = Pickpocket.getStealChance(row.item, count)
         if chance == nil then return end
         if math.random(100) > chance then
             session.resolved = true
@@ -297,14 +308,14 @@ local function takeover(row, ctx, role)
             return false
         end
         omwself:sendEvent('IER_PickpocketSuccess', { item = row.item, target = target })
-        ctx.dragAndDrop:transferInto(row.item, omwself, target, row.getCount(),
+        ctx.dragAndDrop:transferInto(row.item, omwself, target, count,
             { target = target }, IER.Modes.Pickpocket)
         return false
     end
 
     if role == IER.Roles.Inventory and settings.plantDirection then
         if ctx.favoriteItems[row.item.id] then return false end
-        if math.random(100) > getPlantChance(row.item, 1) then
+        if math.random(100) > getPlantChance(target, row.item) then
             session.resolved = true
             I.UI.removeMode(IER.Modes.Container)
             core.sendGlobalEvent('IERPT_Assault', {
@@ -332,6 +343,7 @@ local function tryInit()
         end
     end)
     Pickpocket.registerStealChance(D.PatchId, function(player, target, item, count, chance)
+        if not Helpers.isGold(item) then count = 1 end
         return getStealChance(player, target, item, count)
     end)
     IER.patchMode(IER.Modes.Pickpocket, {
@@ -357,8 +369,10 @@ local function tryInit()
     -- the column's data, lazy so only visible rows price the plant roll
     IER.registerRowDataModifier(D.PatchId, function(row, ctx)
         row.PlantChance = function()
-            if not settings.plantDirection or not sessionTarget(ctx) then return nil end
-            return getPlantChance(row.item, 1)
+            if not settings.plantDirection then return nil end
+            local target = sessionTarget(ctx)
+            if not target then return nil end
+            return getPlantChance(target, row.item)
         end
     end)
     -- one closure on both lists: use/k_UseItem/swap behave like pickup during a session

@@ -53,13 +53,13 @@ local M = {
 
     CloseSkill = { default = 30, min = 0, max = 100, integer = true },
 
-    OwnSkillMult = { default = 2, min = 0, max = 10, step = 0.05 },
-    BaseDifficulty = { default = -15, min = -100, max = 100, integer = true },
-    ValueAdd = { default = -10, min = -100, max = 100, integer = true },
+    OwnSkillMult = { default = 1.25, min = 0, max = 10, step = 0.05 },
+    TargetSkillMult = { default = 0.75, min = 0, max = 10, step = 0.05 },
+    BaseDifficulty = { default = 10, min = -100, max = 100, integer = true },
+    ValueAdd = { default = 0, min = -100, max = 100, integer = true },
     ValueExp = { default = 0.51, min = 0, max = 2, step = 0.01 },
     ValueMult = { default = 1.5, min = 0, max = 10, step = 0.05 },
     WeightMult = { default = 0.25, min = 0, max = 10, step = 0.05 },
-    TargetSkillMult = { default = 0.6, min = 0, max = 10, step = 0.05 },
 
     EquippedThreshold = { default = 90, min = 0, max = 100, integer = true },
     EquippedWeaponBonus = { default = 50, min = 0, max = 200, integer = true },
@@ -68,11 +68,13 @@ local M = {
 
     VisibleChance = { default = 10, min = 0, max = 100, integer = true },
 
-    PlantBase = { default = -15, min = -100, max = 100, integer = true },
-    PlantValueAdd = { default = -10, min = -100, max = 100, integer = true },
-    PlantValueExp = { default = 0.51, min = 0, max = 2, step = 0.01 },
-    PlantValueMult = { default = 1.5, min = 0, max = 10, step = 0.05 },
-    PlantWeightMult = { default = 0.25, min = 0, max = 10, step = 0.05 },
+    PlantOwnSkillMult = { default = 1, min = 0, max = 10, step = 0.05 },
+    PlantTargetSkillMult = { default = 0.5, min = 0, max = 10, step = 0.05 },
+    PlantBase = { default = 15, min = -100, max = 100, integer = true },
+    PlantValueAdd = { default = 0, min = -100, max = 100, integer = true },
+    PlantValueExp = { default = 1, min = 0, max = 2, step = 0.01 },
+    PlantValueMult = { default = 0, min = 0, max = 10, step = 0.05 },
+    PlantWeightMult = { default = 10, min = 0, max = 30, step = 0.05 },
 }
 
 return M
