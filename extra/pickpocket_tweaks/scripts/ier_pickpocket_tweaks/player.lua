@@ -33,6 +33,9 @@ local steal   = storage.playerSection(D.Section.Steal)
 local plant   = storage.playerSection(D.Section.Plant)
 
 
+local MIN_CLOSE_CHANCE = 50
+
+
 ---@class CFGGeneral
 ---@field closeSkillThreshold number
 ---@field equippedThreshold number
@@ -49,6 +52,7 @@ local plant   = storage.playerSection(D.Section.Plant)
 ---@field equippedWeaponBonus number
 ---@field equippedJewelryBonus number
 ---@field equippedArmorBonus number
+---@field equippedOtherBonus number
 ---@field merchantBonus number
 ---@field guardBonus number
 
@@ -168,10 +172,6 @@ local function isHarmfulPotion(item)
         end
     end
     return false
-end
-
-local function isVisibleToPlant(row)
-    return not cfgPoison.hideOther or isHarmfulPotion(row.item)
 end
 
 -- the plant roll: value + weight only, no potion-effect term; prices the single planted item
@@ -296,15 +296,23 @@ local function takeover(row, ctx, role)
     end
 
     if role == IER.Roles.Inventory then
-        if cfgPoison.enabled and math.random(100) > getPlantChance(target, row.item) then
-            --failed to poison, report assault
-            session.resolved = true
-            I.UI.removeMode(IER.Modes.Container)
-            core.sendGlobalEvent('IERPT_Assault', {
-                player = omwself,
-                target = target,
-            })
-            return false
+        if cfgPoison.enabled and row.isHarmfulPotion then
+            if math.random(100) > getPlantChance(target, row.item) then
+                --failed to poison, report assault
+                session.resolved = true
+                I.UI.removeMode(IER.Modes.Container)
+                core.sendGlobalEvent('IERPT_Assault', {
+                    player = omwself,
+                    target = target,
+                })
+                return false
+            else
+                --successful poisoning, grant skill
+                I.SkillProgression.skillUsed('sneak', {
+                    useType = I.SkillProgression.SKILL_USE_TYPES.Sneak_PickPocket,
+                    scale = 2,
+                })
+            end
         end
         ctx.dragAndDrop:transferInto(row.item, target, omwself, 1,
             { target = target }, IER.Modes.Container)
@@ -320,10 +328,12 @@ local function tryInit()
 
     L.debug('register chance handlers + visibility patches')
     Pickpocket.registerCloseChance(D.PatchId, function(player, target, session, chance)
-        if getSneak(player) >= cfgGeneral.closeSkillThreshold then
+        local skill = getSneak(player)
+        local threshold = cfgGeneral.closeSkillThreshold
+        if skill >= threshold then
             return 100
         end
-        --TODO: use sliding scale from some min chance to 100 at threshold value
+        return math.floor(MIN_CLOSE_CHANCE + (100 - MIN_CLOSE_CHANCE) * skill / threshold)
     end)
     Pickpocket.registerStealChance(D.PatchId, function(player, target, item, count, chance)
         if not Helpers.isGold(item) then count = 1 end
@@ -344,13 +354,22 @@ local function tryInit()
         id = D.PatchId,
         roles = {
             [IER.Roles.Inventory] = {
-                filters = { add = { { id = D.PatchId .. '.PlantFilter', fn = isVisibleToPlant } } },
+                filters = {
+                    add = { {
+                        id = D.PatchId .. '.PlantFilter',
+                        fn = function(row)
+                            return row.isVisibleToPlant
+                        end
+                    } }
+                },
                 columns = { add = { plantChanceColumn } },
             },
         },
     })
     -- the column's data, lazy so only visible rows price the plant roll
     IER.registerRowDataModifier(D.PatchId, function(row, ctx)
+        row.isHarmfulPotion = isHarmfulPotion(row.item)
+        row.isVisibleToPlant = not cfgPoison.hideOther or row.isHarmfulPotion
         row.PlantChance = function()
             if not cfgPoison.enabled then return nil end
             local target = sessionTarget(ctx)
@@ -377,3 +396,8 @@ return {
         onLoad = tryInit,
     },
 }
+
+---@class InventoryExtenderRedone.RowData : UIToolkit.ListData.Column
+---@field isHarmfulPotion boolean
+---@field isVisibleToPlant boolean
+---@field PlantChance? number|fun():number|nil plant-chance column: a row data modifier owns it, the roll for planting this item, nil when no session is live
