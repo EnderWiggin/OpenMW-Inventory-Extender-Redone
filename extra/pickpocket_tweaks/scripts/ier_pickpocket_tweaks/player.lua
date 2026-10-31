@@ -154,6 +154,14 @@ local function getStealChance(player, target, item, count)
         end
         difficulty = difficulty + getEquippedBonus(item)
     end
+    ---@type openmw.types.NpcRecord
+    local targetRecord = target.type.record(target)
+    local class = targetRecord.class
+    if class == 'guard' or class == 'ordinator' then
+        difficulty = difficulty + 50 --TODO: add setting
+    elseif targetRecord.servicesOffered.Barter then
+        difficulty = difficulty + 20 --TODO: add setting
+    end
     return util.round(getSkillTerm(player) * settings.ownSkillMult - difficulty)
 end
 
