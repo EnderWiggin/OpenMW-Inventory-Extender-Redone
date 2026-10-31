@@ -40,6 +40,7 @@ local ClothingType = Clothing.TYPE
 local ApparatusType = Apparatus.TYPE
 local EQUIPMENT_SLOT = Actor.EQUIPMENT_SLOT
 
+---@class InventoryExtenderRedone.Helpers
 local Helpers = {}
 
 local function reverseLookup(enumTable)

@@ -22,6 +22,7 @@ local API = {}
 API.VERSION = D.API
 
 API.Constants = constants
+---@type InventoryExtenderRedone.Helpers
 API.Helpers = helpers
 API.Roles = D.Roles
 API.Modes = D.Modes

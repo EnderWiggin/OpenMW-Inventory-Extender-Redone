@@ -6,8 +6,8 @@
 
 ---@class openmw.interfaces.InventoryExtenderRedone
 ---@field VERSION number
----@field Constants table? util/constants module (C.Colors, C.Strings, C.OPT_KEYS, …)
----@field Helpers table? util/helpers module (getItem*, isItemEquipped, doesItemFit, …)
+---@field Constants table? util/constants module
+---@field Helpers InventoryExtenderRedone.Helpers util/helpers module
 ---@field Roles table<string,InventoryExtenderRedone.Role> built-in window roles; the same table as config.defaults D.Roles, not a copy
 ---@field Modes table<string,InventoryExtenderRedone.ModeKey> built-in mode keys; the same table as config.defaults D.Modes, not a copy. Custom mode keys are mod-namespaced strings, never enum members
 ---@field allWindowsDisabled boolean live flag set by disableAllWindows; while true, show() is a no-op
