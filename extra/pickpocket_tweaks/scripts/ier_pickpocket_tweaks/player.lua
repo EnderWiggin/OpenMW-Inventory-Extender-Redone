@@ -369,9 +369,9 @@ local function tryInit()
     -- the column's data, lazy so only visible rows price the plant roll
     IER.registerRowDataModifier(D.PatchId, function(row, ctx)
         row.isHarmfulPotion = isHarmfulPotion(row.item)
-        row.isVisibleToPlant = not cfgPoison.hideOther or row.isHarmfulPotion
+        row.isVisibleToPlant = not cfgPoison.enabled or not cfgPoison.hideOther or row.isHarmfulPotion
         row.PlantChance = function()
-            if not cfgPoison.enabled then return nil end
+            if not cfgPoison.enabled or not row.isHarmfulPotion then return nil end
             local target = sessionTarget(ctx)
             if not target then return nil end
             return getPlantChance(target, row.item)
@@ -383,10 +383,13 @@ local function tryInit()
     -- apply on success: the planted potion has already landed in the NPC, so the engine's own
     -- use path makes it drink it — no moveInto needed
     Pickpocket.registerTransferHandler(D.PatchId, function(payload)
-        if not payload.planted or not types.Potion.objectIsInstance(payload.item) then
+        if not payload.planted or not isHarmfulPotion(payload.item) then
             return
         end
         core.sendGlobalEvent('UseItem', { object = payload.item, actor = payload.target })
+        local session = I.InventoryExtenderRedone.getContext().pickpocket
+        if session then session.resolved = true end
+        I.UI.removeMode(IER.Modes.Container)
     end)
 end
 
@@ -398,6 +401,6 @@ return {
 }
 
 ---@class InventoryExtenderRedone.RowData : UIToolkit.ListData.Column
----@field isHarmfulPotion boolean
----@field isVisibleToPlant boolean
+---@field isHarmfulPotion? boolean
+---@field isVisibleToPlant? boolean
 ---@field PlantChance? number|fun():number|nil plant-chance column: a row data modifier owns it, the roll for planting this item, nil when no session is live
