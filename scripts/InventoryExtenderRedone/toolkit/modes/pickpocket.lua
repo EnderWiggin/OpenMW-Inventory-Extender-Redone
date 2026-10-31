@@ -18,8 +18,12 @@ return {
     -- beats Container when the target is a live NPC; the Container role applies unconditionally,
     -- so the NPC case is decided by this more specific spec
     applies = function(role, arg, ctx, uiMode)
-        if role ~= Roles.Container then return false end
-        return Pickpocket.isTarget(arg)
+        if role == Roles.Container then
+            return Pickpocket.isTarget(arg)
+        end
+        -- the player's own window belongs to the encounter too, so this spec can be patched
+        -- for it; the uiMode guard keeps Barter/Companion windows on their own specs
+        return role == Roles.Inventory and uiMode == Modes.Container and Pickpocket.isTarget(arg)
     end,
     -- must beat Container (priority 1) outright, since a live NPC target matches both specs
     priority = 2,
@@ -58,7 +62,7 @@ return {
             arg:sendEvent('IER_ContainerClosed')
         end,
     } },
-    -- only the Container role is in this mode: the player's own window keeps Container's slots
+    -- only the Container role names slots here; the player's own window inherits Container's
     roles = {
         [Roles.Container] = {
             -- inherits Container's Container-role filters and adds the visibility one
