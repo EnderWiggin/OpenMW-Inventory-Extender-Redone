@@ -98,7 +98,7 @@ local function makePane(name, skills, target)
         local skill = values[i]
         content[#content + 1] = {
             template = T.text(),
-            props = { text = skill.name .. ': ' .. skill.value },
+            props = { text = skill.name .. ': ' .. util.round(skill.value) },
         }
     end
 
