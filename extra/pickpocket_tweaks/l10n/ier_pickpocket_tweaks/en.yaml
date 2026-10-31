@@ -1,4 +1,4 @@
-PageName: Pickpocket Tweaks
+PageName: 'IER Tweaks: Pickpocket'
 PageDesc: |-
   Overhauls pickpocketing chances, steal equipped items at high Sneak and apply poisons to NPCs.
 
@@ -45,22 +45,17 @@ GuardBonusDesc: '+ difficulty points when trying to steal from guards and ordina
 VisibleChanceName: Visible Chance Threshold
 VisibleChanceDesc: |-
   Minimum steal chance (in percent) for an item to appear in an NPC's pockets.
-PlantGroupName: Planting Potions
+PlantGroupName: Apply Poisons
 PlantGroupDesc: |-
-  During a pickpocket session you can plant one potion from your own window into the NPC's
-  pockets. A failed plant assaults the NPC and ends the session; a successful one makes the
-  NPC use the potion.
+  Allows to place one harmful potion into the NPC's pockets. A failed attempt assaults the NPC, a successful one makes the NPC use the potion.
 AllowPoisonName: Allow applying poisons
 AllowPoisonDesc: |-
   Allow poisoning NPC by planting potion into their pockets.
-PlantBaseName: Plant Base Difficulty
-PlantBaseDesc: Flat difficulty points for the plant roll.
-PlantWeightMultName: Plant Weight Multiplier
+PlantBaseName: Base Difficulty
+PlantBaseDesc: Flat difficulty points for the poison roll.
+PlantWeightMultName: Weight Multiplier
 PlantWeightMultDesc: '+ weight × mult for the planted potion.'
 Column_PlantChance: Plant
-PotionsGroupName: Your Window During a Session
-PotionsGroupDesc: |-
-  During a pickpocket session your own window can narrow what is worth planting.
 HideOtherName: Hide other items
 HideOtherDesc: |-
   Hide non-poison items from player inventory when pickpocketing.

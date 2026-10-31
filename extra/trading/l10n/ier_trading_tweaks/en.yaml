@@ -6,7 +6,7 @@ InvestTipMore: |-
 InvestmentLine: 'Investment size:'
 InvestmentLimitReached: Can't invest more. Increase Mercantile skill.
 InvestmentLimitGold: You have no gold to invest.
-PageName: Trading Tweaks
+PageName: 'IER Tweaks: Trading'
 PageDesc: |-
   Invest gold into merchants so they have more money to barter with.
 SettingsName: Mercantile
