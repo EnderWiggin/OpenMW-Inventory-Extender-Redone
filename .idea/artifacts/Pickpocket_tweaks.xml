@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact name="Pickpocket tweaks">
+    <output-path>$PROJECT_DIR$/artifacts/</output-path>
+    <root id="root">
+      <element id="archive" name="ier_pickpocket_tweaks.zip">
+        <element id="directory" name="ier_pickpocket_tweaks">
+          <element id="dir-copy" path="$PROJECT_DIR$/extra/pickpocket_tweaks" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
