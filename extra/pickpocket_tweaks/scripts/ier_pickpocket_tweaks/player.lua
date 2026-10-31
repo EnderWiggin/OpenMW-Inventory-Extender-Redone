@@ -345,15 +345,10 @@ local function tryInit()
             [IER.Roles.Container] = {
                 filters = { replace = { { id = 'pickpocketVisibility', fn = isVisibleToSteal } } },
             },
-        },
-    })
-    -- add (not replace): CompoundFilter ANDs the named filters, this only narrows what the
-    -- Container role left visible. The PlantChance column rides the same patch: it is the
-    -- player's own window, so both belong to the Container spec's Inventory role.
-    IER.patchMode(IER.Modes.Container, {
-        id = D.PatchId,
-        roles = {
             [IER.Roles.Inventory] = {
+                -- add (not replace): CompoundFilter ANDs the named filters, this only narrows what the
+                -- Container role left visible. The PlantChance column rides the same patch: it is the
+                -- player's own window, so both belong to the Container spec's Inventory role.
                 filters = {
                     add = { {
                         id = D.PatchId .. '.PlantFilter',
