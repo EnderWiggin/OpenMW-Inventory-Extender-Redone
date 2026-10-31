@@ -54,7 +54,7 @@ local M = {
     EquippedThreshold = { default = 90, min = 0, max = 100, integer = true },
     VisibleChance = { default = 10, min = 0, max = 100, integer = true },
 
-    OwnSkillMult = { default = 1.3, min = 0, max = 10, step = 0.05 },
+    OwnSkillMult = { default = 1.25, min = 0, max = 10, step = 0.05 },
     TargetSkillMult = { default = 0.75, min = 0, max = 10, step = 0.05 },
     BaseDifficulty = { default = 10, min = -100, max = 100, integer = true },
     ValueAdd = { default = 10, min = -100, max = 100, integer = true },
@@ -70,9 +70,9 @@ local M = {
     GuardBonus = { default = 50, min = 0, max = 100, integer = true },
 
 
-    PlantOwnSkillMult = { default = 1.25, min = 0, max = 10, step = 0.05 },
-    PlantTargetSkillMult = { default = 0.9, min = 0, max = 10, step = 0.05 },
-    PlantBase = { default = 20, min = -100, max = 100, integer = true },
+    PlantOwnSkillMult = { default = 1, min = 0, max = 10, step = 0.05 },
+    PlantTargetSkillMult = { default = 0.75, min = 0, max = 10, step = 0.05 },
+    PlantBase = { default = 25, min = -100, max = 100, integer = true },
     PlantValueAdd = { default = 0, min = -100, max = 100, integer = true },
     PlantValueExp = { default = 1, min = 0, max = 2, step = 0.01 },
     PlantValueMult = { default = 0, min = 0, max = 10, step = 0.05 },
