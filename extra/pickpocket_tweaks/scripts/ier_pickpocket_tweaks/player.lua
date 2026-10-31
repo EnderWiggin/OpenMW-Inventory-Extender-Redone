@@ -11,13 +11,15 @@ local omwself = require 'openmw.self'
 
 local Actor   = types.Actor
 local NPC     = types.NPC
-local D       = require('scripts.ier_pickpocket_tweaks.config.defaults')
-local L       = require('scripts.InventoryExtenderRedone.util.logger').get 'PickpocketTweaks'
-
 local IER     = I.InventoryExtenderRedone
+
+
 if not IER then return end
+local D          = require('scripts.ier_pickpocket_tweaks.config.defaults')
+local L          = require('scripts.InventoryExtenderRedone.util.logger').get 'PickpocketTweaks'
 local Pickpocket = IER.Pickpocket
-local Helpers = IER.Helpers
+local Helpers    = IER.Helpers
+
 
 local Toolkit    = I.UIToolkit
 local T          = Toolkit.Templates
@@ -26,79 +28,58 @@ local ColumnItem = require 'scripts.UIToolkit.components.list_items.column_item'
 local l10n       = core.l10n(D.L10N)
 
 
-local closeSection      = storage.playerSection(D.CloseSection)
-local stealSection      = storage.playerSection(D.StealSection)
-local equippedSection   = storage.playerSection(D.EquippedSection)
-local visibilitySection = storage.playerSection(D.VisibilitySection)
-local potionsSection    = storage.playerSection(D.PotionsSection)
-local plantSection      = storage.playerSection(D.PlantSection)
-local settings          = {
-    closeSkillThreshold = D.CloseSkill.default,
-    ownSkillMult = D.OwnSkillMult.default,
-    baseDifficulty = D.BaseDifficulty.default,
-    valueAdd = D.ValueAdd.default,
-    valueExp = D.ValueExp.default,
-    valueMult = D.ValueMult.default,
-    weightMult = D.WeightMult.default,
-    targetSkillMult = D.TargetSkillMult.default,
-    visibleChanceThreshold = D.VisibleChance.default,
-    equippedThreshold = D.EquippedThreshold.default,
-    equippedWeaponBonus = D.EquippedWeaponBonus.default,
-    equippedJewelryBonus = D.EquippedJewelryBonus.default,
-    equippedArmorBonus = D.EquippedArmorBonus.default,
-    showAllPotions = false,
-    plantDirection = true,
-    plantBase = D.PlantBase.default,
-    plantValueAdd = D.PlantValueAdd.default,
-    plantValueExp = D.PlantValueExp.default,
-    plantValueMult = D.PlantValueMult.default,
-    plantWeightMult = D.PlantWeightMult.default,
-    planOwnSkillMult = D.PlantOwnSkillMult.default,
-    plantTargetSkillMult = D.PlantTargetSkillMult.default,
-}
+local general = storage.playerSection(D.Section.General)
+local steal   = storage.playerSection(D.Section.Steal)
+local plant   = storage.playerSection(D.Section.Plant)
 
-local function readSettings()
-    local stored = closeSection:asTable()
-    settings.closeSkillThreshold = stored.n_CloseSkillThreshold or D.CloseSkill.default
 
-    stored = stealSection:asTable()
-    settings.ownSkillMult = stored.n_QLPPOwnSkillMult or D.OwnSkillMult.default
-    settings.baseDifficulty = stored.n_QLPPBaseDifficulty or D.BaseDifficulty.default
-    settings.valueAdd = stored.n_QLPPValueAdd or D.ValueAdd.default
-    settings.valueExp = stored.n_QLPPValueExp or D.ValueExp.default
-    settings.valueMult = stored.n_QLPPValueMult or D.ValueMult.default
-    settings.weightMult = stored.n_QLPPWeightMult or D.WeightMult.default
-    settings.targetSkillMult = stored.n_QLPPTargetSkillMult or D.TargetSkillMult.default
+---@class CFGGeneral
+---@field closeSkillThreshold number
+---@field equippedThreshold number
+---@field visibleChanceThreshold number
 
-    stored = equippedSection:asTable()
-    settings.equippedThreshold = stored.n_EquippedSkillThreshold or D.EquippedThreshold.default
-    settings.equippedWeaponBonus = stored.n_EquippedWeaponBonus or D.EquippedWeaponBonus.default
-    settings.equippedJewelryBonus = stored.n_EquippedJewelryBonus or D.EquippedJewelryBonus.default
-    settings.equippedArmorBonus = stored.n_EquippedArmorBonus or D.EquippedArmorBonus.default
+---@class CFGSteal
+---@field ownSkillMult number
+---@field targetSkillMult number
+---@field baseDifficulty number
+---@field valueAdd number
+---@field valueExp number
+---@field valueMult number
+---@field weightMult number
+---@field equippedWeaponBonus number
+---@field equippedJewelryBonus number
+---@field equippedArmorBonus number
+---@field merchantBonus number
+---@field guardBonus number
 
-    stored = visibilitySection:asTable()
-    settings.visibleChanceThreshold = stored.n_VisibleChanceThreshold or D.VisibleChance.default
+---@class CFGPoison
+---@field enabled boolean
+---@field hideOther boolean
+---@field ownSkillMult number
+---@field targetSkillMult number
+---@field baseDifficulty number
+---@field weightMult number
 
-    stored = plantSection:asTable()
-    settings.plantOwnSkillMult = stored.n_PlanOwnSkillMult or D.PlantOwnSkillMult.default
-    settings.plantTargetSkillMult = stored.n_PlanTargetSkillMult or D.PlantTargetSkillMult.default
-    settings.plantDirection = stored.b_PlantDirection ~= false
-    settings.plantBase = stored.n_PlanBase or D.PlantBase.default
-    settings.plantValueAdd = stored.n_PlanValueAdd or D.PlantValueAdd.default
-    settings.plantValueExp = stored.n_PlanValueExp or D.PlantValueExp.default
-    settings.plantValueMult = stored.n_PlanValueMult or D.PlantValueMult.default
-    settings.plantWeightMult = stored.n_PlanWeightMult or D.PlantWeightMult.default
+---@type CFGGeneral
+local cfgGeneral = general:asTable() --[@as CFGGeneral]]
 
-    stored = potionsSection:asTable()
-    settings.showAllPotions = stored.b_ShowAllPotions == true
-end
-readSettings()
-closeSection:subscribe(async:callback(readSettings))
-stealSection:subscribe(async:callback(readSettings))
-equippedSection:subscribe(async:callback(readSettings))
-visibilitySection:subscribe(async:callback(readSettings))
-potionsSection:subscribe(async:callback(readSettings))
-plantSection:subscribe(async:callback(readSettings))
+---@type CFGSteal
+local cfgSteal   = steal:asTable() --[@as CFGSteal]]
+
+---@type CFGPoison
+local cfgPoison  = plant:asTable() --[@as CFGPoison]]
+
+general:subscribe(async:callback(function()
+    cfgGeneral = general:asTable()
+end))
+
+steal:subscribe(async:callback(function()
+    cfgSteal = steal:asTable()
+end))
+
+plant:subscribe(async:callback(function()
+    cfgPoison = plant:asTable()
+end))
 
 
 local function getSneak(actor)
@@ -124,15 +105,15 @@ end
 -- same formula: a full gold stack is simply hard to steal, a small one stays easy
 local function getEquippedBonus(item)
     if types.Weapon.objectIsInstance(item) then
-        return settings.equippedWeaponBonus
+        return cfgSteal.equippedWeaponBonus
     end
     if types.Clothing.objectIsInstance(item) then
         local recordType = item.type.record(item).type
         if recordType == types.Clothing.TYPE.Ring or recordType == types.Clothing.TYPE.Amulet then
-            return settings.equippedJewelryBonus
+            return cfgSteal.equippedJewelryBonus
         end
     end
-    return settings.equippedArmorBonus
+    return cfgSteal.equippedArmorBonus
 end
 
 local function getStealCount(row)
@@ -142,12 +123,14 @@ end
 
 local function getStealChance(player, target, item, count)
     local record = item.type.record(item)
-    local difficulty = settings.baseDifficulty
-        + (math.max(0, record.value + settings.valueAdd) ^ settings.valueExp * settings.valueMult * count)
-        + record.weight * settings.weightMult * count
-        + getSkillTerm(target) * settings.targetSkillMult
+    local value = util.clamp(record.value * count + cfgSteal.valueAdd, 5, 10000)
+    local difficulty = cfgSteal.baseDifficulty
+        --+ (math.max(0, record.value + cfgSteal.valueAdd) ^ cfgSteal.valueExp * cfgSteal.valueMult)
+        + (math.log(value, 3) ^ cfgSteal.valueExp) * cfgSteal.valueMult
+        + record.weight * cfgSteal.weightMult * count
+        + getSkillTerm(target) * cfgSteal.targetSkillMult
     if Actor.hasEquipped(target, item) then
-        if getSneak(player) < settings.equippedThreshold then
+        if getSneak(player) < cfgGeneral.equippedThreshold then
             return 0
         end
         difficulty = difficulty + getEquippedBonus(item)
@@ -156,22 +139,20 @@ local function getStealChance(player, target, item, count)
     local targetRecord = target.type.record(target)
     local class = targetRecord.class
     if class == 'guard' or class == 'ordinator' then
-        difficulty = difficulty + 50 --TODO: add setting
+        difficulty = difficulty + cfgSteal.guardBonus
     elseif targetRecord.servicesOffered.Barter then
-        difficulty = difficulty + 20 --TODO: add setting
+        difficulty = difficulty + cfgSteal.merchantBonus
     end
-    return util.round(getSkillTerm(player) * settings.ownSkillMult - difficulty)
+    return util.round(getSkillTerm(player) * cfgSteal.ownSkillMult - difficulty)
 end
 
 -- pocket visibility is the Pickpocket mode's Container-role filters slot: replace the built-in
 -- snapshot rule with a live deterministic one, the same chain number the column shows and the
 -- roll runs against. No session: everything stays visible.
-local function isVisible(row, handler, ctx)
-    local session = ctx.pickpocket
-    if not session or not session.active then return true end
+local function isVisibleToSteal(row, handler, ctx)
     local chance = Pickpocket.getStealChance(row.item, getStealCount(row))
     if chance == nil then return true end
-    return chance >= settings.visibleChanceThreshold
+    return chance >= cfgGeneral.visibleChanceThreshold
 end
 
 -- during a live session the player's own window is governed by the Container spec's Inventory
@@ -189,25 +170,18 @@ local function isHarmfulPotion(item)
     return false
 end
 
-local function isPlantCandidate(row, handler, ctx)
-    local session = ctx.pickpocket
-    local target = ctx.windowArgs.Container
-    if not session or not session.active or not target or session.targetId ~= target.id then
-        return true
-    end
-    if settings.showAllPotions then return true end
-    return isHarmfulPotion(row.item)
+local function isVisibleToPlant(row)
+    return not cfgPoison.hideOther or isHarmfulPotion(row.item)
 end
 
 -- the plant roll: value + weight only, no potion-effect term; prices the single planted item
 local function getPlantChance(target, item)
     local record = item.type.record(item)
 
-    local difficulty = settings.plantBase
-        + (math.max(0, record.value + settings.plantValueAdd) ^ settings.plantValueExp * settings.plantValueMult)
-        + record.weight * settings.plantWeightMult
-        + getSkillTerm(target) * settings.plantTargetSkillMult
-    return util.round(util.clamp(getSkillTerm(omwself) * settings.planOwnSkillMult - difficulty, 0, 100))
+    local difficulty = cfgPoison.baseDifficulty
+        + record.weight * cfgPoison.weightMult
+        + getSkillTerm(target) * cfgPoison.targetSkillMult
+    return util.round(util.clamp(getSkillTerm(omwself) * cfgPoison.ownSkillMult - difficulty, 0, 100))
 end
 
 -- the session NPC: windowArgs is last-known, the targetId guard is what makes it sound
@@ -293,13 +267,15 @@ local function takeover(row, ctx, role)
     local target = sessionTarget(ctx)
     if not target then return end
 
+    --TODO: favorite message
+    if ctx.favoriteItems[row.item.id] then return false end
+
     if Helpers.isBoundItem(row.item) then
         ui.showMessage(core.getGMST('sContentsMessage1'))
         return false
     end
 
     if role == IER.Roles.Container then
-        if ctx.favoriteItems[row.item.id] then return false end
         local count = getStealCount(row)
         local chance = Pickpocket.getStealChance(row.item, count)
         if chance == nil then return end
@@ -319,9 +295,9 @@ local function takeover(row, ctx, role)
         return false
     end
 
-    if role == IER.Roles.Inventory and settings.plantDirection then
-        if ctx.favoriteItems[row.item.id] then return false end
-        if math.random(100) > getPlantChance(target, row.item) then
+    if role == IER.Roles.Inventory then
+        if cfgPoison.enabled and math.random(100) > getPlantChance(target, row.item) then
+            --failed to poison, report assault
             session.resolved = true
             I.UI.removeMode(IER.Modes.Container)
             core.sendGlobalEvent('IERPT_Assault', {
@@ -344,10 +320,10 @@ local function tryInit()
 
     L.debug('register chance handlers + visibility patches')
     Pickpocket.registerCloseChance(D.PatchId, function(player, target, session, chance)
-        if getSneak(player) >= settings.closeSkillThreshold then
+        if getSneak(player) >= cfgGeneral.closeSkillThreshold then
             return 100
         end
-    --TODO: use sliding scale from some min chance to 100 at threshold value
+        --TODO: use sliding scale from some min chance to 100 at threshold value
     end)
     Pickpocket.registerStealChance(D.PatchId, function(player, target, item, count, chance)
         if not Helpers.isGold(item) then count = 1 end
@@ -357,7 +333,7 @@ local function tryInit()
         id = D.PatchId,
         roles = {
             [IER.Roles.Container] = {
-                filters = { replace = { { id = 'pickpocketVisibility', fn = isVisible } } },
+                filters = { replace = { { id = 'pickpocketVisibility', fn = isVisibleToSteal } } },
             },
         },
     })
@@ -368,7 +344,7 @@ local function tryInit()
         id = D.PatchId,
         roles = {
             [IER.Roles.Inventory] = {
-                filters = { add = { { id = D.PatchId .. '.PlantFilter', fn = isPlantCandidate } } },
+                filters = { add = { { id = D.PatchId .. '.PlantFilter', fn = isVisibleToPlant } } },
                 columns = { add = { plantChanceColumn } },
             },
         },
@@ -376,7 +352,7 @@ local function tryInit()
     -- the column's data, lazy so only visible rows price the plant roll
     IER.registerRowDataModifier(D.PatchId, function(row, ctx)
         row.PlantChance = function()
-            if not settings.plantDirection then return nil end
+            if not cfgPoison.enabled then return nil end
             local target = sessionTarget(ctx)
             if not target then return nil end
             return getPlantChance(target, row.item)

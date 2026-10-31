@@ -44,27 +44,29 @@ local M = {
     PatchId = 'ier_pickpocket_tweaks',
     MinIERVersion = 4,
 
-    CloseSection = 'Settings/ier_pickpocket_tweaks/Close',
-    StealSection = 'Settings/ier_pickpocket_tweaks/Steal',
-    EquippedSection = 'Settings/ier_pickpocket_tweaks/Equipped',
-    VisibilitySection = 'Settings/ier_pickpocket_tweaks/Visibility',
-    PlantSection = 'Settings/ier_pickpocket_tweaks/Plant',
-    PotionsSection = 'Settings/ier_pickpocket_tweaks/Potions',
+    Section = {
+        General = 'Settings/ier_pickpocket_tweaks/General',
+        Steal = 'Settings/ier_pickpocket_tweaks/Steal',
+        Plant = 'Settings/ier_pickpocket_tweaks/Plant',
+    },
 
-    CloseSkill = { default = 30, min = 0, max = 100, integer = true },
+    CloseSkill = { default = 25, min = 0, max = 100, integer = true },
 
     OwnSkillMult = { default = 1.25, min = 0, max = 10, step = 0.05 },
     TargetSkillMult = { default = 0.75, min = 0, max = 10, step = 0.05 },
     BaseDifficulty = { default = 10, min = -100, max = 100, integer = true },
     ValueAdd = { default = 0, min = -100, max = 100, integer = true },
-    ValueExp = { default = 0.51, min = 0, max = 2, step = 0.01 },
-    ValueMult = { default = 1.5, min = 0, max = 10, step = 0.05 },
+    ValueExp = { default =2.1, min = 0.2, max = 4, step = 0.01 },
+    ValueMult = { default = 1.2, min = 0, max = 10, step = 0.05 },
     WeightMult = { default = 0.25, min = 0, max = 10, step = 0.05 },
 
     EquippedThreshold = { default = 90, min = 0, max = 100, integer = true },
     EquippedWeaponBonus = { default = 50, min = 0, max = 200, integer = true },
     EquippedJewelryBonus = { default = 15, min = 0, max = 200, integer = true },
     EquippedArmorBonus = { default = 30, min = 0, max = 200, integer = true },
+
+    MerchantBonus = { default = 20, min = 0, max = 100, integer = true },
+    GuardBonus = { default = 50, min = 0, max = 100, integer = true },
 
     VisibleChance = { default = 10, min = 0, max = 100, integer = true },
 

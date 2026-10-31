@@ -1,37 +1,32 @@
 PageName: Pickpocket Tweaks
 PageDesc: |-
-  Overhauls pickpocketing: QLPP-style steal chances, pocket visibility by chance,
-  equipped items at high Sneak and planting potions into NPCs.
-CloseGroupName: Caught on Leaving
-CloseGroupDesc: |-
-  Leaving a pickpocket session without taking anything rolls a Sneak check: failing alerts
-  the NPC. At this Sneak level the check always succeeds.
+  Overhauls pickpocketing chances, steal equipped items at high Sneak and apply poisons to NPCs.
+
+GeneralGroupName: General
+GeneralGroupDesc: Skill and visibility threshold settings.
+
 CloseSkillName: Never-Caught Sneak
 CloseSkillDesc: |-
   Sneak level at or above which leaving a pickpocket session never alerts the NPC.
 StealGroupName: Steal Chance
 StealGroupDesc: |-
-  QLPP-style steal chance: chance = own skill − difficulty, clamped to [0, 100].
-  Own skill is Sneak + 0.2·Agility + 0.1·Luck, scaled by fatigue and the multiplier.
-  Difficulty is the item's price, weight and the target's skill.
+  Chance = own skill − difficulty, clamped to [0, 100].
+  Own skill is Sneak + 0.2×Agility + 0.1×Luck, scaled by fatigue and the multiplier.
+  Difficulty is influenced by item's value (clamped in range [5, 10000]), weight and the target's skill.
 OwnSkillMultName: Own Skill Multiplier
 OwnSkillMultDesc: 'Own skill × this multiplier.'
 BaseDifficultyName: Base Difficulty
 BaseDifficultyDesc: Flat difficulty points, before the item terms.
 ValueAddName: Price Add
-ValueAddDesc: '+ (price·count + add)^exponent × mult'
+ValueAddDesc: '+ log(value + add, 3)^exponent × mult'
 ValueExpName: Price Exponent
-ValueExpDesc: '+ (price·count + add)^exponent × mult'
+ValueExpDesc: '+ log(value + add, 3)^exponent × mult'
 ValueMultName: Price Multiplier
-ValueMultDesc: '+ (price·count + add)^exponent × mult'
+ValueMultDesc: '+ log(value + add, 3)^exponent × mult'
 WeightMultName: Weight Multiplier
-WeightMultDesc: '+ weight·count × mult'
+WeightMultDesc: '+ weight×count × mult'
 TargetSkillMultName: Target Skill Multiplier
-TargetSkillMultDesc: '+ (target Sneak + 0.2·target Agility + 0.1·target Luck) × mult'
-EquippedGroupName: Equipped Items
-EquippedGroupDesc: |-
-  Items worn by the NPC: below the Sneak threshold they can neither be seen nor taken;
-  at or above it they appear in the pockets list and get extra difficulty.
+TargetSkillMultDesc: '+ (target Sneak + 0.2×target Agility + 0.1×target Luck) × mult'
 EquippedThresholdName: Equipped Sneak Threshold
 EquippedThresholdDesc: |-
   Sneak level at which items worn by the NPC become visible and stealable.
@@ -41,9 +36,12 @@ EquippedJewelryBonusName: Equipped Jewelry Bonus
 EquippedJewelryBonusDesc: '+ difficulty points for a worn ring or amulet.'
 EquippedArmorBonusName: Equipped Armor Bonus
 EquippedArmorBonusDesc: '+ difficulty points for worn armor or clothing.'
-VisibilityGroupName: Pocket Visibility
-VisibilityGroupDesc: |-
-  The pockets list shows an item only when its steal chance is high enough.
+
+MerchantBonusName: Merchant Bonus
+MerchantBonusDesc: '+ difficulty points when trying to steal from merchants.'
+GuardBonusName: Guard Bonus
+GuardBonusDesc: '+ difficulty points when trying to steal from guards and ordinators.'
+
 VisibleChanceName: Visible Chance Threshold
 VisibleChanceDesc: |-
   Minimum steal chance (in percent) for an item to appear in an NPC's pockets.
@@ -52,24 +50,17 @@ PlantGroupDesc: |-
   During a pickpocket session you can plant one potion from your own window into the NPC's
   pockets. A failed plant assaults the NPC and ends the session; a successful one makes the
   NPC use the potion.
-PlantDirectionName: Plant Potions
-PlantDirectionDesc: |-
-  Allow planting one potion into an NPC's pockets during a pickpocket session.
+AllowPoisonName: Allow applying poisons
+AllowPoisonDesc: |-
+  Allow poisoning NPC by planting potion into their pockets.
 PlantBaseName: Plant Base Difficulty
 PlantBaseDesc: Flat difficulty points for the plant roll.
-PlantValueAddName: Plant Price Add
-PlantValueAddDesc: '+ (price + add)^exponent × mult for the planted potion.'
-PlantValueExpName: Plant Price Exponent
-PlantValueExpDesc: '+ (price + add)^exponent × mult for the planted potion.'
-PlantValueMultName: Plant Price Multiplier
-PlantValueMultDesc: '+ (price + add)^exponent × mult for the planted potion.'
 PlantWeightMultName: Plant Weight Multiplier
 PlantWeightMultDesc: '+ weight × mult for the planted potion.'
 Column_PlantChance: Plant
 PotionsGroupName: Your Window During a Session
 PotionsGroupDesc: |-
   During a pickpocket session your own window can narrow what is worth planting.
-ShowAllPotionsName: Show All Items
-ShowAllPotionsDesc: |-
-  During a pickpocket session your own window shows only harmful potions. This option
-  shows everything instead.
+HideOtherName: Hide other items
+HideOtherDesc: |-
+  Hide non-poison items from player inventory when pickpocketing.

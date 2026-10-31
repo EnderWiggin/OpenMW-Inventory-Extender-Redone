@@ -29,20 +29,22 @@ local function slider(key, name, description, knob)
 end
 
 I.Settings.registerGroup {
-    key = D.CloseSection,
+    key = D.Section.General,
     page = D.PageKey,
     l10n = D.L10N,
-    name = 'CloseGroupName',
-    description = 'CloseGroupDesc',
+    name = 'GeneralGroupName',
+    description = 'GeneralGroupDesc',
     order = 1,
     permanentStorage = true,
     settings = {
-        slider('n_CloseSkillThreshold', 'CloseSkillName', 'CloseSkillDesc', D.CloseSkill),
+        slider('closeSkillThreshold', 'CloseSkillName', 'CloseSkillDesc', D.CloseSkill),
+        slider('equippedThreshold', 'EquippedThresholdName', 'EquippedThresholdDesc', D.EquippedThreshold),
+        slider('visibleChanceThreshold', 'VisibleChanceName', 'VisibleChanceDesc', D.VisibleChance),
     },
 }
 
 I.Settings.registerGroup {
-    key = D.StealSection,
+    key = D.Section.Steal,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'StealGroupName',
@@ -50,86 +52,47 @@ I.Settings.registerGroup {
     order = 2,
     permanentStorage = true,
     settings = {
-        slider('n_QLPPOwnSkillMult', 'OwnSkillMultName', 'OwnSkillMultDesc', D.OwnSkillMult),
-        slider('n_QLPPTargetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.TargetSkillMult),
-        slider('n_QLPPBaseDifficulty', 'BaseDifficultyName', 'BaseDifficultyDesc', D.BaseDifficulty),
-        slider('n_QLPPValueAdd', 'ValueAddName', 'ValueAddDesc', D.ValueAdd),
-        slider('n_QLPPValueExp', 'ValueExpName', 'ValueExpDesc', D.ValueExp),
-        slider('n_QLPPValueMult', 'ValueMultName', 'ValueMultDesc', D.ValueMult),
-        slider('n_QLPPWeightMult', 'WeightMultName', 'WeightMultDesc', D.WeightMult),
+        slider('ownSkillMult', 'OwnSkillMultName', 'OwnSkillMultDesc', D.OwnSkillMult),
+        slider('targetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.TargetSkillMult),
+        slider('baseDifficulty', 'BaseDifficultyName', 'BaseDifficultyDesc', D.BaseDifficulty),
+        slider('valueAdd', 'ValueAddName', 'ValueAddDesc', D.ValueAdd),
+        slider('valueExp', 'ValueExpName', 'ValueExpDesc', D.ValueExp),
+        slider('valueMult', 'ValueMultName', 'ValueMultDesc', D.ValueMult),
+        slider('weightMult', 'WeightMultName', 'WeightMultDesc', D.WeightMult),
+        slider('equippedWeaponBonus', 'EquippedWeaponBonusName', 'EquippedWeaponBonusDesc', D.EquippedWeaponBonus),
+        slider('equippedJewelryBonus', 'EquippedJewelryBonusName', 'EquippedJewelryBonusDesc', D.EquippedJewelryBonus),
+        slider('equippedArmorBonus', 'EquippedArmorBonusName', 'EquippedArmorBonusDesc', D.EquippedArmorBonus),
+        slider('merchantBonus', 'MerchantBonusName', 'MerchantBonusDesc', D.MerchantBonus),
+        slider('guardBonus', 'GuardBonusName', 'GuardBonusDesc', D.GuardBonus),
     },
 }
 
 I.Settings.registerGroup {
-    key = D.EquippedSection,
-    page = D.PageKey,
-    l10n = D.L10N,
-    name = 'EquippedGroupName',
-    description = 'EquippedGroupDesc',
-    order = 3,
-    permanentStorage = true,
-    settings = {
-        slider('n_EquippedSkillThreshold', 'EquippedThresholdName', 'EquippedThresholdDesc', D.EquippedThreshold),
-        slider('n_EquippedWeaponBonus', 'EquippedWeaponBonusName', 'EquippedWeaponBonusDesc', D.EquippedWeaponBonus),
-        slider('n_EquippedJewelryBonus', 'EquippedJewelryBonusName', 'EquippedJewelryBonusDesc', D.EquippedJewelryBonus),
-        slider('n_EquippedArmorBonus', 'EquippedArmorBonusName', 'EquippedArmorBonusDesc', D.EquippedArmorBonus),
-    },
-}
-
-I.Settings.registerGroup {
-    key = D.VisibilitySection,
-    page = D.PageKey,
-    l10n = D.L10N,
-    name = 'VisibilityGroupName',
-    description = 'VisibilityGroupDesc',
-    order = 4,
-    permanentStorage = true,
-    settings = {
-        slider('n_VisibleChanceThreshold', 'VisibleChanceName', 'VisibleChanceDesc', D.VisibleChance),
-    },
-}
-
-I.Settings.registerGroup {
-    key = D.PlantSection,
+    key = D.Section.Plant,
     page = D.PageKey,
     l10n = D.L10N,
     name = 'PlantGroupName',
     description = 'PlantGroupDesc',
-    order = 5,
+    order = 3,
     permanentStorage = true,
     settings = {
         {
-            key = 'b_PlantDirection',
+            key = 'enabled',
             renderer = 'checkbox',
-            name = 'PlantDirectionName',
-            description = 'PlantDirectionDesc',
+            name = 'AllowPoisonName',
+            description = 'AllowPoisonDesc',
             default = true,
         },
-        slider('n_PlanOwnSkillMult', 'OwnSkillMultName', 'OwnSkillMultDesc', D.PlantOwnSkillMult),
-        slider('n_PlanTargetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.PlantTargetSkillMult),
-        slider('n_PlanBase', 'PlantBaseName', 'PlantBaseDesc', D.PlantBase),
-        slider('n_PlanValueAdd', 'PlantValueAddName', 'PlantValueAddDesc', D.PlantValueAdd),
-        slider('n_PlanValueExp', 'PlantValueExpName', 'PlantValueExpDesc', D.PlantValueExp),
-        slider('n_PlanValueMult', 'PlantValueMultName', 'PlantValueMultDesc', D.PlantValueMult),
-        slider('n_PlanWeightMult', 'PlantWeightMultName', 'PlantWeightMultDesc', D.PlantWeightMult),
-    },
-}
-
-I.Settings.registerGroup {
-    key = D.PotionsSection,
-    page = D.PageKey,
-    l10n = D.L10N,
-    name = 'PotionsGroupName',
-    description = 'PotionsGroupDesc',
-    order = 6,
-    permanentStorage = true,
-    settings = {
         {
-            key = 'b_ShowAllPotions',
+            key = 'hideOther',
             renderer = 'checkbox',
-            name = 'ShowAllPotionsName',
-            description = 'ShowAllPotionsDesc',
-            default = false,
+            name = 'HideOtherName',
+            description = 'HideOtherDesc',
+            default = true,
         },
+        slider('ownSkillMult', 'OwnSkillMultName', 'OwnSkillMultDesc', D.PlantOwnSkillMult),
+        slider('targetSkillMult', 'TargetSkillMultName', 'TargetSkillMultDesc', D.PlantTargetSkillMult),
+        slider('baseDifficulty', 'PlantBaseName', 'PlantBaseDesc', D.PlantBase),
+        slider('weightMult', 'PlantWeightMultName', 'PlantWeightMultDesc', D.PlantWeightMult),
     },
 }
