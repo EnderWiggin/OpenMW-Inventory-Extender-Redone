@@ -17,9 +17,7 @@ local L       = require('scripts.InventoryExtenderRedone.util.logger').get 'Pick
 local IER     = I.InventoryExtenderRedone
 if not IER then return end
 local Pickpocket = IER.Pickpocket
-if not Pickpocket then return end
 local Helpers = IER.Helpers
-if not Helpers then return end
 
 local Toolkit    = I.UIToolkit
 local T          = Toolkit.Templates
@@ -171,7 +169,7 @@ end
 local function isVisible(row, handler, ctx)
     local session = ctx.pickpocket
     if not session or not session.active then return true end
-    local chance = Pickpocket.getStealChance(row.item, getStealCount(row)) --TODO: use different check
+    local chance = Pickpocket.getStealChance(row.item, getStealCount(row))
     if chance == nil then return true end
     return chance >= settings.visibleChanceThreshold
 end
@@ -349,6 +347,7 @@ local function tryInit()
         if getSneak(player) >= settings.closeSkillThreshold then
             return 100
         end
+    --TODO: use sliding scale from some min chance to 100 at threshold value
     end)
     Pickpocket.registerStealChance(D.PatchId, function(player, target, item, count, chance)
         if not Helpers.isGold(item) then count = 1 end
