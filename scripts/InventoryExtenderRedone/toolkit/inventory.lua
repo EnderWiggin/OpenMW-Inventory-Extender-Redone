@@ -1076,6 +1076,7 @@ function Inventory:update()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()
     if self.infoBar then self.infoBar:update() end
+    self:updateTitle()
     L.debug('refresh', self.role, self.mode, #data, #self.table.filteredItems)
 end
 
