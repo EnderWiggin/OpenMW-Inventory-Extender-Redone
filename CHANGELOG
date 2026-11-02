@@ -1,3 +1,16 @@
+1.1.0 (2026-11-02)
+- on update try to maintain selected item or select new item at same index
+- added setting to disable 'Activate' closing container
+- API: publicised disposeCorpse function
+- API: mode can override input handling
+- Controller tweaks:
+  - holding LT and RT now switches input 'layer' allowing for more actions
+  - added keybind to switch focused window
+  - added keybind to switch sorting column
+  - added keybind to dispose of a corpse
+  - added keybinds to change barter offer
+  - added keybind to make barter offer
+
 1.0.0 (2026-11-01)
 - Public Release
 
