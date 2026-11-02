@@ -378,6 +378,7 @@ end
 WindowManager.ctx.dragAndDrop:init(WindowManager.ctx)
 
 input.registerTriggerHandler('Activate', async:callback(function()
+    if not configPlayer.keybinds.b_ActivateClosesContainer then return end
     for _, button in pairs(input.CONTROLLER_BUTTON) do
         if input.isControllerButtonPressed(button) then
             return
@@ -385,7 +386,7 @@ input.registerTriggerHandler('Activate', async:callback(function()
     end
 
     local mode = I.UI.getMode()
-    if mode and (mode == D.Modes.Container or mode == D.Modes.Barter or mode == D.Modes.Companion) then
+    if mode and mode == D.Modes.Container then
         I.UI.removeMode(mode)
         return false
     end

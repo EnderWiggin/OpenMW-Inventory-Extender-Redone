@@ -29,6 +29,11 @@ SwapUsePickupDesc: |-
   
   Enable this option to swap those behaviors, so that left-click will use items and the keybind will pick them up.
 
+ActivateClosesContainer: Activate closes container
+ActivateClosesContainerDesc: |-
+  Pressing 'Activate' keybind will close a container (or corpse).
+  Disable if you want to bind this key to any other action within this mod or don't like this feature.
+
 ConfigCategoryWindowOptions: Window Options
 EnableMod: Enable mod
 ItemViewMode: Item view mode

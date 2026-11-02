@@ -5,6 +5,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 
 ---@class IER.Config.Player.Keybinds
 ---@field b_SwapUsePickup boolean
+---@field b_ActivateClosesContainer boolean
 ---@field c_Activate UIToolkit.SettingRenderer.CustomBind[]?
 ---@field c_Favorite UIToolkit.SettingRenderer.CustomBind[]?
 ---@field c_TransferAll UIToolkit.SettingRenderer.CustomBind[]?

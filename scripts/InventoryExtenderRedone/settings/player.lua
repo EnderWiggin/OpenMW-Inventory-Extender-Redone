@@ -39,6 +39,13 @@ I.Settings.registerGroup {
             default = false,
         },
         {
+            key = 'b_ActivateClosesContainer',
+            renderer = 'checkbox',
+            name = 'ActivateClosesContainer',
+            description = 'ActivateClosesContainerDesc',
+            default = true,
+        },
+        {
             key = 'c_Activate',
             renderer = 'UIToolkit/BindCustom',
             name = 'KeybindUseItem',
