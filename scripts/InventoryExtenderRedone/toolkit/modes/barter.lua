@@ -10,12 +10,15 @@ local I = require('openmw.interfaces')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
+local barterUtils = require('scripts.InventoryExtenderRedone.util.barter')
 local cfgUtil = require 'scripts.UIToolkit.config.utils'
 local l10n = core.l10n(D.L10N)
 local Roles = D.Roles
 local Modes = D.Modes
+local BINDING = D.Binds
 
 local BUTTON = input.CONTROLLER_BUTTON
+local STR_BARTER = core.getGMST('sBarter')
 
 
 -- controller hints replace the base list: Activate offers instead of picking up, and B
@@ -25,19 +28,100 @@ local BUTTON = input.CONTROLLER_BUTTON
 ---@param base UIToolkit.Controller.HintList
 ---@return UIToolkit.Controller.HintList
 local function barterHints(handler, ctx, base)
+    local LT = ctx.axis.LT
+    local RT = ctx.axis.RT
     local binds = configPlayer.keybinds
     local find = cfgUtil.getFirstControllerInput
-    local select = handler.table.showGrid
-        and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
-        or { find(binds.c_SelUp), find(binds.c_SelDown) }
-    return {
-        { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, find(binds.c_Activate) } },
-        'separator',
-        { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
-        { text = l10n 'Hint_Select', input = select, },
-        'separator',
-        { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
-    }
+
+    if LT and RT then
+        return {
+            { text = l10n 'Hint_BarterOne',   input = { id = BUTTON.A } },
+            { text = l10n 'Hint_MakeOffer',   input = find(binds.c_Favorite) },
+            { text = l10n 'Hint_OfferChange', input = { find(binds.c_SelLeft), find(binds.c_SelRight) } },
+            { text = l10n 'Hint_OfferMax',    input = find(binds.c_SelUp) },
+            { text = l10n 'Hint_OfferReset',  input = find(binds.c_SelDown) },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    elseif LT then
+        return {
+            { text = l10n 'Hint_BarterOne',   input = { { id = BUTTON.A }, find(binds.c_Activate) } },
+            { text = l10n 'Hint_MakeOffer',   input = find(binds.c_Favorite) },
+            { text = l10n 'Hint_OfferChange', input = { find(binds.c_SelLeft), find(binds.c_SelRight) } },
+            { text = l10n 'Hint_OfferMax',    input = find(binds.c_SelUp) },
+            { text = l10n 'Hint_OfferReset',  input = find(binds.c_SelDown) },
+            'separator',
+            { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    elseif RT then
+        return {
+            { text = l10n 'Hint_BarterAll',   input = { { id = BUTTON.A }, find(binds.c_Activate) } },
+            { text = l10n 'Hint_MakeOffer',   input = find(binds.c_Favorite) },
+            { text = l10n 'Hint_OfferChange', input = { find(binds.c_SelLeft), find(binds.c_SelRight) } },
+            { text = l10n 'Hint_OfferMax',    input = find(binds.c_SelUp) },
+            { text = l10n 'Hint_OfferReset',  input = find(binds.c_SelDown) },
+            'separator',
+            { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    else
+        local select = handler.table.showGrid
+            and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
+            or { find(binds.c_SelUp), find(binds.c_SelDown) }
+        return {
+            { text = STR_BARTER,           input = { { id = BUTTON.A }, find(binds.c_Activate) } },
+            'separator',
+            { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            { text = l10n 'Hint_Select',   input = select, },
+            'separator',
+            { text = constants.Strings.CLOSE,  input = { id = input.CONTROLLER_BUTTON.B } },
+            { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } },
+        }
+    end
+end
+
+---@param handler IER.Inventory
+---@param bind string?
+---@param base fun(bind:string?) the rest of the chain, this window's own handling at the bottom
+---@param repeating boolean? true on the key-repeat path
+local function barterInput(handler, bind, base, repeating)
+    local ctx = handler.ctx
+    local LT = ctx.axis.LT
+    local RT = ctx.axis.RT
+    local changed = false
+
+    if LT or RT then
+        if bind == BINDING.Select_Left then
+            barterUtils.adjustOffer(ctx, RT and -5 or -1)
+            changed = true
+        elseif bind == BINDING.Select_Left then
+            barterUtils.adjustOffer(ctx, RT and 5 or 1)
+            changed = true
+        elseif not repeating then
+            if bind == BINDING.Select_Up then
+                local max = barterUtils.getMaxOffer(ctx)
+                if max then
+                    ctx.barterState.currentBalance = max
+                    changed = true
+                end
+            elseif bind == BINDING.Select_Down then
+                ctx.barterState.currentBalance = ctx.barterState.currentMerchantOffer
+                changed = true
+            elseif bind == BINDING.Favorite then
+                I.InventoryExtenderRedone.Barter.offerBarter()
+            end
+        end
+        if changed then
+            I.InventoryExtenderRedone.forEachOpenWindow(function(h)
+                h.infoBar:update()
+            end)
+        end
+    end
+
+    return base(bind)
 end
 
 
@@ -94,13 +178,14 @@ return {
                 { id = 'use' },
             },
             hints = barterHints,
+            input = { { id = 'Barter', onInput = barterInput } },
         },
         [Roles.Trade] = {
             -- the merchant's own stock, plus what the item holder on the player's side is
             -- offering (the player in vanilla)
             sources = {
                 { id = 'merchantOfTarget' },
-                { id = 'partner', isBartered = true },
+                { id = 'partner',         isBartered = true },
             },
             filters = { { id = 'barterAllowed' }, { id = 'barterTradeEquipped' }, { id = 'barterOffered' }, { id = 'barterTraderForeign' } },
             actions = {
@@ -114,6 +199,7 @@ return {
                 { id = 'barterCancel' },
             },
             hints = barterHints,
+            input = { { id = 'Barter', onInput = barterInput } },
         },
     },
 }

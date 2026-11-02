@@ -495,12 +495,37 @@ local function getBuyOffer(item, count, npc, ctx)
     return itemOffer(npc, item, count, true, ctx)
 end
 
+--- Move the offer amount by delta, keeping its sign: a positive offer grows away from zero,
+--- a negative one grows toward spending more.
+---@param ctx InventoryExtenderRedone.Context
+---@param delta number
+---@return number balance the new offer amount
+local function adjustOffer(ctx, delta)
+    local state = ctx.barterState
+    local balance = state.currentBalance or 0
+    balance = balance < 0 and balance - delta or balance + delta
+    state.currentBalance = balance
+    return balance
+end
+
+--- The most the merchant can pay: their barter gold pool, set as the offer. nil when nothing
+--- is known to price against.
+---@param ctx InventoryExtenderRedone.Context
+---@return number? max
+local function getMaxOffer(ctx)
+    local pricing = resolvePartner(ctx)
+    if not pricing then return nil end
+    return pricing.type.getBarterGold(pricing)
+end
+
 return {
     haggle = haggle,
     updateOffer = updateOffer,
     completeOffer = completeOffer,
     getSellOffer = getSellOffer,
     getBuyOffer = getBuyOffer,
+    adjustOffer = adjustOffer,
+    getMaxOffer = getMaxOffer,
     barterOfferEffect = barterOfferEffect,
     queueSell = queueSell,
     queueBuy = queueBuy,

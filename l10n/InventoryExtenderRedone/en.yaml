@@ -252,6 +252,12 @@ Hint_Columns: Sorting
 Hint_TransferAll_Container: Loot all
 Hint_TransferAll: Transfer All
 Hint_TransferOne: Transfer One
+Hint_BarterOne: Barter One
+Hint_BarterAll: Barter All
+Hint_MakeOffer: Make Offer
+Hint_OfferChange: Change Offer
+Hint_OfferMax: Max Offer
+Hint_OfferReset: Reset Offer
 Hint_SwitchWindow: Switch Window
 
 Role_Inventory: Inventory
