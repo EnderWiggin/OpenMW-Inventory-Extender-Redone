@@ -121,9 +121,10 @@ function ItemStackModal.show(opts)
         end
     end
     local function onKey(key)
-        if key == KEY.R then
+        --TODO: Add settings
+        if key == KEY.F then
             closePopup()
-        elseif key == KEY.E then
+        elseif key == KEY.R then
             onConfirm(selectedCount)
             closePopup()
         elseif key == KEY.A then
