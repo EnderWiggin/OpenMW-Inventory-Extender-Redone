@@ -248,7 +248,16 @@ Hint_Category: Category
 Hint_Select: Select
 Hint_Favorite: Favorite
 Hint_Count: Count
+Hint_Columns: Sorting
 Hint_TransferAll_Container: Loot all
+Hint_TransferAll: Transfer All
+Hint_TransferOne: Transfer One
+Hint_SwitchWindow: Switch Window
+
+Role_Inventory: Inventory
+Role_Trade: Trade
+Role_Container: Container
+Role_Companion: Companion
 
 Popup_BTN_Defaults: Defaults
 

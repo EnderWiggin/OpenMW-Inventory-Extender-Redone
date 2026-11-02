@@ -61,6 +61,7 @@
 ---@field companionProfit table<string,number> actorId -> profit (saved)
 ---@field pickpocket InventoryExtenderRedone.PickpocketSession? current pickpocket session or nil
 ---@field containerVariables table<string,any> vanilla-parity ownership globals
+---@field axis {LT:boolean, RT: boolean}
 ---@field isConsoleOpen boolean
 ---@field cursorAttachedIcon openmw.ui.Element? icon attached to the cursor while dragging
 ---@field syncingCategoryFilter boolean? guard set ad hoc by inventory.lua for recursive synced category switching

@@ -616,12 +616,12 @@ Mode.Info = {
             }
             return function(c)
                 local visible = false
-                if c.windowArgs[D.Roles.Container] then
-                    visible = Actor.objectIsInstance(c.windowArgs[D.Roles.Container])
-                        and Actor.isDead(c.windowArgs[D.Roles.Container])
+                local target = handler.target or c.windowArgs[D.Roles.Container]
+                if target then
+                    visible = Actor.objectIsInstance(target) and Actor.isDead(target)
                 end
                 btnDispose:setVisible(visible)
-                return btnDispose.element
+                return visible and btnDispose.element or nil
             end
         end,
     },

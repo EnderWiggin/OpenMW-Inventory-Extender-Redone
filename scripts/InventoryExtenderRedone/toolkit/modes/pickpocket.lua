@@ -82,6 +82,9 @@ return {
                     return true
                 end,
             },
+            -- the interface base list instead of Container's hints: it omits Loot all, which
+            -- transferAll refuses to run during a pickpocket session
+            hints = function(handler, ctx, base) return base end,
         },
     },
 }

@@ -35,10 +35,41 @@ local NPC = types.NPC
 local function containerHints(handler, ctx, base)
     local binds = configPlayer.keybinds
     local find = cfgUtil.getFirstControllerInput
+    local LT = ctx.axis.LT
+    local RT = ctx.axis.RT
+
     local select = handler.table.showGrid
         and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
         or { find(binds.c_SelUp), find(binds.c_SelDown) }
     local swap = configPlayer.keybinds.b_SwapUsePickup
+
+    if LT and RT then
+        return {
+            { text = l10n 'Hint_Use',         input = { id = BUTTON.A } },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    elseif LT then
+        return {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_TransferOne'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_TransferOne' or 'Hint_Use'), input = find(binds.c_Activate) },
+            { text = constants.Strings.DISPOSE_OF_CORPSE,             input = find(binds.c_TransferAll) },
+            'separator',
+            { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    elseif RT then
+        return {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_TransferAll'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_TransferAll' or 'Hint_Use'), input = find(binds.c_Activate) },
+            'separator',
+            { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    end
+
     return {
         { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
         { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
@@ -47,7 +78,8 @@ local function containerHints(handler, ctx, base)
         { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
         { text = l10n 'Hint_Select',   input = select, },
         'separator',
-        { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
+        { text = constants.Strings.CLOSE,  input = { id = input.CONTROLLER_BUTTON.B } },
+        { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } }
     }
 end
 

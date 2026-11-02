@@ -21,6 +21,7 @@ local BUTTON    = input.CONTROLLER_BUTTON
 local Container = types.Container
 local Item      = types.Item
 local Player    = types.Player
+local Actor     = types.Actor
 
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
@@ -952,35 +953,87 @@ end
 function Inventory:updateInputHints()
     local binds = configPlayer.keybinds
     local find = cfgUtil.getFirstControllerInput
+    local LT = self.ctx.axis.LT
+    local RT = self.ctx.axis.RT
     local select = self.table.showGrid
         and { find(binds.c_SelUp), find(binds.c_SelDown), find(binds.c_SelLeft), find(binds.c_SelRight) }
         or { find(binds.c_SelUp), find(binds.c_SelDown) }
     local swap = configPlayer.keybinds.b_SwapUsePickup
 
-    -- the base list is the interface default; the hints role slot replaces it wholesale
-    local hints = {
-        { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
-        { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
-        'separator',
-        { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
-        { text = l10n 'Hint_Select',   input = select, },
-        'separator',
-        { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
-    }
+    local hints
+    if LT and RT then
+        hints = {
+            { text = l10n 'Hint_Use',         input = { id = BUTTON.A } },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    elseif LT then
+        hints = {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_TransferOne'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_TransferOne' or 'Hint_Use'), input = find(binds.c_Activate) },
+            'separator',
+            { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    elseif RT then
+        hints = {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_TransferAll'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_TransferAll' or 'Hint_Use'), input = find(binds.c_Activate) },
+            'separator',
+            { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+    else
+        -- the base list is the interface default; the hints role slot replaces it wholesale
+        hints = {
+            { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
+            { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
+            'separator',
+            { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+            { text = l10n 'Hint_Select',   input = select, },
+            'separator',
+            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+        }
+        if self.mode ~= D.Modes.Interface then
+            hints[#hints + 1] = { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } }
+        end
+    end
+
     local hintsFn = self.slots and self.slots.hints
     if hintsFn then
         hints = hintsFn(self, self.ctx, hints) or hints
     end
     -- the favorite hint is a shared row mechanic, not mode behavior: it prefixes whichever list
     -- the mode left in place, for the player's own window
-    if self.target == omwself then
+    if not LT and not RT and self.target == omwself then
         table.insert(hints, 1, { text = l10n 'Hint_Favorite', input = find(binds.c_Favorite) })
     end
+
+    if #hints > 0 then table.insert(hints, 1, 'separator') end
+    table.insert(hints, 1, { text = l10n('Role_' .. self.role), input = nil })
     self.wnd:setControllerHints(hints)
 end
 
 ---@param bind string?
 function Inventory:onInput(bind)
+    if I.UI.getMode() == nil then return end
+    local LT = self.ctx.axis.LT
+    local RT = self.ctx.axis.RT
+    if LT and RT then
+        --add when needed
+    elseif LT then
+        self:onInputLT(bind)
+    elseif RT then
+        self:onInputRT(bind)
+    else
+        self:onInputBase(bind)
+    end
+end
+
+---@param bind string?
+function Inventory:onInputBase(bind)
     if I.UI.getMode() == nil then return end
     --TODO: add binds to toggle view mode (select?)
     --TODO: add binds to open column config popup (R-Stick?) (and add binds to popup itself)
@@ -1001,17 +1054,52 @@ function Inventory:onInput(bind)
     elseif bind == BINDING.TransferAll then
         self:transferAll()
     elseif bind == BINDING.Activate then
-        local ctx = self.ctx
-        local row = self.table:getHovered()
-        if configPlayer.keybinds.b_SwapUsePickup then
-            if ctx.dragAndDrop.draggingObject then
-                ctx.dragAndDrop:stopDrag(self.target)
-            elseif row then
-                self:onRowPickup(row, true, false)
-            end
+        self:onInputActivate()
+    end
+end
+
+function Inventory:onInputActivate()
+    local ctx = self.ctx
+    local row = self.table:getHovered()
+    if configPlayer.keybinds.b_SwapUsePickup then
+        if ctx.dragAndDrop.draggingObject then
+            ctx.dragAndDrop:stopDrag(self.target)
         elseif row then
-            self:onRowUse(row)
+            self:onRowPickup(row, true, false)
         end
+    elseif row then
+        self:onRowUse(row)
+    end
+end
+
+---@param bind string?
+function Inventory:onInputLT(bind)
+    if I.UI.getMode() == nil then return end
+    if bind == BINDING.Category_Prev then
+        self.table:prevActiveColumn(true)
+    elseif bind == BINDING.Category_Next then
+        self.table:nextActiveColumn(true)
+    elseif bind == BINDING.Activate then
+        self:onInputActivate()
+    elseif bind == BINDING.TransferAll then
+        local target = self.target
+        if target and Actor.objectIsInstance(target) and Actor.isDead(target) then
+            I.InventoryExtenderRedone.disposeCorpse(target)
+        end
+    end
+end
+
+---@param bind string?
+function Inventory:onInputRT(bind)
+    if I.UI.getMode() == nil then return end
+    --TODO: add binds to toggle view mode (select?)
+    --TODO: add binds to open column config popup (R-Stick?) (and add binds to popup itself)
+    if bind == BINDING.Category_Prev then
+        self.table:prevActiveColumn(false)
+    elseif bind == BINDING.Category_Next then
+        self.table:nextActiveColumn(false)
+    elseif bind == BINDING.Activate then
+        self:onInputActivate()
     end
 end
 
@@ -1032,7 +1120,9 @@ function Inventory:onKeyboardButtonRepeat(key)
 end
 
 function Inventory:onControllerButtonPress(button)
-    if button == input.CONTROLLER_BUTTON.A then
+    local LT = self.ctx.axis.LT
+    local RT = self.ctx.axis.RT
+    if button == BUTTON.A then
         local focused = I.UIToolkit.getCtx().focusedScrollable
         if focused ~= self.table:currentScrollable() then
             local row = self.table:getHovered()
@@ -1047,6 +1137,14 @@ function Inventory:onControllerButtonPress(button)
                 self:onRowUse(row)
             end
         end
+    elseif button == BUTTON.Back and self.mode ~= D.Modes.Interface and not LT and not RT then
+        local found = false
+        --TODO: try to make better solution
+        I.InventoryExtenderRedone.forEachOpenWindow(function(handler, wnd)
+            if found or handler == self then return end
+            found = true
+            I.UIToolkit.WindowManager.focusWindow(wnd.id)
+        end)
     end
     self:onInput(cfgUtil.findMatchingController(button, configPlayer.keybinds))
 end
@@ -1254,9 +1352,11 @@ function Inventory:onRowPickup(row, fromKBMKeybind, forceBarterAction)
         return false
     end
 
-    local transfer = input.isAltPressed() or self.mode == D.Modes.Barter
-    local takeAll = input.isShiftPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerRight) > 0.5
-    local takeOne = input.isCtrlPressed() or input.getAxisValue(input.CONTROLLER_AXIS.TriggerLeft) > 0.5
+    local LT = ctx.axis.LT
+    local RT = ctx.axis.RT
+    local transfer = input.isAltPressed() or self.mode == D.Modes.Barter or LT or RT
+    local takeAll = input.isShiftPressed() or RT
+    local takeOne = input.isCtrlPressed() or LT
 
     if takeAll and takeOne and not forceBarterAction then
         self:onRowUse(row)

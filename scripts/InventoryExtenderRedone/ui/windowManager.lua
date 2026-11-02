@@ -8,15 +8,18 @@ local omwself = require('openmw.self')
 
 local Toolkit = I.UIToolkit
 local Manager = Toolkit.WindowManager
+local AXIS    = input.CONTROLLER_AXIS
+local PRESS   = 0.5
+local RELEASE = 0.25
 
 
 local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
-local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local D            = require('scripts.InventoryExtenderRedone.config.defaults')
 local RoleRegistry = require('scripts.InventoryExtenderRedone.ui.roles')
-local Mode = require('scripts.InventoryExtenderRedone.toolkit.mode')
-local L = require('scripts.InventoryExtenderRedone.util.logger').get 'WM'
+local Mode         = require('scripts.InventoryExtenderRedone.toolkit.mode')
+local L            = require('scripts.InventoryExtenderRedone.util.logger').get 'WM'
 
-local DragAndDrop = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
+local DragAndDrop  = require('scripts.InventoryExtenderRedone.ui.dragAndDrop')
 
 
 local InvHandler = require 'scripts.InventoryExtenderRedone.toolkit.inventory'
@@ -43,6 +46,7 @@ WindowManager.ctx = {
         data = {},
         badge = {},
     },
+    axis = { LT = false, RT = false },
     -- custom modes and id-keyed patches registered by other mods
     modes = {},
     modePatches = {},
@@ -310,6 +314,15 @@ function WindowManager:onUiModeChanged(oldMode, newMode, arg)
     self.ctx.dragAndDrop:stopDrag()
 end
 
+---@param axis number
+---@param was boolean
+---@return boolean state, boolean changed
+local function getAxisState(axis, was)
+    local v = input.getAxisValue(axis)
+    local state = v > (was and RELEASE or PRESS)
+    return state, state ~= was
+end
+
 function WindowManager:onFrame()
     if not configPlayer.window.b_EnableMod then return end
 
@@ -317,6 +330,16 @@ function WindowManager:onFrame()
 
     if mouseMoved then
         self.ctx.dragAndDrop:updatePosition()
+    end
+
+    local axis = self.ctx.axis
+    local LTChanged, RTChanged = false, false
+    axis.LT, LTChanged = getAxisState(AXIS.TriggerLeft, axis.LT)
+    axis.RT, RTChanged = getAxisState(AXIS.TriggerRight, axis.RT)
+
+
+    if LTChanged or RTChanged then
+        self:forEachOpenWindow(function(handler) handler:updateInputHints() end)
     end
 end
 

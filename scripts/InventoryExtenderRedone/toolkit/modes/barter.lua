@@ -33,8 +33,8 @@ local function barterHints(handler, ctx, base)
     return {
         { text = core.getGMST('sBarter'), input = { { id = BUTTON.A }, find(binds.c_Activate) } },
         'separator',
-        { text = l10n 'Hint_Category', input = select, },
-        { text = l10n 'Hint_Select', input = { { id = BUTTON.DPadUp }, { id = BUTTON.DPadDown } }, },
+        { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
+        { text = l10n 'Hint_Select', input = select, },
         'separator',
         { text = constants.Strings.CLOSE, input = { id = input.CONTROLLER_BUTTON.B } },
     }

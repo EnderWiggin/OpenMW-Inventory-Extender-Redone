@@ -243,6 +243,61 @@ function ItemTable:setHiddenColumns(hidden)
     self:refresh()
 end
 
+function ItemTable:getVisibleColumnIds()
+    local visible = {}
+    local columns = self.header.columns
+    local hidden = self.header.hidden
+    for i = 1, #columns do
+        local id = columns[i].id
+        if not hidden[id] then
+            visible[#visible + 1] = id
+        end
+    end
+    return visible
+end
+
+function ItemTable:nextActiveColumn(asc)
+    if self:isDestroyed() then return end
+    local id = self.header:getActiveColumn()
+    local visible = self:getVisibleColumnIds()
+    local nextId = nil
+    if id then
+        local found = false
+        for i = 1, #visible do
+            if found then
+                nextId = visible[i]
+                break
+            elseif visible[i] == id then
+                found = true
+            end
+        end
+    end
+    nextId = nextId or visible[1]
+
+    self.header:toggleColumn(nextId, asc)
+end
+
+function ItemTable:prevActiveColumn(asc)
+    if self:isDestroyed() then return end
+    local id = self.header:getActiveColumn()
+    local visible = self:getVisibleColumnIds()
+    local prevId = nil
+    if id then
+        local found = false
+        for i = #visible, 1, -1 do
+            if found then
+                prevId = visible[i]
+                break
+            elseif visible[i] == id then
+                found = true
+            end
+        end
+    end
+    prevId = prevId or visible[#visible]
+
+    self.header:toggleColumn(prevId, asc)
+end
+
 ---@param items UIToolkit.ListData.Column[]
 function ItemTable:setItems(items)
     self.allItems = items
