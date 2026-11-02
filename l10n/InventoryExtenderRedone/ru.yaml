@@ -248,8 +248,23 @@ Hint_Pickup: "Взять"
 Hint_Category: "Категория"
 Hint_Select: "Выбрать"
 Hint_Favorite: "Избранное"
+Hint_Columns: "Сортировка"
 Hint_Count: "Количество"
 Hint_TransferAll_Container: "Взять все"
+Hint_TransferAll: "Перенести все"
+Hint_TransferOne: "Перенести один"
+Hint_BarterOne: "Торговать один"
+Hint_BarterAll: "Торговать все"
+Hint_MakeOffer: Сделка
+Hint_OfferChange: Изменить
+Hint_OfferMax: Макс.
+Hint_OfferReset: Сброс
+Hint_SwitchWindow: Переключить окно
+
+Role_Inventory: Инвентарь
+Role_Trade: Торговля
+Role_Container: Контейнер
+Role_Companion: Спутник
 
 Popup_BTN_Defaults: "По умолчанию"
 
