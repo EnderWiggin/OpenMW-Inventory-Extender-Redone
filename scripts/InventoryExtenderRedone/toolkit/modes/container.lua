@@ -23,6 +23,7 @@ local l10n = core.l10n(D.L10N)
 local BUTTON = input.CONTROLLER_BUTTON
 
 local Container = types.Container
+local Actor = types.Actor
 local NPC = types.NPC
 
 
@@ -50,15 +51,20 @@ local function containerHints(handler, ctx, base)
             { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
         }
     elseif LT then
-        return {
+        local hints = {
             { text = l10n(swap and 'Hint_Use' or 'Hint_TransferOne'), input = { id = BUTTON.A } },
             { text = l10n(swap and 'Hint_TransferOne' or 'Hint_Use'), input = find(binds.c_Activate) },
-            { text = constants.Strings.DISPOSE_OF_CORPSE,             input = find(binds.c_TransferAll) },
             'separator',
             { text = l10n 'Hint_Columns',     input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
             'separator',
             { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
         }
+        local target = handler.target
+        if target and Actor.objectIsInstance(target) and Actor.isDead(target) then
+            table.insert(hints, 3,
+                { text = constants.Strings.DISPOSE_OF_CORPSE, input = find(binds.c_TransferAll) })
+        end
+        return hints
     elseif RT then
         return {
             { text = l10n(swap and 'Hint_Use' or 'Hint_TransferAll'), input = { id = BUTTON.A } },
