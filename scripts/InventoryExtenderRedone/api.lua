@@ -68,11 +68,31 @@ local function columnsSugar(patch)
     end
 end
 
+--- A plain function in a role's `input` slot is one entry keyed by the given id, so callbacks from
+--- several specs chain instead of replacing each other. A patch's plain entry list becomes an add
+--- op, so it merges onto the mode's own overrides.
+---@param specs table<string,InventoryExtenderRedone.Mode.RoleSpec|InventoryExtenderRedone.Mode.RoleSpecPatch>?
+---@param id string id for the entry the sugar produces
+---@param asOp boolean? a patch's entry must come in as an add op, since a plain array replaces the slot
+local function inputSugar(specs, id, asOp)
+    if not specs then return end
+    for _, spec in pairs(specs) do
+        local input = spec.input
+        if type(input) == 'function' then
+            local entry = { id = id, onInput = input }
+            spec.input = asOp and { add = { entry } } or { entry }
+        elseif asOp and input and input[1] ~= nil then
+            spec.input = { add = input }
+        end
+    end
+end
+
 function API.registerMode(mode)
     if not mode or not mode.key then return end
     -- a key colliding with a built-in has to go through patchMode
     if D.Modes[mode.key] then return end
     mode.lifecycle = lifecycleSugar(mode.lifecycle, mode.key)
+    inputSugar(mode.roles, mode.key)
     windowManager.ctx.modes[mode.key] = mode
 end
 
@@ -95,7 +115,7 @@ function API.getModes()
 end
 
 --- Patch a built-in or custom mode with the same shape as Mode: list slots (sources/filters/
---- infoBar/lifecycle/columns) merge by id, every other slot overwrites. Patches apply at resolve
+--- infoBar/lifecycle/columns/input) merge by id, every other slot overwrites. Patches apply at resolve
 --- time, in reverse registration order.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param patch InventoryExtenderRedone.ModePatch
@@ -108,7 +128,9 @@ function API.patchMode(key, patch)
     end
     -- an id-less patch gets a generated one, so its entry chains onto the built-in entry
     -- instead of replacing it
-    patch.lifecycle = lifecycleSugar(patch.lifecycle, patch.id or (key .. '#' .. (#patches + 1)), true)
+    local patchId = patch.id or (key .. '#' .. (#patches + 1))
+    patch.lifecycle = lifecycleSugar(patch.lifecycle, patchId, true)
+    inputSugar(patch.roles, patchId, true)
     columnsSugar(patch)
     patches[#patches + 1] = patch
 end

@@ -179,6 +179,7 @@
 ---@field observer? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip and AR. If absent or returns nil - player is used.
 ---@field target? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? the window's actor: whose inventory is listed, whose equipped gear/encumbrance/armor rating/gold the info bar and sorting read, whose name the title shows. If absent or returns nil - the built-in rule: the player for the Inventory role, the open argument for any other role.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
+---@field input InventoryExtenderRedone.Mode.InputEntry[]? what a bind does in this window, layered over the handler's own handling; a plain function is sugar for one entry keyed by the mode key
 ---@field pinnable boolean? default false; only the Interface Inventory window sets true
 ---@field storageSuffix string? built-ins keep the literal ':Container'/':Barter'/':Companion' - UIToolkit:WindowData keys are save identity, never derive from the mode key
 ---@field defaultStorage UIToolkit.WindowSaveData?
@@ -199,6 +200,14 @@
 ---@field onOpened? fun(handler:IER.Inventory, arg:any?, saved:table?)?
 ---@field onClosing? fun(handler:IER.Inventory?, arg:any?, newMode:string?)?
 ---@field onClosed? fun(handler:IER.Inventory)?
+
+---@class InventoryExtenderRedone.Mode.InputEntry one input override in the chain; entries merge by id like the other list slots, and a built-in entry's id is the mode key
+---@field id string
+---@field onInput? fun(handler:IER.Inventory, bind:string?, base:fun(bind:string?), repeating:boolean):any? what a bind does in this window; base runs the rest of the chain, whose bottom is this window's own handling - not calling it replaces the default for the binds it answers, calling it wraps it; repeating is true on the key-repeat path
+---@field before string? position this entry before another input id
+---@field after string? position this entry after another input id
+
+---@alias InventoryExtenderRedone.Mode.Input fun(bind:string?, repeating:boolean) the resolved chain: Mode.wrapInput folds the merged entries into one callable per open window, press and repeat chains sharing the same callbacks
 
 ---@class InventoryExtenderRedone.Mode.EventData
 ---@field flags table<string,boolean> serializable summary (isBarter, isPickpocket, isCompanion, canTransfer, ...); key and role are stamped at open time
@@ -224,6 +233,7 @@
 ---@field observer? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? observer for the row tooltip and AR. If absent or returns nil - player is used.
 ---@field target? fun(handler:IER.Inventory, ctx:InventoryExtenderRedone.Context):openmw.Object? the window's actor; a patch overwrites the whole slot. If absent or returns nil - the built-in rule: the player for the Inventory role, the open argument for any other role.
 ---@field hints InventoryExtenderRedone.Mode.Hints?
+---@field input InventoryExtenderRedone.Mode.PatchList? a plain entry list here is sugar for {add = list}: a patch always merges onto the mode's own overrides; a plain function is sugar for one add entry
 ---@field pinnable boolean?
 ---@field storageSuffix string?
 ---@field defaultStorage UIToolkit.WindowSaveData?

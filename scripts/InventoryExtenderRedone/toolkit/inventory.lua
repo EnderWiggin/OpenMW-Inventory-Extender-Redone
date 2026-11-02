@@ -226,6 +226,7 @@ end
 ---@field mode InventoryExtenderRedone.ModeKey? the mode key this window snapshotted at open
 ---@field slots InventoryExtenderRedone.Mode.RoleSpec? this role's slots from that mode
 ---@field actions InventoryExtenderRedone.Mode.Actions? use/pickup parts resolved from that role's slots
+---@field input fun(bind:string?, repeating:boolean) the window's input chain: the mode's input callbacks layered over this window's own handling, built at open; the public way to drive input, since calling onInput directly skips the mode's overrides
 ---@field sources InventoryExtenderRedone.Mode.Source[] those slots' sources, parts resolved at open
 ---@field columns InventoryExtenderRedone.Mode.Column[]? column parts resolved at open, in display order, with the handler's Icon/Name closures merged over them
 ---@field infoBarSections InventoryExtenderRedone.Mode.InfoBarSection[]? info bar sections, parts resolved at open, in slot order
@@ -269,6 +270,8 @@ function Inventory:onOpened(wnd, data, saved)
         use = Mode.resolvePart(Mode.Actions, actions.use),
         pickup = Mode.resolvePart(Mode.Actions, actions.pickup),
     } or nil
+    -- input overrides are per role and layered: the chain bottoms at this window's own handling
+    self.input = Mode.wrapInput(roleSpec and roleSpec.input, self)
     L.debug('slots', self.role, self.mode, self.suffix, self.drag and self.drag.allowed,
         self.sources and #self.sources or 0, #modeFilters)
 
@@ -1109,11 +1112,11 @@ function Inventory:onInputRepeat(bind)
 end
 
 function Inventory:onKeyboardButtonPress(key)
-    self:onInput(cfgUtil.findMatchingKeyboard(key, configPlayer.keybinds))
+    self.input(cfgUtil.findMatchingKeyboard(key, configPlayer.keybinds), false)
 end
 
 function Inventory:onKeyboardButtonRepeat(key)
-    self:onInputRepeat(cfgUtil.findMatchingKeyboard(key, configPlayer.keybinds))
+    self.input(cfgUtil.findMatchingKeyboard(key, configPlayer.keybinds), true)
 end
 
 function Inventory:onControllerButtonPress(button)
@@ -1143,11 +1146,11 @@ function Inventory:onControllerButtonPress(button)
             I.UIToolkit.WindowManager.focusWindow(wnd.id)
         end)
     end
-    self:onInput(cfgUtil.findMatchingController(button, configPlayer.keybinds))
+    self.input(cfgUtil.findMatchingController(button, configPlayer.keybinds), false)
 end
 
 function Inventory:onControllerButtonRepeat(button)
-    self:onInputRepeat(cfgUtil.findMatchingController(button, configPlayer.keybinds))
+    self.input(cfgUtil.findMatchingController(button, configPlayer.keybinds), true)
 end
 
 function Inventory:getStorageSuffix()

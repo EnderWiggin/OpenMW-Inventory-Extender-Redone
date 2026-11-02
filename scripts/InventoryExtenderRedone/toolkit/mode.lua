@@ -66,6 +66,7 @@ end
 ---@field resolvePart fun(library:table<string,any>, entry:any?):any
 ---@field statePredicate fun(state:InventoryExtenderRedone.Mode.State?, field:string):(fun(...):boolean)?
 ---@field merge fun(base:InventoryExtenderRedone.Mode?, patch:InventoryExtenderRedone.ModePatch|InventoryExtenderRedone.Mode):InventoryExtenderRedone.Mode
+---@field wrapInput fun(entries:InventoryExtenderRedone.Mode.InputEntry[]?, handler:IER.Inventory):fun(bind:string?, repeating:boolean)
 local Mode = {}
 
 
@@ -1039,8 +1040,9 @@ Mode.Builtins = {
 
 
 -- List slots merge through id-keyed ops; other slots are a whole-slot overwrite. lifecycle is a
--- list slot too: several specs contribute hooks, merged into one chain.
-local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle', 'columns' }
+-- list slot too: several specs contribute hooks, merged into one chain. input is one more:
+-- several specs contribute input callbacks, merged into one chain per window.
+local LIST_SLOTS = { 'sources', 'filters', 'infoBar', 'lifecycle', 'columns', 'input' }
 local ROLE_SLOTS = { 'states', 'actions', 'target', 'observer', 'hints', 'pinnable', 'storageSuffix', 'defaultStorage' }
 local MODE_SLOTS = { 'applies', 'priority', 'drag', 'event' }
 local LIST_SLOT_KEYS = {}
@@ -1265,6 +1267,40 @@ local function wrapLifecycle(entries)
         end
     end
     return lifecycle
+end
+
+--- Folds the merged input entries into one callable per window. Each callback is handed the rest
+--- of the chain as `base`, whose bottom is this window's own handling: the press chain ends at
+--- onInput (the layer dispatch), the repeat chain at onInputRepeat (which keeps the select-bind
+--- gate and re-enters onInput below the chain, so a repeat cannot re-enter it). A callback that
+--- does not call `base` replaces the default for the binds it answers; one that calls it wraps it.
+---@param entries InventoryExtenderRedone.Mode.InputEntry[]?
+---@param handler IER.Inventory
+---@return fun(bind:string?, repeating:boolean) input
+function Mode.wrapInput(entries, handler)
+    local callbacks = {}
+    for _, entry in ipairs(entries or {}) do
+        if entry.onInput then callbacks[#callbacks + 1] = entry.onInput end
+    end
+
+    local function build(repeating)
+        local delegate = repeating
+            and function(bind) return handler.onInputRepeat(handler, bind) end
+            or function(bind) return handler.onInput(handler, bind) end
+        for i = #callbacks, 1, -1 do
+            local callback = callbacks[i]
+            local rest = delegate
+            delegate = function(bind) return callback(handler, bind, rest, repeating) end
+        end
+        return delegate
+    end
+
+    local press = build(false)
+    local again = build(true)
+    return function(bind, repeating)
+        if repeating then return again(bind) end
+        return press(bind)
+    end
 end
 
 --- Re-resolves a key from scratch, for callers that only have the mode key left (the post-close
