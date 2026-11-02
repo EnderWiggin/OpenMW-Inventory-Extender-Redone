@@ -97,7 +97,7 @@ local function barterInput(handler, bind, base, repeating)
         if bind == BINDING.Select_Left then
             barterUtils.adjustOffer(ctx, RT and -5 or -1)
             changed = true
-        elseif bind == BINDING.Select_Left then
+        elseif bind == BINDING.Select_Right then
             barterUtils.adjustOffer(ctx, RT and 5 or 1)
             changed = true
         elseif not repeating then
