@@ -1,3 +1,6 @@
+1.1.1 (2026-11-02)
+- fixed binding for barter mode offer increase
+
 1.1.0 (2026-11-02)
 - on update try to maintain selected item or select new item at same index
 - added setting to disable 'Activate' closing container
