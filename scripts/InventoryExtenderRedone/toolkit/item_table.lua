@@ -276,13 +276,29 @@ function ItemTable:setPosition(p)
     end
 end
 
----@return InventoryExtenderRedone.RowData?
+---@return InventoryExtenderRedone.RowData?, integer?
 function ItemTable:getHovered()
+    local row, idx
     if self.showGrid then
-        return self.grid:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        row, idx = self.grid:getHovered()
     else
-        return self.list:getHovered() --[[@as InventoryExtenderRedone.RowData?]]
+        row, idx = self.list:getHovered()
     end
+    ---@cast row InventoryExtenderRedone.RowData?
+    return row, idx
+end
+
+---@param id string
+---@return InventoryExtenderRedone.RowData?, integer?
+function ItemTable:getItemById(id)
+    local row, idx
+    if self.showGrid then
+        row, idx = self.grid:getItemById(id)
+    else
+        row, idx = self.list:getItemById(id)
+    end
+    ---@cast row InventoryExtenderRedone.RowData?
+    return row, idx
 end
 
 ---@param idOrIndex string|integer|nil

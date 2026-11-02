@@ -1073,8 +1073,15 @@ function Inventory:update()
     self.table.provider:markCacheDirty()
     self.table.gridProvider:markAllDirty()
     local data = self:createData()
+    local row, was = self.table:getHovered()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()
+    if row then --try restoring hovered item or select item on same position
+        local _, new = self.table:getItemById(row.id)
+        local idx = new or was
+        --if in new list hovered item is out of visible area, should we auto-scroll to it?
+        if idx then self.table:setHovered(idx) end
+    end
     if self.infoBar then self.infoBar:update() end
     self:updateTitle()
     L.debug('refresh', self.role, self.mode, #data, #self.table.filteredItems)
