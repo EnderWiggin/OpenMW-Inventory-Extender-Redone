@@ -611,20 +611,7 @@ Mode.Info = {
                 style = theme.IntRe and 'empty' or 'thin',
                 text = constants.Strings.DISPOSE_OF_CORPSE,
                 onClick = function()
-                    -- the window's own snapshot decides: during a pickpocket session the
-                    -- engine sits in Container mode but the mode key is Pickpocket
-                    local mode = handler.mode
-                    if mode ~= D.Modes.Container and mode ~= D.Modes.Pickpocket then return end
-                    if not ctx.windowArgs[D.Roles.Container] then return end
-                    ctx.dragAndDrop:moveAll(handler.target, omwself)
-                    if persistentCorpses(handler.target) then
-                        ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
-                    else
-                        core.sendGlobalEvent('IER_DisposeOfCorpse', {
-                            target = ctx.windowArgs[D.Roles.Container],
-                        })
-                    end
-                    I.UI.removeMode(D.Modes.Container)
+                    I.InventoryExtenderRedone.disposeCorpse(handler.target)
                 end,
             }
             return function(c)

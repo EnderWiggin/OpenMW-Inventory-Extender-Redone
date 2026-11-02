@@ -4,10 +4,12 @@ local core = require('openmw.core')
 local self = require('openmw.self')
 local types = require('openmw.types')
 local I = require('openmw.interfaces')
+local ui = require('openmw.ui')
 
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
+local persistentCorpses = require('scripts.InventoryExtenderRedone.util.persistentCorpses')
 
 local windowManager = require('scripts.InventoryExtenderRedone.ui.windowManager')
 local modeApi = require('scripts.InventoryExtenderRedone.toolkit.mode')
@@ -16,6 +18,7 @@ local pickpocketUtils = require('scripts.InventoryExtenderRedone.util.pickpocket
 local L = require('scripts.InventoryExtenderRedone.util.logger').get 'API'
 
 local Player = types.Player
+local Actor = types.Actor
 
 local API = {}
 
@@ -592,6 +595,22 @@ function API.isFavorite(itemOrId)
         id = itemOrId.id
     end
     return ctx.favoriteItems[id] == true
+end
+
+---@param corpse openmw.Object
+function API.disposeCorpse(corpse)
+    if not Actor.objectIsInstance(corpse) or not Actor.isDead(corpse) then
+        L.warn('disposeCorpse: corpse is dead actor:', corpse)
+        return
+    end
+    local ctx = windowManager.ctx
+    ctx.dragAndDrop:moveAll(corpse, self)
+    if persistentCorpses(corpse) then
+        ui.showMessage(constants.Strings.DISPOSE_CORPSE_FAIL)
+    else
+        core.sendGlobalEvent('IER_DisposeOfCorpse', { target = corpse, })
+    end
+    I.UI.removeMode(D.Modes.Container)
 end
 
 local eventHandlers = {

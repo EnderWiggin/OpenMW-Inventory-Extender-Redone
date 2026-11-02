@@ -26,6 +26,7 @@
 ---@field registerCategory fun(category:InventoryExtenderRedone.Category)
 ---@field unregisterCategory fun(key:string)
 ---@field isFavorite fun(itemOrId:string|openmw.Object):boolean
+---@field disposeCorpse fun(corpse:openmw.Object):boolean takes all items from a corpse and disposes of it if possible
 ---@field registerEquippedOverride fun(id:string, handler:fun(item:openmw.Object, actor:openmw.Object):boolean?) called in reverse registration order until one returns non-nil
 ---@field registerRowDataModifier fun(id:string, handler:InventoryExtenderRedone.RowDataModifier)
 ---@field registerRowBadge fun(id:string, provider:InventoryExtenderRedone.RowBadgeProvider)
