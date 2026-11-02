@@ -85,7 +85,7 @@ local function containerHints(handler, ctx, base)
         { text = l10n 'Hint_Select',   input = select, },
         'separator',
         { text = constants.Strings.CLOSE,  input = { id = input.CONTROLLER_BUTTON.B } },
-        { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } }
+        { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } },
     }
 end
 

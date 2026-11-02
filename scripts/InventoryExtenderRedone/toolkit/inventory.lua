@@ -960,6 +960,7 @@ function Inventory:updateInputHints()
         or { find(binds.c_SelUp), find(binds.c_SelDown) }
     local swap = configPlayer.keybinds.b_SwapUsePickup
 
+    --TODO: when mode is Interface - change transfer one/all hints to drop one/all
     local hints
     if LT and RT then
         hints = {
@@ -986,7 +987,6 @@ function Inventory:updateInputHints()
             { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
         }
     else
-        -- the base list is the interface default; the hints role slot replaces it wholesale
         hints = {
             { text = l10n(swap and 'Hint_Use' or 'Hint_Pickup'), input = { id = BUTTON.A } },
             { text = l10n(swap and 'Hint_Pickup' or 'Hint_Use'), input = find(binds.c_Activate) },
@@ -1034,7 +1034,6 @@ end
 
 ---@param bind string?
 function Inventory:onInputBase(bind)
-    if I.UI.getMode() == nil then return end
     --TODO: add binds to toggle view mode (select?)
     --TODO: add binds to open column config popup (R-Stick?) (and add binds to popup itself)
     if bind == BINDING.Category_Prev then
@@ -1074,7 +1073,6 @@ end
 
 ---@param bind string?
 function Inventory:onInputLT(bind)
-    if I.UI.getMode() == nil then return end
     if bind == BINDING.Category_Prev then
         self.table:prevActiveColumn(true)
     elseif bind == BINDING.Category_Next then
@@ -1091,7 +1089,6 @@ end
 
 ---@param bind string?
 function Inventory:onInputRT(bind)
-    if I.UI.getMode() == nil then return end
     --TODO: add binds to toggle view mode (select?)
     --TODO: add binds to open column config popup (R-Stick?) (and add binds to popup itself)
     if bind == BINDING.Category_Prev then
