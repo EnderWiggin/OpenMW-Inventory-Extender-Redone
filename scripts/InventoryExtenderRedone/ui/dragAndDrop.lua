@@ -136,6 +136,9 @@ end
 function DragAndDrop:setDraggingObject(object)
     L.info('setDraggingObject', object and object.id)
     self.draggingObject = object
+    if object then
+        self.draggingCount = object.count
+    end
 
     local upSound = helpers.getItemSound(object, 'up')
     if upSound then
