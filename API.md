@@ -135,7 +135,7 @@ There are three registration points, and they compose at open time.
 IER.patchMode(key, patch)
 ```
 
-The patch merges into the spec at resolve time, in reverse registration order (the most recently
+The patch merges into the spec at resolve time, in registration order (the most recently
 registered patch wins). A patch registered mid-session takes effect from the next open; it does not
 change an already-open window's snapshot. Patches change slots, never which mode applies. The
 patch's `id` is required if you want to remove it later with `unpatchMode`.
@@ -314,7 +314,7 @@ The resolution has four steps:
    `applies(role, arg, ctx, uiMode)`; the highest-`priority` match wins. Equal priorities are
    unordered, so a custom mode that overlaps a built-in must out-prioritize it.
 2. **Spec merge** — the mode's `base` chain first (own slots win over the base's), then the
-   patches registered for the mode key, applied in reverse registration order.
+   patches registered for the mode key, applied in registration order.
 3. **Role defaults** — the role's slot set is filled in with defaults for anything it does not
    name.
 4. **Part resolution** — each `sources`/`filters`/`actions`/`infoBar` entry is resolved against
@@ -326,8 +326,11 @@ The resolution has four steps:
 ## Row hooks
 
 These hooks wrap the default row behavior for every window, regardless of mode. They are global
-registration lists, called in reverse registration order. Re-registering the same `id` replaces
-the existing entry (`id`s are case-insensitive).
+registration lists; re-registering the same `id` replaces the existing entry (`id`s are case-insensitive).
+The three that can veto the default action (`registerRowUseHandler`, `registerRowPickupHandler`,
+`registerEquippedOverride`) run in reverse registration order, so the most recently registered has
+priority; `registerRowDataModifier` and `registerRowBadge` run in registration order, so later
+modifiers' writes win and badges stack in list order.
 
 | Function | Handler signature | Default behavior | Chain stops when a handler returns |
 | --- | --- | --- | --- |
@@ -439,8 +442,8 @@ player buys `item` from the merchant (the buy side), false when selling it to th
 (the sell side) — one handler can price the two directions differently. `price` is the final
 per-item contribution magnitude (after the 0.75 cap and the NPC min/max rule; `updateOffer`
 applies the sign per side). To price from the item's value instead, call
-`IER.Barter.getEffectiveValue(item, count)` (the query above). Handlers run in reverse registration
-order; each non-nil return replaces the running magnitude, so modifiers **compose** and the last
+`IER.Barter.getEffectiveValue(item, count)` (the query above). Handlers run in registration order;
+each non-nil return replaces the running magnitude, so modifiers **compose** and the last
 registered wins.
 Returned prices are clamped to `[0, infinity)`: `0` means a free item; a negative would flip
 the offer sign and corrupt the balance scalars.
@@ -553,7 +556,7 @@ IER.Barter.registerHaggleOverride(id, handler)
 
 The chain is consulted by both the Offer button and `Barter.offerBarter`, **before the acceptance dice are
 rolled** — a mod never sees or re-rolls them. `chance` is IER's computed acceptance threshold
-(`roll > chance` refuses, `roll` in `[1, 100]`). Handlers run in reverse registration order; each
+(`roll > chance` refuses, `roll` in `[1, 100]`). Handlers run in registration order; each
 non-nil return replaces the running value for its own field, so chance modifiers **stack** and the
 last registered wins per field (this is replace-per-field on purpose: chance modifiers compose,
 unlike eligibility chains such as `registerEquippedOverride` where the first non-nil decides).

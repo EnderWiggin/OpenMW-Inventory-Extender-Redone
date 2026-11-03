@@ -60,7 +60,7 @@ local function getEffectiveValue(item, count)
     return x * count
 end
 
---- Haggle override chain (ctx.overrides.haggle): handlers run in reverse registration order, and
+--- Haggle override chain (ctx.overrides.haggle): handlers run in registration order, and
 --- each non-nil return replaces the running chance and/or skillGain, so the last registered wins
 --- per field. Chance is clamped to [0, 100] after each replacement. The chain runs before the
 --- acceptance dice, and the vanilla early outs (offer at/below the merchant's, creature merchants)
@@ -74,7 +74,7 @@ end
 ---@return number? skillGain the last registered replacement, nil when no handler forced one
 local function applyHaggleOverrides(overrides, npc, playerOffer, merchantOffer, chance)
     local skillGain
-    for i = #overrides, 1, -1 do
+    for i = 1, #overrides do
         local newChance, newGain = overrides[i].handler(npc, playerOffer, merchantOffer, chance)
         if newChance ~= nil then
             chance = util.clamp(newChance, 0, 100)
@@ -163,7 +163,7 @@ end
 
 --- Price override chain (ctx.overrides.price): consulted inside itemOffer, so the queue, the
 --- prediction exports and the committed gold all see the same repriced value. Handlers run in
---- reverse registration order; each non-nil return replaces the running per-item price, so the
+--- registration order; each non-nil return replaces the running per-item price, so the
 --- last registered wins. buying is true when the player buys item from npc, false when selling it
 --- to npc, so one handler can price the two directions differently. price is the final per-item
 --- magnitude; the returned price is clamped to [0, infinity).
@@ -175,7 +175,7 @@ end
 ---@param price number
 ---@return number
 local function applyPriceOverrides(overrides, npc, item, count, buying, price)
-    for i = #overrides, 1, -1 do
+    for i = 1, #overrides do
         local newPrice = overrides[i].handler(npc, item, count, buying, price)
         if newPrice ~= nil then
             price = math.max(0, newPrice)

@@ -116,7 +116,7 @@ end
 
 --- Patch a built-in or custom mode with the same shape as Mode: list slots (sources/filters/
 --- infoBar/lifecycle/columns/input) merge by id, every other slot overwrites. Patches apply at resolve
---- time, in reverse registration order.
+--- time, in registration order, so the most recently registered patch wins.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param patch InventoryExtenderRedone.ModePatch
 function API.patchMode(key, patch)
@@ -340,7 +340,7 @@ function Barter.getEffectiveValue(item, count)
 end
 
 --- Register a haggle modifier, consulted when an offer is committed (by the Trade window's Offer
---- button and by Barter.offerBarter). Handlers run in reverse registration order; each non-nil
+--- button and by Barter.offerBarter). Handlers run in registration order; each non-nil
 --- return replaces the running chance and/or skillGain, so modifiers stack and the last
 --- registered wins per field. The returned chance is clamped to [0, 100].
 --- @param id string A unique identifier for the override
@@ -356,7 +356,7 @@ function Barter.registerHaggleOverride(id, handler)
 end
 
 --- Register a repricing modifier, consulted by the offer price, the price predictions and the
---- committed gold. Handlers run in reverse registration order; each non-nil return replaces the
+--- committed gold. Handlers run in registration order; each non-nil return replaces the
 --- running per-item price, so modifiers compose and the last registered wins. buying is true
 --- when the player buys item from the merchant, false when selling to it. price is the final
 --- per-item contribution magnitude; the returned price is clamped to [0, infinity).
@@ -382,8 +382,8 @@ API.Pickpocket = Pickpocket
 
 --- Register a steal-chance modifier, consulted for every visible row of an NPC's pockets: the
 --- chain runs inside getStealChance, so the window's StealChance column and the take roll read
---- the same number and the displayed chance and the dice agree. Handlers run in reverse
---- registration order; each non-nil return replaces the running chance, so modifiers compose and
+--- the same number and the displayed chance and the dice agree. Handlers run in registration order;
+--- each non-nil return replaces the running chance, so modifiers compose and
 --- the last registered wins. The returned chance is clamped to [0, 100]: 0 = never stealable,
 --- 100 = guaranteed. The handler is a query, not a roll: it must return the chance the roll will
 --- be made against, so a fresh random value per call makes the column lie. count is the row's
@@ -403,7 +403,7 @@ end
 
 --- Register a caught-on-close modifier, consulted when a pickpocket session leaves without
 --- resolving: the default dice roll always runs against whatever the chain produced, so a mod
---- retunes the odds, it does not replace the roll. Handlers run in reverse registration order;
+--- retunes the odds, it does not replace the roll. Handlers run in registration order;
 --- each non-nil return replaces the running chance, clamped to [0, 100]. Returning 0 means the
 --- close never fails (the victim is never alerted on leaving); 100 means it always alerts; nil
 --- defers to the running chance. The session clear and the close animation are not part of the

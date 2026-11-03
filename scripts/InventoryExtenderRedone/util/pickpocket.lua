@@ -76,7 +76,7 @@ function Pickpocket.getStealChance(player, target, item, stackCount)
     local chance = getChance(player, target, valueTerm)
 
     local overrides = I.InventoryExtenderRedone.getContext().overrides.stealChance
-    for i = #overrides, 1, -1 do
+    for i = 1, #overrides do
         local newChance = overrides[i].handler(player, target, item, stackCount, chance)
         if newChance ~= nil then
             chance = util.clamp(newChance, 0, 100)
@@ -98,7 +98,7 @@ function Pickpocket.rollClose(player, target)
 
     local ctx = I.InventoryExtenderRedone.getContext()
     local overrides = ctx.overrides.closeChance
-    for i = #overrides, 1, -1 do
+    for i = 1, #overrides do
         local newChance = overrides[i].handler(player, target, ctx.pickpocket, chance)
         if newChance ~= nil then
             chance = util.clamp(newChance, 0, 100)

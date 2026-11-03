@@ -1204,7 +1204,7 @@ local function applyModeDefaults(mode)
 end
 
 --- A spec's own slots win over its base chain, which wins over Mode.Defaults. Registered patches
---- then apply in reverse registration order.
+--- then apply in registration order, so the most recently registered patch wins.
 ---@param key InventoryExtenderRedone.ModeKey
 ---@param ctx InventoryExtenderRedone.Context
 ---@param visited table<string,boolean>? guards a mod-supplied base cycle
@@ -1224,7 +1224,7 @@ local function resolveSpec(key, ctx, visited)
     local merged = Mode.merge(base, spec)
     local patches = ctx.modePatches[key]
     if patches then
-        for i = #patches, 1, -1 do
+        for i = 1, #patches do
             merged = Mode.merge(merged, patches[i])
         end
     end
