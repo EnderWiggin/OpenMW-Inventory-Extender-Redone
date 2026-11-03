@@ -519,6 +519,7 @@ local function getMaxOffer(ctx)
 end
 
 return {
+    getEffectiveValue = getEffectiveValue,
     haggle = haggle,
     updateOffer = updateOffer,
     completeOffer = completeOffer,

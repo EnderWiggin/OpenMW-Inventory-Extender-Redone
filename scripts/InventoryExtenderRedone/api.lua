@@ -329,6 +329,16 @@ function Barter.getBuyOffer(item, count)
     return barterUtils.getBuyOffer(item, count, windowManager.ctx.windowArgs.Trade, windowManager.ctx)
 end
 
+--- The item stack's effective value: the number the offer prices start from, before any
+--- merchant math — record value scaled by condition (weapons/armor) or remaining uses (lockpicks/
+--- probes/repair), soul gems valued by their contents (the value rebalance included), times count.
+---@param item openmw.Object
+---@param count number
+---@return number
+function Barter.getEffectiveValue(item, count)
+    return barterUtils.getEffectiveValue(item, count)
+end
+
 --- Register a haggle modifier, consulted when an offer is committed (by the Trade window's Offer
 --- button and by Barter.offerBarter). Handlers run in reverse registration order; each non-nil
 --- return replaces the running chance and/or skillGain, so modifiers stack and the last

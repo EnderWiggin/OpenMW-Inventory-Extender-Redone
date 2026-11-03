@@ -413,11 +413,16 @@ any object of that record.
 IER.Barter.getSellOffer(item, count)   -- predicted gold gain from selling
 IER.Barter.getBuyOffer(item, count)    -- predicted gold spent buying
 IER.Barter.getBarterBalance()          -- current offer balance in gold (committing now nets this)
+IER.Barter.getEffectiveValue(item, count) -- the effective value behind those prices, before merchant math
 ```
 
 These share `updateOffer`'s per-item math (effective value, merchant offer, 0.75 cap, NPC rule), so
 a mod can price a candidate against the current queue before committing: price the queue plus the
-candidate and subtract the existing offer.
+candidate and subtract the existing offer. `getEffectiveValue(item, count)` is the base that math
+starts from — record value scaled by condition (weapons/armor) or remaining uses (lockpicks/probes/
+repair), soul gems valued by their contents (the value rebalance included), times `count`. It needs
+no merchant and no window and never returns `nil`, so a repricing handler can price from the item's
+value without recomputing it.
 
 ### Repricing — `IER.Barter.registerPriceOverride`
 
@@ -433,8 +438,10 @@ implementation, no drift. Handlers receive the barter direction: `buying` is tru
 player buys `item` from the merchant (the buy side), false when selling it to the merchant
 (the sell side) — one handler can price the two directions differently. `price` is the final
 per-item contribution magnitude (after the 0.75 cap and the NPC min/max rule; `updateOffer`
-applies the sign per side). Handlers run in reverse registration order; each non-nil return
-replaces the running magnitude, so modifiers **compose** and the last registered wins.
+applies the sign per side). To price from the item's value instead, call
+`IER.Barter.getEffectiveValue(item, count)` (the query above). Handlers run in reverse registration
+order; each non-nil return replaces the running magnitude, so modifiers **compose** and the last
+registered wins.
 Returned prices are clamped to `[0, infinity)`: `0` means a free item; a negative would flip
 the offer sign and corrupt the balance scalars.
 
