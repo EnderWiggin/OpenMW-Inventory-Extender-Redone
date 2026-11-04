@@ -1,3 +1,11 @@
+1.2.0 (2026-11-04)
+- fixed single stack pickup always picking full stack
+- when looking into companions inventory, they are now 'observer' in player's inventory too - makes selecting gear upgrades for companion easier
+- when window focus is switched by controller input active tooltip will switch to new window
+- added option to mark trader's restocking items (disabled by default)
+- Barter API: added getEffectiveValue
+- API: flipped order of mode patch application, barter's haggle and price overrides and pickpockets steal and close chance overrides (first-to-last now)
+
 1.1.1 (2026-11-02)
 - fixed binding for barter mode offer increase
 
