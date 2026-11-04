@@ -186,6 +186,7 @@ return {
                 { id = 'filler' },
                 { id = 'use' },
             },
+            observer = function(handler, _) return handler.arg end,
         },
         [Roles.Companion] = {
             sources = { { id = 'target' } },
