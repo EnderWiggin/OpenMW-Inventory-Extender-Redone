@@ -134,9 +134,10 @@ function DragAndDrop:updatePosition()
 end
 
 function DragAndDrop:setDraggingObject(object)
-    L.info('setDraggingObject', object and object.id)
+    L.info('setDraggingObject', object and object.id, self.draggingCount)
     self.draggingObject = object
-    if object then
+    if object and not self.draggingCount then
+        L.warn('setDraggingObject', 'missing dragging count, default to stack', object)
         self.draggingCount = object.count
     end
 
