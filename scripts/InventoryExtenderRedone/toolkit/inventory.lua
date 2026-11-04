@@ -949,6 +949,17 @@ function Inventory:onResized(inner)
     self.table:setSize(tableSize)
 end
 
+function Inventory:onFocusGained()
+    L.debug('onFocusGained', self.role, self.mode)
+    self:_restoreHovered()
+end
+
+function Inventory:onFocusLost()
+    L.debug('onFocusLost', self.role, self.mode)
+    self:_saveHovered()
+    self.table:setHovered()
+end
+
 function Inventory:getTopBarHeight()
     return self.categoryFilter:getSize().y
 end
@@ -1167,6 +1178,31 @@ function Inventory:getDefaultStorage()
     return roleSpec and roleSpec.defaultStorage
 end
 
+---@private
+function Inventory:_saveHovered()
+    local row, idx = self.table:getHovered()
+    if row then
+        self.wasHoveredId = row.id
+        self.wasHoveredIdx = idx
+    else
+        self.wasHoveredId = nil
+        self.wasHoveredIdx = nil
+    end
+end
+
+---@private
+--try restoring hovered item or select item on same position
+---@param id string?
+---@param idx integer?
+function Inventory:_restoreHovered(id, idx)
+    id = id or self.wasHoveredId
+    if not id then return end
+    local _, new = self.table:getItemById(id)
+    idx = new or idx or self.wasHoveredIdx
+    --if in new list hovered item is out of visible area, should we auto-scroll to it?
+    if idx then self.table:setHovered(idx) end
+end
+
 function Inventory:update()
     self.table.provider:markCacheDirty()
     self.table.gridProvider:markAllDirty()
@@ -1175,13 +1211,11 @@ function Inventory:update()
     self.table:setItems(data)
     self.categoryFilter.updateCategories()
     if row then --try restoring hovered item or select item on same position
-        local _, new = self.table:getItemById(row.id)
-        local idx = new or was
-        --if in new list hovered item is out of visible area, should we auto-scroll to it?
-        if idx then self.table:setHovered(idx) end
+        self:_restoreHovered(row.id, was)
     end
     if self.infoBar then self.infoBar:update() end
     self:updateTitle()
+    self:_saveHovered()
     L.debug('refresh', self.role, self.mode, #data, #self.table.filteredItems)
 end
 
