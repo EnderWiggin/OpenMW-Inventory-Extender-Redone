@@ -307,6 +307,13 @@ I.Settings.registerGroup {
             default = true,
         },
         {
+            key = 'b_RestockingIndicator',
+            renderer = 'checkbox',
+            name = 'RestockingIndicator',
+            description = 'RestockingIndicatorDesc',
+            default = false,
+        },
+        {
             key = 's_EnchantedIndicatorMode',
             renderer = 'select',
             name = 'EnchantedIndicatorMode',

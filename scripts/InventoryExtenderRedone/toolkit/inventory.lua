@@ -639,6 +639,7 @@ function Inventory:onOpened(wnd, data, saved)
     local function getItemBadgeState(row)
         local favorite = isFavorited(row.item)
         local stolen = false
+        local restock = false
 
         if configPlayer.tweaks.b_StolenIndicator then
             if self.role == 'Inventory' and ctx.stolenItems then
@@ -652,9 +653,14 @@ function Inventory:onOpened(wnd, data, saved)
             end
         end
 
+        if configPlayer.tweaks.b_RestockingIndicator then
+            restock = Item.isRestocking(row.item)
+        end
+
         return {
             favorite = favorite,
             stolen = stolen,
+            restock = restock,
         }
     end
 
@@ -705,6 +711,13 @@ function Inventory:onOpened(wnd, data, saved)
                 constants.Colors.DAMAGED, sz, #layouts)
             if not was['stolen'] then changed = true end
             was['stolen'] = nil
+        end
+
+        if badges.restock then
+            layouts[#layouts + 1] = makeBadge('restock', iconPack.getPath('item/restock.dds'),
+                constants.Colors.DAMAGED, sz, #layouts)
+            if not was['restock'] then changed = true end
+            was['restock'] = nil
         end
 
         if row.showAsEnchanted() and shouldShowEnchantedNameIcon() then

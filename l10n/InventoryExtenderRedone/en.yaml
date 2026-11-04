@@ -84,6 +84,8 @@ ShowStolenInfo: Show stolen item details
 ShowStolenInfoDesc: |-
   Tooltips will show list of people and factions you stole the item from.
 StolenTooltipText: 'Stolen from:'
+RestockingIndicator: Show restocking indicator
+RestockingIndicatorDesc: Show an icon next to restocking items.
 EnchantedIndicatorMode: Enchanted indicator mode
 EnchantedIndicatorModeDesc: |-
   In table view, show enchanted items with the icon swirl, the name-row icon, or both.

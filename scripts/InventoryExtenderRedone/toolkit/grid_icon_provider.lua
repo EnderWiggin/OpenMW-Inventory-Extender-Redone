@@ -212,6 +212,13 @@ function GridIcon:getBadgeLayouts(data, existing)
         was['stolen'] = nil
     end
 
+    if badges.restock then
+        layouts[#layouts + 1] = makeBadge('restock', iconPack.getPath('item/restock.dds'), constants.Colors.CYAN,
+            #layouts, n)
+        if not was['restock'] then changed = true end
+        was['restock'] = nil
+    end
+
     local ctx = I.InventoryExtenderRedone.getContext()
     local custom = ctx.modifiers.badge
     for i = 1, #custom do

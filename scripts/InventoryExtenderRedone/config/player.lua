@@ -36,6 +36,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 ---@field b_CategoryBarBorders boolean
 ---@field b_StolenIndicator boolean
 ---@field b_ShowStolenInfo boolean
+---@field b_RestockingIndicator boolean
 ---@field s_EnchantedIndicatorMode string
 ---@field b_FilledGemsAppearEnchanted boolean
 
