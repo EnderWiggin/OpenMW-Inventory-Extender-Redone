@@ -1,9 +1,13 @@
 ---@omw-context player
 
+local I = require('openmw.interfaces')
+local util = require('openmw.util')
 local D = require('scripts.InventoryExtenderRedone.config.defaults')
 local Roles = D.Roles
 local Modes = D.Modes
+local v2 = util.vector2
 
+local controllerMenus = I.GamepadControls.isControllerMenusEnabled()
 
 -- The player's own window.
 ---@type InventoryExtenderRedone.Mode
@@ -38,6 +42,8 @@ return {
                 { id = 'filler' },
                 { id = 'use' },
             },
+            storageSuffix = controllerMenus and ':Controller' or nil,
+            defaultStorage = controllerMenus and { position = v2(0.0, 0.1), size = v2(0.4, 0.80) } or nil,
         },
     },
 }

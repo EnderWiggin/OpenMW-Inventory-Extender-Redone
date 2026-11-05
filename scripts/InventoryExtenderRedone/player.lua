@@ -42,7 +42,7 @@ local function init()
     if not configPlayer.window.b_EnableMod then
         return
     end
-    if not I.GamepadControls.isControllerMenusEnabled or not I.GamepadControls.isControllerMenusEnabled() then
+    if core.contentFiles.has('TPA_ControllerUI.omwscripts') or not I.GamepadControls.isControllerMenusEnabled() then
         local overrides = {
             D.Roles.Inventory,
             D.Roles.Trade,
