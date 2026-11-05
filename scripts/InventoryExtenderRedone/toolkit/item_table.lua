@@ -9,9 +9,35 @@ local I = require('openmw.interfaces')
 
 local Class = require('scripts.UIToolkit.class')
 local Component = require('scripts.UIToolkit.components.component')
+local ItemList = require('scripts.UIToolkit.components.item_list')
 local ColumnItemProvider = require('scripts.UIToolkit.components.list_items.column_item')
 local GridIconProvider = require('scripts.InventoryExtenderRedone.toolkit.grid_icon_provider')
 local L = require('scripts.InventoryExtenderRedone.util.logger').get 'IT'
+local controllerMenus = I.GamepadControls.isControllerMenusEnabled()
+
+
+---@class IER.CustomList: UIToolkit.ItemList
+local CustomList = Class(ItemList)
+
+---@param idOrIndex string|integer|nil
+function CustomList:setHovered(idOrIndex)
+    local row = self:getHovered() --[[@as InventoryExtenderRedone.RowData]]
+    ItemList.setHovered(self, idOrIndex)
+    if controllerMenus then
+        self:updateActiveState(row, false)
+        row = self:getHovered() --[[@as InventoryExtenderRedone.RowData]]
+        self:updateActiveState(row, true)
+    end
+end
+
+---@param row InventoryExtenderRedone.RowData?
+---@param value boolean
+function CustomList:updateActiveState(row, value)
+    if not row then return end
+    local wdg = self.state.provider:getCachedComponent(row.id)
+    if not wdg then return end
+    wdg:setActive(value)
+end
 
 ---@class InventoryExtenderRedone.ItemTable : UIToolkit.Component
 ---@field new fun(self:InventoryExtenderRedone.ItemTable):InventoryExtenderRedone.ItemTable
@@ -99,7 +125,8 @@ function ItemTable:init(opts)
     self.provider:init(providerColumns, rowHeight)
     self.provider:setHiddenColumns(opts.hiddenColumns)
 
-    self.list = I.UIToolkit.Components.itemList {
+    self.list = CustomList:new()
+    self.list:init {
         size = self:getListSize(),
         provider = self.provider,
         onItemClicked = opts.onItemClicked,
