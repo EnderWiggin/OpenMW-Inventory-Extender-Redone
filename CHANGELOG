@@ -1,3 +1,8 @@
+1.2.1 (2026-11-05)
+- allow working during controller menus if Controller UI mod is present
+- if Controller menus are active - mark hovered item Active, for better visibility
+- added LT/RT hint for more actions
+
 1.2.0 (2026-11-04)
 - fixed single stack pickup always picking full stack
 - when looking into companions inventory, they are now 'observer' in player's inventory too - makes selecting gear upgrades for companion easier
