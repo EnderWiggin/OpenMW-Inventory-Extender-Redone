@@ -20,11 +20,13 @@ local configPlayer = require('scripts.InventoryExtenderRedone.config.player')
 local cfgUtil = require 'scripts.UIToolkit.config.utils'
 local l10n = core.l10n(D.L10N)
 
-local BUTTON = input.CONTROLLER_BUTTON
+
+local BUTTON    = input.CONTROLLER_BUTTON
+local AXIS      = input.CONTROLLER_AXIS
 
 local Container = types.Container
-local Actor = types.Actor
-local NPC = types.NPC
+local Actor     = types.Actor
+local NPC       = types.NPC
 
 
 -- controller hints replace the base list: Activate offers instead of picking up, and B
@@ -84,6 +86,7 @@ local function containerHints(handler, ctx, base)
         { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
         { text = l10n 'Hint_Select',   input = select, },
         'separator',
+        { text = l10n 'Hint_More',         input = { { id = AXIS.TriggerLeft, axis = true }, { id = AXIS.TriggerLeft, axis = true } } },
         { text = constants.Strings.CLOSE,  input = { id = input.CONTROLLER_BUTTON.B } },
         { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } },
     }

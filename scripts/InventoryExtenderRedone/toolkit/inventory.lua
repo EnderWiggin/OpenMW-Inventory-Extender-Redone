@@ -17,6 +17,7 @@ local D         = require 'scripts.InventoryExtenderRedone.config.defaults'
 local L         = require 'scripts.InventoryExtenderRedone.util.logger'.get 'INV'
 local BINDING   = D.Binds
 local BUTTON    = input.CONTROLLER_BUTTON
+local AXIS      = input.CONTROLLER_AXIS
 
 local Container = types.Container
 local Item      = types.Item
@@ -1021,7 +1022,8 @@ function Inventory:updateInputHints()
             { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
             { text = l10n 'Hint_Select',   input = select, },
             'separator',
-            { text = constants.Strings.CLOSE, input = { id = BUTTON.B } },
+            { text = l10n 'Hint_More', input = { { id = AXIS.TriggerLeft, axis = true }, { id = AXIS.TriggerLeft, axis = true } } },
+            { text = constants.Strings.CLOSE,  input = { id = BUTTON.B } },
         }
         if self.mode ~= D.Modes.Interface then
             hints[#hints + 1] = { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } }

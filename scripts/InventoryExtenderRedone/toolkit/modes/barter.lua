@@ -18,6 +18,7 @@ local Modes = D.Modes
 local BINDING = D.Binds
 
 local BUTTON = input.CONTROLLER_BUTTON
+local AXIS = input.CONTROLLER_AXIS
 local STR_BARTER = core.getGMST('sBarter')
 
 
@@ -77,6 +78,7 @@ local function barterHints(handler, ctx, base)
             { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
             { text = l10n 'Hint_Select',   input = select, },
             'separator',
+            { text = l10n 'Hint_More',         input = { { id = AXIS.TriggerLeft, axis = true }, { id = AXIS.TriggerLeft, axis = true } } },
             { text = constants.Strings.CLOSE,  input = { id = input.CONTROLLER_BUTTON.B } },
             { text = l10n 'Hint_SwitchWindow', input = { id = BUTTON.Back } },
         }
