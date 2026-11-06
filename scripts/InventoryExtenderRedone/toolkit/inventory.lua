@@ -1215,7 +1215,7 @@ function Inventory:_restoreHovered(id, idx)
     local _, new = self.table:getItemById(id)
     idx = new or idx or self.wasHoveredIdx
     --if in new list hovered item is out of visible area, should we auto-scroll to it?
-    if idx then self.table:setHovered(idx) end
+    if idx then self.table:setHovered(idx, true) end
 end
 
 function Inventory:update()

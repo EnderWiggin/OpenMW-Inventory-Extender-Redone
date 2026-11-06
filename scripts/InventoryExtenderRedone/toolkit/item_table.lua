@@ -389,9 +389,10 @@ function ItemTable:getItemById(id)
 end
 
 ---@param idOrIndex string|integer|nil
-function ItemTable:setHovered(idOrIndex)
+---@param highlight boolean? if true and mode is grid - will highlight item
+function ItemTable:setHovered(idOrIndex, highlight)
     if self.showGrid then
-        return self.grid:setHovered(idOrIndex)
+        return self.grid:setHovered(idOrIndex, highlight)
     else
         return self.list:setHovered(idOrIndex)
     end
