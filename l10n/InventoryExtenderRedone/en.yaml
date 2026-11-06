@@ -255,6 +255,8 @@ Hint_Category: Category
 Hint_Select: Select
 Hint_Favorite: Favorite
 Hint_Count: Count
+Hint_CountMin: Min
+Hint_CountMax: Max
 Hint_Columns: Sorting
 Hint_TransferAll_Container: Loot all
 Hint_TransferAll: Transfer All

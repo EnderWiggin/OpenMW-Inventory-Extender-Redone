@@ -112,12 +112,18 @@ function ItemStackModal.show(opts)
         elseif button == BUTTON.X then
             onConfirm(selectedCount)
             closePopup()
-        elseif button == BUTTON.LeftShoulder then
+        elseif button == BUTTON.DPadLeft then
             if selectedCount <= 1 then return end
             slider:setPosition(selectedCount - 2) --slider's position needs to be 1 lower that selected count
-        elseif button == BUTTON.RightShoulder then
+        elseif button == BUTTON.DPadRight then
             if selectedCount >= maxCount then return end
             slider:setPosition(selectedCount) --slider's position needs to be 1 lower that selected count
+        elseif button == BUTTON.LeftShoulder then
+            if selectedCount <= 1 then return end
+            slider:setPosition(0) --slider's position needs to be 1 lower that selected count
+        elseif button == BUTTON.RightShoulder then
+            if selectedCount >= maxCount then return end
+            slider:setPosition(maxCount - 1) --slider's position needs to be 1 lower that selected count
         end
     end
     local function onKey(key)
@@ -155,7 +161,9 @@ function ItemStackModal.show(opts)
         controllerHints = {
             { text = constants.Strings.OK,     input = { id = BUTTON.X } },
             { text = constants.Strings.CANCEL, input = { id = BUTTON.Y } },
-            { text = l10n 'Hint_Count',        input = { { id = BUTTON.LeftShoulder }, { id = BUTTON.RightShoulder } } },
+            { text = l10n 'Hint_Count',        input = { { id = BUTTON.DPadLeft }, { id = BUTTON.DPadRight } } },
+            { text = l10n 'Hint_CountMin',     input = { id = BUTTON.LeftShoulder } },
+            { text = l10n 'Hint_CountMax',     input = { id = BUTTON.RightShoulder } },
         },
     }
 
