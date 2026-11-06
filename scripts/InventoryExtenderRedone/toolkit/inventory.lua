@@ -51,6 +51,8 @@ local T              = Toolkit.Templates
 local playerWindowSettings = storage.playerSection(D.Section.Window)
 local windowOptionsSection = storage.playerSection('InventoryExtender')
 local columnVisibilityKey  = 'ColumnVisibility'
+local isControllerMenus = I.GamepadControls.isControllerMenusEnabled()
+local hasCursorAPI = core.API_REVISION >= 161
 
 
 ---@type table<string, string>
@@ -253,6 +255,15 @@ function Inventory:onOpened(wnd, data, saved)
     local mode, roleSpec = Mode.resolveMode(self.role, self.arg, I.UI.getMode())
     self.mode = mode and mode.key or nil
     L.info('onOpened', self.role, self.mode)
+    if isControllerMenus then
+        --with Controller Menus cursor does not become visible over custom windows
+        --do a fix that depends on available API
+        if hasCursorAPI then
+            ui.setCursorVisible(true)
+        elseif ui._setWindowDisabled then --Should be safe, since this will run on 0.51 only, which has the method
+            ui._setWindowDisabled('Inventory', true)
+        end
+    end
     self.slots = roleSpec
     -- the open window answers from these snapshots, never from the engine mode
     self.suffix = roleSpec and roleSpec.storageSuffix or nil
