@@ -329,6 +329,11 @@ end
 function ItemTable:setItems(items)
     self.allItems = items
     self:filter()
+    for i = 1, #self.filteredItems do
+        local row = self.filteredItems[i]
+        local cached = self.provider:getCachedComponent(row.id)
+        if cached and cached:isActive() then cached:setActive(false) end
+    end
     L.debug('setItems', #items, #self.filteredItems, self.showGrid)
 end
 
