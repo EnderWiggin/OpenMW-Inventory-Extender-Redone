@@ -1,5 +1,5 @@
 1.2.2 (2026-11-06)
-- fixed 'more' hint listing LT twice instead of LT/RT\
+- fixed 'more' hint listing LT twice instead of LT/RT
 - changed stack split controls: DPad Left/Right for count, Shoulders for Min/Max
 - fixed restore highlight for grid mode
 - fixed invisible cursor when Controller Menus are enabled
