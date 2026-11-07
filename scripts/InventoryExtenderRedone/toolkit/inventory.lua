@@ -1033,7 +1033,7 @@ function Inventory:updateInputHints()
             { text = l10n 'Hint_Category', input = { find(binds.c_CatPrev), find(binds.c_CatNext) }, },
             { text = l10n 'Hint_Select',   input = select, },
             'separator',
-            { text = l10n 'Hint_More', input = { { id = AXIS.TriggerLeft, axis = true }, { id = AXIS.TriggerLeft, axis = true } } },
+            { text = l10n 'Hint_More', input = { { id = AXIS.TriggerLeft, axis = true }, { id = AXIS.TriggerRight, axis = true } } },
             { text = constants.Strings.CLOSE,  input = { id = BUTTON.B } },
         }
         if self.mode ~= D.Modes.Interface then
