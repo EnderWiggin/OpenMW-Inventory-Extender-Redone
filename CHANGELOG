@@ -1,3 +1,8 @@
+1.2.3 (2026-11-13)
+- select last item in list on update if last item selected was last in list and is now gone
+- scroll restored selection into view
+- added `Cap offer at merchant's gold` gameplay setting
+
 1.2.2 (2026-11-06)
 - fixed 'more' hint listing LT twice instead of LT/RT
 - changed stack split controls: DPad Left/Right for count, Shoulders for Min/Max
