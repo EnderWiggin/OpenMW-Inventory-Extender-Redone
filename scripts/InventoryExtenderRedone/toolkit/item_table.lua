@@ -407,6 +407,17 @@ function ItemTable:shiftHoveredItem(shift)
     end
 end
 
+---@param idOrIndex string|integer
+---@param strict boolean? if true, only fully visible items count as in view. Defaults to true
+---@return boolean scrolled
+function ItemTable:scrollIntoView(idOrIndex, strict)
+    if self.showGrid then
+        return self.grid:scrollIntoView(idOrIndex, strict)
+    else
+        return self.list:scrollIntoView(idOrIndex, strict)
+    end
+end
+
 ---@return UIToolkit.Scrollable
 function ItemTable:currentScrollable()
     if self.showGrid then
