@@ -207,6 +207,7 @@ local function createSection(handler, _)
 end
 
 local function cleanupSection()
+    state = nil
     if not box then return end
     Toolkit.queueDestroy(box.element)
     box = nil
@@ -247,11 +248,12 @@ return {
     },
     eventHandlers = {
         IER_BarterFinalized = function()
+            -- the commit clears the offer queues itself, so the chosen partner stays selected:
+            -- a commit that leaves the window open can start a new deal with the same follower
             local selected = state and state.selectedActor
             if selected and selected ~= omwself then
                 core.sendGlobalEvent('IER_AutoEquip', { target = selected })
             end
-            state = nil
         end,
     },
 }
