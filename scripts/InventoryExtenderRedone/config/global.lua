@@ -6,6 +6,7 @@ local D = require('scripts.InventoryExtenderRedone.config.defaults')
 ---@class IER.Config.Global.Gameplay
 ---@field b_SoulGemValueRebalance boolean
 ---@field b_IgnoreChestCapacity boolean
+---@field b_CapOfferToMerchantGold boolean
 
 ---@class IER.Config.Global
 ---@field gameplay IER.Config.Global.Gameplay

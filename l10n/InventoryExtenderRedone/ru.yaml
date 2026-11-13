@@ -122,6 +122,9 @@ SoulGemValueRebalanceDesc: |-
 IgnoreChestCapacity: "Игнорировать вместимость контейнера"
 IgnoreChestCapacityDesc: |-
   Позволяет помещать предметы в контейнеры, игнорируя ограничения по весу.
+CapOfferToMerchantGold: "Ограничивать предложение золотом торговца"
+CapOfferToMerchantGoldDesc: |-
+  Ограничивать сумму автоматического предложения доступным золотом торговца, если доступное золото больше 0.
 
 # Колонки
 Column_Name: "Имя"
@@ -255,10 +258,10 @@ Hint_Pickup: "Взять"
 Hint_Category: "Категория"
 Hint_Select: "Выбрать"
 Hint_Favorite: "Избранное"
-Hint_Columns: "Сортировка"
 Hint_Count: "Количество"
 Hint_CountMin: "Мин."
 Hint_CountMax: "Макс."
+Hint_Columns: "Сортировка"
 Hint_TransferAll_Container: "Взять все"
 Hint_TransferAll: "Перенести все"
 Hint_TransferOne: "Перенести один"

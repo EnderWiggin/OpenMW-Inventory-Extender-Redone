@@ -24,5 +24,12 @@ I.Settings.registerGroup {
             description = 'IgnoreChestCapacityDesc',
             default = false,
         },
+        {
+            key = 'b_CapOfferToMerchantGold',
+            renderer = 'checkbox',
+            name = 'CapOfferToMerchantGold',
+            description = 'CapOfferToMerchantGoldDesc',
+            default = false,
+        },
     },
 }

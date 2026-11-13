@@ -9,6 +9,7 @@ local I = require('openmw.interfaces')
 
 local constants = require('scripts.InventoryExtenderRedone.util.constants')
 local helpers = require('scripts.InventoryExtenderRedone.util.helpers')
+local configGlobal = require('scripts.InventoryExtenderRedone.config.global')
 local L = require('scripts.InventoryExtenderRedone.util.logger').get 'Barter'
 
 local Weapon = types.Weapon
@@ -252,6 +253,16 @@ local function updateOffer(ctx)
 
     for _, sellingData in pairs(state.selling) do
         merchantOffer = merchantOffer + itemOffer(merchant, sellingData.item, sellingData.count, false, ctx)
+    end
+
+    -- the running offer never asks the merchant for more than he holds: the queue's price is
+    -- capped before it becomes the stored value, so later diffs subtract the capped number too.
+    -- an empty pool is left alone - uncapped, so the Offer gold check still refuses it
+    if configGlobal.gameplay.b_CapOfferToMerchantGold and merchantOffer > 0 then
+        local merchantGold = merchant.type.getBarterGold(merchant)
+        if merchantGold > 0 and merchantGold < merchantOffer then
+            merchantOffer = merchantGold
+        end
     end
 
     local diff = merchantOffer - (state.currentMerchantOffer or 0)

@@ -121,6 +121,9 @@ SoulGemValueRebalanceDesc: |-
 IgnoreChestCapacity: Ignore container capacity
 IgnoreChestCapacityDesc: |-
   Allows placing items into containers ignoring weight limits.
+CapOfferToMerchantGold: Cap offer at merchant's gold
+CapOfferToMerchantGoldDesc: |-
+  Cap auto offer amount at merchant's available gold, if available gold is above 0.
 
 # Column
 Column_Name: Name
